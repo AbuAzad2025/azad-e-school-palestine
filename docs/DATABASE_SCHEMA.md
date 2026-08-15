@@ -12,6 +12,7 @@
 3. **كل عمود يخزن قيماً بسيطة**؛ التعقيد/التغيّر في `jsonb` (`settings`, `meta`, `benefits`, `options`, `answers`) — مرونة دون هجرات.
 4. الحقول النصية العربية تُخزَّن `TEXT` مع إسقاط Unicode عادي (لا collation حساس للعربية)؛ البحث عبر `ILIKE` أو `pg_trgm` (فهرس `gin_trgm_ops`) عند الحاجة.
 5. **المدرسة هي حاجز العزل (tenancy)**: كل جدول أعمال يبدأ بمفتاح `school_id` — لا تداخل بين المدارس مهما توسّعنا.
+   > **استثناء وحيد مقصود — الدروس الخصوصية (§3.15):** جداول T **بلا** `school_id` لأنها سوق حر خارج المدارس. حاجز العزل فيها هو المنصة نفسها، والوصول بصلاحية: طرفا الجلسة فقط + super_admin. لا يُضاف أي جدول خارج عزل المدرسة إلا بقرار صريح كهذا.
 6. لا جداول خلفية صامتة: كل العلاقات `ON DELETE RESTRICT` (منع حذف بيانات محاسبية/درجات) إلا حيث صُمِّم النشر بوعي.
 
 ---
@@ -387,7 +388,59 @@ attendance_status: present | absent | late | excused
 | tokens | int |
 | created_at | timestamptz |
 
-### 3.13 سجل التدقيق
+### 3.15 الدروس الخصوصية (سوق حر — استثناء تينانتس مقصود)
+> بلا `school_id` — الحاجز هو المنصة، والوصول: طرفا الجلسة فقط + super_admin. انظر المبدأ 5.
+
+**tutor_profiles** — ملف المعلم الخصوصي (صفحة عامة قابلة للبحث).
+| عمود | النوع | ملاحظات |
+|---|---|---|
+| id | PK | |
+| tutor_id | FK→users NOT NULL | UNIQUE — معلم واحد لكل ملف |
+| subject | text NOT NULL | مادة التدريس |
+| grade_levels | jsonb | [7,8,9] الصفوف التي يدرّسها |
+| price_hour | numeric(10,2) | سعر الساعة |
+| price_session | numeric(10,2) | سعر الجلسة الثابتة |
+| mode | text | online/offline/both |
+| availability | jsonb | أوقات/أيام التوفر |
+| bio | text | نبذة للمعلم |
+| invite_code | citext UNIQUE | مفتاح دعوة مباشر |
+| is_active | boolean DEFAULT true | |
+| created_at / updated_at | timestamptz | |
+
+**tutoring_requests** — طلب حجز من طالب لمعلم.
+| عمود | النوع | ملاحظات |
+|---|---|---|
+| id | PK | |
+| tutor_id | FK→users NOT NULL | |
+| student_id | FK→users NOT NULL | |
+| subject | text | |
+| preferred_time | timestamptz | |
+| mode | text | online/offline |
+| price_quote | numeric(10,2) | سعر مقترح |
+| note | text | |
+| status | text | pending/accepted/rejected/cancelled |
+| UNIQUE (tutor_id, student_id, status) | | قيد نشاط منطقي للطلبات المفتوحة |
+
+**tutoring_sessions** — الجلسة المؤكَّدة بين المعلم والطالب.
+| عمود | النوع | ملاحظات |
+|---|---|---|
+| id | PK | |
+| request_id | FK→tutoring_requests NULL | |
+| tutor_id | FK→users NOT NULL | |
+| student_id | FK→users NOT NULL | |
+| subject | text NOT NULL | |
+| scheduled_at | timestamptz NOT NULL | |
+| duration_min | int | |
+| price | numeric(10,2) | |
+| currency | text DEFAULT 'ILS' | |
+| mode | text | online/offline |
+| online_link | text NULL | رابط الاجتماع |
+| location | text NULL | المكان الحضوري |
+| status | text | requested/accepted/completed/cancelled |
+| payment_status | text | pending/approved/rejected (يدوي — D12) |
+| created_at / updated_at | timestamptz | |
+
+### 3.16 سجل التدقيق
 **audit_logs**
 | عمود | النوع |
 |---|---|
@@ -417,6 +470,7 @@ attendance_status: present | absent | late | excused
 - `grade_entries(student_id)` لبطاقة الدرجات السريعة.
 - `attendance(class_id, date)` للحضور اليومي.
 - `audit_logs(entity, entity_id)`.
+- `tutor_profiles(subject)`, `tutor_profiles(invite_code)`, `tutoring_sessions(tutor_id, scheduled_at)`, `tutoring_sessions(student_id)`.
 - `pg_trgm` على `subjects.name_ar`, `lessons.title` للبحث المرن عند الحاجة لاحقاً.
 
 ## 5. الهجرات
@@ -432,8 +486,9 @@ attendance_status: present | absent | late | excused
 | M4 الاختبارات | quizzes, questions, quiz_attempts, answers |
 | M5 الواجبات والدرجات والحضور | assignments, submissions, grade_categories, grade_items, grade_entries, attendance |
 | M6 الاشتراك والدفع | subscription_plans, subscriptions, manual_payments, payment_receipts |
+| M2T الدروس الخصوصية (موازٍ) | tutor_profiles, tutoring_requests, tutoring_sessions |
 
-> الجداول 3.11-3.14 تُنشأ في M0 كجزء من الهيكل الأساسي (لا كود بعد — schema فقط)، لتضمن أن التصميم مستقبلي بالكامل من أول يوم.
+> الجداول 3.11-3.16 تُنشأ في M0 كجزء من الهيكل الأساسي (لا كود بعد — schema فقط)، لتضمن أن التصميم مستقبلي بالكامل من أول يوم.
 
 ## 7. قرارات تحتاج تأكيدك قبل التنفيذ
 1. **الرمز النقدي الافتراضي:** `ILS` (شيكل) أم `USD` أم `JOD`؟ (أُدرج `currency` كعمود مرن — لكن أفترض شيكلاً افتراضياً).
