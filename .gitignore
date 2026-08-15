@@ -1,0 +1,37 @@
+# ===== أمان: لا أسرار تُرفع إلى Git (D4) =====
+.env
+.env.*
+!.env.example
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+instance/
+
+# ===== قاعدة البيانات =====
+*.db
+*.sqlite3
+
+# ===== المرفوعات (D7): خارج مجلد عام، وأسماؤها عشوائية =====
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+instance/uploads/*
+!instance/uploads/.gitkeep
+
+# ===== النسخ الاحتياطي =====
+backups/
+*.dump
+*.bak
+
+# ===== نظام التشغيل والأدوات =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
