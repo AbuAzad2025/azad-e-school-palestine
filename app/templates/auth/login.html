@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ _('تسجيل الدخول') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="card card-centered">
+  <h1 class="page-title azad-title">{{ _('تسجيل الدخول') }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.email.label }}
+      {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
+      {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-group">
+      {{ form.password.label }}
+      {{ form.password(autocomplete="current-password") }}
+      {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class="azad-btn") }}
+    </div>
+  </form>
+  <p class="auth-alt">{{ _('ليس لديك حساب؟') }} <a href="{{ url_for('auth.register') }}">{{ _('أنشئ حساباً مجاناً') }}</a></p>
+  <p class="auth-alt"><a href="{{ url_for('auth.forgot_password') }}">{{ _('نسيت كلمة المرور؟') }}</a></p>
+</div>
+{% endblock %}

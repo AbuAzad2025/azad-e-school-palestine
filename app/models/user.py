@@ -1,5 +1,6 @@
 """المستخدمون والأدوار — حساب واحد، أدوار متعددة عبر المدارس"""
-from enum import Enum
+
+from enum import StrEnum
 
 from flask_login import UserMixin
 from sqlalchemy import Boolean, ForeignKey, String, Text, UniqueConstraint
@@ -7,10 +8,11 @@ from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
 from .mixins import PKMixin, SoftDeleteMixin
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     super_admin = "super_admin"
     school_admin = "school_admin"
     teacher = "teacher"
@@ -37,6 +39,14 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
     @property
     def is_authenticated_prop(self):
         return self.is_active
+
+    @property
+    def school_id(self) -> int | None:
+        """أول مدرسة نشطة للمستخدم (من user_role_links). None للمشرف الكلي."""
+        for link in self.role_links:
+            if link.is_active:
+                return link.school_id
+        return None
 
     def __repr__(self):
         return f"<User {self.id} {self.email} {self.role}>"

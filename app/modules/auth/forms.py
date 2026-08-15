@@ -1,35 +1,43 @@
 """نماذج المصادقة (Flask-WTF)"""
+
+from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
 from wtforms import EmailField, PasswordField, RadioField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 
 
 class RegisterForm(FlaskForm):
-    name_ar = StringField("الاسم (عربي)", validators=[DataRequired(), Length(min=2, max=120)])
-    email = EmailField("البريد الإلكتروني", validators=[DataRequired(), Email()])
+    name_ar = StringField(_("الاسم (عربي)"), validators=[DataRequired(), Length(min=2, max=120)])
+    email = EmailField(_("البريد الإلكتروني"), validators=[DataRequired(), Email()])
     role = RadioField(
-        "أنا",
-        choices=[("student", "طالب"), ("teacher", "معلم"), ("parent", "ولي أمر")],
+        _("أنا"),
+        choices=[("student", _("طالب")), ("teacher", _("معلم")), ("parent", _("ولي أمر"))],
         default="student",
         validators=[DataRequired()],
     )
-    password = PasswordField("كلمة المرور", validators=[DataRequired(), Length(min=8)])
-    confirm = PasswordField("تأكيد كلمة المرور", validators=[DataRequired(), EqualTo("password", message="كلمتا المرور غير متطابقتين")])
-    submit = SubmitField("إنشاء الحساب")
+    password = PasswordField(_("كلمة المرور"), validators=[DataRequired(), Length(min=8)])
+    confirm = PasswordField(
+        _("تأكيد كلمة المرور"),
+        validators=[DataRequired(), EqualTo("password", message=_("كلمتا المرور غير متطابقتين"))],
+    )
+    submit = SubmitField(_("إنشاء الحساب"))
 
 
 class LoginForm(FlaskForm):
-    email = EmailField("البريد الإلكتروني", validators=[DataRequired(), Email()])
-    password = PasswordField("كلمة المرور", validators=[DataRequired()])
-    submit = SubmitField("تسجيل الدخول")
+    email = EmailField(_("البريد الإلكتروني"), validators=[DataRequired(), Email()])
+    password = PasswordField(_("كلمة المرور"), validators=[DataRequired()])
+    submit = SubmitField(_("تسجيل الدخول"))
 
 
 class ForgotPasswordForm(FlaskForm):
-    email = EmailField("البريد الإلكتروني", validators=[DataRequired(), Email()])
-    submit = SubmitField("إرسال رابط إعادة التعيين")
+    email = EmailField(_("البريد الإلكتروني"), validators=[DataRequired(), Email()])
+    submit = SubmitField(_("إرسال رابط إعادة التعيين"))
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField("كلمة المرور الجديدة", validators=[DataRequired(), Length(min=8)])
-    confirm = PasswordField("تأكيد كلمة المرور", validators=[DataRequired(), EqualTo("password", message="كلمتا المرور غير متطابقتين")])
-    submit = SubmitField("حفظ كلمة المرور الجديدة")
+    password = PasswordField(_("كلمة المرور الجديدة"), validators=[DataRequired(), Length(min=8)])
+    confirm = PasswordField(
+        _("تأكيد كلمة المرور"),
+        validators=[DataRequired(), EqualTo("password", message=_("كلمتا المرور غير متطابقتين"))],
+    )
+    submit = SubmitField(_("حفظ كلمة المرور الجديدة"))

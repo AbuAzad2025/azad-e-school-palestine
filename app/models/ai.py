@@ -1,9 +1,11 @@
 """الذكاء الاصطناعي: جلسات معلم افتراضي + رسائل (F27-F30 — مُخطَّط مسبقاً)"""
+
 from sqlalchemy import ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 

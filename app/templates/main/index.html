@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>{{ _('مدرسة أزاد الإلكترونية') }}</h1>
+  <p>{{ _('منصة تعليمية متكاملة للمناهج الفلسطينية — دروس، اختبارات، واجبات، ومتابعة دقيقة من أي جهاز.') }}</p>
+  <div class="hero-actions">
+    {% if current_user.is_authenticated %}
+      <a class="azad-btn" href="{{ url_for('auth.dashboard') }}">{{ _('لوحتي') }}</a>
+    {% else %}
+      <a class="azad-btn" href="{{ url_for('auth.register') }}">{{ _('سجّل مجاناً') }}</a>
+      <a class="azad-btn-outline" href="{{ url_for('auth.login') }}">{{ _('تسجيل الدخول') }}</a>
+    {% endif %}
+  </div>
+</section>
+<section class="container">
+  <div class="dash-grid">
+    <div class="dash-card"><div class="icon">📚</div><div class="meta"><strong>{{ _('دروس منظمة') }}</strong><small>{{ _('منهاج فلسطيني كامل لكل الصفوف والمواد') }}</small></div></div>
+    <div class="dash-card"><div class="icon">📝</div><div class="meta"><strong>{{ _('اختبارات فورية') }}</strong><small>{{ _('تصحيح آلي ونتائج لحظية') }}</small></div></div>
+    <div class="dash-card"><div class="icon">🎥</div><div class="meta"><strong>{{ _('فيديو وشرح') }}</strong><small>{{ _('معلم افتراضي ومحتوى تفاعلي قريباً') }}</small></div></div>
+    <div class="dash-card"><div class="icon">📊</div><div class="meta"><strong>{{ _('متابعة دقيقة') }}</strong><small>{{ _('درجات، حضور، وتقارير لأولياء الأمور') }}</small></div></div>
+  </div>
+</section>
+{% endblock %}

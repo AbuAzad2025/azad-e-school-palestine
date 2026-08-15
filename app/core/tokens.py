@@ -1,6 +1,7 @@
 """رموز آمنة موقّعة للبريد (تفعيل الحساب + إعادة التعيين)"""
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+
 from flask import current_app
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 
 def _serializer() -> URLSafeTimedSerializer:

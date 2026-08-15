@@ -1,0 +1,14 @@
+{
+  "name": "azad-e-school",
+  "version": "0.1.0",
+  "private": true,
+  "description": "منصة مدرسة أزاد الإلكترونية — جافاسكريبت الواجهة",
+  "scripts": {
+    "check:biome": "biome check app/static/js",
+    "lint": "npm run check:biome",
+    "format": "biome format --write app/static/js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.8"
+  }
+}

@@ -1,0 +1,118 @@
+:root {
+  /* Azad Smart Systems brand palette */
+  --azad-navy: #0f172a;
+  --azad-blue: #0ea5e9;
+  --azad-blue-dark: #0284c7;
+  --azad-teal: #14b8a6;
+  --azad-gold: #f59e0b;
+  --azad-slate: #f8fafc;
+  --azad-text: #1e293b;
+  --azad-white: #ffffff;
+
+  --azad-gradient: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+  --azad-shadow: 0 4px 14px rgba(14, 165, 233, 0.25);
+  --azad-radius: 12px;
+}
+
+/* Brand buttons */
+.azad-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--azad-gradient);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--azad-shadow);
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.azad-btn:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.azad-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  border: 2px solid var(--azad-blue);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--azad-blue-dark);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.azad-btn-outline:hover {
+  background: var(--azad-blue);
+  color: #fff;
+}
+
+/* Brand badge */
+.azad-badge {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 9999px;
+  background: var(--azad-gradient);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Footer tagline */
+.azad-footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: var(--azad-text);
+}
+.azad-footer a {
+  color: var(--azad-blue-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+.azad-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Brand headings */
+.azad-title {
+  background: var(--azad-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 800;
+}
+
+/* Error pages */
+.azad-404 {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--azad-slate);
+  color: var(--azad-text);
+  padding: 2rem;
+}
+.azad-404 code {
+  font-size: 5rem;
+  font-weight: 800;
+  background: var(--azad-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}

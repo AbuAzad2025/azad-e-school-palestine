@@ -1,0 +1,202 @@
+/* منصة مدرسة أزاد الإلكترونية — نظام تصميم متجاوب (mobile-first) */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --nav-height: 60px;
+  --radius: 12px;
+  --shadow-sm: 0 1px 3px rgba(15,23,42,.12);
+  --shadow-md: 0 6px 18px rgba(15,23,42,.12);
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --border: #e2e8f0;
+  --muted: #64748b;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body.azad-app {
+  font-family: "Segoe UI", "Tahoma", "Arial", system-ui, sans-serif;
+  background: var(--azad-slate);
+  color: var(--azad-text);
+  line-height: 1.6;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+/* ===== شريط التنقل (متجاوب) ===== */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: var(--nav-height);
+  background: var(--azad-navy);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(15,23,42,.35);
+}
+.navbar .container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.brand { display: flex; align-items: center; gap: .5rem; color: #fff; text-decoration: none; font-weight: 800; }
+.brand img { height: 32px; width: 32px; }
+.brand small { font-weight: 400; color: #94a3b8; }
+
+.nav-links { display: none; gap: 1rem; align-items: center; }
+.nav-links a { color: #e2e8f0; text-decoration: none; font-weight: 500; }
+.nav-links a:hover { color: var(--azad-blue); }
+
+.nav-toggle {
+  display: inline-flex;
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: .25rem .5rem;
+}
+
+.nav-links.open {
+  display: flex;
+  position: absolute;
+  inset: var(--nav-height) 0 auto 0;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--azad-navy);
+  padding: 1rem;
+  gap: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 768px) {
+  .nav-links { display: flex; }
+  .nav-toggle { display: none; }
+}
+
+/* ===== الفلاش ===== */
+.flash-stack { margin-block: 1rem; display: grid; gap: .5rem; }
+.flash { padding: .75rem 1rem; border-radius: var(--radius); font-weight: 500; box-shadow: var(--shadow-sm); }
+.flash-success { background: #ecfdf5; color: #065f46; border-inline-start: 4px solid var(--success); }
+.flash-danger { background: #fef2f2; color: #991b1b; border-inline-start: 4px solid var(--danger); }
+.flash-warning { background: #fffbeb; color: #92400e; border-inline-start: 4px solid var(--warning); }
+.flash-info { background: #eff6ff; color: #1e40af; border-inline-start: 4px solid var(--azad-blue); }
+
+/* ===== البطاقات والنماذج ===== */
+.card {
+  background: var(--azad-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem;
+}
+.card-centered {
+  max-width: 420px;
+  margin: 2rem auto;
+}
+h1.page-title { font-size: 1.5rem; font-weight: 800; margin-block: 1.5rem .5rem; }
+h2.page-subtitle { color: var(--muted); font-weight: 500; font-size: 1rem; margin-bottom: 1.5rem; }
+
+.form-group { margin-bottom: 1.1rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: .35rem; font-size: .9rem; }
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="search"] {
+  width: 100%;
+  padding: .7rem .9rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  background: var(--azad-white);
+  color: var(--azad-text);
+}
+.form-group input:focus {
+  outline: none;
+  border-color: var(--azad-blue);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.2);
+}
+.form-group .radio-row { display: flex; gap: 1.2rem; flex-wrap: wrap; padding-top: .25rem; }
+.form-group .radio-row label { display: inline-flex; align-items: center; gap: .4rem; font-weight: 500; cursor: pointer; }
+.form-errors { color: var(--danger); font-size: .8rem; list-style: none; margin-top: .3rem; }
+.form-hint { font-size: .8rem; color: var(--muted); }
+
+.form-actions { display: flex; flex-direction: column; gap: .75rem; margin-top: 1.25rem; }
+.form-actions .azad-btn { width: 100%; padding: .8rem; font-size: 1rem; }
+.auth-alt { text-align: center; font-size: .9rem; margin-top: 1rem; color: var(--muted); }
+.auth-alt a { color: var(--azad-blue-dark); font-weight: 600; text-decoration: none; }
+
+/* ===== لوحة بعد الدخول ===== */
+.dash-grid { display: grid; gap: 1rem; margin-top: 1rem; }
+.dash-card {
+  background: var(--azad-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+  border-top: 4px solid var(--azad-blue);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.dash-card .icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: var(--azad-gradient);
+  display: grid; place-items: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.dash-card .meta small { display: block; color: var(--muted); font-size: .75rem; }
+.dash-card .meta strong { font-size: 1.05rem; }
+@media (min-width: 640px) {
+  .dash-grid { grid-template-columns: repeat(2, 1fr); }
+  h1.page-title { font-size: 1.75rem; }
+}
+
+/* ===== الصفحة الافتتاحية ===== */
+.hero {
+  background: linear-gradient(160deg, var(--azad-navy) 0%, #0b3a52 100%);
+  color: #fff;
+  text-align: center;
+  padding: 3rem 1rem;
+  margin-bottom: 2rem;
+}
+.hero h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 800; }
+.hero p { color: #cbd5e1; max-width: 640px; margin: .75rem auto 1.5rem; }
+.hero-actions { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+
+/* ===== التذييل ===== */
+footer.azad-footer {
+  margin-top: auto;
+  background: var(--azad-navy);
+  color: #cbd5e1;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: .85rem;
+}
+footer.azad-footer a { color: var(--azad-blue); }
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: -9999px;
+}
+.skip-link:focus {
+  inset-inline-start: 1rem;
+  top: 1rem;
+  background: var(--azad-navy);
+  color: #fff;
+  padding: .5rem 1rem;
+  border-radius: 8px;
+  z-index: 100;
+}
+
+/* دعم RTL/LTR للتباعد الطبيعي */
+[dir="rtl"] .form-actions .azad-btn { letter-spacing: 0; }

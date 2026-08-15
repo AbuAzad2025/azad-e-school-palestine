@@ -1,8 +1,10 @@
 """الحضور اليومي"""
+
 from sqlalchemy import Date, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 

@@ -35,3 +35,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# ===== Node / Biome =====
+node_modules/
+messages.pot
+.mypy_cache/

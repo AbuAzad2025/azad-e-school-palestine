@@ -1,0 +1,289 @@
+# English translations for Azad e-School.
+# Copyright (C) 2026 Azad for Smart Systems
+# This file is distributed under the same license as the Azad e-School project.
+# Developer: Ahmed Ghannam
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: azad-e-school\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-08-15 11:40+0300\n"
+"PO-Revision-Date: 2026-08-15 11:40+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/modules/auth/forms.py:9
+msgid "الاسم (عربي)"
+msgstr "Name (Arabic)"
+
+#: app/modules/auth/forms.py:10 app/modules/auth/forms.py:23
+#: app/modules/auth/forms.py:29
+msgid "البريد الإلكتروني"
+msgstr "Email address"
+
+#: app/modules/auth/forms.py:12
+msgid "أنا"
+msgstr "I am"
+
+#: app/modules/auth/forms.py:13
+msgid "طالب"
+msgstr "Student"
+
+#: app/modules/auth/forms.py:13
+msgid "معلم"
+msgstr "Teacher"
+
+#: app/modules/auth/forms.py:13
+msgid "ولي أمر"
+msgstr "Parent"
+
+#: app/modules/auth/forms.py:17 app/modules/auth/forms.py:24
+msgid "كلمة المرور"
+msgstr "Password"
+
+#: app/modules/auth/forms.py:18 app/modules/auth/forms.py:35
+msgid "تأكيد كلمة المرور"
+msgstr "Confirm password"
+
+#: app/modules/auth/forms.py:18 app/modules/auth/forms.py:35
+msgid "كلمتا المرور غير متطابقتين"
+msgstr "Passwords do not match"
+
+#: app/modules/auth/forms.py:19
+msgid "إنشاء الحساب"
+msgstr "Create account"
+
+#: app/modules/auth/forms.py:25 app/templates/auth/login.html:2
+#: app/templates/auth/login.html:5 app/templates/main/index.html:11
+msgid "تسجيل الدخول"
+msgstr "Log in"
+
+#: app/modules/auth/forms.py:30
+msgid "إرسال رابط إعادة التعيين"
+msgstr "Send reset link"
+
+#: app/modules/auth/forms.py:34
+msgid "كلمة المرور الجديدة"
+msgstr "New password"
+
+#: app/modules/auth/forms.py:36
+msgid "حفظ كلمة المرور الجديدة"
+msgstr "Save new password"
+
+#: app/modules/auth/routes.py:37
+msgid ""
+"تم إنشاء الحساب. فعّل بريدك الإلكتروني عبر الرابط (يُطبع في الطرفية بوضع "
+"التطوير)."
+msgstr "Account created. Verify your email via the link (printed in the console in dev mode)."
+
+#: app/modules/auth/routes.py:62
+msgid "تم تسجيل الخروج."
+msgstr "You have been logged out."
+
+#: app/modules/auth/routes.py:70
+msgid "تم تفعيل بريدك الإلكتروني. سجّل الدخول الآن."
+msgstr "Your email has been verified. Log in now."
+
+#: app/modules/auth/routes.py:72
+msgid "رابط التفعيل غير صالح أو منتهي."
+msgstr "Activation link is invalid or expired."
+
+#: app/modules/auth/routes.py:84
+msgid "إن كان البريد مسجلاً، ستصل رسالة إعادة التعيين."
+msgstr "If the email is registered, a reset message will arrive."
+
+#: app/modules/auth/routes.py:93
+msgid "في وضع التطوير، تُدار إعادة التعيين عبر رابط مؤمن. أرسلنا تفاصيل لاحقاً."
+msgstr "In dev mode, reset is handled via a secure link. We'll send details later."
+
+#: app/templates/base.html:8
+msgid "منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية"
+msgstr "Azad Electronic School Platform — integrated e-learning for the Palestinian curriculum"
+
+#: app/templates/auth/dashboard.html:2 app/templates/auth/forgot.html:2
+#: app/templates/auth/login.html:2 app/templates/auth/register.html:2
+#: app/templates/auth/reset.html:2 app/templates/base.html:9
+#: app/templates/partials/footer.html:2
+msgid "منصة مدرسة أزاد الإلكترونية"
+msgstr "Azad Electronic School Platform"
+
+#: app/templates/base.html:16
+msgid "تخطَّ إلى المحتوى"
+msgstr "Skip to content"
+
+#: app/templates/auth/dashboard.html:2 app/templates/main/index.html:8
+#: app/templates/partials/navbar.html:13
+msgid "لوحتي"
+msgstr "My dashboard"
+
+#: app/templates/auth/dashboard.html:4
+msgid "أهلاً"
+msgstr "Welcome"
+
+#: app/templates/auth/dashboard.html:5
+msgid "دورك"
+msgstr "Your role"
+
+#: app/templates/auth/dashboard.html:7
+msgid "صفوفي"
+msgstr "My classes"
+
+#: app/templates/auth/dashboard.html:7
+msgid "صفوفك وموادك الدراسية"
+msgstr "Your classes and subjects"
+
+#: app/templates/auth/dashboard.html:8
+msgid "اختباراتي"
+msgstr "My exams"
+
+#: app/templates/auth/dashboard.html:8
+msgid "الاختبارات المتاحة ونتائجك"
+msgstr "Available exams and your results"
+
+#: app/templates/auth/dashboard.html:9
+msgid "واجباتي"
+msgstr "My assignments"
+
+#: app/templates/auth/dashboard.html:9
+msgid "الواجبات والتسليمات"
+msgstr "Assignments and submissions"
+
+#: app/templates/auth/dashboard.html:10
+msgid "اشتراكاتي"
+msgstr "My subscriptions"
+
+#: app/templates/auth/dashboard.html:10
+msgid "حالة الاشتراك والمزايا"
+msgstr "Subscription status and benefits"
+
+#: app/templates/auth/forgot.html:2
+msgid "نسيت كلمة المرور"
+msgstr "Forgot password"
+
+#: app/templates/auth/forgot.html:5
+msgid "استعادة كلمة المرور"
+msgstr "Recover password"
+
+#: app/templates/auth/forgot.html:6
+msgid "أدخل بريدك وسنرسل إليك رابط إعادة التعيين."
+msgstr "Enter your email and we'll send you a reset link."
+
+#: app/templates/auth/forgot.html:18
+msgid "العودة لتسجيل الدخول"
+msgstr "Back to login"
+
+#: app/templates/auth/login.html:22
+msgid "ليس لديك حساب؟"
+msgstr "Don't have an account?"
+
+#: app/templates/auth/login.html:22
+msgid "أنشئ حساباً مجاناً"
+msgstr "Create a free account"
+
+#: app/templates/auth/login.html:23
+msgid "نسيت كلمة المرور؟"
+msgstr "Forgot your password?"
+
+#: app/templates/auth/register.html:2 app/templates/auth/register.html:5
+msgid "إنشاء حساب"
+msgstr "Create account"
+
+#: app/templates/auth/register.html:6
+msgid "اختر نوعك، أنشئ حساباً، ثم فعّل بريدك الإلكتروني."
+msgstr "Choose your type, create an account, then verify your email."
+
+#: app/templates/auth/register.html:42
+msgid "لديك حساب بالفعل؟"
+msgstr "Already have an account?"
+
+#: app/templates/auth/register.html:42
+msgid "سجّل الدخول"
+msgstr "Log in"
+
+#: app/templates/auth/reset.html:2 app/templates/auth/reset.html:5
+msgid "كلمة مرور جديدة"
+msgstr "New password"
+
+#: app/templates/main/index.html:4 app/templates/partials/navbar.html:5
+msgid "مدرسة أزاد الإلكترونية"
+msgstr "Azad Electronic School"
+
+#: app/templates/main/index.html:5
+msgid ""
+"منصة تعليمية متكاملة للمناهج الفلسطينية — دروس، اختبارات، واجبات، ومتابعة"
+" دقيقة من أي جهاز."
+msgstr "A comprehensive e-learning platform for the Palestinian curriculum — lessons, exams, assignments, and precise tracking from any device."
+
+#: app/templates/main/index.html:10 app/templates/partials/navbar.html:20
+msgid "سجّل مجاناً"
+msgstr "Sign up free"
+
+#: app/templates/main/index.html:17
+msgid "دروس منظمة"
+msgstr "Organized lessons"
+
+#: app/templates/main/index.html:17
+msgid "منهاج فلسطيني كامل لكل الصفوف والمواد"
+msgstr "Complete Palestinian curriculum for all grades and subjects"
+
+#: app/templates/main/index.html:18
+msgid "اختبارات فورية"
+msgstr "Instant exams"
+
+#: app/templates/main/index.html:18
+msgid "تصحيح آلي ونتائج لحظية"
+msgstr "Auto-grading with real-time results"
+
+#: app/templates/main/index.html:19
+msgid "فيديو وشرح"
+msgstr "Video and explanations"
+
+#: app/templates/main/index.html:19
+msgid "معلم افتراضي ومحتوى تفاعلي قريباً"
+msgstr "Virtual teacher and interactive content coming soon"
+
+#: app/templates/main/index.html:20
+msgid "متابعة دقيقة"
+msgstr "Precise tracking"
+
+#: app/templates/main/index.html:20
+msgid "درجات، حضور، وتقارير لأولياء الأمور"
+msgstr "Grades, attendance, and reports for parents"
+
+#: app/templates/partials/footer.html:2
+msgid "أزاد للأنظمة الذكية"
+msgstr "Azad for Smart Systems"
+
+#: app/templates/partials/footer.html:3
+msgid "تطوير: أحمد غنام"
+msgstr "Developed by: Ahmed Ghannam"
+
+#: app/templates/partials/navbar.html:4
+msgid "شعار أزاد"
+msgstr "Azad logo"
+
+#: app/templates/partials/navbar.html:7
+msgid "القائمة"
+msgstr "Menu"
+
+#: app/templates/partials/navbar.html:11
+msgid "الرئيسية"
+msgstr "Home"
+
+#: app/templates/partials/navbar.html:16
+msgid "خروج"
+msgstr "Log out"
+
+#: app/templates/partials/navbar.html:19
+msgid "دخول"
+msgstr "Log in"
+
+#: app/templates/partials/navbar.html:24
+msgid "English"
+msgstr "English"

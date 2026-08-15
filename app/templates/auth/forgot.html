@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _('نسيت كلمة المرور') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="card card-centered">
+  <h1 class="page-title azad-title">{{ _('استعادة كلمة المرور') }}</h1>
+  <p class="form-hint">{{ _('أدخل بريدك وسنرسل إليك رابط إعادة التعيين.') }}</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.email.label }}
+      {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
+      {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class="azad-btn") }}
+    </div>
+  </form>
+  <p class="auth-alt"><a href="{{ url_for('auth.login') }}">{{ _('العودة لتسجيل الدخول') }}</a></p>
+</div>
+{% endblock %}

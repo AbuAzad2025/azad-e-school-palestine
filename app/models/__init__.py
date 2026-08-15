@@ -2,6 +2,7 @@
 
 تُستورَد هنا صراحةً كل الوحدات حتى تُسجَّل الجداول لدى قاعدة البيانات.
 """
+
 from .ai import AiMessage, AiSession
 from .assessment import Answer, Question, Quiz, QuizAttempt
 from .attendance import Attendance

@@ -1,9 +1,11 @@
 """التقييم: اختبارات، أسئلة، محاولات، إجابات"""
+
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 

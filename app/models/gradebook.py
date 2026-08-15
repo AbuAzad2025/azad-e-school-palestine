@@ -1,8 +1,10 @@
 """الواجبات والتسليمات والدرجات ودفتر الدرجات"""
-from sqlalchemy import ForeignKey, Numeric, SmallInteger, String, Text
+
+from sqlalchemy import ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 

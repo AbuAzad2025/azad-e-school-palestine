@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ _('لوحتي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ _('أهلاً') }}، {{ current_user.name_ar or current_user.email }} 👋</h1>
+<p class="page-subtitle">{{ _('دورك') }}: {{ current_user.role.value }}</p>
+<div class="dash-grid">
+  <div class="dash-card"><div class="icon">📚</div><div class="meta"><strong>{{ _('صفوفي') }}</strong><small>{{ _('صفوفك وموادك الدراسية') }}</small></div></div>
+  <div class="dash-card"><div class="icon">📝</div><div class="meta"><strong>{{ _('اختباراتي') }}</strong><small>{{ _('الاختبارات المتاحة ونتائجك') }}</small></div></div>
+  <div class="dash-card"><div class="icon">📄</div><div class="meta"><strong>{{ _('واجباتي') }}</strong><small>{{ _('الواجبات والتسليمات') }}</small></div></div>
+  <div class="dash-card"><div class="icon">💳</div><div class="meta"><strong>{{ _('اشتراكاتي') }}</strong><small>{{ _('حالة الاشتراك والمزايا') }}</small></div></div>
+</div>
+{% endblock %}

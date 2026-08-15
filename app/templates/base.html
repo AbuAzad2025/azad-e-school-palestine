@@ -1,0 +1,35 @@
+{% block doc -%}
+<!doctype html>
+<html lang="{{ request.cookies.get('locale', config.DEFAULT_LOCALE) }}" dir="{{ 'rtl' if request.cookies.get('locale', config.DEFAULT_LOCALE) == 'ar' else 'ltr' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F172A">
+<meta name="description" content="{{ _('منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
+<title>{% block title %}{{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/azad-mark.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body class="azad-app">
+  <a class="skip-link" href="#main">{{ _('تخطَّ إلى المحتوى') }}</a>
+  {% include "partials/navbar.html" %}
+  <main id="main" class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack" role="status">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  {% include "partials/footer.html" %}
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
+{%- endblock %}

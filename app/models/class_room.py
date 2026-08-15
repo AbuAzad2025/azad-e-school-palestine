@@ -1,9 +1,11 @@
 """الصفوف الدراسية والعضوية — قلب المنصة"""
+
 from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
 from .mixins import PKMixin, SoftDeleteMixin
 
 

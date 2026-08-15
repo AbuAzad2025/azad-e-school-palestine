@@ -1,4 +1,5 @@
 """Mixins مشتركة لكل الجداول — اتساق كامل (توقيت + حذف ناعم)"""
+
 from datetime import datetime
 
 from sqlalchemy import BigInteger, DateTime, func

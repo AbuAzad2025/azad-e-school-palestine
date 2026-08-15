@@ -1,9 +1,11 @@
 """الاشتراك والدفع — حقيبة معزولة (درس OpenEduCat Fees)"""
+
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 
@@ -23,9 +25,7 @@ class SubscriptionPlan(PKMixin, db.Model):
 
 class Subscription(PKMixin, db.Model):
     __tablename__ = "subscriptions"
-    __table_args__ = (
-        UniqueConstraint("user_id", "plan_id", "class_id", "status", name="uq_subscription_active"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "plan_id", "class_id", "status", name="uq_subscription_active"),)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("subscription_plans.id"), nullable=False)
@@ -34,7 +34,9 @@ class Subscription(PKMixin, db.Model):
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
     start_at = db.Column(db.DateTime(timezone=True))
     end_at = db.Column(db.DateTime(timezone=True))
-    status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/active/expired/cancelled
+    status: Mapped[str] = mapped_column(
+        String(10), default="pending", nullable=False
+    )  # pending/active/expired/cancelled
     source: Mapped[str] = mapped_column(String(10), default="manual", nullable=False)  # manual/gateway
 
     payments: Mapped[list["ManualPayment"]] = relationship(back_populates="subscription", cascade="all, delete-orphan")

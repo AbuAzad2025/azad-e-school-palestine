@@ -1,8 +1,10 @@
 """التواصل: إعلانات الصف + إشعارات داخلية"""
+
 from sqlalchemy import Boolean, ForeignKey, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 

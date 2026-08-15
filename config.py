@@ -1,4 +1,5 @@
 """إعدادات التطبيق — مقروءة من .env فقط (D4)"""
+
 import os
 from pathlib import Path
 

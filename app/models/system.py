@@ -1,9 +1,11 @@
 """سجل التدقيق + إعدادات النظام"""
+
 from sqlalchemy import BigInteger, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
+
 from .mixins import PKMixin
 
 

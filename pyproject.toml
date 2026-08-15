@@ -1,0 +1,35 @@
+[project]
+name = "azad-e-school"
+version = "0.1.0"
+description = "منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني للمناهج الفلسطينية"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+  "B008", # args.py اتباع النمط المعتاد لـ db.session في دوال الديكور
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = ["migrations", "tests"]
+
+[[tool.mypy.overrides]]
+# نماذج SQLAlchemy declarative: db.Model ديناميكية لا يفهمها mypy (سلوك معروف).
+# تُفحص بدقة عبر التحقق من مخطط قاعدة البيانات واختبارات schema.
+module = "app.models.*"
+ignore_errors = true

@@ -1,4 +1,5 @@
 """امتدادات Flask — كائنات مشتركة تُربط في app factory (M0)"""
+
 from flask_babel import Babel
 from flask_login import LoginManager
 from flask_migrate import Migrate

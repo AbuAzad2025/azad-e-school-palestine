@@ -1,10 +1,12 @@
 """المدارس، السنوات، المستويات الدراسية، المواد"""
-from sqlalchemy import Boolean, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint
+
+from sqlalchemy import Boolean, ForeignKey, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
-from .mixins import PKMixin, SoftDeleteMixin
+
+from .mixins import PKMixin
 
 
 class School(PKMixin, db.Model):
