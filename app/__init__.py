@@ -2,7 +2,7 @@
 
 M0: هيكل قابل للتشغيل فقط. تُضاف النماذج والوحدات (blueprints) في مراحلها.
 """
-from flask import Flask
+from flask import Flask, jsonify, render_template
 
 from config import Config
 from .extensions import babel, csrf, db, login_manager, migrate
@@ -21,17 +21,25 @@ def create_app(config_class=Config):
     csrf.init_app(app)
     babel.init_app(app, locale_selector=lambda: app.config.get("DEFAULT_LOCALE", "ar"))
 
+    from . import models  # noqa: F401  — تسجيل الجداول
+
+    from .models.user import User
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return db.session.get(User, int(user_id))
+
     @app.get("/health")
     def health():
-        return {"status": "ok", "app": "azad-e-school"}
+        return jsonify(status="ok", app="azad-e-school")
 
     @app.errorhandler(404)
     def not_found(e):
-        return "الصفحة غير موجودة", 404
+        return render_template("errors/404.html"), 404
 
     @app.errorhandler(500)
     def server_error(e):
         db.session.rollback()
-        return "خطأ داخلي في الخادم", 500
+        return render_template("errors/500.html"), 500
 
     return app
