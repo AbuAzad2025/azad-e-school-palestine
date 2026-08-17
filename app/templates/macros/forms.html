@@ -1,0 +1,132 @@
+{# ═══════════════════════════════════════════
+   Azad Form Components — Jinja2 Macros
+   Usage: {% from "macros/forms.html" import azad_input, azad_select, ... %}
+═══════════════════════════════════════════ #}
+
+{# ─── Text Input with Floating Label ─── #}
+{% macro azad_input(field, label='', placeholder='', icon_name='', help_text='') %}
+<div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
+  {% if label or field.label.text %}
+  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  {% endif %}
+  <div class="azad-field__input-wrap">
+    {% if icon_name %}
+    <span class="azad-field__icon">{{ icon(icon_name) }}</span>
+    {% endif %}
+    {{ field(class="azad-field__input" ~ (" azad-field__input--icon" if icon_name else ""), placeholder=placeholder) }}
+  </div>
+  {% if field.errors %}
+  <div class="azad-field__error">
+    {% for error in field.errors %}
+    <span>{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% elif help_text %}
+  <div class="azad-field__help">{{ help_text }}</div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ─── Password Input with Toggle ─── #}
+{% macro azad_password(field, label='', placeholder='', toggle=true) %}
+<div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
+  {% if label or field.label.text %}
+  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  {% endif %}
+  <div class="azad-field__input-wrap azad-field__input-wrap--password">
+    <span class="azad-field__icon">{{ icon('lock') }}</span>
+    {{ field(class="azad-field__input azad-field__input--icon", placeholder=placeholder, type="password") }}
+    {% if toggle %}
+    <button type="button" class="azad-field__toggle" data-password-toggle aria-label="إظهار كلمة المرور">
+      {{ icon('eye') }}
+    </button>
+    {% endif %}
+  </div>
+  {% if field.errors %}
+  <div class="azad-field__error">
+    {% for error in field.errors %}
+    <span>{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ─── Select ─── #}
+{% macro azad_select(field, label='', icon_name='', options=[]) %}
+<div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
+  {% if label or field.label.text %}
+  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  {% endif %}
+  <div class="azad-field__input-wrap">
+    {% if icon_name %}
+    <span class="azad-field__icon">{{ icon(icon_name) }}</span>
+    {% endif %}
+    {{ field(class="azad-field__select" ~ (" azad-field__input--icon" if icon_name else "")) }}
+  </div>
+  {% if field.errors %}
+  <div class="azad-field__error">
+    {% for error in field.errors %}
+    <span>{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ─── Textarea ─── #}
+{% macro azad_textarea(field, label='', placeholder='', rows=4) %}
+<div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
+  {% if label or field.label.text %}
+  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  {% endif %}
+  {{ field(class="azad-field__textarea", placeholder=placeholder, rows=rows) }}
+  {% if field.errors %}
+  <div class="azad-field__error">
+    {% for error in field.errors %}
+    <span>{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ─── Checkbox Group ─── #}
+{% macro azad_checkbox(field, label='') %}
+<label class="azad-checkbox">
+  {{ field(class="azad-checkbox__input") }}
+  <span class="azad-checkbox__mark"></span>
+  <span class="azad-checkbox__text">{{ label or field.label.text }}</span>
+</label>
+{% endmacro %}
+
+{# ─── Radio Group ─── #}
+{% macro azad_radio(field, options=[]) %}
+<div class="azad-radio-group">
+  {% for option in options %}
+  <label class="azad-radio">
+    {{ field(class="azad-radio__input", value=option.value) }}
+    <span class="azad-radio__mark"></span>
+    <span class="azad-radio__text">{{ option.label }}</span>
+  </label>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# ─── Form Actions ─── #}
+{% macro azad_form_actions(submit_text='حفظ', submit_class='azad-btn', cancel_url='') %}
+<div class="azad-form-actions">
+  {% if cancel_url %}
+  <a href="{{ cancel_url }}" class="azad-btn azad-btn-ghost">إلغاء</a>
+  {% endif %}
+  <button type="submit" class="{{ submit_class }}">{{ submit_text }}</button>
+</div>
+{% endmacro %}
+
+{# ─── Search Input ─── #}
+{% macro azad_search(name='q', value='', placeholder='بحث...') %}
+<div class="azad-search">
+  <span class="azad-search__icon">{{ icon('search') }}</span>
+  <input type="search" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="azad-search__input">
+</div>
+{% endmacro %}

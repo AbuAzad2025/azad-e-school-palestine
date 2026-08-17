@@ -1,95 +1,66 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_stat_card, azad_section, azad_quick_actions, azad_breadcrumb, azad_empty_state %}
 {% block title %}{{ _('لوحتي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block breadcrumbs %}
-<nav class="breadcrumb" aria-label="مسار التنقل" style="margin-block: 1rem;">
-  <ol style="display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; font-size: .875rem; color: var(--text-muted);">
-    <li>
-      <a href="{{ url_for('main.index') }}" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: .3rem;">
-        {{ icon('home') }}
-      </a>
-    </li>
-    <li style="display: flex; align-items: center; gap: .3rem;">
-      <span aria-hidden="true" style="color: var(--text-muted);">{{ icon('chevron-right') }}</span>
-      <span aria-current="page" style="color: var(--text); font-weight: 600;">{{ _('لوحتي') }}</span>
-    </li>
-  </ol>
-</nav>
+{{ azad_breadcrumb([{'label': _('لوحتي')}]) }}
 {% endblock %}
 {% block content %}
 <h1 class="page-title azad-title">{{ _('لوحتي') }}</h1>
 <p class="page-subtitle">{{ _('مرحباً') }}، {{ current_user.name_ar }}!</p>
 
 {% if is_super_admin() %}
-  {# Super Admin Dashboard #}
+  {# ═══ Super Admin Dashboard ═══ #}
   <div class="section-head">
     <h2>{{ _('نظرة عامة على النظام') }}</h2>
-    <a class="azad-btn-outline" href="{{ url_for('schools.index') }}">{{ _('إدارة المدارس') }}</a>
-    <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('إدارة المستخدمين') }}</a>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('schools.index') }}">{{ _('إدارة المدارس') }}</a>
+      <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.users_list') }}">{{ _('إدارة المستخدمين') }}</a>
+    </div>
   </div>
   <div class="stats-grid">
-    <div class="stat-card"><div class="stat-num">{{ school_count }}</div><div class="stat-label">{{ _('مدرسة') }}</div></div>
-    <div class="stat-card"><div class="stat-num">{{ user_count }}</div><div class="stat-label">{{ _('مستخدم') }}</div></div>
-    <div class="stat-card"><div class="stat-num">{{ class_count }}</div><div class="stat-label">{{ _('صف') }}</div></div>
-    <div class="stat-card"><div class="stat-num">{{ subscription_count or 0 }}</div><div class="stat-label">{{ _('اشتراك نشط') }}</div></div>
+    {{ azad_stat_card(school_count, _('مدرسة'), 'school', 'var(--azad-navy)', url_for('admin.schools_list')) }}
+    {{ azad_stat_card(user_count, _('مستخدم'), 'users', 'var(--azad-blue)', url_for('admin.users_list')) }}
+    {{ azad_stat_card(class_count, _('صف'), 'book-open', 'var(--azad-green)', url_for('admin.users_list')) }}
+    {{ azad_stat_card(subscription_count or 0, _('اشتراك نشط'), 'credit-card', 'var(--azad-gold)') }}
   </div>
 
   <div class="section-head"><h2>{{ _('إجراءات سريعة') }}</h2></div>
-  <div class="stats-grid">
-    <a class="stat-card link" href="{{ url_for('admin.users_list') }}">
-      <div class="stat-num">{{ icon('users') }}</div><div class="stat-label">{{ _('المستخدمين') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.schools_list') }}">
-      <div class="stat-num">{{ icon('school') }}</div><div class="stat-label">{{ _('المدارس') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.subscriptions_list') }}">
-      <div class="stat-num">{{ icon('credit-card') }}</div><div class="stat-label">{{ _('الاشتراكات') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.pending_payments') }}">
-      <div class="stat-num">{{ icon('payment') }}</div><div class="stat-label">{{ _('دفعات معلقة') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.backups') }}">
-      <div class="stat-num">{{ icon('archive') }}</div><div class="stat-label">{{ _('النسخ الاحتياطي') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.settings') }}">
-      <div class="stat-num">{{ icon('settings') }}</div><div class="stat-label">{{ _('الإعدادات') }}</div>
-    </a>
-  </div>
+  {{ azad_quick_actions([
+    {'icon': 'users', 'label': _('المستخدمين'), 'href': url_for('admin.users_list'), 'color': 'var(--azad-navy)'},
+    {'icon': 'school', 'label': _('المدارس'), 'href': url_for('admin.schools_list'), 'color': 'var(--azad-blue)'},
+    {'icon': 'credit-card', 'label': _('الاشتراكات'), 'href': url_for('admin.subscriptions_list'), 'color': 'var(--azad-green)'},
+    {'icon': 'cash', 'label': _('دفعات معلقة'), 'href': url_for('admin.pending_payments'), 'color': 'var(--color-warning)'},
+    {'icon': 'archive', 'label': _('النسخ الاحتياطي'), 'href': url_for('admin.backups'), 'color': 'var(--text-muted)'},
+    {'icon': 'settings', 'label': _('الإعدادات'), 'href': url_for('admin.settings'), 'color': 'var(--text-muted)'}
+  ]) }}
 
 {% elif is_school_admin() %}
-  {# School Admin Dashboard #}
+  {# ═══ School Admin Dashboard ═══ #}
   <div class="section-head">
     <h2>{{ _('إدارة مدرستي') }}</h2>
-    <a class="azad-btn" href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('عرض مدارسي') }}</a>
+    <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('عرض مدارسي') }}</a>
   </div>
 
   <div class="stats-grid">
-    <div class="stat-card"><div class="stat-num">{{ my_school_class_count or 0 }}</div><div class="stat-label">{{ _('صفوف') }}</div></div>
-    <div class="stat-card"><div class="stat-num">{{ my_school_student_count or 0 }}</div><div class="stat-label">{{ _('طلاب') }}</div></div>
-    <div class="stat-card"><div class="stat-num">{{ my_school_teacher_count or 0 }}</div><div class="stat-label">{{ _('معلمين') }}</div></div>
-    <div class="stat-card"><div class="stat-num">{{ my_school_subscription_count or 0 }}</div><div class="stat-label">{{ _('اشتراكات') }}</div></div>
+    {{ azad_stat_card(my_school_class_count or 0, _('صفوف'), 'book-open', 'var(--azad-navy)') }}
+    {{ azad_stat_card(my_school_student_count or 0, _('طلاب'), 'users', 'var(--azad-blue)') }}
+    {{ azad_stat_card(my_school_teacher_count or 0, _('معلمين'), 'teacher', 'var(--azad-green)') }}
+    {{ azad_stat_card(my_school_subscription_count or 0, _('اشتراكات'), 'credit-card', 'var(--azad-gold)') }}
   </div>
 
   <div class="section-head"><h2>{{ _('إجراءات سريعة') }}</h2></div>
-  <div class="stats-grid">
-    <a class="stat-card link" href="{{ url_for('schools.index') }}">
-      <div class="stat-num">{{ icon('school') }}</div><div class="stat-label">{{ _('مدارسي') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('schools.my_classes') }}">
-      <div class="stat-num">{{ icon('book-open') }}</div><div class="stat-label">{{ _('صفوفي') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.subscriptions_list') }}">
-      <div class="stat-num">{{ icon('credit-card') }}</div><div class="stat-label">{{ _('اشتراكات المدرسة') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('admin.pending_payments') }}">
-      <div class="stat-num">{{ icon('payment') }}</div><div class="stat-label">{{ _('دفعات معلقة') }}</div>
-    </a>
-  </div>
+  {{ azad_quick_actions([
+    {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'color': 'var(--azad-navy)'},
+    {'icon': 'book-open', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-blue)'},
+    {'icon': 'credit-card', 'label': _('اشتراكات المدرسة'), 'href': url_for('admin.subscriptions_list'), 'color': 'var(--azad-green)'},
+    {'icon': 'cash', 'label': _('دفعات معلقة'), 'href': url_for('admin.pending_payments'), 'color': 'var(--color-warning)'}
+  ]) }}
 
 {% elif is_teacher() %}
-  {# Teacher Dashboard #}
+  {# ═══ Teacher Dashboard ═══ #}
   <div class="section-head">
     <h2>{{ _('صفوفي') }}</h2>
-    <a class="azad-btn" href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('عرض جميع الصفوف') }}</a>
+    <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('عرض جميع الصفوف') }}</a>
   </div>
 
   {% if my_classes %}
@@ -105,34 +76,30 @@
         </div>
       </div>
       <div class="item-actions">
-        <a class="azad-btn-outline" href="{{ url_for('content.class_lessons', class_id=c.id) }}">{{ icon('book-open') }} {{ _('الدروس') }}</a>
-        <a class="azad-btn-outline" href="{{ url_for('assessment.quiz_list', class_id=c.id) }}">{{ icon('quiz') }} {{ _('الاختبارات') }}</a>
-        <a class="azad-btn-outline" href="{{ url_for('grades.assignments', class_id=c.id) }}">{{ icon('clipboard') }} {{ _('الواجبات') }}</a>
-        <a class="azad-btn-outline" href="{{ url_for('grades.attendance', class_id=c.id) }}">{{ icon('calendar-check') }} {{ _('الحضور') }}</a>
-        <a class="azad-btn-outline" href="{{ url_for('grades.gradebook', class_id=c.id) }}">{{ icon('grade') }} {{ _('سجل الدرجات') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('content.class_lessons', class_id=c.id) }}">{{ icon('book-open') }} {{ _('الدروس') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('assessment.quiz_list', class_id=c.id) }}">{{ icon('quiz') }} {{ _('الاختبارات') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.assignments', class_id=c.id) }}">{{ icon('note') }} {{ _('الواجبات') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.attendance', class_id=c.id) }}">{{ icon('calendar') }} {{ _('الحضور') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.gradebook', class_id=c.id) }}">{{ icon('chart') }} {{ _('سجل الدرجات') }}</a>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">{{ _('ليس لديك أي صف مخصص للتدريس.') }}</div>
+  {{ azad_empty_state(_('ليس لديك أي صف مخصص للتدريس.'), icon_name='book-open') }}
   {% endif %}
 
   <div class="section-head"><h2>{{ _('سوق الدروس الخصوصية') }}</h2></div>
-  <div class="stats-grid">
-    <a class="stat-card link" href="{{ url_for('tutoring.profile') }}">
-      <div class="stat-num">{{ icon('user') }}</div><div class="stat-label">{{ _('ملفي كمعلم') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('tutoring.my') }}">
-      <div class="stat-num">{{ icon('folder') }}</div><div class="stat-label">{{ _('طلباتي وجلساتي') }}</div>
-    </a>
-  </div>
+  {{ azad_quick_actions([
+    {'icon': 'user', 'label': _('ملفي كمعلم'), 'href': url_for('tutoring.profile'), 'color': 'var(--azad-navy)'},
+    {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'}
+  ]) }}
 
 {% elif is_student() %}
-  {# Student Dashboard #}
+  {# ═══ Student Dashboard ═══ #}
   <div class="section-head">
     <h2>{{ _('صفوفي') }}</h2>
-    <a class="azad-btn" href="{{ url_for('schools.class_join') }}">+ {{ _('انضمام برمز') }}</a>
+    <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.class_join') }}">+ {{ _('انضمام برمز') }}</a>
   </div>
   {% if memberships %}
   <div class="azad-list">
@@ -147,39 +114,35 @@
         </div>
       </div>
       <div class="item-actions">
-        <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=m.class_room.id) }}">{{ _('فتح') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('schools.class_detail', class_id=m.class_room.id) }}">{{ _('فتح') }}</a>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">{{ _('لم تنضم لأي صف بعد.') }} <a href="{{ url_for('schools.class_join') }}">{{ _('انضم برمز') }}</a></div>
+  {{ azad_empty_state(_('لم تنضم لأي صف بعد.'), _('انضم برمز'), icon_name='school', action_url=url_for('schools.class_join'), action_label=_('انضم برمز')) }}
   {% endif %}
 
   <div class="section-head"><h2>{{ _('دروس خصوصية') }}</h2></div>
-  <div class="stats-grid">
-    <a class="stat-card link" href="{{ url_for('tutoring.index') }}">
-      <div class="stat-num">{{ icon('books') }}</div><div class="stat-label">{{ _('البحث عن معلم') }}</div>
-    </a>
-    <a class="stat-card link" href="{{ url_for('tutoring.my') }}">
-      <div class="stat-num">{{ icon('folder') }}</div><div class="stat-label">{{ _('طلباتي وجلساتي') }}</div>
-    </a>
-  </div>
+  {{ azad_quick_actions([
+    {'icon': 'books', 'label': _('البحث عن معلم'), 'href': url_for('tutoring.index'), 'color': 'var(--azad-green)'},
+    {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'}
+  ]) }}
 
 {% elif is_parent() %}
-  {# Parent Dashboard #}
+  {# ═══ Parent Dashboard ═══ #}
   <div class="section-head">
     <h2>{{ _('صفوف أبنائي') }}</h2>
   </div>
   {% if children_memberships %}
   <div class="azad-list">
     {% for child_name, memberships in children_memberships.items() %}
-    <div class="azad-item">
+    <div class="azad-item" style="border-top:3px solid var(--azad-blue)">
       <div>
-        <div class="item-title">{{ _('أبنائي:') }} {{ child_name }}</div>
+        <div class="item-title" style="font-size:1.05rem">{{ icon('user') }} {{ child_name }}</div>
       </div>
     </div>
-    <div class="azad-list">
+    <div class="azad-list" style="margin-top:0">
       {% for m in memberships %}
       <div class="azad-item">
         <div>
@@ -190,7 +153,7 @@
           </div>
         </div>
         <div class="item-actions">
-          <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=m.class_room.id) }}">{{ _('متابعة') }}</a>
+          <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('schools.class_detail', class_id=m.class_room.id) }}">{{ _('متابعة') }}</a>
         </div>
       </div>
       {% endfor %}
@@ -198,27 +161,17 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">{{ _('لا يوجد أبناء مرتبطين بحسابك.') }}</div>
+  {{ azad_empty_state(_('لا يوجد أبناء مرتبطين بحسابك.'), icon_name='user') }}
   {% endif %}
 
 {% endif %}
 
 {# Common quick access for all authenticated users #}
 <div class="section-head"><h2>{{ _('وصول سريع') }}</h2></div>
-<div class="stats-grid">
-  <a class="stat-card link" href="{{ url_for('tutoring.index') }}">
-    <div class="stat-num">{{ icon('books') }}</div><div class="stat-label">{{ _('دروس خصوصية') }}</div>
-  </a>
-  <a class="stat-card link" href="{{ url_for('schools.my_classes') }}">
-    <div class="stat-num">{{ icon('school') }}</div><div class="stat-label">{{ _('صفوفي') }}</div>
-  </a>
-  <a class="stat-card link" href="{{ url_for('notifications.index') }}">
-    <div class="stat-num">{{ icon('bell') }}</div><div class="stat-label">{{ _('الإشعارات') }}</div>
-  </a>
-  {% if is_teacher() %}
-  <a class="stat-card link" href="{{ url_for('tutoring.my') }}">
-    <div class="stat-num">{{ icon('teacher') }}</div><div class="stat-label">{{ _('دروسي الخصوصية') }}</div>
-  </a>
-  {% endif %}
-</div>
+{{ azad_quick_actions([
+  {'icon': 'books', 'label': _('دروس خصوصية'), 'href': url_for('tutoring.index'), 'color': 'var(--azad-green)'},
+  {'icon': 'school', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-navy)'},
+  {'icon': 'bell', 'label': _('الإشعارات'), 'href': url_for('notifications.index'), 'color': 'var(--color-warning)'},
+  {'icon': 'teacher', 'label': _('دروسي الخصوصية'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'} if is_teacher() else {}
+]) }}
 {% endblock %}

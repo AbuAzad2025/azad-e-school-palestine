@@ -7,6 +7,7 @@
 
 <div class="card">
   <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
       <label>{{ _('اسم المنصة (عربي)') }}</label>
       <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar') else 'مدرسة أزاد الإلكترونية' }}">

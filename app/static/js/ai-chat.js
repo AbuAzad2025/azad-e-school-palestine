@@ -122,7 +122,7 @@
       .map(
         (msg) => `
       <div class="message ${msg.role}" data-message-id="${msg.id || ""}">
-        <div class="message-content">${msg.content}</div>
+        <div class="message-content">${typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(msg.content) : msg.content}</div>
         <div class="message-meta">
           <span class="message-time">${formatTime(msg.created_at)}</span>
           ${msg.role === "assistant" ? `<button class="copy-btn" data-content="${escapeHtml(msg.content)}">${_("نسخ")}</button>` : ""}

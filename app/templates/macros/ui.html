@@ -1,0 +1,211 @@
+{# ═══════════════════════════════════════════
+   Azad UI Component Library — Jinja2 Macros
+   Usage: {% from "macros/ui.html" import azad_card, azad_stat_card, ... %}
+═══════════════════════════════════════════ #}
+
+{# ─── Stat Card ─── #}
+{% macro azad_stat_card(value, label, icon_name='', color='var(--azad-blue)', href='', sparkline='') %}
+{% if href %}
+<a href="{{ href }}" class="azad-stat-card azad-stat-card--link" style="--stat-accent: {{ color }}">
+{% else %}
+<div class="azad-stat-card" style="--stat-accent: {{ color }}">
+{% endif %}
+  <div class="azad-stat-card__icon">
+    {% if icon_name %}{{ icon(icon_name) }}{% endif %}
+  </div>
+  <div class="azad-stat-card__body">
+    <div class="azad-stat-card__value">{{ value }}</div>
+    <div class="azad-stat-card__label">{{ label }}</div>
+  </div>
+  {% if sparkline %}
+  <div class="azad-stat-card__sparkline">{{ sparkline }}</div>
+  {% endif %}
+{% if href %}
+</a>
+{% else %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# ─── Card ─── #}
+{% macro azad_card(title='', subtitle='', icon_name='', class='', body_class='') %}
+<div class="azad-card {{ class }}">
+  {% if title %}
+  <div class="azad-card__header">
+    <div class="azad-card__header-left">
+      {% if icon_name %}
+      <div class="azad-card__icon">{{ icon(icon_name) }}</div>
+      {% endif %}
+      <div>
+        <h3 class="azad-card__title">{{ title }}</h3>
+        {% if subtitle %}
+        <p class="azad-card__subtitle">{{ subtitle }}</p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="azad-card__actions">
+      {{ caller() if caller is defined else '' }}
+    </div>
+  </div>
+  {% endif %}
+  <div class="azad-card__body {{ body_class }}">
+    {{ caller() if title else caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+{# ─── Empty State ─── #}
+{% macro azad_empty_state(title, description='', icon_name='folder', action_url='', action_label='') %}
+<div class="azad-empty">
+  <div class="azad-empty__icon">
+    {% if icon_name %}{{ icon(icon_name) }}{% endif %}
+  </div>
+  <h3 class="azad-empty__title">{{ title }}</h3>
+  {% if description %}
+  <p class="azad-empty__description">{{ description }}</p>
+  {% endif %}
+  {% if action_url %}
+  <a href="{{ action_url }}" class="azad-btn azad-btn-sm">{{ action_label or title }}</a>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ─── Badge / Status ─── #}
+{% macro azad_badge(text, variant='info') %}
+<span class="azad-badge-variant azad-badge-variant--{{ variant }}">{{ text }}</span>
+{% endmacro %}
+
+{# ─── Section Header ─── #}
+{% macro azad_section(title, icon_name='') %}
+<div class="azad-section">
+  <h2 class="azad-section__title">
+    {% if icon_name %}
+    <span class="azad-section__icon">{{ icon(icon_name) }}</span>
+    {% endif %}
+    {{ title }}
+  </h2>
+  {{ caller() if caller is defined else '' }}
+</div>
+{% endmacro %}
+
+{# ─── Quick Action Grid ─── #}
+{% macro azad_quick_actions(actions) %}
+<div class="azad-actions-grid">
+  {% for action in actions %}
+  <a href="{{ action.href }}" class="azad-action-card" style="--action-color: {{ action.color|default('var(--azad-blue)') }}">
+    <div class="azad-action-card__icon">{{ icon(action.icon) }}</div>
+    <div class="azad-action-card__label">{{ action.label }}</div>
+    {% if action.count is defined %}
+    <div class="azad-action-card__count">{{ action.count }}</div>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# ─── Breadcrumb ─── #}
+{% macro azad_breadcrumb(items) %}
+<nav class="azad-breadcrumb" aria-label="مسار التنقل">
+  <ol class="azad-breadcrumb__list">
+    <li class="azad-breadcrumb__item">
+      <a href="{{ url_for('main.index') }}" class="azad-breadcrumb__link">{{ icon('home') }}</a>
+    </li>
+    {% for item in items %}
+    <li class="azad-breadcrumb__separator" aria-hidden="true">{{ icon('chevron-right') }}</li>
+    {% if item.href is defined and item.href %}
+    <li class="azad-breadcrumb__item">
+      <a href="{{ item.href }}" class="azad-breadcrumb__link">{{ item.label }}</a>
+    </li>
+    {% else %}
+    <li class="azad-breadcrumb__item azad-breadcrumb__item--active" aria-current="page">{{ item.label }}</li>
+    {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endmacro %}
+
+{# ─── Pagination ─── #}
+{% macro azad_pagination(pagination) %}
+{% if pagination.pages > 1 %}
+<nav class="azad-pagination" aria-label="التنقل بين الصفحات">
+  <div class="azad-pagination__info">
+    عرض {{ pagination.page_start }}–{{ pagination.page_end }} من {{ pagination.total }}
+  </div>
+  <div class="azad-pagination__links">
+    {% if pagination.has_prev %}
+    <a href="?page={{ pagination.prev_num }}" class="azad-pagination__link" rel="prev">
+      {{ icon('arrow-left') }} السابق
+    </a>
+    {% endif %}
+    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if page_num %}
+        {% if page_num == pagination.page %}
+        <span class="azad-pagination__link azad-pagination__link--active">{{ page_num }}</span>
+        {% else %}
+        <a href="?page={{ page_num }}" class="azad-pagination__link">{{ page_num }}</a>
+        {% endif %}
+      {% else %}
+      <span class="azad-pagination__ellipsis">...</span>
+      {% endif %}
+    {% endfor %}
+    {% if pagination.has_next %}
+    <a href="?page={{ pagination.next_num }}" class="azad-pagination__link" rel="next">
+      التالي {{ icon('arrow-right') }}
+    </a>
+    {% endif %}
+  </div>
+</nav>
+{% endif %}
+{% endmacro %}
+
+{# ─── Skeleton Loader ─── #}
+{% macro azad_skeleton(type='card', count=3) %}
+{% for _ in range(count) %}
+  {% if type == 'card' %}
+  <div class="azad-skeleton">
+    <div class="azad-skeleton__circle"></div>
+    <div class="azad-skeleton__lines">
+      <div class="azad-skeleton__line azad-skeleton__line--title"></div>
+      <div class="azad-skeleton__line"></div>
+      <div class="azad-skeleton__line azad-skeleton__line--short"></div>
+    </div>
+  </div>
+  {% elif type == 'row' %}
+  <div class="azad-skeleton azad-skeleton--row">
+    <div class="azad-skeleton__circle"></div>
+    <div class="azad-skeleton__lines">
+      <div class="azad-skeleton__line"></div>
+      <div class="azad-skeleton__line azad-skeleton__line--short"></div>
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% endmacro %}
+
+{# ─── Toast (for JS injection) ─── #}
+{% macro azad_toast_container() %}
+<div class="azad-toast-container" id="azad-toasts" aria-live="polite"></div>
+{% endmacro %}
+
+{# ─── Flash Messages ─── #}
+{% macro azad_flash_messages() %}
+<div class="azad-flash-stack" id="azad-flashes" role="status">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="azad-flash azad-flash--{{ category }}" data-auto-dismiss="5000">
+      <div class="azad-flash__icon">
+        {% if category == 'success' %}{{ icon('check') }}
+        {% elif category == 'danger' %}{{ icon('alert') }}
+        {% elif category == 'warning' %}{{ icon('alert') }}
+        {% else %}{{ icon('bell') }}
+        {% endif %}
+      </div>
+      <div class="azad-flash__content">{{ message }}</div>
+      <button class="azad-flash__close" onclick="this.parentElement.remove()" aria-label="إغلاق">
+        {{ icon('x') }}
+      </button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+</div>
+{% endmacro %}

@@ -1,0 +1,44 @@
+name: Full Audit
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: "0 8 * * 1"  # كل أربعاء الساعة 8 صباحاً
+
+jobs:
+  full-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install bandit radon
+
+      - name: Ruff Lint
+        run: ruff check app config.py run.py
+
+      - name: Ruff Format
+        run: ruff format --check app config.py run.py
+
+      - name: MyPy
+        run: mypy app config.py run.py --ignore-missing-imports --show-error-codes
+
+      - name: Bandit Security
+        run: bandit -r app -q -ll
+
+      - name: Radon Complexity
+        run: radon cc app -a -nc
+
+      - name: Pytest
+        run: pytest tests -v --tb=short
+
+      - name: Biome (JS)
+        run: npx biome check app/static/js

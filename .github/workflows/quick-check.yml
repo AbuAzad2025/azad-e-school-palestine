@@ -1,0 +1,27 @@
+name: Quick Check
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  quick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ruff Lint
+        run: ruff check app config.py run.py
+      - name: Ruff Format
+        run: ruff format --check app config.py run.py
+      - name: MyPy
+        run: mypy app config.py run.py --ignore-missing-imports --show-error-codes
+      - name: Pytest
+        run: pytest tests -q --tb=short
+      - name: Biome (JS)
+        run: npx biome check app/static/js

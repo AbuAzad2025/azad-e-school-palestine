@@ -111,7 +111,7 @@ def create_app(config_class=Config):
         from .modules.tutoring import bp as tutoring_bp_local
 
         # auth routes
-        for endpoint in ("login", "register", "forgot_password"):
+        for endpoint in ("login", "register", "forgot_password", "reset_password"):
             if endpoint in auth_bp_local.view_functions:
                 limiter.limit("5 per minute")(auth_bp_local.view_functions[endpoint])
         # tutoring book

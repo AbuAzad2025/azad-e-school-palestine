@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from app.core.permissions import _has_any
 from app.extensions import db
 from app.models.ai import AiUsageLog
 from app.models.billing import ManualPayment, Subscription
@@ -17,12 +18,6 @@ from flask_login import current_user, login_required
 from sqlalchemy import func
 
 from . import bp
-
-
-def admin_required():
-    """فحص صلاحيات المشرف الكلي"""
-    if not current_user.is_authenticated or current_user.role != UserRole.super_admin:
-        abort(403)
 
 
 @bp.app_context_processor
@@ -40,7 +35,10 @@ def admin_nav_context():
 def require_admin():
     if request.endpoint == "admin.impersonate_exit":
         return None  # جلسة الانتحال ليست سوبر أدمن — مسار الخروج مفتوح لها
-    admin_required()
+    if not current_user.is_authenticated:
+        abort(401)
+    if not _has_any(UserRole.super_admin):
+        abort(403)
 
 
 @bp.get("/")

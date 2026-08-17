@@ -18,7 +18,7 @@
 </div>
 
 {% if lesson.body_html %}
-  <div class="card" style="margin-bottom:1rem">{{ lesson.body_html | safe }}</div>
+  <div class="card" style="margin-bottom:1rem">{{ lesson.body_html | e }}</div>
 {% endif %}
 
 <div class="section-head"><h2>{{ _('المرفقات') }}</h2></div>

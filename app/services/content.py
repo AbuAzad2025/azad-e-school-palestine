@@ -1,9 +1,63 @@
 """خدمات المحتوى: الوحدات والدروس والمرفقات (رفع آمن عبر core/uploads)."""
 
+import bleach
+
 from app.core.db import tx
 from app.core.uploads import save_upload
 from app.extensions import db
 from app.models.content import Lesson, LessonAttachment, Unit
+
+# قائمة بيضاء لعناصر HTML المسموحة في دروس المعلم
+ALLOWED_HTML_TAGS = {
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "p",
+    "br",
+    "hr",
+    "strong",
+    "em",
+    "u",
+    "s",
+    "sub",
+    "sup",
+    "ul",
+    "ol",
+    "li",
+    "a",
+    "img",
+    "table",
+    "thead",
+    "tbody",
+    "tr",
+    "th",
+    "td",
+    "blockquote",
+    "pre",
+    "code",
+    "div",
+    "span",
+}
+ALLOWED_HTML_ATTRS = {
+    "a": ["href", "title", "target", "rel"],
+    "img": ["src", "alt", "title", "width", "height"],
+    "*": ["class", "style", "dir", "lang"],
+}
+
+
+def _sanitize_html(raw: str | None) -> str | None:
+    """ينظف HTML من عناصر خطرة (script, iframe, event handlers) مع الحفاظ على التنسيق."""
+    if not raw:
+        return raw
+    return bleach.clean(
+        raw,
+        tags=ALLOWED_HTML_TAGS,
+        attributes=ALLOWED_HTML_ATTRS,
+        strip=True,
+    )
 
 
 def create_unit(class_id: int, title: str, sort_order: int | None = None) -> Unit:
@@ -44,7 +98,7 @@ def create_lesson(
             class_id=class_id,
             unit_id=unit_id,
             title=title,
-            body_html=body_html,
+            body_html=_sanitize_html(body_html),
             created_by=created_by,
         )
 
@@ -55,7 +109,7 @@ def update_lesson(lesson: Lesson, *, title: str, unit_id: int | None, body_html:
     def _update():
         lesson.title = title.strip()
         lesson.unit_id = unit_id
-        lesson.body_html = body_html
+        lesson.body_html = _sanitize_html(body_html)
         lesson.version = (lesson.version or 1) + 1
 
     tx(_update)
