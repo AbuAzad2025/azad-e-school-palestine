@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الدروس') }} — {{ class_room.name or class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('الدروس') }}</h1>
+    <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }} — {{ class_room.subject.name_ar }}</p>
+  </div>
+  {% if can_teach %}
+    <a class="azad-btn" href="{{ url_for('content.lesson_new', class_id=class_room.id) }}">+ {{ _('درس جديد') }}</a>
+  {% endif %}
+</div>
+
+{% if can_teach %}
+<div class="card" style="margin-bottom:1rem">
+  <form method="post" action="{{ url_for('content.unit_create', class_id=class_room.id) }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <input type="text" name="title" placeholder="{{ _('عنوان وحدة جديدة...') }}" style="flex:1;min-width:200px" required>
+      <button class="azad-btn-outline" type="submit">{{ _('إضافة وحدة') }}</button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% for unit in units %}
+  <div class="section-head"><h2>{{ icon('book-open') }} {{ unit.title }}</h2></div>
+  {% for lesson in lessons if lesson.unit_id == unit.id %}
+    {% include "content/_lesson_row.html" %}
+  {% endfor %}
+{% endfor %}
+
+{% if lessons|selectattr('unit_id','none')|list or not units %}
+  <div class="section-head"><h2>{{ _('دروس بلا وحدة') }}</h2></div>
+  {% for lesson in lessons if lesson.unit_id is none %}
+    {% include "content/_lesson_row.html" %}
+  {% endfor %}
+{% endif %}
+
+{% if not lessons %}
+<div class="empty-state">{{ _('لا دروس بعد.') }}{% if can_teach %} <a href="{{ url_for('content.lesson_new', class_id=class_room.id) }}">{{ _('أنشئ أول درس') }}</a>{% endif %}</div>
+{% endif %}
+{% endblock %}

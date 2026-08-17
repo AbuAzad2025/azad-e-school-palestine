@@ -1,21 +1,10 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>404 — منصة مدرسة أزاد الإلكترونية</title>
-<style>
-  body{font-family:Tahoma,Arial,sans-serif;background:#0F172A;color:#E2E8F0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center}
-  .card{background:#1E293B;padding:40px;border-radius:12px;max-width:420px}
-  h1{color:#0EA5E9;font-size:48px;margin:0}
-  a{color:#14B8A6;text-decoration:none}
-</style>
-</head>
-<body>
-<div class="card">
-  <h1>404</h1>
-  <p>الصفحة غير موجودة.</p>
-  <p><a href="/">العودة إلى الرئيسية</a></p>
+{% extends "base.html" %}
+{% block title %}{{ _('الصفحة غير موجودة') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="card azad-404" style="max-width:420px;margin:4rem auto;text-align:center">
+  <h1 class="azad-title" style="font-size:48px;margin:0">404</h1>
+  <p style="font-size:1.25rem;margin:1rem 0">{{ _('الصفحة غير موجودة.') }}</p>
+  <p>{{ _('قد تكون الصفحة حُذفت أو انتقل رابطها.') }}</p>
+  <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
 </div>
-</body>
-</html>
+{% endblock %}

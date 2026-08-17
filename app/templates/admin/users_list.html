@@ -1,0 +1,75 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('المستخدمين') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('إدارة المستخدمين') }}</h1>
+  <form method="get" class="form-inline">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" class="form-group" style="flex:1">
+    <select name="role" class="form-group" style="min-width:160px">
+      <option value="">{{ _('كل الأدوار') }}</option>
+      {% for r in roles %}
+      <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.value }}</option>
+      {% endfor %}
+    </select>
+    <button class="azad-btn" type="submit">{{ _('بحث') }}</button>
+    {% if search or role_filter %}
+    <a href="{{ url_for('admin.users_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if pagination.items %}
+<div class="azad-list">
+  {% for u in pagination.items %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ u.name_ar }}</div>
+      <div class="item-meta">
+        <span>{{ u.email }}</span>
+        <span class="meta-chip">{{ u.role.value }}</span>
+        <span class="badge-status badge-{{ 'ok' if u.is_active else 'err' }}">{{ _('نشط') if u.is_active else _('معطل') }}</span>
+        <span>{{ u.created_at.strftime('%Y-%m-%d') }}</span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('فتح') }}</a>
+      {% if u.role.value != 'super_admin' and u.id != current_user.id %}
+      <form method="post" action="{{ url_for('admin.user_impersonate', user_id=u.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn" type="submit" style="padding:.35rem .75rem">{{ _('انتحال الصفة') }}</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-{{ 'outline' if u.is_active else 'btn' }}" type="submit" style="padding:.35rem .75rem">
+          {{ _('تعطيل') if u.is_active else _('تفعيل') }}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="pagination">
+  {% if pagination.has_prev %}
+  <a href="{{ url_for('admin.users_list', page=pagination.page-1, search=search, role=role_filter) }}">&laquo; {{ _('السابق') }}</a>
+  {% endif %}
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      {% if p == pagination.page %}
+      <span class="current">{{ p }}</span>
+      {% else %}
+      <a href="{{ url_for('admin.users_list', page=p, search=search, role=role_filter) }}">{{ p }}</a>
+      {% endif %}
+    {% else %}
+    <span>…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}
+  <a href="{{ url_for('admin.users_list', page=pagination.page+1, search=search, role=role_filter) }}">{{ _('التالي') }} &raquo;</a>
+  {% endif %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا يوجد مستخدمين يطابقون البحث') }}</div>
+{% endif %}
+{% endblock %}

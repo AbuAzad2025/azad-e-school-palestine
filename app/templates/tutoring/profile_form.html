@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _('ملفك الخصوصي') }} — {{ _('دروس خصوصية') }}{% endblock %}
+{% block content %}
+<div class="card card-centered">
+  <h1 class="page-title azad-title">{{ _('ملفك الخصوصي') if editing else _('نشر ملفك كمعلم') }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for f in form %}
+      {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
+        <div class="form-group">
+          {{ f.label }}
+          {{ f() }}
+          {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+{% endblock %}

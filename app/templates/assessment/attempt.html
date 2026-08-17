@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} — {{ _('محاولة') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ quiz.title }}</h1>
+<p class="page-subtitle">{{ _('المحاولة') }} {{ attempt.attempt_no }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
+
+<form method="post" action="{{ url_for('assessment.attempt_submit', attempt_id=attempt.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for q in quiz.questions %}
+  <div class="card" style="margin-bottom:1rem">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:.75rem">{{ loop.index }}. {{ q.prompt }}
+      <span class="meta-chip" style="margin-inline-start:.5rem">{{ q.mark or 0 }} {{ _('درجة') }}</span>
+    </h2>
+    {% if q.type == 'mcq' %}
+      {% set saved = answers.get(q.id) %}
+      {% for item in (q.options.items if q.options else []) %}
+        {% set idx = loop.index0 %}
+        <label style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;cursor:pointer">
+          <input type="radio" name="q_{{ q.id }}" value="{{ idx }}" {% if saved and saved.answer.index == idx %}checked{% endif %}>
+          <span>{{ item.label }}. {{ item.text }}</span>
+        </label>
+      {% endfor %}
+    {% elif q.type == 'true_false' %}
+      {% set saved = answers.get(q.id) %}
+      <label style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;cursor:pointer">
+        <input type="radio" name="q_{{ q.id }}" value="true" {% if saved and saved.answer.value == true %}checked{% endif %}> {{ _('صح') }}
+      </label>
+      <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer">
+        <input type="radio" name="q_{{ q.id }}" value="false" {% if saved and saved.answer.value == false %}checked{% endif %}> {{ _('خطأ') }}
+      </label>
+    {% else %}
+      <textarea name="q_{{ q.id }}" placeholder="{{ _('اكتب إجابتك...') }}">{{ answers.get(q.id).answer.text if answers.get(q.id) else '' }}</textarea>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <div class="form-actions" style="flex-direction:row">
+    <button class="azad-btn" type="submit">{{ _('سليم الاختبار') }}</button>
+    <a class="azad-btn-outline" href="{{ url_for('assessment.attempt_save', attempt_id=attempt.id) }}" data-save>{{ _('حفظ مؤقت') }}</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var saveBtn = document.querySelector('[data-save]');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      var form = saveBtn.closest('form');
+      form.action = saveBtn.href;
+      form.submit();
+    });
+  }
+});
+</script>
+{% endblock %}

@@ -1,5 +1,7 @@
 """الاشتراك والدفع — حقيبة معزولة (درس OpenEduCat Fees)"""
 
+from __future__ import annotations
+
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -7,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.extensions import db
 
 from .mixins import PKMixin
+from .user import User
 
 
 class SubscriptionPlan(PKMixin, db.Model):
@@ -39,7 +42,9 @@ class Subscription(PKMixin, db.Model):
     )  # pending/active/expired/cancelled
     source: Mapped[str] = mapped_column(String(10), default="manual", nullable=False)  # manual/gateway
 
-    payments: Mapped[list["ManualPayment"]] = relationship(back_populates="subscription", cascade="all, delete-orphan")
+    payments: Mapped[list[ManualPayment]] = relationship(back_populates="subscription", cascade="all, delete-orphan")
+    user: Mapped[User] = relationship("User")
+    plan: Mapped[SubscriptionPlan] = relationship("SubscriptionPlan")
 
 
 class ManualPayment(PKMixin, db.Model):
@@ -54,7 +59,7 @@ class ManualPayment(PKMixin, db.Model):
     reviewed_at = db.Column(db.DateTime(timezone=True))
 
     subscription: Mapped[Subscription] = relationship(back_populates="payments")
-    receipts: Mapped[list["PaymentReceipt"]] = relationship(back_populates="payment", cascade="all, delete-orphan")
+    receipts: Mapped[list[PaymentReceipt]] = relationship(back_populates="payment", cascade="all, delete-orphan")
 
 
 class PaymentReceipt(PKMixin, db.Model):
@@ -67,3 +72,14 @@ class PaymentReceipt(PKMixin, db.Model):
     size_bytes: Mapped[int | None] = mapped_column(Numeric(20))
 
     payment: Mapped[ManualPayment] = relationship(back_populates="receipts")
+
+
+class ProcessedEvent(PKMixin, db.Model):
+    """أحداث Webhook المعالجة — لمنع المعالجة المكررة (Idempotency)."""
+
+    __tablename__ = "processed_events"
+
+    event_id: Mapped[str] = mapped_column(Text, unique=True, nullable=False, index=True)
+    gateway: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[dict | None] = mapped_column(JSONB)
+    processed_at = db.Column(db.DateTime(timezone=True), default=db.func.now())

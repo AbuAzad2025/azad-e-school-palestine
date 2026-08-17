@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('الإعدادات') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('إعدادات النظام') }}</h1>
+</div>
+
+<div class="card">
+  <form method="post">
+    <div class="form-group">
+      <label>{{ _('اسم المنصة (عربي)') }}</label>
+      <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar') else 'مدرسة أزاد الإلكترونية' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ _('اسم المنصة (إنجليزي)') }}</label>
+      <input type="text" name="platform_name_en" class="form-control" value="{{ settings.get('platform_name_en', '').value if settings.get('platform_name_en') else 'Azad E-School' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ _('اللغة الافتراضية') }}</label>
+      <select name="default_locale" class="form-control">
+        <option value="ar" {% if settings.get('default_locale') and settings['default_locale'].value == 'ar' %}selected{% endif %}>العربية</option>
+        <option value="en" {% if settings.get('default_locale') and settings['default_locale'].value == 'en' %}selected{% endif %}>English</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>{{ _('اللغات المتاحة (مفصولة بفواصل)') }}</label>
+      <input type="text" name="languages" class="form-control" value="{{ settings.get('languages', '').value if settings.get('languages') else 'ar,en' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ _('العملة الافتراضية') }}</label>
+      <input type="text" name="default_currency" class="form-control" value="{{ settings.get('default_currency', '').value if settings.get('default_currency') else 'ILS' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ _('عدد العناصر في الصفحة') }}</label>
+      <input type="number" name="per_page" class="form-control" value="{{ settings.get('per_page', '').value if settings.get('per_page') else '25' }}" min="10" max="100">
+    </div>
+    <div class="form-group">
+      <label>{{ _('حد رفع الملفات (MB)') }}</label>
+      <input type="number" name="max_upload_mb" class="form-control" value="{{ settings.get('max_upload_mb', '').value if settings.get('max_upload_mb') else '50' }}" min="1" max="500">
+    </div>
+    <div class="form-group">
+      <label>{{ _('أنواع الملفات المسموحة') }}</label>
+      <input type="text" name="allowed_extensions" class="form-control" value="{{ settings.get('allowed_extensions', '').value if settings.get('allowed_extensions') else 'pdf,doc,docx,png,jpg,jpeg,mp4,webm' }}">
+    </div>
+    <div class="form-actions">
+      <button class="azad-btn" type="submit">{{ _('حفظ الإعدادات') }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

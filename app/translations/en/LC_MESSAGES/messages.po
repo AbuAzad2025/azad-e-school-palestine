@@ -1,13 +1,14 @@
 # English translations for Azad e-School.
 # Copyright (C) 2026 Azad for Smart Systems
-# This file is distributed under the same license as the Azad e-School project.
+# This file is distributed under the same license as the Azad e-School
+# project.
 # Developer: Ahmed Ghannam
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: azad-e-school\n"
+"Project-Id-Version:  azad-e-school\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-15 11:40+0300\n"
+"POT-Creation-Date: 2026-08-15 14:18+0300\n"
 "PO-Revision-Date: 2026-08-15 11:40+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,98 +19,792 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/modules/auth/forms.py:9
+#: app/modules/assessment/forms.py:10
+msgid "عنوان الاختبار"
+msgstr ""
+
+#: app/modules/assessment/forms.py:11 app/modules/tutoring/forms.py:37
+msgid "المدة (دقائق)"
+msgstr ""
+
+#: app/modules/assessment/forms.py:13
+msgid "عدد المحاولات"
+msgstr ""
+
+#: app/modules/assessment/forms.py:15
+msgid "خلط الأسئلة"
+msgstr ""
+
+#: app/modules/assessment/forms.py:16
+#, fuzzy
+msgid "إظهار الإجابات بعد التسليم"
+msgstr "Assignments and submissions"
+
+#: app/modules/assessment/forms.py:17
+msgid "حفظ الاختبار"
+msgstr ""
+
+#: app/modules/assessment/forms.py:22 app/modules/billing/forms.py:21
+#: app/modules/grades/forms.py:38
+msgid "النوع"
+msgstr ""
+
+#: app/modules/assessment/forms.py:24
+msgid "اختيار من متعدد"
+msgstr ""
+
+#: app/modules/assessment/forms.py:25
+msgid "صح/خطأ"
+msgstr ""
+
+#: app/modules/assessment/forms.py:26
+msgid "مقالي"
+msgstr ""
+
+#: app/modules/assessment/forms.py:30
+msgid "السؤال"
+msgstr ""
+
+#: app/modules/assessment/forms.py:31 app/modules/grades/forms.py:23
+#: app/templates/assessment/attempt_result.html:33
+#: app/templates/assessment/quiz_results.html:25
+#: app/templates/grades/assignment_detail.html:45
+msgid "الدرجة"
+msgstr ""
+
+#: app/modules/assessment/forms.py:32
+msgid "الخيار أ"
+msgstr ""
+
+#: app/modules/assessment/forms.py:33
+msgid "الخيار ب"
+msgstr ""
+
+#: app/modules/assessment/forms.py:34
+msgid "الخيار ج"
+msgstr ""
+
+#: app/modules/assessment/forms.py:35
+msgid "الخيار د"
+msgstr ""
+
+#: app/modules/assessment/forms.py:37
+msgid "الإجابة الصحيحة"
+msgstr ""
+
+#: app/modules/assessment/forms.py:41
+msgid "الإجابة"
+msgstr ""
+
+#: app/modules/assessment/forms.py:41 app/templates/assessment/attempt.html:26
+msgid "صح"
+msgstr ""
+
+#: app/modules/assessment/forms.py:41 app/templates/assessment/attempt.html:29
+#: app/templates/assessment/attempt_result.html:18
+msgid "خطأ"
+msgstr ""
+
+#: app/modules/assessment/forms.py:42
+msgid "إضافة السؤال"
+msgstr ""
+
+#: app/modules/assessment/routes.py:80
+msgid "تم إنشاء الاختبار. أضف الأسئلة الآن."
+msgstr ""
+
+#: app/modules/assessment/routes.py:135
+msgid "أُضيف السؤال."
+msgstr ""
+
+#: app/modules/assessment/routes.py:148
+msgid "حُذف السؤال."
+msgstr ""
+
+#: app/modules/assessment/routes.py:160
+msgid "المحاولة للطلاب فقط."
+msgstr ""
+
+#: app/modules/assessment/routes.py:198
+msgid "حُفظت إجاباتك."
+msgstr ""
+
+#: app/modules/assessment/routes.py:220
+msgid "محاولة جديدة في اختبار"
+msgstr ""
+
+#: app/modules/assessment/routes.py:223
+msgid "سُلّم اختبارك."
+msgstr ""
+
+#: app/modules/assessment/routes.py:283
+msgid "حُدّثت درجة السؤال المقالي."
+msgstr ""
+
+#: app/modules/auth/forms.py:10 app/modules/schools/forms.py:38
 msgid "الاسم (عربي)"
 msgstr "Name (Arabic)"
 
-#: app/modules/auth/forms.py:10 app/modules/auth/forms.py:23
-#: app/modules/auth/forms.py:29
+#: app/modules/auth/forms.py:11 app/modules/auth/forms.py:27
+#: app/modules/auth/forms.py:33
 msgid "البريد الإلكتروني"
 msgstr "Email address"
 
-#: app/modules/auth/forms.py:12
+#: app/modules/auth/forms.py:13
 msgid "أنا"
 msgstr "I am"
 
-#: app/modules/auth/forms.py:13
+#: app/modules/auth/forms.py:14
 msgid "طالب"
 msgstr "Student"
 
-#: app/modules/auth/forms.py:13
+#: app/modules/auth/forms.py:14
 msgid "معلم"
 msgstr "Teacher"
 
-#: app/modules/auth/forms.py:13
+#: app/modules/auth/forms.py:14
 msgid "ولي أمر"
 msgstr "Parent"
 
-#: app/modules/auth/forms.py:17 app/modules/auth/forms.py:24
+#: app/modules/auth/forms.py:18 app/modules/auth/forms.py:28
 msgid "كلمة المرور"
 msgstr "Password"
 
-#: app/modules/auth/forms.py:18 app/modules/auth/forms.py:35
+#: app/modules/auth/forms.py:20 app/modules/auth/forms.py:40
 msgid "تأكيد كلمة المرور"
 msgstr "Confirm password"
 
-#: app/modules/auth/forms.py:18 app/modules/auth/forms.py:35
+#: app/modules/auth/forms.py:21 app/modules/auth/forms.py:41
 msgid "كلمتا المرور غير متطابقتين"
 msgstr "Passwords do not match"
 
-#: app/modules/auth/forms.py:19
+#: app/modules/auth/forms.py:23
 msgid "إنشاء الحساب"
 msgstr "Create account"
 
-#: app/modules/auth/forms.py:25 app/templates/auth/login.html:2
+#: app/modules/auth/forms.py:29 app/templates/auth/login.html:2
 #: app/templates/auth/login.html:5 app/templates/main/index.html:11
 msgid "تسجيل الدخول"
 msgstr "Log in"
 
-#: app/modules/auth/forms.py:30
+#: app/modules/auth/forms.py:34
 msgid "إرسال رابط إعادة التعيين"
 msgstr "Send reset link"
 
-#: app/modules/auth/forms.py:34
+#: app/modules/auth/forms.py:38
 msgid "كلمة المرور الجديدة"
 msgstr "New password"
 
-#: app/modules/auth/forms.py:36
+#: app/modules/auth/forms.py:43
 msgid "حفظ كلمة المرور الجديدة"
 msgstr "Save new password"
 
-#: app/modules/auth/routes.py:37
+#: app/modules/auth/routes.py:38
 msgid ""
 "تم إنشاء الحساب. فعّل بريدك الإلكتروني عبر الرابط (يُطبع في الطرفية بوضع "
 "التطوير)."
-msgstr "Account created. Verify your email via the link (printed in the console in dev mode)."
+msgstr ""
+"Account created. Verify your email via the link (printed in the console "
+"in dev mode)."
 
-#: app/modules/auth/routes.py:62
+#: app/modules/auth/routes.py:63
 msgid "تم تسجيل الخروج."
 msgstr "You have been logged out."
 
-#: app/modules/auth/routes.py:70
+#: app/modules/auth/routes.py:71
 msgid "تم تفعيل بريدك الإلكتروني. سجّل الدخول الآن."
 msgstr "Your email has been verified. Log in now."
 
-#: app/modules/auth/routes.py:72
+#: app/modules/auth/routes.py:73
 msgid "رابط التفعيل غير صالح أو منتهي."
 msgstr "Activation link is invalid or expired."
 
-#: app/modules/auth/routes.py:84
+#: app/modules/auth/routes.py:86
 msgid "إن كان البريد مسجلاً، ستصل رسالة إعادة التعيين."
 msgstr "If the email is registered, a reset message will arrive."
 
-#: app/modules/auth/routes.py:93
-msgid "في وضع التطوير، تُدار إعادة التعيين عبر رابط مؤمن. أرسلنا تفاصيل لاحقاً."
-msgstr "In dev mode, reset is handled via a secure link. We'll send details later."
+#: app/modules/auth/routes.py:99
+#, fuzzy
+msgid "تم تحديث كلمة المرور. سجّل الدخول الآن."
+msgstr "Your email has been verified. Log in now."
+
+#: app/modules/billing/forms.py:19
+msgid "اسم الخطة"
+msgstr ""
+
+#: app/modules/billing/forms.py:22
+msgid "الفصل الأول"
+msgstr ""
+
+#: app/modules/billing/forms.py:22
+msgid "الفصل الثاني"
+msgstr ""
+
+#: app/modules/billing/forms.py:22 app/modules/schools/forms.py:21
+msgid "السنوي"
+msgstr ""
+
+#: app/modules/billing/forms.py:25 app/modules/tutoring/forms.py:38
+#: app/templates/tutoring/session.html:14
+msgid "السعر"
+msgstr ""
+
+#: app/modules/billing/forms.py:26
+#, fuzzy
+msgid "العملة"
+msgstr "Menu"
+
+#: app/modules/billing/forms.py:27
+#, fuzzy
+msgid "مدة الاشتراك (أيام)"
+msgstr "Subscription status and benefits"
+
+#: app/modules/billing/forms.py:28
+msgid "حفظ الخطة"
+msgstr ""
+
+#: app/modules/billing/forms.py:33 app/templates/billing/class_billing.html:40
+#, fuzzy
+msgid "اشترك"
+msgstr "My subscriptions"
+
+#: app/modules/billing/forms.py:37
+msgid "رقم مرجع التحويل"
+msgstr ""
+
+#: app/modules/billing/forms.py:38
+#, fuzzy
+msgid "المبلغ"
+msgstr "Student"
+
+#: app/modules/billing/forms.py:39 app/modules/grades/forms.py:24
+#: app/modules/tutoring/forms.py:31
+#: app/templates/grades/assignment_detail.html:46
+msgid "ملاحظات"
+msgstr ""
+
+#: app/modules/billing/forms.py:40
+msgid "صورة الإيصال (اختياري)"
+msgstr ""
+
+#: app/modules/billing/forms.py:41
+msgid "إرسال الدفع للاعتماد"
+msgstr ""
+
+#: app/modules/billing/routes.py:81
+msgid "حُفظت الخطة."
+msgstr ""
+
+#: app/modules/billing/routes.py:97
+msgid "خطة غير صالحة."
+msgstr ""
+
+#: app/modules/billing/routes.py:104
+msgid "أُنشئ اشتراكك. أرسل الدفع لتفعيله."
+msgstr ""
+
+#: app/modules/billing/routes.py:130
+msgid "أُرسل الدفع للاعتماد اليدوي."
+msgstr ""
+
+#: app/modules/billing/routes.py:150
+msgid "فعّل اشتراكك"
+msgstr ""
+
+#: app/modules/billing/routes.py:152
+msgid "اعتُمد الدفع وفُعّل الاشتراك."
+msgstr ""
+
+#: app/modules/billing/routes.py:155
+msgid "رُفض دفعك — راجع البيانات."
+msgstr ""
+
+#: app/modules/billing/routes.py:157
+msgid "رُفض الدفع."
+msgstr ""
+
+#: app/modules/content/forms.py:10
+msgid "عنوان الوحدة"
+msgstr ""
+
+#: app/modules/content/forms.py:11 app/templates/content/lessons.html:20
+msgid "إضافة وحدة"
+msgstr ""
+
+#: app/modules/content/forms.py:15
+msgid "عنوان الدرس"
+msgstr ""
+
+#: app/modules/content/forms.py:16
+msgid "الوحدة"
+msgstr ""
+
+#: app/modules/content/forms.py:17
+msgid "محتوى الدرس (HTML)"
+msgstr ""
+
+#: app/modules/content/forms.py:18
+msgid "حفظ الدرس"
+msgstr ""
+
+#: app/modules/content/forms.py:22
+msgid "ملف المرفق"
+msgstr ""
+
+#: app/modules/content/forms.py:23
+msgid "عنوان المرفق"
+msgstr ""
+
+#: app/modules/content/forms.py:24
+msgid "رفع"
+msgstr ""
+
+#: app/modules/content/forms.py:28
+msgid "رابط فيديو YouTube"
+msgstr ""
+
+#: app/modules/content/forms.py:29
+msgid "عنوان الفيديو"
+msgstr ""
+
+#: app/modules/content/forms.py:30
+msgid "إضافة الفيديو"
+msgstr ""
+
+#: app/modules/content/routes.py:83
+#, fuzzy
+msgid "تم إنشاء الدرس."
+msgstr "Create account"
+
+#: app/modules/content/routes.py:100
+msgid "بلا وحدة"
+msgstr ""
+
+#: app/modules/content/routes.py:105
+msgid "تم حفظ الدرس."
+msgstr ""
+
+#: app/modules/content/routes.py:140
+msgid "أُعيد الدرس للمسودة."
+msgstr ""
+
+#: app/modules/content/routes.py:143
+msgid "نُشر الدرس."
+msgstr ""
+
+#: app/modules/content/routes.py:156
+msgid "أُضيفت الوحدة."
+msgstr ""
+
+#: app/modules/content/routes.py:173
+msgid "تم رفع المرفق."
+msgstr ""
+
+#: app/modules/content/routes.py:191
+msgid "أُضيف الفيديو."
+msgstr ""
+
+#: app/modules/content/routes.py:203
+msgid "حُذف المرفق."
+msgstr ""
+
+#: app/modules/grades/forms.py:10
+msgid "عنوان الواجب"
+msgstr ""
+
+#: app/modules/grades/forms.py:11
+msgid "شرح الواجب"
+msgstr ""
+
+#: app/modules/grades/forms.py:12 app/modules/grades/forms.py:36
+msgid "الدرجة القصوى"
+msgstr ""
+
+#: app/modules/grades/forms.py:13
+#, fuzzy
+msgid "نشر الواجب"
+msgstr "Create account"
+
+#: app/modules/grades/forms.py:17
+msgid "إجابتك"
+msgstr ""
+
+#: app/modules/grades/forms.py:18
+msgid "ملف"
+msgstr ""
+
+#: app/modules/grades/forms.py:19
+msgid "تسليم"
+msgstr ""
+
+#: app/modules/grades/forms.py:25
+#: app/templates/assessment/attempt_result.html:34
+#: app/templates/assessment/quiz_results.html:16
+#: app/templates/grades/assignment_detail.html:47
+msgid "تصحيح"
+msgstr ""
+
+#: app/modules/grades/forms.py:29
+msgid "اسم القسم"
+msgstr ""
+
+#: app/modules/grades/forms.py:30
+msgid "الوزن"
+msgstr ""
+
+#: app/modules/grades/forms.py:31
+msgid "إضافة قسم"
+msgstr ""
+
+#: app/modules/grades/forms.py:35
+msgid "عنوان البند"
+msgstr ""
+
+#: app/modules/grades/forms.py:39
+#, fuzzy
+msgid "اختبار"
+msgstr "My exams"
+
+#: app/modules/grades/forms.py:39 app/templates/grades/assignment_detail.html:2
+#, fuzzy
+msgid "واجب"
+msgstr "My assignments"
+
+#: app/modules/grades/forms.py:39
+msgid "مشروع"
+msgstr ""
+
+#: app/modules/grades/forms.py:39
+msgid "حضور"
+msgstr ""
+
+#: app/modules/grades/forms.py:42
+msgid "إضافة بند"
+msgstr ""
+
+#: app/modules/grades/routes.py:83
+msgid "نُشر الواجب."
+msgstr ""
+
+#: app/modules/grades/routes.py:131
+#, fuzzy
+msgid "تسليم واجب جديد"
+msgstr "New password"
+
+#: app/modules/grades/routes.py:132
+msgid "سُلّم واجبك."
+msgstr ""
+
+#: app/modules/grades/routes.py:162
+msgid "صُحّح واجبك"
+msgstr ""
+
+#: app/modules/grades/routes.py:163
+msgid "صُحّح التسليم."
+msgstr ""
+
+#: app/modules/grades/routes.py:214
+msgid "أُضيف القسم."
+msgstr ""
+
+#: app/modules/grades/routes.py:230
+msgid "أُضيف البند."
+msgstr ""
+
+#: app/modules/grades/routes.py:245
+#, fuzzy
+msgid "سُجّلت الدرجة."
+msgstr "Log in"
+
+#: app/modules/grades/routes.py:285
+#, fuzzy
+msgid "سُجّل الحضور."
+msgstr "Log in"
+
+#: app/modules/schools/forms.py:10
+#, fuzzy
+msgid "اسم المدرسة (عربي)"
+msgstr "Name (Arabic)"
+
+#: app/modules/schools/forms.py:11
+msgid "اسم المدرسة (إنجليزي)"
+msgstr ""
+
+#: app/modules/schools/forms.py:12
+msgid "النطاق"
+msgstr ""
+
+#: app/modules/schools/forms.py:13
+#, fuzzy
+msgid "إنشاء المدرسة"
+msgstr "Create account"
+
+#: app/modules/schools/forms.py:17
+#, fuzzy
+msgid "المادة"
+msgstr "Menu"
+
+#: app/modules/schools/forms.py:18
+#, fuzzy
+msgid "الصف الدراسي"
+msgstr "Your classes and subjects"
+
+#: app/modules/schools/forms.py:20
+msgid "الفصل"
+msgstr ""
+
+#: app/modules/schools/forms.py:21
+msgid "الأول"
+msgstr ""
+
+#: app/modules/schools/forms.py:21
+msgid "الثاني"
+msgstr ""
+
+#: app/modules/schools/forms.py:24
+msgid "اسم الصف (اختياري)"
+msgstr ""
+
+#: app/modules/schools/forms.py:25
+msgid "سعر الفصل الأول"
+msgstr ""
+
+#: app/modules/schools/forms.py:26
+msgid "سعر الفصل الثاني"
+msgstr ""
+
+#: app/modules/schools/forms.py:27
+msgid "سعر السنوي"
+msgstr ""
+
+#: app/modules/schools/forms.py:28
+#, fuzzy
+msgid "إنشاء الصف"
+msgstr "Create account"
+
+#: app/modules/schools/forms.py:32 app/templates/schools/class_detail.html:12
+msgid "رمز الانضمام"
+msgstr ""
+
+#: app/modules/schools/forms.py:33
+msgid "انضمام"
+msgstr ""
+
+#: app/modules/schools/forms.py:37
+msgid "المستوى (1..12)"
+msgstr ""
+
+#: app/modules/schools/forms.py:39
+msgid "إضافة مستوى"
+msgstr ""
+
+#: app/modules/schools/forms.py:44
+msgid "تعيين المعلم"
+msgstr ""
+
+#: app/modules/schools/routes.py:53
+#, fuzzy
+msgid "تم إنشاء المدرسة."
+msgstr "Create account"
+
+#: app/modules/schools/routes.py:55 app/templates/schools/index.html:6
+#, fuzzy
+msgid "مدرسة جديدة"
+msgstr "New password"
+
+#: app/modules/schools/routes.py:73
+msgid "لا مستويات بعد"
+msgstr ""
+
+#: app/modules/schools/routes.py:91
+#, fuzzy
+msgid "تم إنشاء الصف."
+msgstr "Create account"
+
+#: app/modules/schools/routes.py:104
+msgid "تمت إضافة المستوى."
+msgstr ""
+
+#: app/modules/schools/routes.py:118
+msgid "رمز انضمام غير صالح."
+msgstr ""
+
+#: app/modules/schools/routes.py:125
+msgid "تم الانضمام للصف."
+msgstr ""
+
+#: app/modules/schools/routes.py:182
+msgid "تم توليد رمز جديد."
+msgstr ""
+
+#: app/modules/schools/routes.py:210
+msgid "تم تعيين المعلم."
+msgstr ""
+
+#: app/modules/tutoring/forms.py:10
+msgid "المادة التي تدرّسها"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:11 app/templates/tutoring/profile.html:16
+msgid "سعر الساعة"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:12 app/templates/tutoring/profile.html:17
+msgid "سعر الجلسة"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:14
+msgid "طريقة الجلسة"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:15
+msgid "أونلاين وحضوري"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:15 app/modules/tutoring/forms.py:27
+#: app/modules/tutoring/forms.py:41
+#, fuzzy
+msgid "أونلاين"
+msgstr "I am"
+
+#: app/modules/tutoring/forms.py:15 app/modules/tutoring/forms.py:27
+#: app/modules/tutoring/forms.py:41
+msgid "حضوري"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:18
+msgid "نبذة عنك"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:19
+msgid "حفظ الملف"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:23
+#, fuzzy
+msgid "المادة المطلوبة"
+msgstr "Password"
+
+#: app/modules/tutoring/forms.py:24
+msgid "الوقت المفضّل"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:26 app/modules/tutoring/forms.py:40
+#: app/templates/tutoring/profile.html:18
+#: app/templates/tutoring/session.html:13
+#, fuzzy
+msgid "الطريقة"
+msgstr "Home"
+
+#: app/modules/tutoring/forms.py:30
+msgid "السعر المقترح"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:32
+msgid "إرسال طلب الحجز"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:36
+msgid "موعد الجلسة"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:44
+msgid "رابط الاجتماع"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:45
+msgid "المكان الحضوري"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:46
+msgid "تأكيد الجلسة"
+msgstr ""
+
+#: app/modules/tutoring/forms.py:51
+#, fuzzy
+msgid "تأكيد استلام الدفع"
+msgstr "Confirm password"
+
+#: app/modules/tutoring/routes.py:51
+msgid "رمز دعوة غير صالح."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:90
+msgid "تم نشر ملفك. شارك رابط ملفك مع طلابك."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:111
+msgid "تم تحديث الملف."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:127
+msgid "لا يمكنك حجز درس من نفسك."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:144
+msgid "طلب درس خصوصي جديد"
+msgstr ""
+
+#: app/modules/tutoring/routes.py:145
+msgid "أُرسل طلبك للمعلم. سيعاودك بالرد."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:157
+msgid "تم الرد على هذا الطلب مسبقاً."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:163
+msgid "قُبل طلب درسك الخصوصي"
+msgstr ""
+
+#: app/modules/tutoring/routes.py:165
+msgid "اعتذر المعلم عن طلبك"
+msgstr ""
+
+#: app/modules/tutoring/routes.py:166
+msgid "تم تحديث الطلب."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:191
+#, fuzzy
+msgid "تم تحديث الجلسة."
+msgstr "You have been logged out."
+
+#: app/modules/tutoring/routes.py:204
+msgid "تم تأكيد دفع درسك الخصوصي"
+msgstr ""
+
+#: app/modules/tutoring/routes.py:205
+msgid "تم تأكيد استلام الدفع (يدوي)."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:219
+msgid "تم تحديث حالة الجلسة."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:261
+msgid "تم بدء الجلسة المباشرة."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:274
+msgid "تم ending الجلسة المباشرة."
+msgstr ""
 
 #: app/templates/base.html:8
 msgid "منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية"
-msgstr "Azad Electronic School Platform — integrated e-learning for the Palestinian curriculum"
+msgstr ""
+"Azad Electronic School Platform — integrated e-learning for the "
+"Palestinian curriculum"
 
 #: app/templates/auth/dashboard.html:2 app/templates/auth/forgot.html:2
 #: app/templates/auth/login.html:2 app/templates/auth/register.html:2
 #: app/templates/auth/reset.html:2 app/templates/base.html:9
 #: app/templates/partials/footer.html:2
+#: app/templates/schools/class_detail.html:2
+#: app/templates/schools/class_form.html:2 app/templates/schools/classes.html:2
+#: app/templates/schools/form.html:2 app/templates/schools/index.html:2
+#: app/templates/schools/join.html:2 app/templates/schools/manage.html:2
+#: app/templates/schools/my_classes.html:2 app/templates/tutoring/index.html:2
 msgid "منصة مدرسة أزاد الإلكترونية"
 msgstr "Azad Electronic School Platform"
 
@@ -117,50 +812,244 @@ msgstr "Azad Electronic School Platform"
 msgid "تخطَّ إلى المحتوى"
 msgstr "Skip to content"
 
-#: app/templates/auth/dashboard.html:2 app/templates/main/index.html:8
-#: app/templates/partials/navbar.html:13
+#: app/templates/assessment/attempt.html:2
+#: app/templates/assessment/quiz_results.html:14
+#: app/templates/assessment/quiz_results.html:25
+msgid "محاولة"
+msgstr ""
+
+#: app/templates/assessment/attempt.html:5
+#: app/templates/assessment/attempt_result.html:7
+msgid "المحاولة"
+msgstr ""
+
+#: app/templates/assessment/attempt.html:5
+msgid "سؤالاً"
+msgstr ""
+
+#: app/templates/assessment/attempt.html:12
+msgid "درجة"
+msgstr ""
+
+#: app/templates/assessment/attempt.html:32
+msgid "اكتب إجابتك..."
+msgstr ""
+
+#: app/templates/assessment/attempt.html:37
+msgid "سليم الاختبار"
+msgstr ""
+
+#: app/templates/assessment/attempt.html:38
+msgid "حفظ مؤقت"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:2
+msgid "النتيجة"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:6
+#, fuzzy
+msgid "درجتك"
+msgstr "Your role"
+
+#: app/templates/assessment/attempt_result.html:8
+#: app/templates/grades/assignment_detail.html:12
+#: app/templates/grades/assignments.html:33
+msgid "سُلّم"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:18
+msgid "صحيح"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:19
+msgid "بانتظار التصحيح"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:22
+#, fuzzy
+msgid "درجتك:"
+msgstr "Your role"
+
+#: app/templates/assessment/attempt_result.html:24
+msgid "الصحيح:"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:28
+msgid "إجابتك:"
+msgstr ""
+
+#: app/templates/assessment/attempt_result.html:42
+msgid "الإجابات غير مكشوفة بعد."
+msgstr ""
+
+#: app/templates/assessment/quiz_form.html:2
+#: app/templates/assessment/quiz_form.html:5
+#: app/templates/assessment/quiz_list.html:10
+#, fuzzy
+msgid "اختبار جديد"
+msgstr "My exams"
+
+#: app/templates/assessment/quiz_list.html:2
+#: app/templates/assessment/quiz_list.html:6
+#: app/templates/schools/class_detail.html:20
+#, fuzzy
+msgid "الاختبارات"
+msgstr "My exams"
+
+#: app/templates/assessment/quiz_list.html:21
+msgid "أسئلة:"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:22
+msgid "مدة:"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:23
+msgid "محاولات:"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:29
+#: app/templates/schools/index.html:20
+msgid "إدارة"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:30
+#: app/templates/assessment/quiz_results.html:2
+#: app/templates/assessment/quiz_results.html:4
+msgid "النتائج"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:33
+msgid "نتيجتي"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:35
+msgid "ابدأ المحاولة"
+msgstr ""
+
+#: app/templates/assessment/quiz_list.html:43
+#, fuzzy
+msgid "لا اختبارات بعد."
+msgstr "My exams"
+
+#: app/templates/assessment/quiz_list.html:43
+msgid "أنشئ أول اختبار"
+msgstr ""
+
+#: app/templates/assessment/quiz_results.html:8
+msgid "بانتظار التصحيح اليدوي"
+msgstr ""
+
+#: app/templates/assessment/quiz_results.html:22
+#, fuzzy
+msgid "كل المحاولات"
+msgstr "Password"
+
+#: app/templates/assessment/quiz_results.html:25
+#: app/templates/grades/attendance.html:27
+#: app/templates/grades/gradebook.html:40
+#, fuzzy
+msgid "الطالب"
+msgstr "Student"
+
+#: app/templates/assessment/quiz_results.html:25
+#: app/templates/grades/attendance.html:27
+#: app/templates/tutoring/session.html:15
+#, fuzzy
+msgid "الحالة"
+msgstr "Menu"
+
+#: app/templates/assessment/quiz_results.html:33
+#: app/templates/grades/attendance.html:13
+msgid "عرض"
+msgstr ""
+
+#: app/templates/assessment/quiz_results.html:39
+msgid "لا محاولات بعد."
+msgstr ""
+
+#: app/templates/auth/dashboard.html:2 app/templates/auth/dashboard.html:4
+#: app/templates/main/index.html:8 app/templates/partials/navbar.html:13
 msgid "لوحتي"
 msgstr "My dashboard"
 
-#: app/templates/auth/dashboard.html:4
-msgid "أهلاً"
-msgstr "Welcome"
-
 #: app/templates/auth/dashboard.html:5
-msgid "دورك"
-msgstr "Your role"
+msgid "مرحباً"
+msgstr ""
 
-#: app/templates/auth/dashboard.html:7
+#: app/templates/auth/dashboard.html:9
+msgid "نظرة عامة"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:10
+msgid "إدارة المدارس"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:13
+msgid "مدرسة"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:14
+msgid "مستخدم"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:15
+msgid "صف"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:19 app/templates/auth/dashboard.html:50
+#: app/templates/partials/navbar.html:14
+#: app/templates/schools/my_classes.html:2
+#: app/templates/schools/my_classes.html:5
 msgid "صفوفي"
 msgstr "My classes"
 
-#: app/templates/auth/dashboard.html:7
-msgid "صفوفك وموادك الدراسية"
-msgstr "Your classes and subjects"
+#: app/templates/auth/dashboard.html:20 app/templates/schools/my_classes.html:6
+msgid "انضمام برمز"
+msgstr ""
 
-#: app/templates/auth/dashboard.html:8
-msgid "اختباراتي"
-msgstr "My exams"
+#: app/templates/auth/dashboard.html:30
+#: app/templates/schools/class_detail.html:6
+#: app/templates/schools/classes.html:19 app/templates/schools/manage.html:19
+#: app/templates/schools/my_classes.html:16
+msgid "الصف"
+msgstr ""
 
-#: app/templates/auth/dashboard.html:8
-msgid "الاختبارات المتاحة ونتائجك"
-msgstr "Available exams and your results"
+#: app/templates/auth/dashboard.html:34
+#: app/templates/content/_lesson_row.html:11
+#: app/templates/grades/assignments.html:38
+#: app/templates/notifications/index.html:17
+#: app/templates/schools/classes.html:24 app/templates/schools/manage.html:24
+#: app/templates/schools/my_classes.html:20 app/templates/tutoring/my.html:64
+#: app/templates/tutoring/my.html:82
+msgid "فتح"
+msgstr ""
 
-#: app/templates/auth/dashboard.html:9
-msgid "واجباتي"
-msgstr "My assignments"
+#: app/templates/auth/dashboard.html:40
+#: app/templates/schools/my_classes.html:26
+msgid "لم تنضم لأي صف بعد."
+msgstr ""
 
-#: app/templates/auth/dashboard.html:9
-msgid "الواجبات والتسليمات"
-msgstr "Assignments and submissions"
+#: app/templates/auth/dashboard.html:40
+#: app/templates/schools/my_classes.html:26
+msgid "انضم برمز"
+msgstr ""
 
-#: app/templates/auth/dashboard.html:10
-msgid "اشتراكاتي"
-msgstr "My subscriptions"
+#: app/templates/auth/dashboard.html:44
+msgid "وصول سريع"
+msgstr ""
 
-#: app/templates/auth/dashboard.html:10
-msgid "حالة الاشتراك والمزايا"
-msgstr "Subscription status and benefits"
+#: app/templates/auth/dashboard.html:47 app/templates/tutoring/my.html:2
+#: app/templates/tutoring/profile.html:2
+#: app/templates/tutoring/profile_form.html:2
+#: app/templates/tutoring/session.html:2
+msgid "دروس خصوصية"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:54
+msgid "الإشعارات"
+msgstr ""
 
 #: app/templates/auth/forgot.html:2
 msgid "نسيت كلمة المرور"
@@ -210,6 +1099,234 @@ msgstr "Log in"
 msgid "كلمة مرور جديدة"
 msgstr "New password"
 
+#: app/templates/billing/admin.html:2 app/templates/billing/admin.html:4
+#: app/templates/billing/class_billing.html:10
+msgid "الاعتمادات المعلّقة"
+msgstr ""
+
+#: app/templates/billing/admin.html:13
+#: app/templates/billing/class_billing.html:19
+msgid "الخطة:"
+msgstr ""
+
+#: app/templates/billing/admin.html:20
+msgid "اعتماد"
+msgstr ""
+
+#: app/templates/billing/admin.html:24 app/templates/tutoring/my.html:28
+msgid "رفض"
+msgstr ""
+
+#: app/templates/billing/admin.html:31
+msgid "لا دفعات معلّقة."
+msgstr ""
+
+#: app/templates/billing/class_billing.html:2
+#, fuzzy
+msgid "الاشتراك"
+msgstr "My subscriptions"
+
+#: app/templates/billing/class_billing.html:6
+#, fuzzy
+msgid "الاشتراك والدفع"
+msgstr "Subscription status and benefits"
+
+#: app/templates/billing/class_billing.html:16
+#, fuzzy
+msgid "اشتراكك الحالي"
+msgstr "My subscriptions"
+
+#: app/templates/billing/class_billing.html:20
+msgid "المبلغ:"
+msgstr ""
+
+#: app/templates/billing/class_billing.html:21
+msgid "ينتهي:"
+msgstr ""
+
+#: app/templates/billing/class_billing.html:26
+msgid "الخطط المتاحة"
+msgstr ""
+
+#: app/templates/billing/class_billing.html:48
+msgid "لا خطط بعد."
+msgstr ""
+
+#: app/templates/billing/class_billing.html:48
+msgid "أضف خطة أدناه."
+msgstr ""
+
+#: app/templates/billing/class_billing.html:52
+msgid "خطة جديدة"
+msgstr ""
+
+#: app/templates/billing/class_billing.html:68
+#, fuzzy
+msgid "إرسال الدفع اليدوي"
+msgstr "Send reset link"
+
+#: app/templates/billing/class_billing.html:70
+msgid "حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد."
+msgstr ""
+
+#: app/templates/content/_lesson_row.html:7
+msgid "إصدار"
+msgstr ""
+
+#: app/templates/content/_lesson_row.html:15
+#: app/templates/content/lesson_detail.html:15
+msgid "نشر"
+msgstr ""
+
+#: app/templates/content/_lesson_row.html:15
+msgid "مسودة"
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:15
+msgid "إرجاع للمسودة"
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:24
+msgid "المرفقات"
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:44
+msgid "حذف"
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:52
+msgid "لا مرفقات بعد."
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:56
+msgid "رفع مرفق"
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:65
+msgid "إضافة فيديو خارجي"
+msgstr ""
+
+#: app/templates/content/lesson_detail.html:75
+#, fuzzy
+msgid "تعديل الدرس"
+msgstr "Log in"
+
+#: app/templates/content/lesson_form.html:2
+#: app/templates/content/lesson_form.html:5
+#: app/templates/content/lessons.html:10
+msgid "درس جديد"
+msgstr ""
+
+#: app/templates/content/lessons.html:2 app/templates/content/lessons.html:6
+#: app/templates/schools/class_detail.html:19
+msgid "الدروس"
+msgstr ""
+
+#: app/templates/content/lessons.html:19
+msgid "عنوان وحدة جديدة..."
+msgstr ""
+
+#: app/templates/content/lessons.html:34
+msgid "دروس بلا وحدة"
+msgstr ""
+
+#: app/templates/content/lessons.html:41
+msgid "لا دروس بعد."
+msgstr ""
+
+#: app/templates/content/lessons.html:41
+msgid "أنشئ أول درس"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:6
+#: app/templates/grades/assignments.html:30
+msgid "الدرجة القصوى:"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:9
+msgid "تسليم الواجب"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:13
+msgid "الدرجة:"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:14
+msgid "ملاحظات المعلم:"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:26
+#, fuzzy
+msgid "التسليمات"
+msgstr "Assignments and submissions"
+
+#: app/templates/grades/assignment_detail.html:35
+msgid "درجة:"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:35
+msgid "غير مُصحَّح"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:40
+msgid "عرض وتصحيح"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:42
+msgid "تحميل الملف المرفق"
+msgstr ""
+
+#: app/templates/grades/assignment_detail.html:55
+msgid "لا تسليمات بعد."
+msgstr ""
+
+#: app/templates/grades/assignments.html:2
+#: app/templates/grades/assignments.html:6
+#: app/templates/schools/class_detail.html:21
+#, fuzzy
+msgid "الواجبات"
+msgstr "My assignments"
+
+#: app/templates/grades/assignments.html:31
+msgid "الموعد:"
+msgstr ""
+
+#: app/templates/grades/assignments.html:33
+msgid "لم تُسلَّم"
+msgstr ""
+
+#: app/templates/grades/assignments.html:44
+msgid "لا واجبات بعد."
+msgstr ""
+
+#: app/templates/grades/attendance.html:2
+#: app/templates/grades/attendance.html:6
+#: app/templates/schools/class_detail.html:22
+msgid "الحضور"
+msgstr ""
+
+#: app/templates/grades/attendance.html:49
+msgid "حفظ الحضور"
+msgstr ""
+
+#: app/templates/grades/gradebook.html:2 app/templates/grades/gradebook.html:6
+msgid "دفتر الدرجات"
+msgstr ""
+
+#: app/templates/grades/gradebook.html:66
+msgid "لا أقسام بعد — أضف قسماً لبدء دفتر الدرجات."
+msgstr ""
+
+#: app/templates/grades/gradebook_student.html:2
+#: app/templates/grades/gradebook_student.html:4
+#, fuzzy
+msgid "درجاتي"
+msgstr "My assignments"
+
+#: app/templates/grades/gradebook_student.html:7
+msgid "لا بنود تقييم بعد."
+msgstr ""
+
 #: app/templates/main/index.html:4 app/templates/partials/navbar.html:5
 msgid "مدرسة أزاد الإلكترونية"
 msgstr "Azad Electronic School"
@@ -218,9 +1335,11 @@ msgstr "Azad Electronic School"
 msgid ""
 "منصة تعليمية متكاملة للمناهج الفلسطينية — دروس، اختبارات، واجبات، ومتابعة"
 " دقيقة من أي جهاز."
-msgstr "A comprehensive e-learning platform for the Palestinian curriculum — lessons, exams, assignments, and precise tracking from any device."
+msgstr ""
+"A comprehensive e-learning platform for the Palestinian curriculum — "
+"lessons, exams, assignments, and precise tracking from any device."
 
-#: app/templates/main/index.html:10 app/templates/partials/navbar.html:20
+#: app/templates/main/index.html:10 app/templates/partials/navbar.html:23
 msgid "سجّل مجاناً"
 msgstr "Sign up free"
 
@@ -256,6 +1375,23 @@ msgstr "Precise tracking"
 msgid "درجات، حضور، وتقارير لأولياء الأمور"
 msgstr "Grades, attendance, and reports for parents"
 
+#: app/templates/notifications/index.html:2
+#: app/templates/notifications/index.html:5
+msgid "إشعاراتي"
+msgstr ""
+
+#: app/templates/notifications/index.html:6
+msgid "تحديد الكل كمقروء"
+msgstr ""
+
+#: app/templates/notifications/index.html:13
+msgid "جديد"
+msgstr ""
+
+#: app/templates/notifications/index.html:22
+msgid "لا إشعارات بعد."
+msgstr ""
+
 #: app/templates/partials/footer.html:2
 msgid "أزاد للأنظمة الذكية"
 msgstr "Azad for Smart Systems"
@@ -276,14 +1412,312 @@ msgstr "Menu"
 msgid "الرئيسية"
 msgstr "Home"
 
-#: app/templates/partials/navbar.html:16
+#: app/templates/partials/navbar.html:15
+msgid "دروسي الخصوصية"
+msgstr ""
+
+#: app/templates/partials/navbar.html:19
 msgid "خروج"
 msgstr "Log out"
 
-#: app/templates/partials/navbar.html:19
+#: app/templates/partials/navbar.html:22
 msgid "دخول"
 msgstr "Log in"
 
-#: app/templates/partials/navbar.html:24
+#: app/templates/partials/navbar.html:27
 msgid "English"
 msgstr "English"
+
+#: app/templates/schools/class_detail.html:11
+#, fuzzy
+msgid "طالباً"
+msgstr "Student"
+
+#: app/templates/schools/class_detail.html:17
+msgid "أدوات المعلم"
+msgstr ""
+
+#: app/templates/schools/class_detail.html:27
+msgid "توليد رمز جديد"
+msgstr ""
+
+#: app/templates/schools/class_detail.html:31
+msgid "الأعضاء"
+msgstr ""
+
+#: app/templates/schools/class_detail.html:33
+#, fuzzy
+msgid "الاسم"
+msgstr "Menu"
+
+#: app/templates/schools/class_detail.html:33
+#, fuzzy
+msgid "الدور"
+msgstr "Your role"
+
+#: app/templates/schools/class_form.html:2
+#: app/templates/schools/class_form.html:5 app/templates/schools/classes.html:9
+#: app/templates/schools/manage.html:9
+msgid "صف جديد"
+msgstr ""
+
+#: app/templates/schools/class_form.html:18
+msgid "سيُولَّد رمز انضمام تلقائياً بعد الإنشاء."
+msgstr ""
+
+#: app/templates/schools/classes.html:2 app/templates/schools/classes.html:5
+#: app/templates/schools/classes.html:8 app/templates/schools/manage.html:8
+#, fuzzy
+msgid "الصفوف"
+msgstr "My classes"
+
+#: app/templates/schools/classes.html:20 app/templates/schools/manage.html:20
+msgid "رمز:"
+msgstr ""
+
+#: app/templates/schools/classes.html:30 app/templates/schools/manage.html:30
+msgid "لا صفوف بعد في هذه المدرسة."
+msgstr ""
+
+#: app/templates/schools/classes.html:30 app/templates/schools/manage.html:30
+msgid "أنشئ أول صف"
+msgstr ""
+
+#: app/templates/schools/index.html:2 app/templates/schools/index.html:5
+msgid "المدارس"
+msgstr ""
+
+#: app/templates/schools/index.html:15
+msgid "بلا نطاق"
+msgstr ""
+
+#: app/templates/schools/index.html:16
+msgid "سنة:"
+msgstr ""
+
+#: app/templates/schools/index.html:26
+msgid "لا توجد مدارس بعد."
+msgstr ""
+
+#: app/templates/schools/index.html:26
+msgid "أنشئ المدرسة الأولى"
+msgstr ""
+
+#: app/templates/schools/join.html:2 app/templates/schools/join.html:5
+msgid "الانضمام إلى صف"
+msgstr ""
+
+#: app/templates/schools/join.html:6
+msgid "أدخل رمز الانضمام الذي وصلك من معلمك أو مدرستك."
+msgstr ""
+
+#: app/templates/schools/manage.html:33
+msgid "إضافة مستوى دراسي"
+msgstr ""
+
+#: app/templates/tutoring/book.html:2
+msgid "حجز درس"
+msgstr ""
+
+#: app/templates/tutoring/book.html:5
+msgid "حجز درس خصوصي"
+msgstr ""
+
+#: app/templates/tutoring/index.html:2 app/templates/tutoring/index.html:4
+msgid "الدروس الخصوصية"
+msgstr ""
+
+#: app/templates/tutoring/index.html:5
+msgid "سوق حر — احجز درساً 1-1 مع معلم خارج حدود المدرسة."
+msgstr ""
+
+#: app/templates/tutoring/index.html:8
+msgid "ابحث بمادة أو اسم معلم..."
+msgstr ""
+
+#: app/templates/tutoring/index.html:9
+msgid "بحث"
+msgstr ""
+
+#: app/templates/tutoring/index.html:10
+msgid "انشر ملفك كمعلم"
+msgstr ""
+
+#: app/templates/tutoring/index.html:20
+msgid "ساعة:"
+msgstr ""
+
+#: app/templates/tutoring/index.html:21
+msgid "جلسة:"
+msgstr ""
+
+#: app/templates/tutoring/index.html:23 app/templates/tutoring/profile.html:8
+msgid "معلم خصوصي"
+msgstr ""
+
+#: app/templates/tutoring/index.html:27
+msgid "الملف"
+msgstr ""
+
+#: app/templates/tutoring/index.html:29 app/templates/tutoring/profile.html:32
+msgid "احجز درساً"
+msgstr ""
+
+#: app/templates/tutoring/index.html:36
+msgid "لا معلمون مطابقون بعد."
+msgstr ""
+
+#: app/templates/tutoring/index.html:36
+msgid "كن أول معلم خصوصي"
+msgstr ""
+
+#: app/templates/tutoring/index.html:36
+msgid "سجّل لتشارك أو تحجز"
+msgstr ""
+
+#: app/templates/tutoring/my.html:2
+msgid "جلساتك الخصوصية"
+msgstr ""
+
+#: app/templates/tutoring/my.html:4
+msgid "الدروس الخصوصية — ملفي"
+msgstr ""
+
+#: app/templates/tutoring/my.html:6
+msgid "طلبات تلقيتها"
+msgstr ""
+
+#: app/templates/tutoring/my.html:14
+msgid "الوقت:"
+msgstr ""
+
+#: app/templates/tutoring/my.html:24
+msgid "قبول"
+msgstr ""
+
+#: app/templates/tutoring/my.html:35
+msgid "لا طلبات واردة."
+msgstr ""
+
+#: app/templates/tutoring/my.html:37
+msgid "طلبات أرسلتها"
+msgstr ""
+
+#: app/templates/tutoring/my.html:49
+msgid "لا طلبات أرسلتها بعد."
+msgstr ""
+
+#: app/templates/tutoring/my.html:51
+msgid "جلسات بصفتي معلم"
+msgstr ""
+
+#: app/templates/tutoring/my.html:61
+msgid "دفع:"
+msgstr ""
+
+#: app/templates/tutoring/my.html:68 app/templates/tutoring/my.html:86
+msgid "لا جلسات بعد."
+msgstr ""
+
+#: app/templates/tutoring/my.html:70
+msgid "جلسات بصفتي طالب"
+msgstr ""
+
+#: app/templates/tutoring/profile.html:11
+msgid "تعديل"
+msgstr ""
+
+#: app/templates/tutoring/profile.html:24
+msgid "رمز الدعوة المباشر"
+msgstr ""
+
+#: app/templates/tutoring/profile.html:36
+#, fuzzy
+msgid "سجّل الدخول للحجز"
+msgstr "Log in"
+
+#: app/templates/tutoring/profile_form.html:2
+#: app/templates/tutoring/profile_form.html:5
+msgid "ملفك الخصوصي"
+msgstr ""
+
+#: app/templates/tutoring/profile_form.html:5
+msgid "نشر ملفك كمعلم"
+msgstr ""
+
+#: app/templates/tutoring/session.html:2
+msgid "تفاصيل الجلسة"
+msgstr ""
+
+#: app/templates/tutoring/session.html:5
+msgid "جلسة درس خصوصي"
+msgstr ""
+
+#: app/templates/tutoring/session.html:12
+msgid "الموعد"
+msgstr ""
+
+#: app/templates/tutoring/session.html:18
+msgid "رابط الاجتماع:"
+msgstr ""
+
+#: app/templates/tutoring/session.html:19
+msgid "المكان:"
+msgstr ""
+
+#: app/templates/tutoring/session.html:22
+msgid "البث المباشر"
+msgstr ""
+
+#: app/templates/tutoring/session.html:24
+msgid "الجلسة direttaة حالياً"
+msgstr ""
+
+#: app/templates/tutoring/session.html:25
+msgid "عرض حالة الجلسة"
+msgstr ""
+
+#: app/templates/tutoring/session.html:26
+#: app/templates/tutoring/session.html:57
+#, fuzzy
+msgid "إنهاء الجلسة"
+msgstr "Create account"
+
+#: app/templates/tutoring/session.html:28
+msgid "بدء الجلسة المباشرة"
+msgstr ""
+
+#: app/templates/tutoring/session.html:29
+msgid "الحصول على رابط الجلسة"
+msgstr ""
+
+#: app/templates/tutoring/session.html:34
+msgid "تعديل الجلسة"
+msgstr ""
+
+#: app/templates/tutoring/session.html:49
+msgid "الإجراءات"
+msgstr ""
+
+#: app/templates/tutoring/session.html:54
+msgid "تأكيد استلام الدفع (يدوي)"
+msgstr ""
+
+#: app/templates/tutoring/session.html:58
+msgid "إلغاء"
+msgstr ""
+
+#~ msgid ""
+#~ "في وضع التطوير، تُدار إعادة التعيين "
+#~ "عبر رابط مؤمن. أرسلنا تفاصيل لاحقاً."
+#~ msgstr ""
+#~ "In dev mode, reset is handled via"
+#~ " a secure link. We'll send details"
+#~ " later."
+
+#~ msgid "أهلاً"
+#~ msgstr "Welcome"
+
+#~ msgid "الاختبارات المتاحة ونتائجك"
+#~ msgstr "Available exams and your results"
+

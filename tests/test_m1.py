@@ -8,7 +8,7 @@ from app.core.db import tx
 from app.core.security import hash_password, verify_password
 from app.core.tenancy import scope_by_school
 from app.extensions import db
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, UserApprovalStatus
 
 @pytest.fixture()
 def app():
@@ -33,7 +33,7 @@ def _register(client, email=None, role="student"):
     email = email or _new_email()
     r = client.post(
         "/auth/register",
-        data={"name_ar": "طالب تجربة", "email": email, "role": role, "password": "secret123", "confirm": "secret123"},
+        data={"name_ar": "طالب تجربة", "email": email, "role": role, "password": "Secret123!", "confirm": "Secret123!"},
         follow_redirects=True,
     )
     return r, email
@@ -46,46 +46,88 @@ def test_hash_and_verify_password():
     assert not verify_password(hashed, "wrong")
 
 
-def test_register_flow_and_confirm(app, client):
+def test_register_creates_pending_user(app, client):
+    """اختبار أن التسجيل ينشئ مستخدم بحالة pending."""
     r, email = _register(client)
     assert r.status_code == 200
     with app.app_context():
         user = User.query.filter_by(email=email).first()
         assert user is not None
-        assert not user.is_verified
+        assert user.approval_status == UserApprovalStatus.pending
+        assert user.is_verified == False  # لم يعد مطلوباً
         assert user.role == UserRole.student
-        uid = user.id
-    # تفعيل البريد عبر رابط مؤمن
-    with app.app_context():
-        from app.core import make_activation_token
-
-        token = make_activation_token(uid, email)
-    r = client.get(f"/auth/confirm/{token}", follow_redirects=True)
-    assert r.status_code == 200
-    with app.app_context():
-        assert db.session.get(User, uid).is_verified
 
 
-def test_login_without_verification_blocked(app, client):
+def test_login_pending_user_blocked(app, client):
+    """اختبار أن المستخدم بحالة pending لا يستطيع تسجيل الدخول."""
     _, email = _register(client)
     r = client.post(
         "/auth/login",
-        data={"email": email, "password": "secret123"},
+        data={"email": email, "password": "Secret123!"},
         follow_redirects=True,
     )
     body = r.get_data(as_text=True)
-    assert "فعّل بريدك الإلكتروني أولاً" in body
+    assert "في انتظار موافقة الإدارة" in body
 
 
-def test_full_login_dashboard(app, client):
+def test_admin_can_approve_user(app, client):
+    """اختبار أن السوبر أدمن يمكنه قبول المستخدم."""
     _, email = _register(client)
     with app.app_context():
         user = User.query.filter_by(email=email).first()
-        user.is_verified = True
+        assert user.approval_status == UserApprovalStatus.pending
+        
+        # محاكاة موافقة السوبر أدمن
+        user.approval_status = UserApprovalStatus.approved
         db.session.commit()
+        
+        # الآن المستخدم يستطيع تسجيل الدخول
+        user = User.query.filter_by(email=email).first()
+        assert user.approval_status == UserApprovalStatus.approved
+        assert user.is_approved == True
+
+
+def test_admin_can_reject_user(app, client):
+    """اختبار أن السوبر أدمن يمكنه رفض المستخدم."""
+    _, email = _register(client)
+    with app.app_context():
+        user = User.query.filter_by(email=email).first()
+        user.approval_status = UserApprovalStatus.rejected
+        db.session.commit()
+        
+        user = User.query.filter_by(email=email).first()
+        assert user.approval_status == UserApprovalStatus.rejected
+        assert user.is_approved == False
+
+
+def test_rejected_user_cannot_login(app, client):
+    """اختبار أن المستخدم المرفوض لا يستطيع تسجيل الدخول."""
+    _, email = _register(client)
+    with app.app_context():
+        user = User.query.filter_by(email=email).first()
+        user.approval_status = UserApprovalStatus.rejected
+        db.session.commit()
+    
     r = client.post(
         "/auth/login",
-        data={"email": email, "password": "secret123"},
+        data={"email": email, "password": "Secret123!"},
+        follow_redirects=True,
+    )
+    body = r.get_data(as_text=True)
+    assert "في انتظار موافقة الإدارة" in body or "مرفوض" in body
+
+
+def test_full_login_after_approval(app, client):
+    """اختبار تسجيل الدخول الكامل بعد الموافقة."""
+    _, email = _register(client)
+    with app.app_context():
+        user = User.query.filter_by(email=email).first()
+        user.approval_status = UserApprovalStatus.approved
+        db.session.commit()
+    
+    r = client.post(
+        "/auth/login",
+        data={"email": email, "password": "Secret123!"},
         follow_redirects=True,
     )
     assert r.status_code == 200
@@ -162,7 +204,7 @@ def test_tenancy_scope_filters_by_school(app):
         db.session.commit()
         rows = scope_by_school(Grade, s1.id).all()
         ids = {r.id for r in rows}
-        assert ids == {g1.id, g2.id}, "نطاق التينانتس لم يَعزل المدرسة الأولى"
+        assert ids == {g1.id, g2.id}, "نطاق التينانتس لم يعزل المدرسة الأولى"
         assert g3.id not in ids, "تسرّب من المدرسة الثانية!"
 
 
@@ -172,3 +214,43 @@ def test_tenancy_scope_rejects_model_without_school(app):
     with app.app_context():
         with pytest.raises(ValueError):
             scope_by_school(School, 1)
+
+
+def test_password_reset_flow(app, client):
+    from app.core import make_reset_token
+
+    _, email = _register(client)
+    with app.app_context():
+        user = User.query.filter_by(email=email).first()
+        assert user is not None
+        user.approval_status = UserApprovalStatus.approved
+        db.session.commit()
+        token = make_reset_token(user.id, email)
+    r = client.post(
+        f"/auth/reset/{token}",
+        data={"password": "NewPass123!", "confirm": "NewPass123!"},
+        follow_redirects=True,
+    )
+    assert "تم تحديث كلمة المرور" in r.get_data(as_text=True)
+    with app.app_context():
+        assert verify_password(db.session.get(User, user.id).password_hash, "NewPass123!")
+        assert not verify_password(db.session.get(User, user.id).password_hash, "Secret123!")
+
+
+def test_password_reset_bad_token_rejected(app, client):
+    _, email = _register(client)
+    r = client.post(
+        "/auth/reset/forged-token",
+        data={"password": "NewPass123!", "confirm": "NewPass123!"},
+        follow_redirects=True,
+    )
+    assert "غير صالح أو منتهي" in r.get_data(as_text=True)
+    with app.app_context():
+        user = User.query.filter_by(email=email).first()
+        assert verify_password(user.password_hash, "Secret123!")
+
+
+def test_forgot_route_prints_reset_link(app, client):
+    _, email = _register(client)
+    r = client.post("/auth/forgot", data={"email": email}, follow_redirects=True)
+    assert "إن كان البريد مسجلاً" in r.get_data(as_text=True)

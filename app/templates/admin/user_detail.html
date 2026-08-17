@@ -1,0 +1,86 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('تفاصيل المستخدم') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('تفاصيل المستخدم') }}</h1>
+  <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('رجوع') }}</a>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('معلومات الحساب') }}</h2>
+  </div>
+  <div class="azad-list">
+    <div class="azad-item">
+      <div class="item-title">{{ _('الاسم') }}</div>
+      <div>{{ user.name_ar }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('البريد الإلكتروني') }}</div>
+      <div>{{ user.email }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('الدور') }}</div>
+      <div><span class="meta-chip">{{ user.role.value }}</span></div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('الحالة') }}</div>
+      <div><span class="badge-status badge-{{ 'ok' if user.is_active else 'err' }}">{{ _('نشط') if user.is_active else _('معطل') }}</span></div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('تاريخ التسجيل') }}</div>
+      <div>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('آخر دخول') }}</div>
+      <div>{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') if user.last_login_at else _('لم يسجل دخول') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('عضويات المدارس') }}</h2>
+  </div>
+  {% if memberships %}
+  <div class="azad-list">
+    {% for m in memberships %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ m.school.display_name }}</div>
+        <div class="item-meta">
+          <span class="meta-chip">{{ m.role.value }}</span>
+          <span>{{ _('نشط') if m.is_active else _('معطل') }}</span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <a class="azad-btn-outline" href="{{ url_for('admin.school_detail', school_id=m.school_id) }}">{{ _('فتح المدرسة') }}</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">{{ _('هذا المستخدم غير مرتبط بأي مدرسة') }}</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('الإجراءات') }}</h2>
+  </div>
+  <div class="item-actions" style="gap: 0.75rem; flex-wrap: wrap;">
+    <form method="post" action="{{ url_for('admin.user_toggle', user_id=user.id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn-{{ 'outline' if user.is_active else 'btn' }}" type="submit">
+        {{ _('تعطيل') if user.is_active else _('تفعيل') }}
+      </button>
+    </form>
+    {% if user.role.value != 'super_admin' and user.id != current_user.id %}
+    <form method="post" action="{{ url_for('admin.user_impersonate', user_id=user.id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn" type="submit">{{ _('انتحال الصفة') }}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

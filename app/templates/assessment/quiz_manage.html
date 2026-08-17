@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} — {{ _('إدارة') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ quiz.title }}</h1>
+    <p class="page-subtitle">{{ class_room.subject.name_ar }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
+  </div>
+</div>
+
+{% if quiz.questions %}
+<div class="azad-list">
+  {% for q in quiz.questions %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ q.prompt }}</div>
+      <div class="item-meta">
+        <span class="meta-chip">{{ q.type }}</span>
+        <span>{{ _('درجة:') }} {{ q.mark or 0 }}</span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('assessment.question_delete', question_id=q.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit">{{ _('حذف') }}</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا أسئلة بعد — أضف أول سؤال.') }}</div>
+{% endif %}
+
+<div class="section-head"><h2>{{ _('إضافة سؤال') }}</h2></div>
+<div class="card">
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">{{ form.qtype.label }}{{ form.qtype() }}</div>
+    <div class="form-group">{{ form.prompt.label }}{{ form.prompt() }}</div>
+    <div class="form-group">{{ form.mark.label }}{{ form.mark() }}</div>
+
+    <div data-qtype="mcq">
+      {% for f in [form.option_a, form.option_b, form.option_c, form.option_d] %}
+        <div class="form-group">{{ f.label }}{{ f() }}{% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
+      {% endfor %}
+      <div class="form-group">{{ form.correct_index.label }}{{ form.correct_index() }}</div>
+    </div>
+    <div data-qtype="true_false" style="display:none">
+      <div class="form-group">{{ form.correct_tf.label }}{{ form.correct_tf() }}</div>
+    </div>
+
+    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+
+<!-- AI Question Generation Form -->
+<div class="card" style="margin-top:1.5rem;border:1px solid var(--azad-navy);border-radius:var(--radius);background:var(--azad-navy);color:#fff;padding:1rem">
+  <h3 style="margin:0 0 .5rem 0;color:#fff;font-size:1rem;">{{ _('توليد أسئلة بواسطة AI') }}</h3>
+  <form method="post" action="{{ url_for('assessment.ai_generate_questions') }}" class="ai-generate-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="topic" placeholder="{{ _('موضوع الأسئلة') }}" style="width:100%;padding:.5rem;font-size:.9rem;margin-bottom:.5rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+    <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+      <select name="count" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+        <option value="3">3 أسئلة</option>
+        <option value="5" selected>5 أسئلة</option>
+        <option value="10">10 أسئلة</option>
+      </select>
+      <select name="question_types" multiple="multiple" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+        <option value="mcq">MCQ</option>
+        <option value="true_false">True/False</option>
+        <option value="essay">Essay</option>
+      </select>
+    </div>
+    <select name="difficulty" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+      <option value="medium">متوسط</option>
+      <option value="easy"> facile</option>
+      <option value="hard">صعب</option>
+    </select>
+    <button class="azad-btn-outline" type="submit">{{ _('توليد') }}</button>
+    <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var sel = document.querySelector('[name="qtype"]');
+  function toggle() {
+    document.querySelectorAll('[data-qtype]').forEach(function (el) {
+      el.style.display = el.dataset.qtype === sel.value ? '' : 'none';
+    });
+  }
+  if (sel) { sel.addEventListener('change', toggle); toggle(); }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Handle AI form submission
+  var aiForm = document.querySelector('.ai-generate-form');
+  if (aiForm) {
+    aiForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var formData = new FormData(aiForm);
+      fetch('{{ url_for("assessment.ai_generate_questions") }}', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Display generated questions
+        var container = document.createElement('div');
+        container.className = "azad-list";
+        data.questions.forEach(function (q) {
+          var item = document.createElement('div');
+          item.className = "azad-item";
+          item.innerHTML = `<div><div class="item-title">${q.prompt}</div>`;
+          if (q.type === "mcq") {
+            item.innerHTML += `<div class="item-meta">MCQ - ${q.mark} علامات</div>`;
+          } else if (q.type === "true_false") {
+            item.innerHTML += `<div class="item-meta">True/False - ${q.mark} علامات</div>`;
+          } else {
+            item.innerHTML += `<div class="item-meta">Essay - ${q.mark} علامات</div>`;
+          }
+          container.appendChild(item);
+        });
+        // Insert before the existing question list or form
+        var target = document.querySelector('.azad-list');
+        if (target) {
+          target.parentNode.insertBefore(container, target.nextSibling);
+        } else {
+          // Append after the AI form header
+          var formSection = aiForm.parentNode;
+          formSection.insertBefore(container, aiForm.querySelector('button[type="submit"]'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ في توليد الأسئلة');
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

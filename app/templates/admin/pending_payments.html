@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('مدفوعات معلقة') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('المدفوعات المعلقة') }}</h1>
+</div>
+
+{% if payments %}
+<div class="azad-list">
+  {% for p in payments %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ p.subscription.user.name_ar }} — {{ p.subscription.plan.name if p.subscription.plan else _('خطة') }}</div>
+      <div class="item-meta">
+        <span>{{ _('المدرسة:') }} {{ p.subscription.class_room.school.display_name if p.subscription.class_room and p.subscription.class_room.school else _('—') }}</span>
+        <span>{{ _('المبلغ:') }} {{ p.amount }} {{ p.subscription.currency }}</span>
+        <span>{{ _('المرجع:') }} {{ p.reference or _('—') }}</span>
+        <span>{{ _('التاريخ:') }} {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      </div>
+      {% if p.note %}
+      <p style="font-size:.85rem;color:var(--muted);margin-top:.4rem">{{ p.note }}</p>
+      {% endif %}
+      {% if p.receipts %}
+      <div style="margin-top:.5rem">
+        {% for r in p.receipts %}
+        <a href="{{ url_for('billing.payment_file', filename=r.stored_name) }}" target="_blank" class="azad-btn-outline" style="font-size:.8rem;padding:.25rem .5rem">{{ r.original_name or _('إيصال') }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('admin.payment_approve', payment_id=p.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من اعتماد هذا الدفع؟') }}')">{{ _('اعتماد') }}</button>
+      </form>
+      <form method="post" action="{{ url_for('admin.payment_reject', payment_id=p.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من رفض هذا الدفع؟') }}')">{{ _('رفض') }}</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا توجد مدفوعات معلقة') }}</div>
+{% endif %}
+{% endblock %}

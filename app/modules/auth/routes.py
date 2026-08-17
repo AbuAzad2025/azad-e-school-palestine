@@ -1,21 +1,14 @@
-"""مسارات المصادقة: تسجيل، دخول، خروج، تفعيل بريد، إعادة تعيين كلمة مرور"""
+"""مسارات المصادقة: تسجيل، دخول، خروج، إعادة تعيين كلمة مرور"""
 
-from app.core.tokens import make_activation_token, read_token
-from app.models.user import User
-from app.services.auth import authenticate, mark_login, register_user
-from app.services.auth import confirm_email as confirm_user_email
-from flask import current_app, flash, redirect, render_template, request, url_for
+from app.services.auth import authenticate, mark_login, register_user, request_password_reset
+from app.services.auth import reset_password as reset_user_password
+from flask import current_app, flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy import func
 
 from . import bp
 from .forms import ForgotPasswordForm, LoginForm, RegisterForm, ResetPasswordForm
-
-
-def _dev_activation_link(user):
-    """بدون خادم بريد فعلي (M1): يعيد رابط التفعيل للفحص في الطرفية."""
-    token = make_activation_token(user.id, user.email)
-    return url_for("auth.confirm_email", token=token, _external=True)
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -33,9 +26,7 @@ def register():
         if error:
             flash(_(error), "danger")
             return render_template("auth/register.html", form=form)
-        if request.host.startswith("127.0.0.1") or request.host.startswith("localhost"):
-            current_app.logger.warning("[DEV] تفعيل الحساب: %s", _dev_activation_link(user))
-        flash(_("تم إنشاء الحساب. فعّل بريدك الإلكتروني عبر الرابط (يُطبع في الطرفية بوضع التطوير)."), "success")
+        flash(_("تم إنشاء الحساب بنجاح. حسابك في انتظار موافقة الإدارة. سيتم إشعارك عند القبول."), "success")
         return redirect(url_for("auth.login"))
     return render_template("auth/register.html", form=form)
 
@@ -59,18 +50,11 @@ def login():
 @bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    from app.services.impersonation import clear_impersonation
+
+    clear_impersonation()
     logout_user()
     flash(_("تم تسجيل الخروج."), "info")
-    return redirect(url_for("auth.login"))
-
-
-@bp.route("/confirm/<token>")
-def confirm_email(token):
-    uid, email = read_token(token)
-    if uid and email and confirm_user_email(uid, email):
-        flash(_("تم تفعيل بريدك الإلكتروني. سجّل الدخول الآن."), "success")
-    else:
-        flash(_("رابط التفعيل غير صالح أو منتهي."), "danger")
     return redirect(url_for("auth.login"))
 
 
@@ -79,24 +63,98 @@ def forgot_password():
     form = ForgotPasswordForm()
     if form.validate_on_submit():
         email = form.email.data.strip().lower()
-        user = User.query.filter_by(email=email).first()
-        if user:
-            current_app.logger.warning("[DEV] إعادة تعيين كلمة المرور لـ %s", email)
+        token = request_password_reset(email)
+        if token:
+            reset_link = url_for("auth.reset_password", token=token, _external=True)
+            current_app.logger.warning("[DEV] رابط إعادة التعيين: %s", reset_link)
         flash(_("إن كان البريد مسجلاً، ستصل رسالة إعادة التعيين."), "info")
         return redirect(url_for("auth.login"))
     return render_template("auth/forgot.html", form=form)
 
 
-@bp.route("/reset", methods=["GET", "POST"])
-def reset_password():
+@bp.route("/reset/<token>", methods=["GET", "POST"])
+def reset_password(token):
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        flash(_("في وضع التطوير، تُدار إعادة التعيين عبر رابط مؤمن. أرسلنا تفاصيل لاحقاً."), "info")
+        error = reset_user_password(token, form.password.data)
+        if error:
+            flash(_(error), "danger")
+            return redirect(url_for("auth.forgot_password"))
+        flash(_("تم تحديث كلمة المرور. سجّل الدخول الآن."), "success")
         return redirect(url_for("auth.login"))
-    return render_template("auth/reset.html", form=form)
+    return render_template("auth/reset.html", form=form, token=token)
 
 
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("auth/dashboard.html")
+    from app.extensions import db
+    from app.models.billing import Subscription
+    from app.models.class_room import ClassMember, ClassRoom
+    from app.models.school import School
+    from app.models.user import User, UserRole
+
+    # Common data
+    memberships = ClassMember.query.filter_by(user_id=current_user.id, status="active").all()
+
+    # Role-specific data
+    school_count = 0
+    user_count = 0
+    class_count = 0
+    subscription_count = 0
+    my_school_class_count = 0
+    my_school_student_count = 0
+    my_school_teacher_count = 0
+    my_school_subscription_count = 0
+
+    if current_user.role == UserRole.super_admin:
+        school_count = School.query.count()
+        user_count = User.query.count()
+        class_count = ClassRoom.query.count()
+        subscription_count = Subscription.query.filter_by(status="active").count()
+
+    elif current_user.role == UserRole.school_admin:
+        from app.core.tenancy import current_school_id
+
+        school_id = current_school_id()
+        if school_id:
+            from app.models.user import UserRole, UserRoleLink
+
+            my_school_class_count = ClassRoom.query.filter_by(school_id=school_id, deleted_at=None).count()
+            my_school_student_count = (
+                db.session.query(func.count(User.id))
+                .join(ClassMember, User.id == ClassMember.user_id)
+                .join(ClassRoom, ClassMember.class_id == ClassRoom.id)
+                .filter(ClassRoom.school_id == school_id, ClassMember.status == "active", User.role == UserRole.student)
+                .scalar()
+                or 0
+            )
+            my_school_teacher_count = (
+                User.query.join(UserRoleLink, User.id == UserRoleLink.user_id)
+                .filter(
+                    UserRoleLink.school_id == current_school_id(), UserRoleLink.is_active, User.role == UserRole.teacher
+                )
+                .count()
+            )
+            my_school_subscription_count = Subscription.query.filter_by(
+                school_id=current_school_id(), status="active"
+            ).count()
+
+    return render_template(
+        "auth/dashboard.html",
+        school_count=school_count,
+        user_count=user_count,
+        class_count=class_count,
+        subscription_count=subscription_count,
+        memberships=memberships,
+        my_classes=(
+            ClassRoom.query.filter_by(teacher_id=current_user.id, deleted_at=None).all()
+            if current_user.role == UserRole.teacher
+            else []
+        ),
+        my_school_class_count=my_school_class_count,
+        my_school_student_count=my_school_student_count,
+        my_school_teacher_count=my_school_teacher_count,
+        my_school_subscription_count=my_school_subscription_count,
+        children_memberships={},
+    )

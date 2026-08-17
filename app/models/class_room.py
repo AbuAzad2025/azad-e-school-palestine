@@ -1,10 +1,14 @@
 """الصفوف الدراسية والعضوية — قلب المنصة"""
 
+from __future__ import annotations
+
 from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+from app.models.school import Grade, Subject
+from app.models.user import User
 
 from .mixins import PKMixin, SoftDeleteMixin
 
@@ -28,7 +32,10 @@ class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
     price_annual: Mapped[float | None] = mapped_column(Numeric(10, 2))
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
 
-    members: Mapped[list["ClassMember"]] = relationship(back_populates="class_room", cascade="all, delete-orphan")
+    members: Mapped[list[ClassMember]] = relationship(back_populates="class_room", cascade="all, delete-orphan")
+    subject: Mapped[Subject] = relationship("Subject")
+    grade: Mapped[Grade] = relationship("Grade")
+    teacher: Mapped[User] = relationship("User")
 
 
 class ClassMember(PKMixin, db.Model):
@@ -41,3 +48,4 @@ class ClassMember(PKMixin, db.Model):
     joined_at = db.Column(db.DateTime(timezone=True))
 
     class_room: Mapped[ClassRoom] = relationship(back_populates="members")
+    user: Mapped[User] = relationship("User")

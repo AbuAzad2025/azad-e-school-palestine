@@ -1,0 +1,88 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('التسجيلات المعلقة') }} — {{ _('لوحة التحكم') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('التسجيلات المعلقة موافقة') }}</h1>
+  <div>
+    <form method="get" style="display:inline-flex; gap:.5rem;">
+      <input type="search" name="search" value="{{ search or '' }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" style="width:240px;">
+      <button type="submit" class="azad-btn-outline">{{ icon('search') }} {{ _('بحث') }}</button>
+    </form>
+  </div>
+</div>
+
+{% if pagination.items %}
+<div class="table-scroll">
+  <table class="azad-table">
+    <thead>
+      <tr>
+        <th>{{ _('المستخدم') }}</th>
+        <th>{{ _('البريد الإلكتروني') }}</th>
+        <th>{{ _('الدور') }}</th>
+        <th>{{ _('تاريخ التسجيل') }}</th>
+        <th>{{ _('الحالة') }}</th>
+        <th>{{ _('الإجراءات') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in pagination.items %}
+      <tr>
+        <td>
+          <div style="font-weight:600;">{{ user.name_ar or user.email }}</div>
+          <div class="meta-chip">{{ user.role.value }}</div>
+        </td>
+        <td>{{ user.email }}</td>
+        <td><span class="meta-chip">{{ user.role.value }}</span></td>
+        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '—' }}</td>
+        <td>
+          <span class="badge-status badge-warn">{{ _('بانتظار الموافقة') }}</span>
+        </td>
+        <td>
+          <div class="item-actions">
+            <form method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" style="display:inline" onsubmit="return confirm('{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="azad-btn-outline azad-btn-success">{{ icon('check') }} {{ _('قبول') }}</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" style="display:inline" onsubmit="return confirm('{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="azad-btn-outline azad-btn-danger">{{ icon('x') }} {{ _('رفض') }}</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="pagination-wrapper" style="margin-top:1.5rem;">
+  {% if pagination.pages > 1 %}
+  <nav class="pagination" aria-label="تنقل الصفحات">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.pending_registrations', page=pagination.prev_num, search=search) }}">{{ icon('chevron-right') }} {{ _('السابق') }}</a>
+    {% else %}
+      <span class="ellipsis">{{ icon('chevron-right') }} {{ _('السابق') }}</span>
+    {% endif %}
+    {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+      {% if p %}
+        {% if p == pagination.page %}
+          <span class="current">{{ p }}</span>
+        {% else %}
+          <a href="{{ url_for('admin.pending_registrations', page=p, search=search) }}">{{ p }}</a>
+        {% endif %}
+      {% else %}
+        <span class="ellipsis">…</span>
+      {% endfor %}
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin.pending_registrations', page=pagination.next_num, search=search) }}">{{ _('التالي') }} {{ icon('chevron-left') }}</a>
+    {% else %}
+      <span class="ellipsis">{{ _('التالي') }} {{ icon('chevron-left') }}</span>
+    {% endif %}
+  </nav>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="empty-state">{{ _('لا توجد تسجيلات معلقة حالياً.') }}</div>
+{% endif %}
+{% endblock %}

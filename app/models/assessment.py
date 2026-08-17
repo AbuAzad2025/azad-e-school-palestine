@@ -1,5 +1,7 @@
 """التقييم: اختبارات، أسئلة، محاولات، إجابات"""
 
+from __future__ import annotations
+
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -7,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.extensions import db
 
 from .mixins import PKMixin
+from .user import User
 
 
 class Quiz(PKMixin, db.Model):
@@ -24,7 +27,7 @@ class Quiz(PKMixin, db.Model):
     status: Mapped[str] = mapped_column(String(10), default="draft", nullable=False)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
 
-    questions: Mapped[list["Question"]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
+    questions: Mapped[list[Question]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
 
 
 class Question(PKMixin, db.Model):
@@ -53,7 +56,9 @@ class QuizAttempt(PKMixin, db.Model):
     score: Mapped[float | None] = mapped_column(Numeric(6, 2))
     status: Mapped[str] = mapped_column(String(12), default="in_progress", nullable=False)
 
-    answers: Mapped[list["Answer"]] = relationship(back_populates="attempt", cascade="all, delete-orphan")
+    answers: Mapped[list[Answer]] = relationship(back_populates="attempt", cascade="all, delete-orphan")
+    student: Mapped[User] = relationship("User")
+    quiz: Mapped[Quiz] = relationship("Quiz")
 
 
 class Answer(PKMixin, db.Model):

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الاشتراك') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('الاشتراك والدفع') }}</h1>
+    <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+  </div>
+  {% if can_teach %}
+    <a class="azad-btn-outline" href="{{ url_for('billing.admin') }}">{{ _('الاعتمادات المعلّقة') }}</a>
+  {% endif %}
+</div>
+
+{% if my_sub %}
+<div class="card" style="margin-bottom:1rem">
+  <h2 style="font-size:1rem">{{ _('اشتراكك الحالي') }}</h2>
+  <div class="item-meta" style="margin-top:.5rem">
+    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else 'err') }}">{{ my_sub.status }}</span>
+    <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
+    <span>{{ _('المبلغ:') }} {{ my_sub.price }} {{ my_sub.currency }}</span>
+    {% if my_sub.end_at %}<span>{{ _('ينتهي:') }} {{ my_sub.end_at.strftime('%Y-%m-%d') }}</span>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="section-head"><h2>{{ _('الخطط المتاحة') }}</h2></div>
+{% if plans %}
+<div class="azad-list">
+  {% for p in plans %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ p.name }} <span class="meta-chip">{{ p.plan }}</span></div>
+      <div class="item-meta"><span>{{ p.price }} {{ p.currency }}</span></div>
+    </div>
+    {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') %}
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('billing.subscribe_route', class_id=class_room.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_id" value="{{ p.id }}">
+        <button class="azad-btn" type="submit">{{ _('اشترك') }}</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا خطط بعد.') }}{% if can_teach %} {{ _('أضف خطة أدناه.') }}{% endif %}</div>
+{% endif %}
+
+{% if can_teach %}
+<div class="section-head"><h2>{{ _('خطة جديدة') }}</h2></div>
+<div class="card" style="margin-bottom:1rem">
+  <form method="post" action="{{ url_for('billing.plan_create', class_id=class_room.id) }}" novalidate>
+    {{ plan_form.hidden_tag() }}
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <div style="flex:2;min-width:160px"><div class="form-group" style="margin:0">{{ plan_form.name.label }}{{ plan_form.name() }}</div></div>
+      <div style="flex:1;min-width:130px"><div class="form-group" style="margin:0">{{ plan_form.plan.label }}{{ plan_form.plan() }}</div></div>
+      <div style="flex:1;min-width:100px"><div class="form-group" style="margin:0">{{ plan_form.price.label }}{{ plan_form.price() }}</div></div>
+      <div style="flex:1;min-width:110px"><div class="form-group" style="margin:0">{{ plan_form.duration_days.label }}{{ plan_form.duration_days() }}</div></div>
+      <div style="align-self:end">{{ plan_form.submit(class="azad-btn-outline") }}</div>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% if current_user.role == 'student' and my_sub and my_sub.status == 'pending' %}
+<div class="section-head"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
+<div class="card">
+  <p class="form-hint" style="margin-bottom:.75rem">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>
+  <form method="post" action="{{ url_for('billing.payment_create', subscription_id=my_sub.id) }}" enctype="multipart/form-data" novalidate>
+    {{ pay_form.hidden_tag() }}
+    <div class="form-group">{{ pay_form.reference.label }}{{ pay_form.reference() }}{% for e in pay_form.reference.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
+    <div class="form-group">{{ pay_form.amount.label }}{{ pay_form.amount(value=my_sub.price) }}</div>
+    <div class="form-group">{{ pay_form.receipt.label }}{{ pay_form.receipt() }}</div>
+    <div class="form-group">{{ pay_form.note.label }}{{ pay_form.note() }}</div>
+    <div class="form-actions">{{ pay_form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

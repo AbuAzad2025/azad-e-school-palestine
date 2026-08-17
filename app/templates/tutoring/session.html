@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ _('تفاصيل الجلسة') }} — {{ _('دروس خصوصية') }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:720px;margin:2rem auto">
+  <h1 class="page-title azad-title">{{ _('جلسة درس خصوصي') }}</h1>
+  <p class="page-subtitle">
+    {{ session_.subject }}
+    {% if is_tutor %}{{ session_.student.name_ar }}{% else %}{{ session_.tutor.name_ar }}{% endif %}
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat-card"><strong>{{ session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—' }}</strong><small>{{ _('الموعد') }}</small></div>
+    <div class="stat-card"><strong>{{ session_.mode }}</strong><small>{{ _('الطريقة') }}</small></div>
+    <div class="stat-card"><strong>{{ session_.price or '—' }}</strong><small>{{ _('السعر') }}</small></div>
+    <div class="stat-card"><strong><span class="badge-status badge-{{ 'ok' if session_.status == 'completed' else 'warn' }}">{{ session_.status }}</span></strong><small>{{ _('الحالة') }}</small></div>
+  </div>
+
+  {% if session_.online_link %}<p>{{ _('رابط الاجتماع:') }} <a href="{{ session_.online_link }}" dir="ltr">{{ session_.online_link }}</a></p>{% endif %}
+  {% if session_.location %}<p>{{ _('المكان:') }} {{ session_.location }}</p>{% endif %}
+
+  {% if is_tutor %}
+    <div class="section-head"><h2>{{ _('البث المباشر') }}</h2></div>
+    {% if session_.status == 'active' %}
+    <p>{{ _('الجلسة direttaة حالياً') }}</p>
+    <a class="azad-btn" href="{{ url_for('tutoring.live_session_status', session_id=session_.id) }}" target="_blank">{{ _('عرض حالة الجلسة') }}</a>
+    <a class="azad-btn-outline" href="{{ url_for('tutoring.end_live_session', session_id=session_.id) }}">{{ _('إنهاء الجلسة') }}</a>
+    {% else %}
+    <a class="azad-btn" href="{{ url_for('tutoring.start_live_session', session_id=session_.id) }}">{{ _('بدء الجلسة المباشرة') }}</a>
+    <a class="azad-btn-outline" href="{{ url_for('tutoring.live_session_url', session_id=session_.id) }}" target="_blank">{{ _('الحصول على رابط الجلسة') }}</a>
+    {% endif %}
+  {% endif %}
+
+  {% if is_tutor %}
+    <div class="section-head"><h2>{{ _('تعديل الجلسة') }}</h2></div>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      {% for f in form %}
+        {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
+          <div class="form-group">
+            {{ f.label }}
+            {{ f() }}
+            {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+      <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+    </form>
+
+    <div class="section-head"><h2>{{ _('الإجراءات') }}</h2></div>
+    <div class="item-actions">
+      {% if session_.payment_status != 'approved' %}
+      <form method="post" action="{{ url_for('tutoring.session_pay', session_id=session_.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn" type="submit">{{ _('تأكيد استلام الدفع (يدوي)') }}</button>
+      </form>
+      {% endif %}
+      <a class="azad-btn-outline" href="{{ url_for('tutoring.session_status', session_id=session_.id, value='completed') }}">{{ _('إنهاء الجلسة') }}</a>
+      <a class="azad-btn-outline" href="{{ url_for('tutoring.session_status', session_id=session_.id, value='cancelled') }}">{{ _('إلغاء') }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

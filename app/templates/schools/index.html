@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ _('المدارس') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <h1 class="page-title azad-title" style="margin:0">{{ _('المدارس') }}</h1>
+  <a class="azad-btn" href="{{ url_for('schools.create') }}">+ {{ _('مدرسة جديدة') }}</a>
+</div>
+{% if schools %}
+<div class="azad-list">
+  {% for s in schools %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ s.display_name }}</div>
+      <div class="item-meta">
+        <span>{% if s.domain %}{{ s.domain }}{% else %}{{ _('بلا نطاق') }}{% endif %}</span>
+        <span>{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('schools.manage', school_id=s.id) }}">{{ _('إدارة') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا توجد مدارس بعد.') }} <a href="{{ url_for('schools.create') }}">{{ _('أنشئ المدرسة الأولى') }}</a></div>
+{% endif %}
+{% endblock %}

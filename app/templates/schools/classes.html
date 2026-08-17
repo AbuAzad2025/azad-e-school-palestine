@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الصفوف') }} — {{ school.display_name }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ school.display_name }}</h1>
+<p class="page-subtitle">{{ _('الصفوف') }} {% if school.domain %}<span class="meta-chip">{{ school.domain }}</span>{% endif %}</p>
+
+<div class="section-head">
+  <h2>{{ _('الصفوف') }}</h2>
+  <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">+ {{ _('صف جديد') }}</a>
+</div>
+{% if classes %}
+<div class="azad-list">
+  {% for c in classes %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ c.name or c.subject.name_ar }}</div>
+      <div class="item-meta">
+        <span>{{ c.subject.name_ar }}</span>
+        <span>{{ _('الصف') }} {{ c.grade_id }}</span>
+        <span>{{ _('رمز:') }} <code>{{ c.join_code }}</code></span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=c.id) }}">{{ _('فتح') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا صفوف بعد في هذه المدرسة.') }} <a href="{{ url_for('schools.class_new', school_id=school.id) }}">{{ _('أنشئ أول صف') }}</a></div>
+{% endif %}
+{% endblock %}

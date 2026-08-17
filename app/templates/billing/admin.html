@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الاعتمادات المعلّقة') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('الاعتمادات المعلّقة') }}</h1>
+{% if payments %}
+<div class="azad-list">
+  {% for p in payments %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ p.subscription.user.name_ar }} — {{ p.reference }}</div>
+      <div class="item-meta">
+        <span>{{ p.amount }} {{ p.subscription.currency }}</span>
+        <span>{{ _('الخطة:') }} {{ p.subscription.plan.name }}</span>
+        {% if p.note %}<span>{{ p.note }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('billing.review', payment_id=p.id, result='approve') }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn" type="submit">{{ _('اعتماد') }}</button>
+      </form>
+      <form method="post" action="{{ url_for('billing.review', payment_id=p.id, result='reject') }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit">{{ _('رفض') }}</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا دفعات معلّقة.') }}</div>
+{% endif %}
+{% endblock %}

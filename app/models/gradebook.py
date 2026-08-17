@@ -1,11 +1,14 @@
 """الواجبات والتسليمات والدرجات ودفتر الدرجات"""
 
+from __future__ import annotations
+
 from sqlalchemy import ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
 
 from .mixins import PKMixin
+from .user import User
 
 
 class Assignment(PKMixin, db.Model):
@@ -18,7 +21,7 @@ class Assignment(PKMixin, db.Model):
     max_mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
 
-    submissions: Mapped[list["Submission"]] = relationship(back_populates="assignment", cascade="all, delete-orphan")
+    submissions: Mapped[list[Submission]] = relationship(back_populates="assignment", cascade="all, delete-orphan")
 
 
 class Submission(PKMixin, db.Model):
@@ -36,6 +39,7 @@ class Submission(PKMixin, db.Model):
     graded_at = db.Column(db.DateTime(timezone=True))
 
     assignment: Mapped[Assignment] = relationship(back_populates="submissions")
+    student: Mapped[User] = relationship("User", foreign_keys=[student_id])
 
 
 class GradeCategory(PKMixin, db.Model):
@@ -48,7 +52,7 @@ class GradeCategory(PKMixin, db.Model):
     name: Mapped[str] = mapped_column(Text, nullable=False)
     weight: Mapped[float | None] = mapped_column(Numeric(3, 2))  # نسبي
 
-    items: Mapped[list["GradeItem"]] = relationship(back_populates="category", cascade="all, delete-orphan")
+    items: Mapped[list[GradeItem]] = relationship(back_populates="category", cascade="all, delete-orphan")
 
 
 class GradeItem(PKMixin, db.Model):
@@ -64,7 +68,7 @@ class GradeItem(PKMixin, db.Model):
     kind: Mapped[str] = mapped_column(String(15), default="exam", nullable=False)  # quiz/assignment/exam/project
 
     category: Mapped[GradeCategory] = relationship(back_populates="items")
-    entries: Mapped[list["GradeEntry"]] = relationship(back_populates="item", cascade="all, delete-orphan")
+    entries: Mapped[list[GradeEntry]] = relationship(back_populates="item", cascade="all, delete-orphan")
 
 
 class GradeEntry(PKMixin, db.Model):

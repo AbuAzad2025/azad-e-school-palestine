@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ _('صفوفي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <h1 class="page-title azad-title" style="margin:0">{{ _('صفوفي') }}</h1>
+  <a class="azad-btn" href="{{ url_for('schools.class_join') }}">+ {{ _('انضمام برمز') }}</a>
+</div>
+{% if memberships %}
+<div class="azad-list">
+  {% for m in memberships %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ m.class_room.name or m.class_room.subject.name_ar }}</div>
+      <div class="item-meta">
+        <span>{{ m.class_room.subject.name_ar }}</span>
+        <span>{{ _('الصف') }} {{ m.class_room.grade.grade_level }}</span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=m.class_room.id) }}">{{ _('فتح') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لم تنضم لأي صف بعد.') }} <a href="{{ url_for('schools.class_join') }}">{{ _('انضم برمز') }}</a></div>
+{% endif %}
+{% endblock %}

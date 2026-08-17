@@ -5,6 +5,7 @@
 2. rollback كامل عند أي خطأ (لا حالة نصف مكتوبة).
 3. تسجيل الخطأ في سجل التطبيق.
 """
+
 from collections.abc import Callable
 from typing import Any, TypeVar
 

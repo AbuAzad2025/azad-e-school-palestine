@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ tutor.name_ar }} — {{ _('دروس خصوصية') }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:720px;margin:2rem auto">
+  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:space-between">
+    <div>
+      <h1 class="page-title azad-title" style="margin:0">{{ tutor.name_ar }}</h1>
+      <p class="page-subtitle">{{ _('معلم خصوصي') }} — {{ prof.subject }}</p>
+    </div>
+    {% if current_user.is_authenticated and current_user.id == tutor.id %}
+      <a class="azad-btn-outline" href="{{ url_for('tutoring.profile_edit') }}">{{ _('تعديل') }}</a>
+    {% endif %}
+  </div>
+
+  <div class="stat-grid">
+    {% if prof.price_hour %}<div class="stat-card"><strong>{{ prof.price_hour }}</strong><small>{{ _('سعر الساعة') }}</small></div>{% endif %}
+    {% if prof.price_session %}<div class="stat-card"><strong>{{ prof.price_session }}</strong><small>{{ _('سعر الجلسة') }}</small></div>{% endif %}
+    <div class="stat-card"><strong>{{ prof.mode }}</strong><small>{{ _('الطريقة') }}</small></div>
+  </div>
+
+  {% if prof.bio %}<p>{{ prof.bio }}</p>{% endif %}
+
+  <div class="form-group">
+    <label>{{ _('رمز الدعوة المباشر') }}</label>
+    <code style="display:block;background:var(--azad-slate);padding:.6rem .8rem;border-radius:8px" dir="ltr">
+      {{ url_for('tutoring.invite', code=prof.invite_code, _external=True) }}
+    </code>
+  </div>
+
+  {% if current_user.is_authenticated and current_user.id != tutor.id %}
+    <div class="form-actions">
+      <a class="azad-btn" href="{{ url_for('tutoring.book', tutor_id=tutor.id) }}">{{ _('احجز درساً') }}</a>
+    </div>
+  {% elif not current_user.is_authenticated %}
+    <div class="form-actions">
+      <a class="azad-btn" href="{{ url_for('auth.login') }}">{{ _('سجّل الدخول للحجز') }}</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

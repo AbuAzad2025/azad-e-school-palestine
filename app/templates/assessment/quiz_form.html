@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ _('اختبار جديد') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:640px;margin:2rem auto">
+  <h1 class="page-title azad-title" style="margin-top:0">{{ _('اختبار جديد') }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for f in form %}
+      {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
+        <div class="form-group">
+          {{ f.label }}
+          {{ f() }}
+          {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+{% endblock %}

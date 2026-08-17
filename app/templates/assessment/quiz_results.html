@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} — {{ _('النتائج') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ quiz.title }} — {{ _('النتائج') }}</h1>
+<p class="page-subtitle">{{ class_room.subject.name_ar }}</p>
+
+{% if pending %}
+<div class="section-head"><h2>{{ _('بانتظار التصحيح اليدوي') }}</h2></div>
+<div class="azad-list">
+  {% for a in pending %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ a.student.name_ar }}</div>
+      <div class="item-meta"><span>{{ _('محاولة') }} {{ a.attempt_no }}</span></div>
+    </div>
+    <div class="item-actions"><a class="azad-btn-outline" href="{{ url_for('assessment.attempt_result', attempt_id=a.id) }}">{{ _('تصحيح') }}</a></div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="section-head"><h2>{{ _('كل المحاولات') }}</h2></div>
+{% if attempts %}
+<table class="azad-table">
+  <thead><tr><th>{{ _('الطالب') }}</th><th>{{ _('محاولة') }}</th><th>{{ _('الدرجة') }}</th><th>{{ _('الحالة') }}</th><th></th></tr></thead>
+  <tbody>
+  {% for a in attempts %}
+    <tr>
+      <td>{{ a.student.name_ar }}</td>
+      <td>{{ a.attempt_no }}</td>
+      <td>{{ a.score or '—' }}</td>
+      <td><span class="badge-status badge-{{ 'ok' if a.status == 'submitted' else 'warn' }}">{{ a.status }}</span></td>
+      <td><a class="azad-btn-outline" href="{{ url_for('assessment.attempt_result', attempt_id=a.id) }}">{{ _('عرض') }}</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">{{ _('لا محاولات بعد.') }}</div>
+{% endif %}
+{% endblock %}

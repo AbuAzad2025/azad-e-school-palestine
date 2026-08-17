@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الحضور') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('الحضور') }}</h1>
+    <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+  </div>
+</div>
+
+<form method="get" class="card" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+  <input type="date" name="date" value="{{ day.isoformat() }}" style="flex:1;min-width:160px">
+  <button class="azad-btn-outline" type="submit">{{ _('عرض') }}</button>
+</form>
+
+{% if days %}
+<div class="item-meta" style="gap:.5rem;margin-bottom:1rem">
+  {% for d in days %}
+    <a class="meta-chip" href="{{ url_for('grades.attendance', class_id=class_room.id, date=d.isoformat()) }}">{{ d.isoformat() }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('grades.attendance_save', class_id=class_room.id, date=day.isoformat()) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <table class="azad-table">
+    <thead><tr><th>{{ _('الطالب') }}</th><th>{{ _('الحالة') }}</th></tr></thead>
+    <tbody>
+    {% for m in members %}
+      {% set rec = records.get(m.user_id) %}
+      <tr>
+        <td>{{ m.user.name_ar }}</td>
+        <td>
+          {% if can_teach %}
+          <select name="status_{{ m.user_id }}">
+            {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
+              <option value="{{ value }}" {% if rec and rec.status == value %}selected{% endif %}>{{ _(label) }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+            <span class="badge-status badge-{{ 'ok' if rec and rec.status == 'present' else 'warn' }}">{{ rec.status if rec else '—' }}</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if can_teach and members %}
+    <div class="form-actions" style="flex-direction:row"><button class="azad-btn" type="submit">{{ _('حفظ الحضور') }}</button></div>
+  {% endif %}
+</form>
+{% endblock %}

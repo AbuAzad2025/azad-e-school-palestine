@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الواجبات') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('الواجبات') }}</h1>
+    <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+  </div>
+</div>
+
+{% if can_teach %}
+<div class="card" style="margin-bottom:1rem">
+  <form method="post" action="{{ url_for('grades.assignment_create', class_id=class_room.id) }}" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">{{ form.title.label }}{{ form.title() }}{% for e in form.title.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
+    <div class="form-group">{{ form.body.label }}{{ form.body() }}</div>
+    <div class="form-group">{{ form.max_mark.label }}{{ form.max_mark() }}</div>
+    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+{% endif %}
+
+{% if assignments %}
+<div class="azad-list">
+  {% for a in assignments %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ a.title }}</div>
+      <div class="item-meta">
+        <span>{{ _('الدرجة القصوى:') }} {{ a.max_mark or '—' }}</span>
+        {% if a.due_at %}<span>{{ _('الموعد:') }} {{ a.due_at.strftime('%Y-%m-%d %H:%M') }}</span>{% endif %}
+        {% if current_user.role == 'student' %}
+          {% if a.id in subs %}<span class="badge-status badge-ok">{{ _('سُلّم') }}</span>{% else %}<span class="badge-status badge-warn">{{ _('لم تُسلَّم') }}</span>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('grades.assignment_detail', class_id=class_room.id, assignment_id=a.id) }}">{{ _('فتح') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا واجبات بعد.') }}</div>
+{% endif %}
+{% endblock %}

@@ -1,60 +1,109 @@
 :root {
-  /* Azad Smart Systems brand palette */
-  --azad-navy: #0f172a;
-  --azad-blue: #0ea5e9;
-  --azad-blue-dark: #0284c7;
-  --azad-teal: #14b8a6;
-  --azad-gold: #f59e0b;
-  --azad-slate: #f8fafc;
-  --azad-text: #1e293b;
+  /* Palestinian brand palette — inspired by the Palestinian flag */
+  --azad-navy: #014e7c;
+  --azad-red: #c90f2a;
+  --azad-green: #009535;
   --azad-white: #ffffff;
+  --azad-text: #1e293b;
+  --azad-slate: #f1f5f9;
+  --azad-blue: #0ea5e9;
 
-  --azad-gradient: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
-  --azad-shadow: 0 4px 14px rgba(14, 165, 233, 0.25);
+  --azad-gradient: linear-gradient(135deg, #009535 0%, #014e7c 100%);
+  --azad-shadow: 0 4px 14px rgba(1, 78, 124, 0.25);
   --azad-radius: 12px;
+
+  /* الخطوط — عربية قوية مع رصّة احتياطية كاملة */
+  --font-sans: "Cairo", "Tajawal", "Segoe UI", "Tahoma", system-ui, -apple-system,
+    "Helvetica Neue", "Arial", sans-serif;
+
+  /* رموز دلالية (تتبدل تلقائياً في الوضع الداكن) */
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #64748b;
+
+  /* رموز متوافقة قديمة (مستعملة في ai-chat وبعض القوالب) */
+  --muted: #64748b;
+  --azad-teal: #0d9488;
+  --azad-gold: #d97706;
+}
+
+html[data-theme="dark"] {
+  --bg: #0b1220;
+  --surface: #111a2b;
+  --surface-2: #16233a;
+  --border: #1e2a3d;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --muted: #94a3b8;
+  --azad-teal: #2dd4bf;
+  --azad-gold: #f59e0b;
+  --azad-slate: #0b1220;
+  --azad-text: #e2e8f0;
+  --azad-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
 }
 
 /* Brand buttons */
-.azad-btn {
+.azad-btn,
+.azad-btn-primary,
+.azad-btn-outline,
+.azad-btn-accent {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1.4rem;
-  border: 0;
+  padding: 0.65rem 1.4rem;
   border-radius: 9999px;
-  background: var(--azad-gradient);
-  color: #fff;
   font-weight: 600;
+  font-family: inherit;
+  font-size: .95rem;
   cursor: pointer;
   text-decoration: none;
-  box-shadow: var(--azad-shadow);
-  transition: filter 0.2s ease, transform 0.2s ease;
-}
-.azad-btn:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
+  line-height: 1.4;
+  transition: filter 0.2s ease, transform 0.15s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.azad-btn-outline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.4rem;
-  border: 2px solid var(--azad-blue);
-  border-radius: 9999px;
-  background: transparent;
-  color: var(--azad-blue-dark);
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
+.azad-btn {
+  border: 0;
+  background: var(--azad-gradient);
+  color: #fff;
+  box-shadow: var(--azad-shadow);
 }
-.azad-btn-outline:hover {
-  background: var(--azad-blue);
+.azad-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.azad-btn:active { transform: translateY(0); }
+
+/* Primary button in Palestinian colors */
+.azad-btn-primary {
+  border: 0;
+  background: var(--azad-navy);
   color: #fff;
 }
+.azad-btn-primary:hover { background: var(--azad-red); }
+
+/* Outline button */
+.azad-btn-outline {
+  border: 2px solid var(--azad-green);
+  background: transparent;
+  color: var(--azad-green);
+}
+.azad-btn-outline:hover {
+  background: var(--azad-green);
+  color: #fff;
+}
+html[data-theme="dark"] .azad-btn-outline { color: #34d399; border-color: #34d399; }
+
+/* Accent button (red for actions) */
+.azad-btn-accent {
+  border: 0;
+  background: var(--azad-red);
+  color: #fff;
+}
+.azad-btn-accent:hover { background: #b80e26; }
 
 /* Brand badge */
 .azad-badge {
@@ -68,21 +117,20 @@
   letter-spacing: 0.5px;
 }
 
+/* Badge colors */
+.azad-badge-primary { background: var(--azad-navy); }
+.azad-badge-accent { background: var(--azad-red); }
+.azad-badge-success { background: var(--azad-green); }
+
 /* Footer tagline */
 .azad-footer {
   text-align: center;
   padding: 1rem;
   font-size: 0.85rem;
-  color: var(--azad-text);
+  color: var(--text);
 }
-.azad-footer a {
-  color: var(--azad-blue-dark);
-  font-weight: 600;
-  text-decoration: none;
-}
-.azad-footer a:hover {
-  text-decoration: underline;
-}
+.azad-footer a { color: var(--azad-red); font-weight: 600; text-decoration: none; }
+.azad-footer a:hover { text-decoration: underline; }
 
 /* Brand headings */
 .azad-title {
@@ -102,9 +150,9 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  background: var(--azad-slate);
-  color: var(--azad-text);
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
   padding: 2rem;
 }
 .azad-404 code {

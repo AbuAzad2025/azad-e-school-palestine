@@ -1,0 +1,91 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('إحصائيات AI') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('إحصائيات الذكاء الاصطناعي') }}</h1>
+  <form method="get" class="form-inline">
+    <select name="days" class="form-group" style="min-width:140px">
+      <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
+      <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوم') }}</option>
+      <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوم') }}</option>
+    </select>
+    <button class="azad-btn" type="submit">{{ _('تطبيق') }}</button>
+  </form>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-num">{{ stats.total_requests }}</span>
+    <span class="stat-label">{{ _('إجمالي الطلبات') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ stats.total_tokens }}</span>
+    <span class="stat-label">{{ _('إجمالي التوكنات') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">${{ stats.total_cost_usd }}</span>
+    <span class="stat-label">{{ _('التكلفة الإجمالية ($)') }}</span>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head"><h2>{{ _('الاستخدام حسب النوع') }}</h2></div>
+  {% if stats.by_action %}
+  <table class="admin-table">
+    <thead><tr><th>{{ _('النوع') }}</th><th>{{ _('عدد الطلبات') }}</th></tr></thead>
+    <tbody>
+      {% for action, count in stats.by_action.items() %}
+      <tr><td>{{ action }}</td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">{{ _('لا توجد بيانات') }}</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head"><h2>{{ _('الاستخدام حسب النموذج') }}</h2></div>
+  {% if stats.by_model %}
+  <table class="admin-table">
+    <thead><tr><th>{{ _('النموذج') }}</th><th>{{ _('عدد الطلبات') }}</th></tr></thead>
+    <tbody>
+      {% for model, count in stats.by_model.items() %}
+      <tr><td>{{ model }}</td><td>{{ count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">{{ _('لا توجد بيانات') }}</div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head"><h2>{{ _('الميزانية') }}</h2></div>
+  {% if stats.budget %}
+  <div class="azad-list">
+    <div class="azad-item">
+      <div><div class="item-title">{{ _('المصروف') }}</div><div class="item-meta"><strong>${{ stats.budget.spent_usd }}</strong></div></div>
+      <div><strong>${{ stats.budget.budget_usd }}</strong></div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('المتبقي') }}</div>
+      <div class="item-meta"><strong>${{ stats.budget.remaining_usd }}</strong></div>
+      <div><strong>{{ stats.budget.usage_percent }}%</strong></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head"><h2>{{ _('حدود المعدل') }}</h2></div>
+  {% if stats.rate_limit %}
+  <div class="azad-list">
+    <div class="azad-item">
+      <div><div class="item-title">{{ _('طلبات/دقيقة') }}</div><div class="item-meta"><strong>{{ stats.rate_limit.requests_per_minute }}</strong></div></div>
+      <div><div class="item-title">{{ _('توكنات/دقيقة') }}</div><div class="item-meta"><strong>{{ stats.rate_limit.tokens_per_minute }}</strong></div></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

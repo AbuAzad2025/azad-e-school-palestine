@@ -3,7 +3,16 @@
 from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
 from wtforms import EmailField, PasswordField, RadioField, StringField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, Length
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
+
+
+def password_policy_validator(form, field):
+    """مُدقق مخصص لسياسة كلمة المرور."""
+    from app.core.security import validate_password_policy
+
+    ok, msg = validate_password_policy(field.data)
+    if not ok:
+        raise ValidationError(_(msg))
 
 
 class RegisterForm(FlaskForm):
@@ -15,7 +24,7 @@ class RegisterForm(FlaskForm):
         default="student",
         validators=[DataRequired()],
     )
-    password = PasswordField(_("كلمة المرور"), validators=[DataRequired(), Length(min=8)])
+    password = PasswordField(_("كلمة المرور"), validators=[DataRequired(), password_policy_validator])
     confirm = PasswordField(
         _("تأكيد كلمة المرور"),
         validators=[DataRequired(), EqualTo("password", message=_("كلمتا المرور غير متطابقتين"))],
@@ -35,7 +44,7 @@ class ForgotPasswordForm(FlaskForm):
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField(_("كلمة المرور الجديدة"), validators=[DataRequired(), Length(min=8)])
+    password = PasswordField(_("كلمة المرور الجديدة"), validators=[DataRequired(), password_policy_validator])
     confirm = PasswordField(
         _("تأكيد كلمة المرور"),
         validators=[DataRequired(), EqualTo("password", message=_("كلمتا المرور غير متطابقتين"))],

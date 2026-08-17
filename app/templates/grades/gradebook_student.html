@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ _('درجاتي') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('درجاتي') }}</h1>
+<p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+{% if not items %}
+<div class="empty-state">{{ _('لا بنود تقييم بعد.') }}</div>
+{% else %}
+{% for cat in categories %}
+<div class="section-head"><h2>{{ icon('folder') }} {{ cat.name }}</h2></div>
+<div class="azad-list">
+  {% for item in items if item.category_id == cat.id %}
+  {% set e = entries.get(item.id) %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ item.title }}</div>
+      <div class="item-meta"><span>{{ item.kind }}</span></div>
+    </div>
+    <div>
+      <strong>{{ e.mark if e and e.mark is not none else '—' }}</strong>
+      {% if item.max_mark %}<small style="color:var(--muted)">/ {{ item.max_mark }}</small>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

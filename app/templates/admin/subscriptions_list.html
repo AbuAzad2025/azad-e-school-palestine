@@ -1,0 +1,69 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('الاشتراكات') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('الاشتراكات') }}</h1>
+  <form method="get" class="form-inline">
+    <select name="status" class="form-group" style="min-width:160px">
+      <option value="">{{ _('كل الحالات') }}</option>
+      <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>{{ _('معلقة') }}</option>
+      <option value="active" {% if status_filter == 'active' %}selected{% endif %}>{{ _('نشطة') }}</option>
+      <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>{{ _('منتهية') }}</option>
+      <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>{{ _('ملغية') }}</option>
+    </select>
+    <button class="azad-btn" type="submit">{{ _('تصفية') }}</button>
+    {% if status_filter %}
+    <a href="{{ url_for('admin.subscriptions_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if pagination.items %}
+<div class="azad-list">
+  {% for sub in pagination.items %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ sub.user.name_ar }} — {{ sub.plan.name if sub.plan else _('خطة') }}</div>
+      <div class="item-meta">
+        <span>{{ _('الحالة:') }} <span class="badge-status badge-{{ 'ok' if sub.status == 'active' else ('warn' if sub.status == 'pending' else ('err' if sub.status == 'expired' else 'err')) }}">{{ sub.status }}</span></span>
+        <span>{{ _('المدرسة:') }} {{ sub.class_room.school.display_name if sub.class_room and sub.class_room.school else _('—') }}</span>
+        <span>{{ _('السعر:') }} {{ sub.price }} {{ sub.currency }}</span>
+        <span>{{ _('ينتهي:') }} {{ sub.end_at.strftime('%Y-%m-%d') if sub.end_at else _('—') }}</span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('admin.subscriptions_list') }}#sub-{{ sub.id }}">{{ _('تفاصيل') }}</a>
+      {% if sub.status == 'active' %}
+      <form method="post" action="{{ url_for('admin.subscription_cancel', sub_id=sub.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من إلغاء الاشتراك؟') }}')">{{ _('إلغاء') }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="pagination">
+  {% if pagination.has_prev %}
+  <a href="{{ url_for('admin.subscriptions_list', page=pagination.page-1, status=status_filter) }}">&laquo; {{ _('السابق') }}</a>
+  {% endif %}
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      {% if p == pagination.page %}
+      <span class="current">{{ p }}</span>
+      {% else %}
+      <a href="{{ url_for('admin.subscriptions_list', page=p, status=status_filter) }}">{{ p }}</a>
+      {% endif %}
+    {% else %}
+    <span>…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}
+  <a href="{{ url_for('admin.subscriptions_list', page=pagination.page+1, status=status_filter) }}">{{ _('التالي') }} &raquo;</a>
+  {% endif %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا توجد اشتراكات') }}</div>
+{% endif %}
+{% endblock %}

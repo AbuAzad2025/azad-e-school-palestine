@@ -14,6 +14,7 @@ from .gradebook import Assignment, GradeCategory, GradeEntry, GradeItem, Submiss
 from .mixins import PKMixin, SoftDeleteMixin
 from .school import Grade, School, SchoolSetting, Subject, SubjectGradeLink
 from .system import AuditLog, Setting
+from .tutoring import TutoringRequest, TutoringSession, TutorProfile
 from .user import User, UserRole, UserRoleLink
 
 __all__ = [
@@ -47,6 +48,9 @@ __all__ = [
     "Submission",
     "Subscription",
     "SubscriptionPlan",
+    "TutorProfile",
+    "TutoringRequest",
+    "TutoringSession",
     "Unit",
     "User",
     "UserRole",

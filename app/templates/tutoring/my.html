@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ _('جلساتك الخصوصية') }} — {{ _('دروس خصوصية') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('الدروس الخصوصية — ملفي') }}</h1>
+
+<div class="section-head"><h2>{{ _('طلبات تلقيتها') }}</h2></div>
+{% if requests %}
+<div class="azad-list">
+  {% for r in requests %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ r.student.name_ar }} — {{ r.subject }}</div>
+      <div class="item-meta">
+        <span>{{ _('الوقت:') }} {{ r.preferred_time.strftime('%Y-%m-%d %H:%M') if r.preferred_time else '—' }}</span>
+        <span>{{ r.mode }}</span>
+        <span class="badge-status badge-{{ 'ok' if r.status == 'accepted' else ('warn' if r.status == 'pending' else 'err') }}">{{ r.status }}</span>
+      </div>
+      {% if r.note %}<p style="font-size:.85rem;color:var(--muted);margin-top:.4rem">{{ r.note }}</p>{% endif %}
+    </div>
+    {% if r.status == 'pending' %}
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('tutoring.respond', req_id=r.id, result='accept') }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn" type="submit">{{ _('قبول') }}</button>
+      </form>
+      <form method="post" action="{{ url_for('tutoring.respond', req_id=r.id, result='reject') }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit">{{ _('رفض') }}</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}<div class="empty-state">{{ _('لا طلبات واردة.') }}</div>{% endif %}
+
+<div class="section-head"><h2>{{ _('طلبات أرسلتها') }}</h2></div>
+{% if student_requests %}
+<div class="azad-list">
+  {% for r in student_requests %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ r.tutor.name_ar }} — {{ r.subject }}</div>
+      <div class="item-meta"><span>{{ r.mode }}</span><span class="badge-status badge-warn">{{ r.status }}</span></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}<div class="empty-state">{{ _('لا طلبات أرسلتها بعد.') }}</div>{% endif %}
+
+<div class="section-head"><h2>{{ _('جلسات بصفتي معلم') }}</h2></div>
+{% if as_tutor %}
+<div class="azad-list">
+  {% for s in as_tutor %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ s.student.name_ar }} — {{ s.subject }}</div>
+      <div class="item-meta">
+        <span>{{ s.scheduled_at.strftime('%Y-%m-%d %H:%M') if s.scheduled_at else '—' }}</span>
+        <span class="badge-status badge-{{ 'ok' if s.status == 'completed' else 'warn' }}">{{ s.status }}</span>
+        <span class="badge-status badge-{{ 'ok' if s.payment_status == 'approved' else 'warn' }}">{{ _('دفع:') }} {{ s.payment_status }}</span>
+      </div>
+    </div>
+    <div class="item-actions"><a class="azad-btn-outline" href="{{ url_for('tutoring.session_detail', session_id=s.id) }}">{{ _('فتح') }}</a></div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}<div class="empty-state">{{ _('لا جلسات بعد.') }}</div>{% endif %}
+
+<div class="section-head"><h2>{{ _('جلسات بصفتي طالب') }}</h2></div>
+{% if as_student %}
+<div class="azad-list">
+  {% for s in as_student %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ s.tutor.name_ar }} — {{ s.subject }}</div>
+      <div class="item-meta">
+        <span>{{ s.scheduled_at.strftime('%Y-%m-%d %H:%M') if s.scheduled_at else '—' }}</span>
+        <span class="badge-status badge-{{ 'ok' if s.status == 'completed' else 'warn' }}">{{ s.status }}</span>
+      </div>
+    </div>
+    <div class="item-actions"><a class="azad-btn-outline" href="{{ url_for('tutoring.session_detail', session_id=s.id) }}">{{ _('فتح') }}</a></div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}<div class="empty-state">{{ _('لا جلسات بعد.') }}</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ _('الدروس الخصوصية') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('الدروس الخصوصية') }}</h1>
+<p class="page-subtitle">{{ _('سوق حر — احجز درساً 1-1 مع معلم خارج حدود المدرسة.') }}</p>
+
+<form method="get" class="card" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+  <input type="search" name="q" value="{{ q }}" placeholder="{{ _('ابحث بمادة أو اسم معلم...') }}" style="flex:1;min-width:200px">
+  <button class="azad-btn" type="submit">{{ _('بحث') }}</button>
+  <a class="azad-btn-outline" href="{{ url_for('tutoring.profile_new') }}">+ {{ _('انشر ملفك كمعلم') }}</a>
+</form>
+
+{% if tutors %}
+<div class="azad-list">
+  {% for prof in tutors %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ prof.tutor.name_ar }} — {{ prof.subject }}</div>
+      <div class="item-meta">
+        {% if prof.price_hour %}<span>{{ _('ساعة:') }} {{ prof.price_hour }}</span>{% endif %}
+        {% if prof.price_session %}<span>{{ _('جلسة:') }} {{ prof.price_session }}</span>{% endif %}
+        <span>{{ prof.mode }}</span>
+        <span>{{ icon('teacher') }} {{ _('معلم خصوصي') }}</span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('tutoring.profile', tutor_id=prof.tutor_id) }}">{{ _('الملف') }}</a>
+      {% if current_user.is_authenticated and current_user.id != prof.tutor_id %}
+        <a class="azad-btn" href="{{ url_for('tutoring.book', tutor_id=prof.tutor_id) }}">{{ _('احجز درساً') }}</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا معلمون مطابقون بعد.') }} {% if current_user.is_authenticated %}<a href="{{ url_for('tutoring.profile_new') }}">{{ _('كن أول معلم خصوصي') }}</a>{% else %}<a href="{{ url_for('auth.register') }}">{{ _('سجّل لتشارك أو تحجز') }}</a>{% endif %}</div>
+{% endif %}
+{% endblock %}

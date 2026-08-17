@@ -1,0 +1,88 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ school.display_name }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ school.display_name }}</h1>
+  <a class="azad-btn-outline" href="{{ url_for('admin.schools_list') }}">{{ _('رجوع') }}</a>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('معلومات المدرسة') }}</h2>
+  </div>
+  <div class="azad-list">
+    <div class="azad-item">
+      <div class="item-title">{{ _('الاسم بالعربية') }}</div>
+      <div>{{ school.name_ar }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('الاسم بالإنجليزي') }}</div>
+      <div>{{ school.name_en or _('—') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('النطاق') }}</div>
+      <div>{{ school.domain or _('بلا نطاق') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('السنة الدراسية') }}</div>
+      <div>{{ school.academic_year or _('—') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('الحالة') }}</div>
+      <div><span class="badge-status badge-ok">{{ _('نشطة') if school.is_active else _('معطلة') }}</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('الصفوف') }}</h2>
+    <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">+ {{ _('صف جديد') }}</a>
+  </div>
+  {% if classes %}
+  <div class="azad-list">
+    {% for c in classes %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ c.name or c.subject.name_ar }}</div>
+        <div class="item-meta">
+          <span>{{ c.subject.name_ar }}</span>
+          <span>{{ _('الصف') }} {{ c.grade_id }}</span>
+          <span>{{ _('المعلم:') }} {{ c.teacher.name_ar if c.teacher else _('غير معين') }}</span>
+          <span>{{ _('رمز:') }} <code>{{ c.join_code }}</code></span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=c.id) }}">{{ _('فتح') }}</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">{{ _('لا توجد صفوف في هذه المدرسة') }} <a href="{{ url_for('schools.class_new', school_id=school.id) }}" class="azad-btn">{{ _('إنشاء أول صف') }}</a></div>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('المعلمين') }}</h2>
+  </div>
+  {% if teachers %}
+  <div class="azad-list">
+    {% for t in teachers %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ t.name_ar }}</div>
+        <div class="item-meta">
+          <span>{{ t.email }}</span>
+          <span class="meta-chip">{{ t.role.value }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">{{ _('لا يوجد معلمين في هذه المدرسة') }}</div>
+  {% endif %}
+</div>
+{% endblock %}

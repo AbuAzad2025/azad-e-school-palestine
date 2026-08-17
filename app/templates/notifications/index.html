@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ _('إشعاراتي') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <h1 class="page-title azad-title" style="margin:0">{{ _('إشعاراتي') }}</h1>
+  {% if items %}<form method="post" action="{{ url_for('notifications.read') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="azad-btn-outline" type="submit">{{ _('تحديد الكل كمقروء') }}</button></form>{% endif %}
+</div>
+{% if items %}
+<div class="azad-list">
+  {% for n in items %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ n.title }} {% if not n.is_read %}<span class="badge-status badge-info">{{ _('جديد') }}</span>{% endif %}</div>
+      {% if n.body %}<div class="item-meta" style="margin-top:.25rem">{{ n.body }}</div>{% endif %}
+      <div class="item-meta"><span>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</span><span class="meta-chip">{{ n.type }}</span></div>
+    </div>
+    {% if n.link %}<div class="item-actions"><a class="azad-btn-outline" href="{{ n.link }}">{{ _('فتح') }}</a></div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا إشعارات بعد.') }}</div>
+{% endif %}
+{% endblock %}

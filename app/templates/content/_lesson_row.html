@@ -1,0 +1,20 @@
+{% if not lesson.deleted_at %}
+<div class="azad-item">
+  <div>
+    <div class="item-title">{{ lesson.title }}</div>
+    <div class="item-meta">
+      <span class="badge-status badge-{{ 'ok' if lesson.status == 'published' else 'warn' }}">{{ _('منشور') if lesson.status == 'published' else _('مسودة') }}</span>
+      <span>{{ _('إصدار') }} {{ lesson.version }}</span>
+    </div>
+  </div>
+  <div class="item-actions">
+    <a class="azad-btn-outline" href="{{ url_for('content.lesson_detail', class_id=class_room.id, lesson_id=lesson.id) }}">{{ _('فتح') }}</a>
+    {% if can_teach %}
+    <form method="post" action="{{ url_for('content.lesson_publish', class_id=class_room.id, lesson_id=lesson.id) }}" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn-outline" type="submit">{{ _('نشر') if lesson.status != 'published' else _('مسودة') }}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

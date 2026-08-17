@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ school.display_name }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ school.display_name }}</h1>
+<p class="page-subtitle">{{ school.name_en or '' }} {% if school.domain %}<span class="meta-chip">{{ school.domain }}</span>{% endif %}</p>
+
+<div class="section-head">
+  <h2>{{ _('الصفوف') }}</h2>
+  <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">+ {{ _('صف جديد') }}</a>
+</div>
+{% if classes %}
+<div class="azad-list">
+  {% for c in classes %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">{{ c.name or c.subject.name_ar }}</div>
+      <div class="item-meta">
+        <span>{{ c.subject.name_ar }}</span>
+        <span>{{ _('الصف') }} {{ c.grade.name_ar if c.grade else c.grade_id }}</span>
+        <span>{{ _('رمز:') }} <code>{{ c.join_code }}</code></span>
+      </div>
+    </div>
+    <div class="item-actions">
+      <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=c.id) }}">{{ _('فتح') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا صفوف بعد في هذه المدرسة.') }} <a href="{{ url_for('schools.class_new', school_id=school.id) }}">{{ _('أنشئ أول صف') }}</a></div>
+{% endif %}
+
+<div class="section-head"><h2>{{ _('إضافة مستوى دراسي') }}</h2></div>
+<div class="card">
+  <form method="post" action="{{ url_for('schools.grade_add', school_id=school.id) }}" novalidate>
+    {{ grade_form.hidden_tag() }}
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+      <div class="form-group" style="flex:1;min-width:120px">
+        {{ grade_form.grade_level.label }}
+        {{ grade_form.grade_level() }}
+        {% for e in grade_form.grade_level.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      </div>
+      <div class="form-group" style="flex:2;min-width:200px">
+        {{ grade_form.name_ar.label }}
+        {{ grade_form.name_ar() }}
+      </div>
+      <div class="form-group" style="align-self:end">{{ grade_form.submit(class="azad-btn") }}</div>
+    </div>
+  </form>
+</div>
+{% endblock %}

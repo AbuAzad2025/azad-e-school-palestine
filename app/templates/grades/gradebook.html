@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ _('دفتر الدرجات') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('دفتر الدرجات') }}</h1>
+    <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+  </div>
+</div>
+
+{% if can_teach %}
+<div class="card" style="margin-bottom:1rem">
+  <form method="post" action="{{ url_for('grades.category_create', class_id=class_room.id) }}" novalidate>
+    {{ category_form.hidden_tag() }}
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <div style="flex:2;min-width:180px"><div class="form-group" style="margin:0">{{ category_form.name.label }}{{ category_form.name() }}</div></div>
+      <div style="flex:1;min-width:120px"><div class="form-group" style="margin:0">{{ category_form.weight.label }}{{ category_form.weight() }}</div></div>
+      <div style="align-self:end">{{ category_form.submit(class="azad-btn-outline") }}</div>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+{% for cat in categories %}
+<div class="section-head"><h2>{{ icon('folder') }} {{ cat.name }}{% if cat.weight %} <small style="color:var(--muted)">({{ cat.weight }})</small>{% endif %}</h2></div>
+{% if can_teach %}
+<div class="card" style="margin-bottom:1rem">
+  <form method="post" action="{{ url_for('grades.grade_item_create', category_id=cat.id) }}" novalidate>
+    {{ item_form.hidden_tag() }}
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <div style="flex:2;min-width:180px"><div class="form-group" style="margin:0">{{ item_form.title.label }}{{ item_form.title() }}</div></div>
+      <div style="flex:1;min-width:110px"><div class="form-group" style="margin:0">{{ item_form.max_mark.label }}{{ item_form.max_mark() }}</div></div>
+      <div style="flex:1;min-width:130px"><div class="form-group" style="margin:0">{{ item_form.kind.label }}{{ item_form.kind() }}</div></div>
+      <div style="align-self:end">{{ item_form.submit(class="azad-btn-outline") }}</div>
+    </div>
+  </form>
+</div>
+{% endif %}
+<table class="azad-table">
+  <thead><tr><th>{{ _('الطالب') }}</th>
+    {% for item in items if item.category_id == cat.id %}<th>{{ item.title }}{% if item.max_mark %}<br><small>({{ item.max_mark }})</small>{% endif %}</th>{% endfor %}
+  </tr></thead>
+  <tbody>
+  {% for m in members %}
+    <tr>
+      <td>{{ m.user.name_ar }}</td>
+      {% for item in items if item.category_id == cat.id %}
+        {% set entry = entries.get((m.user_id, item.id)) %}
+        <td>
+          {% if can_teach %}
+          <form method="post" action="{{ url_for('grades.grade_set', item_id=item.id) }}" style="display:flex;gap:.3rem;align-items:center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="student_id" value="{{ m.user_id }}">
+            <input type="number" step="0.5" name="mark" value="{{ entry.mark if entry and entry.mark is not none else '' }}" style="max-width:80px;padding:.3rem .5rem">
+            <button class="azad-btn-outline" style="padding:.3rem .8rem" type="submit">✓</button>
+          </form>
+          {% else %}{{ entry.mark if entry and entry.mark is not none else '—' }}{% endif %}
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+{% if not categories %}
+<div class="empty-state">{{ _('لا أقسام بعد — أضف قسماً لبدء دفتر الدرجات.') }}</div>
+{% endif %}
+{% endblock %}

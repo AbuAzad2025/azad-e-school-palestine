@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ class_room.name or class_room.subject.name_ar }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumb" aria-label="مسار التنقل" style="margin-block: 1rem;">
+  <ol style="display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; font-size: .875rem; color: var(--text-muted);">
+    <li>
+      <a href="{{ url_for('main.index') }}" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: .3rem;">
+        {{ icon('home') }}
+      </a>
+    </li>
+    <li style="display: flex; align-items: center; gap: .3rem;">
+      <span aria-hidden="true" style="color: var(--text-muted);">{{ icon('chevron-right') }}</span>
+      <a href="{{ url_for('schools.my_classes') }}" style="color: var(--text-muted); text-decoration: none;">{{ _('صفوفي') }}</a>
+    </li>
+    <li style="display: flex; align-items: center; gap: .3rem;">
+      <span aria-hidden="true" style="color: var(--text-muted);">{{ icon('chevron-right') }}</span>
+      <span aria-current="page" style="color: var(--text); font-weight: 600;">{{ class_room.name or class_room.subject.name_ar }}</span>
+    </li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ class_room.name or class_room.subject.name_ar }}</h1>
+<p class="page-subtitle">
+  {{ class_room.subject.name_ar }} — {{ _('الصف') }} {{ class_room.grade.grade_level }}
+  {% if class_room.teacher %}<span class="meta-chip">{{ icon('teacher') }} {{ class_room.teacher.name_ar }}</span>{% endif %}
+</p>
+
+<div class="stat-grid">
+  <div class="stat-card"><strong>{{ members|length }}</strong><small>{{ _('طالباً') }}</small></div>
+  <div class="stat-card"><strong>{{ class_room.join_code }}</strong><small>{{ _('رمز الانضمام') }}</small></div>
+</div>
+
+{% if is_admin or (class_room.teacher and class_room.teacher_id == current_user.id) %}
+<div class="section-head">
+  <h2>{{ _('أدوات المعلم') }}</h2>
+  <div class="item-actions">
+    <a class="azad-btn-outline" href="{{ url_for('content.class_lessons', class_id=class_room.id) }}">{{ _('الدروس') }}</a>
+    <a class="azad-btn-outline" href="{{ url_for('assessment.quiz_list', class_id=class_room.id) }}">{{ _('الاختبارات') }}</a>
+    <a class="azad-btn-outline" href="{{ url_for('grades.assignments', class_id=class_room.id) }}">{{ _('الواجبات') }}</a>
+    <a class="azad-btn-outline" href="{{ url_for('grades.attendance', class_id=class_room.id) }}">{{ _('الحضور') }}</a>
+  </div>
+</div>
+<form method="post" action="{{ url_for('schools.class_code', class_id=class_room.id) }}" style="display:inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="azad-btn-outline">{{ _('توليد رمز جديد') }}</button>
+</form>
+{% endif %}
+
+<div class="section-head"><h2>{{ _('الأعضاء') }}</h2></div>
+<table class="azad-table">
+  <thead><tr><th>{{ _('الاسم') }}</th><th>{{ _('الدور') }}</th></tr></thead>
+  <tbody>
+  {% for m in members %}
+    <tr><td>{{ m.user.name_ar }}</td><td>{{ m.user.role }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

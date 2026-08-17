@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ lesson.title }}</h1>
+    <p class="page-subtitle">
+      {{ class_room.subject.name_ar }}
+      <span class="badge-status badge-{{ 'ok' if lesson.status == 'published' else 'warn' }}">{{ lesson.status }}</span>
+    </p>
+  </div>
+  {% if can_teach %}
+  <form method="post" action="{{ url_for('content.lesson_publish', class_id=class_room.id, lesson_id=lesson.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="azad-btn" type="submit">{{ _('نشر') if lesson.status != 'published' else _('إرجاع للمسودة') }}</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if lesson.body_html %}
+  <div class="card" style="margin-bottom:1rem">{{ lesson.body_html | safe }}</div>
+{% endif %}
+
+<div class="section-head"><h2>{{ _('المرفقات') }}</h2></div>
+{% if lesson.attachments %}
+<div class="azad-list">
+  {% for att in lesson.attachments %}
+  <div class="azad-item">
+    <div>
+      <div class="item-title">
+        {% if att.kind == 'video' and att.youtube_url %}<a href="{{ att.youtube_url }}" target="_blank" rel="noopener">{{ icon('play') }} {{ att.title or att.youtube_url }}</a>
+        {% elif att.stored_name %}<a href="{{ url_for('content.attachment_download', att_id=att.id) }}">{{ att.original_name or att.stored_name }}</a>
+        {% else %}{{ att.title or att.kind }}{% endif %}
+      </div>
+      <div class="item-meta">
+        <span class="meta-chip">{{ att.kind }}</span>
+        {% if att.size_bytes %}<span>{{ (att.size_bytes / 1024 / 1024) | round(1) }} MB</span>{% endif %}
+      </div>
+    </div>
+    {% if can_teach and att.stored_name %}
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('content.attachment_delete', att_id=att.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit">{{ _('حذف') }}</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا مرفقات بعد.') }}</div>
+{% endif %}
+
+{% if can_teach %}
+<div class="section-head"><h2>{{ _('رفع مرفق') }}</h2></div>
+<div class="card" style="margin-bottom:1rem">
+  <form method="post" action="{{ url_for('content.attachment_upload', class_id=class_room.id, lesson_id=lesson.id) }}" enctype="multipart/form-data" novalidate>
+    {{ att_form.hidden_tag() }}
+    <div class="form-group">{{ att_form.file.label }}{{ att_form.file() }}{% for e in att_form.file.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
+    <div class="form-group">{{ att_form.title.label }}{{ att_form.title() }}</div>
+    <div class="form-actions">{{ att_form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+<div class="section-head"><h2>{{ _('إضافة فيديو خارجي') }}</h2></div>
+<div class="card">
+  <form method="post" action="{{ url_for('content.attachment_youtube', class_id=class_room.id, lesson_id=lesson.id) }}" novalidate>
+    {{ yt_form.hidden_tag() }}
+    <div class="form-group">{{ yt_form.url.label }}{{ yt_form.url() }}</div>
+    <div class="form-group">{{ yt_form.title.label }}{{ yt_form.title() }}</div>
+    <div class="form-actions">{{ yt_form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+
+<div class="section-head"><h2>{{ _('تعديل الدرس') }}</h2></div>
+<div class="card">
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for f in form %}
+      {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
+        <div class="form-group">
+          {{ f.label }}
+          {{ f() }}
+          {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

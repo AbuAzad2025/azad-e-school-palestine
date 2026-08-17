@@ -1,0 +1,222 @@
+"""مسارات المحتوى: دروس + وحدات + مرفقات (وصول مقيّد بأعضاء الصف)"""
+
+from app.core import TxError
+from app.models.content import LessonAttachment
+from app.services.access import can_teach_class, can_view_class
+from app.services.communication import audit
+from app.services.content import (
+    add_attachment,
+    add_youtube,
+    create_lesson,
+    create_unit,
+    delete_attachment,
+    get_lesson,
+    list_lessons,
+    list_units,
+    publish_lesson,
+    unpublish_lesson,
+    update_lesson,
+)
+from flask import abort, current_app, flash, redirect, render_template, send_from_directory, url_for
+from flask_babel import _
+from flask_login import current_user, login_required
+
+from . import bp
+from .forms import AttachmentForm, LessonForm, UnitForm, YoutubeForm
+
+
+def _class_or_404(class_id):
+    from app.models.class_room import ClassRoom
+
+    class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+    if not class_room:
+        abort(404)
+    return class_room
+
+
+@bp.get("/<int:class_id>/lessons")
+@login_required
+def class_lessons(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    return render_template(
+        "content/lessons.html",
+        class_room=class_room,
+        units=list_units(class_id),
+        lessons=list_lessons(class_id),
+        can_teach=can_teach_class(class_room, current_user),
+    )
+
+
+@bp.get("/<int:class_id>/lessons/new")
+@login_required
+def lesson_new(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    form = LessonForm()
+    form.unit_id.choices = [(u.id, u.title) for u in list_units(class_id)]
+    return render_template("content/lesson_form.html", class_room=class_room, form=form, lesson=None)
+
+
+@bp.post("/<int:class_id>/lessons")
+@login_required
+def lesson_create(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    form = LessonForm()
+    form.unit_id.choices = [(u.id, u.title) for u in list_units(class_id)]
+    if form.validate_on_submit():
+        lesson, error = create_lesson(
+            class_id=class_id,
+            title=form.title.data,
+            unit_id=form.unit_id.data or None,
+            body_html=form.body_html.data,
+            created_by=current_user.id,
+        )
+        if error:
+            flash(_(error), "danger")
+        elif lesson is not None:
+            audit("lesson.create", "lessons", lesson.id)
+            flash(_("تم إنشاء الدرس."), "success")
+            return redirect(url_for("content.lesson_detail", class_id=class_id, lesson_id=lesson.id))
+    return render_template("content/lesson_form.html", class_room=class_room, form=form, lesson=None)
+
+
+@bp.route("/<int:class_id>/lessons/<int:lesson_id>", methods=["GET", "POST"])
+@login_required
+def lesson_detail(class_id, lesson_id):
+    class_room = _class_or_404(class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    lesson = get_lesson(lesson_id)
+    if not lesson or lesson.class_id != class_id:
+        abort(404)
+    can_teach = can_teach_class(class_room, current_user)
+    if can_teach:
+        form = LessonForm(obj=lesson)
+        form.unit_id.choices = [(0, _("بلا وحدة"))] + [(u.id, u.title) for u in list_units(class_id)]
+        if form.validate_on_submit():
+            update_lesson(
+                lesson, title=form.title.data, unit_id=form.unit_id.data or None, body_html=form.body_html.data
+            )
+            flash(_("تم حفظ الدرس."), "success")
+            return redirect(url_for("content.lesson_detail", class_id=class_id, lesson_id=lesson.id))
+        att_form = AttachmentForm()
+        yt_form = YoutubeForm()
+        return render_template(
+            "content/lesson_detail.html",
+            class_room=class_room,
+            lesson=lesson,
+            can_teach=can_teach,
+            form=form,
+            att_form=att_form,
+            yt_form=yt_form,
+        )
+    return render_template(
+        "content/lesson_detail.html",
+        class_room=class_room,
+        lesson=lesson,
+        can_teach=False,
+        form=None,
+        att_form=None,
+        yt_form=None,
+    )
+
+
+@bp.post("/<int:class_id>/lessons/<int:lesson_id>/publish")
+@login_required
+def lesson_publish(class_id, lesson_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    lesson = get_lesson(lesson_id)
+    if not lesson:
+        abort(404)
+    if lesson.status == "published":
+        unpublish_lesson(lesson)
+        flash(_("أُعيد الدرس للمسودة."), "info")
+    else:
+        publish_lesson(lesson)
+        flash(_("نُشر الدرس."), "success")
+    return redirect(url_for("content.lesson_detail", class_id=class_id, lesson_id=lesson_id))
+
+
+@bp.post("/<int:class_id>/units")
+@login_required
+def unit_create(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    form = UnitForm()
+    if form.validate_on_submit():
+        create_unit(class_id, form.title.data)
+        flash(_("أُضيفت الوحدة."), "success")
+    return redirect(url_for("content.class_lessons", class_id=class_id))
+
+
+@bp.post("/<int:class_id>/lessons/<int:lesson_id>/attachments")
+@login_required
+def attachment_upload(class_id, lesson_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    lesson = get_lesson(lesson_id)
+    if not lesson:
+        abort(404)
+    form = AttachmentForm()
+    if form.validate_on_submit():
+        try:
+            add_attachment(lesson, form.file.data, title=form.title.data)
+            flash(_("تم رفع المرفق."), "success")
+        except TxError as exc:
+            flash(_(str(exc)), "danger")
+    return redirect(url_for("content.lesson_detail", class_id=class_id, lesson_id=lesson_id))
+
+
+@bp.post("/<int:class_id>/lessons/<int:lesson_id>/youtube")
+@login_required
+def attachment_youtube(class_id, lesson_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    lesson = get_lesson(lesson_id)
+    if not lesson:
+        abort(404)
+    form = YoutubeForm()
+    if form.validate_on_submit():
+        add_youtube(lesson, form.url.data, title=form.title.data)
+        flash(_("أُضيف الفيديو."), "success")
+    return redirect(url_for("content.lesson_detail", class_id=class_id, lesson_id=lesson_id))
+
+
+@bp.post("/attachments/<int:att_id>/delete")
+@login_required
+def attachment_delete(att_id):
+    att = LessonAttachment.query.get_or_404(att_id)
+    class_room = _class_or_404(att.lesson.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    delete_attachment(att)
+    flash(_("حُذف المرفق."), "success")
+    return redirect(url_for("content.lesson_detail", class_id=att.lesson.class_id, lesson_id=att.lesson_id))
+
+
+@bp.get("/attachments/<int:att_id>/download")
+@login_required
+def attachment_download(att_id):
+    att = LessonAttachment.query.get_or_404(att_id)
+    class_room = _class_or_404(att.lesson.class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    if not att.stored_name:
+        abort(404)
+    folder = (current_app.config["UPLOAD_FOLDER"] / att.stored_name).parent
+    return send_from_directory(
+        folder,
+        att.stored_name.rsplit("/", 1)[-1],
+        as_attachment=True,
+        download_name=att.original_name or att.stored_name,
+    )

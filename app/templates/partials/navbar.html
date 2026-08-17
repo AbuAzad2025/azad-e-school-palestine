@@ -4,24 +4,65 @@
       <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}">
       <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
     </a>
-    <button class="nav-toggle" type="button" aria-label="{{ _('القائمة') }}" aria-expanded="false" data-nav-toggle>
-      ☰
-    </button>
+    <div class="nav-actions">
+      <button class="nav-icon-btn" type="button" data-theme-toggle aria-label="{{ _('تبديل المظهر') }}" title="{{ _('تبديل المظهر') }}">
+        <span data-theme-icon-light hidden>{{ icon('sun') }}</span>
+        <span data-theme-icon-dark hidden>{{ icon('moon') }}</span>
+      </button>
+      <button class="nav-toggle" type="button" aria-label="{{ _('القائمة') }}" aria-expanded="false" data-nav-toggle>
+        <span data-nav-icon-open>{{ icon('menu') }}</span>
+        <span data-nav-icon-close hidden>{{ icon('x') }}</span>
+      </button>
+    </div>
     <div class="nav-links" data-nav-links>
-      <a href="{{ url_for('main.index') }}">{{ _('الرئيسية') }}</a>
+      <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
+
       {% if current_user.is_authenticated %}
-        <a href="{{ url_for('auth.dashboard') }}">{{ _('لوحتي') }}</a>
+        {# Navigation for all authenticated users #}
+        <a href="{{ url_for('auth.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
+
+        {% if is_student() %}
+          <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
+          <a href="{{ url_for('tutoring.index') }}">{{ icon('books') }} {{ _('دروس خصوصية') }}</a>
+        {% elif is_teacher() %}
+          <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
+          <a href="{{ url_for('tutoring.my') }}">{{ icon('teacher') }} {{ _('دروسي الخصوصية') }}</a>
+        {% elif is_parent() %}
+          <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوف أبنائي') }}</a>
+        {% elif is_school_admin() %}
+          <a href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('إدارة المدرسة') }}</a>
+          <a href="{{ url_for('admin.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحة الإدارة') }}</a>
+        {% elif is_super_admin() %}
+          <a href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('إدارة المدارس') }}</a>
+          <a href="{{ url_for('admin.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
+          <a href="{{ url_for('admin.users_list') }}">{{ icon('users') }} {{ _('إدارة المستخدمين') }}</a>
+          <a href="{{ url_for('admin.subscriptions_list') }}">{{ icon('credit-card') }} {{ _('الاشتراكات') }}</a>
+          <a href="{{ url_for('admin.schools_list') }}">{{ icon('school') }} {{ _('المدارس') }}</a>
+          <a href="{{ url_for('admin.pending_payments') }}">{{ icon('payment') }} {{ _('الدفعات المعلقة') }}</a>
+          <a href="{{ url_for('admin.backups') }}">{{ icon('archive') }} {{ _('النسخ الاحتياطي') }}</a>
+          <a href="{{ url_for('admin.settings') }}">{{ icon('settings') }} {{ _('الإعدادات') }}</a>
+        {% endif %}
+
+        {# Common authenticated links #}
+        <a href="{{ url_for('notifications.index') }}" class="nav-bell">
+          {{ icon('bell') }}
+          {% if unread_count %}
+            <span class="badge-status badge-err">{{ unread_count }}</span>
+          {% endif %}
+        </a>
+
         <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="azad-btn-outline" style="padding:.35rem 1rem">{{ _('خروج') }}</button>
+          <button type="submit" class="azad-btn-outline nav-cta">{{ icon('logout') }} {{ _('خروج') }}</button>
         </form>
       {% else %}
-        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline" style="padding:.35rem 1rem">{{ _('دخول') }}</a>
-        <a href="{{ url_for('auth.register') }}" class="azad-btn" style="padding:.35rem 1rem">{{ _('سجّل مجاناً') }}</a>
+        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
+        <a href="{{ url_for('auth.register') }}" class="azad-btn nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
       {% endif %}
+
       <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'en' else 'ar') }}" style="display:inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="azad-btn-outline" style="padding:.35rem 1rem">{{ _('English') if current_locale == 'ar' else 'عربي' }}</button>
+        <button type="submit" class="azad-btn-outline nav-cta">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else 'عربي' }}</button>
       </form>
     </div>
   </div>

@@ -1,0 +1,142 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('لوحة المشرف') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('لوحة المشرف') }}</h1>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-num">{{ schools_total }}</span>
+    <span class="stat-label">{{ _('المدارس النشطة') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ users_total }}</span>
+    <span class="stat-label">{{ _('المستخدمين النشطين') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ teachers_total }}</span>
+    <span class="stat-label">{{ _('المعلمين') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ students_total }}</span>
+    <span class="stat-label">{{ _('الطلاب') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ classes_total }}</span>
+    <span class="stat-label">{{ _('الصفوف') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ lessons_total }}</span>
+    <span class="stat-label">{{ _('الدروس') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ assignments_total }}</span>
+    <span class="stat-label">{{ _('الواجبات') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ subs_active }}</span>
+    <span class="stat-label">{{ _('اشتراكات نشطة') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ revenue_total }}</span>
+    <span class="stat-label">{{ _('إجمالي الإيرادات') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ ai_requests_30d }}</span>
+    <span class="stat-label">{{ _('طلبات AI (30 يوم)') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">${{ ai_cost_30d }}</span>
+    <span class="stat-label">{{ _('تكلفة AI (30 يوم)') }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">{{ pending_payments }}</span>
+    <span class="stat-label">{{ _('مدفوعات معلقة') }}</span>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="section-head">
+    <h2>{{ _('المدارس الحديثة') }}</h2>
+    <a class="azad-btn-outline" href="{{ url_for('admin.schools_list') }}">{{ _('عرض الكل') }}</a>
+  </div>
+  {% if recent_schools %}
+  <div class="azad-list">
+    {% for s in recent_schools %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ s.display_name }}</div>
+        <div class="item-meta">
+          <span>{{ _('نطاق:') }} {{ s.domain or _('بلا نطاق') }}</span>
+          <span>{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <a class="azad-btn-outline" href="{{ url_for('admin.school_detail', school_id=s.id) }}">{{ _('فتح') }}</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">{{ _('لا توجد مدارس بعد') }}</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="section-head">
+    <h2>{{ _('المستخدمين الجدد') }}</h2>
+    <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('عرض الكل') }}</a>
+  </div>
+  {% if recent_users %}
+  <div class="azad-list">
+    {% for u in recent_users %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ u.name_ar }}</div>
+        <div class="item-meta">
+          <span class="meta-chip">{{ u.role.value }}</span>
+          <span>{{ u.email }}</span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <a class="azad-btn-outline" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('فتح') }}</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">{{ _('لا يوجد مستخدمين جدد') }}</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="section-head">
+    <h2>{{ _('الاشتراكات') }}</h2>
+    <a class="azad-btn-outline" href="{{ url_for('admin.subscriptions_list') }}">{{ _('عرض الكل') }}</a>
+  </div>
+  <div class="azad-list">
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ _('نشطة') }}</div>
+        <div class="item-meta"><span class="stat-num" style="font-size:1.5rem;display:inline">{{ subs_active }}</span></div>
+      </div>
+      <span class="badge-status badge-ok">{{ _('نشطة') }}</span>
+    </div>
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ _('معلقة') }}</div>
+        <div class="item-meta"><span class="stat-num" style="font-size:1.5rem;display:inline">{{ subs_pending }}</span></div>
+      </div>
+      <span class="badge-status badge-warn">{{ _('معلقة') }}</span>
+    </div>
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ _('منتهية') }}</div>
+        <div class="item-meta"><span class="stat-num" style="font-size:1.5rem;display:inline">{{ subs_expired }}</span></div>
+      </div>
+      <span class="badge-status badge-err">{{ _('منتهية') }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

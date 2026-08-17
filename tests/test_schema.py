@@ -13,6 +13,7 @@ EXPECTED_TABLES = {
     "subscription_plans", "subscriptions", "manual_payments",
     "payment_receipts", "announcements", "notifications",
     "ai_sessions", "ai_messages", "audit_logs", "settings",
+    "tutor_profiles", "tutoring_requests", "tutoring_sessions",
 }
 
 
