@@ -179,7 +179,7 @@ class PayTabsGateway(PaymentGatewayBase):
             "return": self.config.get("return_url") or os.getenv("PAYTABS_RETURN_URL"),
         }
         headers = {"Authorization": f"Bearer {self.server_key}", "Content-Type": "application/json"}
-        response = requests.post(f"{self.base_url}/payment/request", json=payload, headers=headers)
+        response = requests.post(f"{self.base_url}/payment/request", json=payload, headers=headers, timeout=30)
 
         if response.status_code == 200:
             data = response.json()
@@ -224,6 +224,7 @@ class PayTabsGateway(PaymentGatewayBase):
             response = requests.get(
                 f"{self.base_url}/payment/query/{tran_ref}",
                 headers={"Authorization": f"Bearer {self.server_key}"},
+                timeout=30,
             )
             if response.status_code == 200:
                 data = response.json()
@@ -295,6 +296,7 @@ class CashUGateway(PaymentGatewayBase):
             response = requests.get(
                 f"{self.base_url}/transaction/{txn_id}",
                 headers={"Authorization": f"Bearer {self.encryption_key}"},
+                timeout=30,
             )
             if response.status_code == 200:
                 data = response.json()

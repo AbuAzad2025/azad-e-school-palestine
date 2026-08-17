@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import request, url_for
 from flask_babel import get_locale
 from flask_login import current_user
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 from app.models.user import UserRole
 
@@ -81,7 +81,9 @@ def icon(name: str, cls: str = "") -> Markup:
         name = "check"
     classes = " ".join(filter(None, ("icon", f"icon-{name}", cls)))
     href = f"{url_for('static', filename='img/icons.svg')}#i-{name}"
-    return Markup(f'<svg class="{classes}" aria-hidden="true" focusable="false"><use href="{href}"></use></svg>')
+    return Markup(
+        f'<svg class="{escape(classes)}" aria-hidden="true" focusable="false"><use href="{escape(href)}"></use></svg>'
+    )  # nosec B704
 
 
 def has_role(role: str | UserRole) -> bool:
