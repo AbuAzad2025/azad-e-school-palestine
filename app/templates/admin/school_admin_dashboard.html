@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_stat_card, azad_section, azad_quick_actions, azad_breadcrumb %}
+{% block title %}{{ _('لوحة مشرف المدرسة') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('لوحة مشرف المدرسة')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('لوحة مشرف المدرسة') }}</h1>
+
+<div class="stats-grid">
+    {{ azad_stat_card(class_count, _('صفوف'), 'book-open', 'var(--azad-navy)') }}
+    {{ azad_stat_card(student_count, _('طالب'), 'users', 'var(--azad-blue)') }}
+    {{ azad_stat_card(teacher_count, _('معلمين'), 'teacher', 'var(--azad-green)') }}
+    {{ azad_stat_card(lesson_count, _('درس'), 'book', 'var(--azad-gold)') }}
+    {{ azad_stat_card(assignment_count, _('واجب'), 'note', 'var(--color-info)') }}
+    {{ azad_stat_card(revenue.active_count or 0, _('اشتراك نشط'), 'credit-card', 'var(--color-success)') }}
+</div>
+
+<div class="section-head"><h2>{{ _('الإيرادات') }}</h2></div>
+<div class="stats-grid">
+    {{ azad_stat_card(revenue.total_revenue or 0, _('إجمالي المحصّل'), 'cash', 'var(--azad-green)') }}
+    {{ azad_stat_card(revenue.pending_amount or 0, _('معلّق'), 'clock', 'var(--color-warning)') }}
+    {{ azad_stat_card(revenue.overdue_count or 0, _('اشتراكات منتهية'), 'alert', 'var(--color-danger)') }}
+</div>
+
+<div class="section-head"><h2>{{ _('إجراءات سريعة') }}</h2></div>
+{{ azad_quick_actions([
+    {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'color': 'var(--azad-navy)'},
+    {'icon': 'book-open', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-blue)'},
+    {'icon': 'calendar', 'label': _('التقويم'), 'href': url_for('calendar.index', school_id=school_id), 'color': 'var(--azad-green)'},
+    {'icon': 'credit-card', 'label': _('الاشتراكات'), 'href': url_for('admin.subscriptions_list'), 'color': 'var(--azad-gold)'},
+    {'icon': 'cash', 'label': _('دفعات معلقة'), 'href': url_for('admin.pending_payments'), 'color': 'var(--color-warning)'},
+    {'icon': 'users', 'label': _('المستخدمين'), 'href': url_for('admin.users_list'), 'color': 'var(--text-muted)'}
+]) }}
+{% endblock %}

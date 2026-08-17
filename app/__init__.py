@@ -11,7 +11,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
-from .extensions import babel, csrf, db, login_manager, migrate
+from .extensions import babel, csrf, db, login_manager, mail, migrate
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,7 @@ def create_app(config_class=Config):
     login_manager.login_message_category = "warning"
     csrf.init_app(app)
     babel.init_app(app, locale_selector=_select_locale)
+    mail.init_app(app)
 
     from . import models  # noqa: F401  — تسجيل الجداول
     from .models.user import User
@@ -86,11 +87,15 @@ def create_app(config_class=Config):
     from .modules.assessment import bp as assessment_bp
     from .modules.auth import bp as auth_bp
     from .modules.billing import bp as billing_bp
+    from .modules.calendar import bp as calendar_bp
     from .modules.content import bp as content_bp
+    from .modules.export import bp as export_bp
+    from .modules.family import bp as family_bp
     from .modules.grades import bp as grades_bp
     from .modules.main import bp as main_bp
     from .modules.notifications import bp as notifications_bp
     from .modules.payments import bp as payments_bp
+    from .modules.progress import bp as progress_bp
     from .modules.schools import bp as schools_bp
     from .modules.tutoring import bp as tutoring_bp
 
@@ -107,6 +112,10 @@ def create_app(config_class=Config):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(payments_bp)
+    app.register_blueprint(family_bp)
+    app.register_blueprint(progress_bp)
+    app.register_blueprint(calendar_bp)
+    app.register_blueprint(export_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة
     with app.app_context():

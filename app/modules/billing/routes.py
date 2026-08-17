@@ -163,6 +163,9 @@ def review(payment_id, result):
     if result == "approve":
         sub = approve_payment(payment, reviewer_id=current_user.id)
         notify(sub.user_id, "subscription", _("فعّل اشتراكك"), str(sub.end_at))
+        from app.services.email import send_payment_approved_email
+
+        send_payment_approved_email(payment)
         audit(
             "billing.approve",
             "subscriptions",
@@ -176,6 +179,9 @@ def review(payment_id, result):
     elif result == "reject":
         reject_payment(payment, reviewer_id=current_user.id)
         notify(payment.subscription.user_id, "subscription", _("رُفض دفعك — راجع البيانات."))
+        from app.services.email import send_payment_rejected_email
+
+        send_payment_rejected_email(payment)
         audit(
             "billing.reject",
             "manual_payments",
@@ -189,3 +195,47 @@ def review(payment_id, result):
     else:
         abort(404)
     return redirect(url_for("billing.admin"))
+
+
+# ======================================================================
+# الفواتير
+# ======================================================================
+@bp.get("/invoices/<int:subscription_id>")
+@login_required
+def invoice_view(subscription_id):
+    sub = Subscription.query.get_or_404(subscription_id)
+    class_room = _class_or_404(sub.class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    from app.services.billing import subscription_payment_summary
+    from app.services.invoice import generate_invoice_number
+
+    summary = subscription_payment_summary(subscription_id)
+    invoice_number = generate_invoice_number(sub)
+    return render_template(
+        "billing/invoice.html",
+        subscription=sub,
+        summary=summary,
+        invoice_number=invoice_number,
+    )
+
+
+@bp.get("/invoices/<int:subscription_id>/pdf")
+@login_required
+def invoice_pdf(subscription_id):
+    sub = Subscription.query.get_or_404(subscription_id)
+    class_room = _class_or_404(sub.class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    from app.services.invoice import render_invoice_pdf
+    from flask import Response
+
+    pdf = render_invoice_pdf(subscription_id)
+    if pdf is None:
+        flash(_("تعذر إنشاء ملف PDF."), "danger")
+        return redirect(url_for("billing.invoice_view", subscription_id=subscription_id))
+    return Response(
+        pdf,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=invoice_{subscription_id}.pdf"},
+    )

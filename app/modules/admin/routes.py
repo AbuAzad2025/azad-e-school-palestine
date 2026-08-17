@@ -36,6 +36,12 @@ def admin_nav_context():
 def require_admin():
     if request.endpoint == "admin.impersonate_exit":
         return None  # جلسة الانتحال ليست سوبر أدمن — مسار الخروج مفتوح لها
+    if request.endpoint == "admin.school_admin_dashboard":
+        if not current_user.is_authenticated:
+            abort(401)
+        if not _has_any(UserRole.super_admin, UserRole.school_admin):
+            abort(403)
+        return None  # لا يطبّق قبل_request السوبر أدمن فقط
     if not current_user.is_authenticated:
         abort(401)
     if not _has_any(UserRole.super_admin):
@@ -269,6 +275,9 @@ def payment_approve(payment_id):
     from app.services.billing import approve_payment
 
     approve_payment(payment, reviewer_id=current_user.id)
+    from app.services.email import send_payment_approved_email
+
+    send_payment_approved_email(payment)
     flash(_("تم اعتماد الدفع وتفعيل الاشتراك"), "success")
     return redirect(url_for("admin.pending_payments"))
 
@@ -280,6 +289,9 @@ def payment_reject(payment_id):
     from app.services.billing import reject_payment
 
     reject_payment(payment, reviewer_id=current_user.id)
+    from app.services.email import send_payment_rejected_email
+
+    send_payment_rejected_email(payment)
     flash(_("تم رفض الدفع"), "warning")
     return redirect(url_for("admin.pending_payments"))
 
@@ -400,6 +412,61 @@ def settings():
     return render_template("admin/settings.html", settings=settings)
 
 
+# ======================================================================
+# لوحة مشرف المدرسة — عرض مخصص
+# ======================================================================
+@bp.get("/school-admin")
+@login_required
+def school_admin_dashboard():
+    from app.core.tenancy import current_school_id
+    from app.models.class_room import ClassMember, ClassRoom
+    from app.models.content import Lesson
+    from app.models.gradebook import Assignment
+    from app.services.finance import school_revenue_summary
+
+    school_id = current_school_id()
+    if not school_id:
+        return redirect(url_for("admin.dashboard"))
+
+    class_count = ClassRoom.query.filter_by(school_id=school_id, deleted_at=None, is_active=True).count()
+    student_count = (
+        db.session.query(func.count(User.id))
+        .join(ClassMember, User.id == ClassMember.user_id)
+        .join(ClassRoom, ClassMember.class_id == ClassRoom.id)
+        .filter(ClassRoom.school_id == school_id, ClassMember.status == "active", User.role == UserRole.student)
+        .scalar()
+        or 0
+    )
+    teacher_count = (
+        User.query.join(UserRoleLink, User.id == UserRoleLink.user_id)
+        .filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active, User.role == UserRole.teacher)
+        .count()
+    )
+    lesson_count = (
+        Lesson.query.join(ClassRoom, Lesson.class_id == ClassRoom.id)
+        .filter(ClassRoom.school_id == school_id)
+        .filter(Lesson.deleted_at.is_(None))
+        .count()
+    )
+    assignment_count = (
+        Assignment.query.join(ClassRoom, Assignment.class_id == ClassRoom.id)
+        .filter(ClassRoom.school_id == school_id)
+        .count()
+    )
+    revenue = school_revenue_summary(school_id)
+
+    return render_template(
+        "admin/school_admin_dashboard.html",
+        school_id=school_id,
+        class_count=class_count,
+        student_count=student_count,
+        teacher_count=teacher_count,
+        lesson_count=lesson_count,
+        assignment_count=assignment_count,
+        revenue=revenue,
+    )
+
+
 @bp.post("/settings")
 @login_required
 def settings_save():
@@ -453,6 +520,9 @@ def registration_approve(user_id):
 
     user.approval_status = UserApprovalStatus.approved
     db.session.commit()
+    from app.services.email import send_welcome_email
+
+    send_welcome_email(user)
     flash(_("تم قبول المستخدم بنجاح. يمكنه الآن تسجيل الدخول."), "success")
     return redirect(url_for("admin.pending_registrations"))
 

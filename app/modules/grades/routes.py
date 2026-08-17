@@ -166,6 +166,9 @@ def submission_grade(submission_id):
         grade_submission(submission, form.mark.data, feedback=form.feedback.data, graded_by=current_user.id)
         audit("submission.grade", "submissions", submission.id)
         notify(submission.student_id, "grade", _("صُحّح واجبك"), str(form.mark.data))
+        from app.services.email import send_grade_published_email
+
+        send_grade_published_email(submission.student, submission.assignment, form.mark.data)
         flash(_("صُحّح التسليم."), "success")
     return redirect(
         url_for(
@@ -290,3 +293,40 @@ def attendance_save(class_id):
         audit("attendance.mark", "attendance", class_id, {"date": str(day)})
         flash(_("سُجّل الحضور."), "success")
     return redirect(url_for("grades.attendance", class_id=class_id, date=day.isoformat()))
+
+
+# ======================================================================
+# كشوف الدرجات
+# ======================================================================
+@bp.get("/<int:class_id>/report-card/<int:student_id>")
+@login_required
+def report_card(class_id, student_id):
+    class_room = _class_or_404(class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    if current_user.role == UserRole.student and current_user.id != student_id:
+        abort(403)
+    from app.services.report_card import generate_report_card
+
+    data = generate_report_card(student_id, class_id)
+    return render_template("grades/report_card.html", **data)
+
+
+@bp.get("/<int:class_id>/report-card/<int:student_id>/pdf")
+@login_required
+def report_card_pdf(class_id, student_id):
+    class_room = _class_or_404(class_id)
+    if not can_view_class(class_room, current_user):
+        abort(403)
+    from app.services.report_card import render_report_card_pdf
+    from flask import Response
+
+    pdf = render_report_card_pdf(student_id, class_id)
+    if pdf is None:
+        flash(_("تعذر إنشاء ملف PDF. تأكد من تثبيت xhtml2pdf."), "danger")
+        return redirect(url_for("grades.report_card", class_id=class_id, student_id=student_id))
+    return Response(
+        pdf,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=report_card_{student_id}.pdf"},
+    )

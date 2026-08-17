@@ -7,17 +7,22 @@ from .ai import AiMessage, AiSession
 from .assessment import Answer, Question, Quiz, QuizAttempt
 from .attendance import Attendance
 from .billing import ManualPayment, PaymentReceipt, Subscription, SubscriptionPlan
+from .calendar import AcademicEvent
 from .class_room import ClassMember, ClassRoom
 from .communication import Announcement, Notification
 from .content import Lesson, LessonAttachment, Unit
+from .family import FamilyLink, FamilyLinkCode
 from .gradebook import Assignment, GradeCategory, GradeEntry, GradeItem, Submission
 from .mixins import PKMixin, SoftDeleteMixin
+from .progress import StudentProgress, VideoProgress
 from .school import Grade, School, SchoolSetting, Subject, SubjectGradeLink
 from .system import AuditLog, Setting
+from .tenant import TenantQuota
 from .tutoring import TutoringRequest, TutoringSession, TutorProfile
 from .user import User, UserRole, UserRoleLink
 
 __all__ = [
+    "AcademicEvent",
     "AiMessage",
     "AiSession",
     "Answer",
@@ -26,6 +31,8 @@ __all__ = [
     "AuditLog",
     "ClassMember",
     "ClassRoom",
+    "FamilyLink",
+    "FamilyLinkCode",
     "Grade",
     "GradeCategory",
     "GradeEntry",
@@ -43,11 +50,13 @@ __all__ = [
     "SchoolSetting",
     "Setting",
     "SoftDeleteMixin",
+    "StudentProgress",
     "Subject",
     "SubjectGradeLink",
     "Submission",
     "Subscription",
     "SubscriptionPlan",
+    "TenantQuota",
     "TutorProfile",
     "TutoringRequest",
     "TutoringSession",
@@ -55,5 +64,6 @@ __all__ = [
     "User",
     "UserRole",
     "UserRoleLink",
+    "VideoProgress",
     "Announcement",
 ]

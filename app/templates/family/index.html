@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_section, azad_empty_state, azad_breadcrumb %}
+{% block title %}{{ _('أبنائي') }} — {{ _('روابط الأسرة') }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('أبنائي')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('أبنائي') }}</h1>
+<p class="page-subtitle">{{ _('حسابات الأبناء المرتبطة بحسابك') }}</p>
+
+{% call azad_section(_('ربط حساب طالب جديد')) %}
+<form method="post" action="{{ url_for('family.do_link') }}" class="azad-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-group">
+        <label for="code">{{ _('أدخل رمز الربط') }}</label>
+        {{ link_form.code(class="form-control", placeholder=_("مثال: ABCD1234")) }}
+        {% for error in link_form.code.errors %}
+        <div class="form-error">{{ error }}</div>
+        {% endfor %}
+    </div>
+    {{ link_form.submit(class="azad-btn") }}
+</form>
+{% endcall %}
+
+<div class="section-head"><h2>{{ _('الحسابات المرتبطة') }}</h2></div>
+{% if children %}
+<div class="azad-list">
+    {% for link in children %}
+    <div class="azad-item">
+        <div>
+            <div class="item-title">{{ link.student.name_ar or link.student.email }}</div>
+            <div class="item-meta">
+                <span>{{ link.student.email }}</span>
+                <span class="meta-chip">{{ _('مرتبط منذ') }} {{ link.linked_at.strftime('%Y-%m-%d') }}</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_progress', student_id=link.student_id) }}">{{ _('التقدم') }}</a>
+            <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_grades', student_id=link.student_id) }}">{{ _('الدرجات') }}</a>
+            <form method="post" action="{{ url_for('family.do_remove', link_id=link.id) }}" style="display:inline" onsubmit="return confirm('{{ _('هل أنت متأكد من إلغاء الربط؟') }}')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="azad-btn-outline azad-btn-sm" style="color:var(--color-danger)">{{ _('إلغاء الربط') }}</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(_('لا يوجد أبناء مرتبطين بحسابك. اطلب من طالبك إنشاء رمز الربط.'), icon_name='user') }}
+{% endif %}
+{% endblock %}

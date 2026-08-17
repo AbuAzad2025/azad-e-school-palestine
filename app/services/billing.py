@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from app.core.db import TxError, tx
@@ -191,3 +192,48 @@ def expire_subscriptions() -> int:
 def has_active_subscription(user_id: int, class_id: int) -> bool:
     sub = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").first()
     return sub is not None
+
+
+def subscription_balance(subscription_id: int) -> float:
+    """الرصيد المتبقي للاشتراك = السعر - مجموع الدفعات المعتمدة."""
+    sub = db.session.get(Subscription, subscription_id)
+    if not sub:
+        return 0
+    paid = (
+        db.session.query(func.sum(ManualPayment.amount))
+        .filter(
+            ManualPayment.subscription_id == subscription_id,
+            ManualPayment.status == "approved",
+        )
+        .scalar()
+        or 0
+    )
+    return float(sub.price) - float(paid)
+
+
+def can_record_payment(subscription_id: int, amount: float) -> tuple[bool, str]:
+    """يتحقق مما إذا كان المبلغ لا يتجاوز الرصيد المتبقي."""
+    balance = subscription_balance(subscription_id)
+    if amount <= 0:
+        return False, "المبلغ يجب أن يكون أكبر من صفر."
+    if amount > balance:
+        return False, f"المبلغ ({amount}) يتجاوز الرصيد المتبقي ({balance})."
+    return True, ""
+
+
+def subscription_payment_summary(subscription_id: int) -> dict:
+    """ملخص الدفعات للاشتراك."""
+    sub = db.session.get(Subscription, subscription_id)
+    if not sub:
+        return {}
+    payments = ManualPayment.query.filter_by(subscription_id=subscription_id).all()
+    approved = [p for p in payments if p.status == "approved"]
+    pending = [p for p in payments if p.status == "pending"]
+    total_paid = sum(float(p.amount) for p in approved)
+    return {
+        "total_price": float(sub.price),
+        "total_paid": total_paid,
+        "balance": float(sub.price) - total_paid,
+        "approved_count": len(approved),
+        "pending_count": len(pending),
+    }

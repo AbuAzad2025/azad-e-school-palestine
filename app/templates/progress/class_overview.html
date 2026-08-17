@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_section, azad_empty_state, azad_stat_card, azad_breadcrumb %}
+{% block title %}{{ _('تقدم الطلاب') }} — {{ class_room.name or class_room.subject.name_ar }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('تقدم الطلاب')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('تقدم الطلاب') }}</h1>
+<p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+
+{% if overview %}
+<div class="azad-list">
+    {% for item in overview %}
+    <div class="azad-item">
+        <div>
+            <div class="item-title">{{ item.student.name_ar or item.student.email }}</div>
+            <div class="item-meta">
+                <span>{{ item.completed_lessons }} / {{ item.total_lessons }} {{ _('درس مكتمل') }}</span>
+                <span class="meta-chip">{{ item.avg_progress }}% {{ _('متوسط التقدم') }}</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <div class="progress-bar" style="width:120px; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+                <div style="width:{{ item.avg_progress }}%; height:100%; background:var(--azad-green); border-radius:4px;"></div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(_('لا يوجد طلب مسجلين في هذا الصف أو لا توجد دروس منشورة.'), icon_name='users') }}
+{% endif %}
+{% endblock %}

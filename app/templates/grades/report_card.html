@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>تقرير الدرجات — {{ student.name_ar or student.email }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; direction: rtl; font-size: 12px; color: #333; }
+        .header { text-align: center; border-bottom: 3px solid #014e7c; padding-bottom: 1rem; margin-bottom: 1rem; }
+        .header h1 { color: #014e7c; margin: 0; font-size: 1.5rem; }
+        .header h2 { color: #333; margin: 0.5rem 0 0; font-size: 1.1rem; font-weight: normal; }
+        .info { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; }
+        .info div { font-size: 0.9rem; }
+        .info strong { color: #014e7c; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: center; }
+        th { background: #014e7c; color: white; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        .total-row { background: #014e7c !important; color: white; font-weight: bold; }
+        .section-title { color: #014e7c; border-bottom: 2px solid #014e7c; padding-bottom: 0.25rem; margin: 1rem 0 0.5rem; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+        .stat { text-align: center; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: #014e7c; }
+        .stat-label { font-size: 0.8rem; color: #666; }
+        .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>تقرير الدرجات</h1>
+        <h2>{{ class_room.name or class_room.subject.name_ar }} — الصف {{ class_room.grade.grade_level }}</h2>
+    </div>
+
+    <div class="info">
+        <div><strong>الاسم:</strong> {{ student.name_ar or student.email }}</div>
+        <div><strong>البريد:</strong> {{ student.email }}</div>
+        <div><strong>المادة:</strong> {{ class_room.subject.name_ar }}</div>
+        <div><strong>المعلم:</strong> {{ class_room.teacher.name_ar if class_room.teacher else '—' }}</div>
+    </div>
+
+    <h3 class="section-title">الدرجات حسب الأقسام</h3>
+    {% for cat in grade_data.categories %}
+    <table>
+        <tr>
+            <th colspan="4">{{ cat.name }} (وزن: {{ (cat.weight * 100)|int }}%)</th>
+        </tr>
+        <tr>
+            <th>البند</th>
+            <th>الدرجة القصوى</th>
+            <th>الدرجة المحصّلة</th>
+            <th>النسبة %</th>
+        </tr>
+        {% for item in cat.items %}
+        <tr>
+            <td>{{ item.title }}</td>
+            <td>{{ item.max_mark }}</td>
+            <td>{{ item.earned if item.earned is not none else '—' }}</td>
+            <td>{{ item.pct if item.pct is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td colspan="3">متوسط القسم</td>
+            <td>{{ cat.category_pct }}%</td>
+        </tr>
+    </table>
+    {% endfor %}
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value">{{ grade_data.final_grade }}</div>
+            <div class="stat-label">الدرجة النهائية</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">{{ grade_data.letter_grade }}</div>
+            <div class="stat-label">التقدير</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">{{ avg_progress }}%</div>
+            <div class="stat-label">متوسط التقدم</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+    </div>
+</body>
+</html>

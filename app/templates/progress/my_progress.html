@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_section, azad_empty_state, azad_breadcrumb %}
+{% block title %}{{ _('تقدمي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('تقدمي')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('تقدمي') }}</h1>
+<p class="page-subtitle">{{ _('متابعة تقدمي في جميع صفوفي') }}</p>
+
+{% if classes_progress %}
+{% for cp in classes_progress %}
+<div class="section-head">
+    <h2>{{ cp.class_room.name or cp.class_room.subject.name_ar }}</h2>
+    <span class="meta-chip">{{ cp.class_room.grade.grade_level }}</span>
+</div>
+
+{% if cp.lessons %}
+<div class="azad-list">
+    {% for item in cp.lessons %}
+    <div class="azad-item">
+        <div>
+            <div class="item-title">{{ item.lesson.title }}</div>
+            <div class="item-meta">
+                <span>{{ {'not_started': _('لم يبدأ'), 'in_progress': _('قيد التنفيذ'), 'completed': _('مكتمل')}[item.status] }}</span>
+                <span>{{ _('الوقت') }}: {{ (item.seconds_spent // 60) }} {{ _('دقيقة') }}</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <div class="progress-bar" style="width:100px; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+                <div style="width:{{ item.progress_pct }}%; height:100%; background:{% if item.status == 'completed' %}var(--azad-green){% elif item.status == 'in_progress' %}var(--azad-blue){% else %}var(--text-muted){% endif %}; border-radius:4px;"></div>
+            </div>
+            <span class="meta-chip">{{ item.progress_pct }}%</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(_('لا توجد دروس منشورة في هذا الصف.'), icon_name='book-open') }}
+{% endif %}
+{% endfor %}
+{% else %}
+{{ azad_empty_state(_('لم تنضم لأي صف بعد.'), icon_name='school') }}
+{% endif %}
+{% endblock %}

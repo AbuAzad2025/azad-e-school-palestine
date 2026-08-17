@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_section, azad_empty_state, azad_stat_card, azad_breadcrumb %}
+{% block title %}{{ _('تقدم الطالب') }} — {{ _('روابط الأسرة') }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('أبنائي'), 'href': url_for('family.index')}, {'label': _('تقدم الطالب')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('تقدم الطالب') }}</h1>
+<p class="page-subtitle">{{ _('متابعة تقدم الطالب في جميع صفوفه') }}</p>
+
+{% if memberships %}
+<div class="azad-list">
+    {% for m in memberships %}
+    <div class="azad-item">
+        <div>
+            <div class="item-title">{{ m.class_room.name or m.class_room.subject.name_ar }}</div>
+            <div class="item-meta">
+                <span>{{ m.class_room.subject.name_ar }}</span>
+                <span>{{ _('الصف') }} {{ m.class_room.grade.grade_level }}</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <span class="meta-chip" style="color:var(--azad-green)">{{ _('نشط') }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(_('الطالب غير مسجل في أي صف حالياً.'), icon_name='book-open') }}
+{% endif %}
+{% endblock %}

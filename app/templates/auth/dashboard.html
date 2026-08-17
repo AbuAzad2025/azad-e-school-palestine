@@ -80,6 +80,7 @@
         <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('assessment.quiz_list', class_id=c.id) }}">{{ icon('quiz') }} {{ _('الاختبارات') }}</a>
         <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.assignments', class_id=c.id) }}">{{ icon('note') }} {{ _('الواجبات') }}</a>
         <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.attendance', class_id=c.id) }}">{{ icon('calendar') }} {{ _('الحضور') }}</a>
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('progress.class_overview', class_id=c.id) }}">{{ icon('chart') }} {{ _('التقدم') }}</a>
         <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.gradebook', class_id=c.id) }}">{{ icon('chart') }} {{ _('سجل الدرجات') }}</a>
       </div>
     </div>
@@ -126,13 +127,15 @@
   <div class="section-head"><h2>{{ _('دروس خصوصية') }}</h2></div>
   {{ azad_quick_actions([
     {'icon': 'books', 'label': _('البحث عن معلم'), 'href': url_for('tutoring.index'), 'color': 'var(--azad-green)'},
-    {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'}
+    {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'},
+    {'icon': 'chart', 'label': _('تقدمي'), 'href': url_for('progress.my_progress'), 'color': 'var(--azad-navy)'}
   ]) }}
 
 {% elif is_parent() %}
   {# ═══ Parent Dashboard ═══ #}
   <div class="section-head">
     <h2>{{ _('صفوف أبنائي') }}</h2>
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.index') }}">{{ icon('user') }} {{ _('إدارة الأبناء') }}</a>
   </div>
   {% if children_memberships %}
   <div class="azad-list">
@@ -161,7 +164,7 @@
     {% endfor %}
   </div>
   {% else %}
-  {{ azad_empty_state(_('لا يوجد أبناء مرتبطين بحسابك.'), icon_name='user') }}
+  {{ azad_empty_state(_('لا يوجد أبناء مرتبطين بحسابك.'), icon_name='user', action_url=url_for('family.index'), action_label=_('إدارة الأبناء')) }}
   {% endif %}
 
 {% endif %}

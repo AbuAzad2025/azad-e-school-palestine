@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>فاتورة {{ invoice_number }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: Arial, sans-serif; direction: rtl; font-size: 12px; color: #333; }
+        .header { text-align: center; border-bottom: 3px solid #014e7c; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .header h1 { color: #014e7c; margin: 0; font-size: 1.8rem; }
+        .header .invoice-no { color: #666; font-size: 0.9rem; margin-top: 0.5rem; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .info-box { padding: 1rem; background: #f8f9fa; border-radius: 8px; }
+        .info-box h3 { margin: 0 0 0.5rem; color: #014e7c; font-size: 0.9rem; }
+        .info-box p { margin: 0.25rem 0; font-size: 0.85rem; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+        th, td { padding: 0.75rem; border: 1px solid #ddd; text-align: center; }
+        th { background: #014e7c; color: white; }
+        .total-row { background: #014e7c !important; color: white; font-weight: bold; font-size: 1.1rem; }
+        .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .summary-item { text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px; }
+        .summary-value { font-size: 1.3rem; font-weight: bold; color: #014e7c; }
+        .summary-label { font-size: 0.8rem; color: #666; }
+        .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>منصة مدرسة أزاد الإلكترونية</h1>
+        <div class="invoice-no">فاتورة رقم: {{ invoice_number }}</div>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-box">
+            <h3>بيانات الاشتراك</h3>
+            <p><strong>الطالب:</strong> {{ subscription.user.name_ar or subscription.user.email }}</p>
+            <p><strong>الخطة:</strong> {{ subscription.plan.name }}</p>
+            <p><strong>المدة:</strong> {{ subscription.start_at.strftime('%Y-%m-%d') if subscription.start_at else '—' }} إلى {{ subscription.end_at.strftime('%Y-%m-%d') if subscription.end_at else '—' }}</p>
+        </div>
+        <div class="info-box">
+            <h3>تفاصيل الفاتورة</h3>
+            <p><strong>رقم الاشتراك:</strong> #{{ subscription.id }}</p>
+            <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
+            <p><strong>التاريخ:</strong> {{ subscription.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+    </div>
+
+    <table>
+        <tr>
+            <th>البيان</th>
+            <th>المبلغ</th>
+        </tr>
+        <tr>
+            <td>اشتراك {{ subscription.plan.name }}</td>
+            <td>{{ subscription.price }} {{ subscription.currency }}</td>
+        </tr>
+        <tr>
+            <td>المدفوع</td>
+            <td>{{ summary.total_paid }} {{ subscription.currency }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>المتبقي</td>
+            <td>{{ summary.balance }} {{ subscription.currency }}</td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+    </div>
+</body>
+</html>

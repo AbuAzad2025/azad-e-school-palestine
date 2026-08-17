@@ -220,6 +220,9 @@ def attempt_submit(attempt_id):
             _("محاولة جديدة في اختبار"),
             f"{current_user.name_ar}: {score}",
         )
+    from app.services.email import send_quiz_result_email
+
+    send_quiz_result_email(current_user, attempt.quiz, score)
     flash(_("سُلّم اختبارك."), "success")
     return redirect(url_for("assessment.attempt_result", attempt_id=attempt.id))
 

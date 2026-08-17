@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_section, azad_empty_state, azad_breadcrumb %}
+{% block title %}{{ _('تقدم الطالب') }} — {{ class_room.name or class_room.subject.name_ar }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('تقدم الطلاب'), 'href': url_for('progress.class_overview', class_id=class_room.id)}, {'label': _('تقدم الطالب')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('تقدم الطالب') }}</h1>
+<p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
+
+{% if progress %}
+<div class="azad-list">
+    {% for item in progress %}
+    <div class="azad-item">
+        <div>
+            <div class="item-title">{{ item.lesson.title }}</div>
+            <div class="item-meta">
+                <span>{{ _('الحالة') }}: {{ {'not_started': _('لم يبدأ'), 'in_progress': _('قيد التنفيذ'), 'completed': _('مكتمل')}[item.status] }}</span>
+                <span>{{ _('الوقت') }}: {{ (item.seconds_spent // 60) }} {{ _('دقيقة') }}</span>
+            </div>
+        </div>
+        <div class="item-actions">
+            <div class="progress-bar" style="width:100px; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+                <div style="width:{{ item.progress_pct }}%; height:100%; background:{% if item.status == 'completed' %}var(--azad-green){% elif item.status == 'in_progress' %}var(--azad-blue){% else %}var(--text-muted){% endif %}; border-radius:4px;"></div>
+            </div>
+            <span class="meta-chip">{{ item.progress_pct }}%</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(_('لا توجد دروس منشورة في هذا الصف.'), icon_name='book-open') }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_section, azad_breadcrumb %}
+{% block title %}{{ _('رمز الربط') }} — {{ _('روابط الأسرة') }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('رمز الربط')}]) }}
+{% endblock %}
+{% block content %}
+<h1 class="page-title azad-title">{{ _('رمز الربط') }}</h1>
+<p class="page-subtitle">{{ _('أرسل هذا الرمز لولي أمرك لربط حسابك بحسابه') }}</p>
+
+{% call azad_section(_('رمز الربط الخاص بك')) %}
+<div style="text-align:center; padding:2rem; background:var(--bg-secondary); border-radius:var(--radius-lg); margin:1rem 0;">
+    <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:0.5rem;">{{ _('شارك هذا الرمز فقط مع ولي أمرك') }}</p>
+    <div style="font-size:2rem; font-weight:700; letter-spacing:0.3em; color:var(--azad-navy); font-family:monospace;">{{ code }}</div>
+    <p style="font-size:0.8em; color:var(--text-muted); margin-top:0.5rem;">{{ _('الرمز صالح لاستخدام واحد فقط') }}</p>
+</div>
+<div style="text-align:center; margin-top:1rem;">
+    <a class="azad-btn azad-btn-sm" href="{{ url_for('auth.dashboard') }}">{{ _('العودة للوحة التحكم') }}</a>
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.generate_code') }}">{{ _('إنشاء رمز جديد') }}</a>
+</div>
+{% endcall %}
+{% endblock %}
