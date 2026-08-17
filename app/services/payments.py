@@ -5,6 +5,8 @@
 
 import hashlib
 import hmac
+import json
+import logging
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -15,6 +17,8 @@ from typing import Any
 
 from app.extensions import db
 from app.models.billing import ProcessedEvent
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentGateway(Enum):
@@ -179,7 +183,7 @@ class PayTabsGateway(PaymentGatewayBase):
             "return": self.config.get("return_url") or os.getenv("PAYTABS_RETURN_URL"),
         }
         headers = {"Authorization": f"Bearer {self.server_key}", "Content-Type": "application/json"}
-        response = requests.post(f"{self.base_url}/payment/request", json=payload, headers=headers, timeout=30)
+        response = requests.post(f"{self.base_url}/payment/request", json=payload, headers=headers, timeout=(3, 27))
 
         if response.status_code == 200:
             data = response.json()
@@ -205,7 +209,9 @@ class PayTabsGateway(PaymentGatewayBase):
 
         # PayTabs يرسل التوقيع في Header: X-Paytabs-Signature
         received_sig = headers.get("X-Paytabs-Signature", "")
-        payload_bytes = str(payload).encode() if isinstance(payload, dict) else str(payload).encode()
+        payload_bytes = (
+            json.dumps(payload, sort_keys=True).encode() if isinstance(payload, dict) else str(payload).encode()
+        )
 
         expected_sig = hmac.new(self.webhook_secret.encode(), payload_bytes, hashlib.sha256).hexdigest()
 
@@ -224,7 +230,7 @@ class PayTabsGateway(PaymentGatewayBase):
             response = requests.get(
                 f"{self.base_url}/payment/query/{tran_ref}",
                 headers={"Authorization": f"Bearer {self.server_key}"},
-                timeout=30,
+                timeout=(3, 27),
             )
             if response.status_code == 200:
                 data = response.json()
@@ -235,7 +241,7 @@ class PayTabsGateway(PaymentGatewayBase):
                         )
                     return True
         except Exception:
-            pass
+            logger.exception("PayTabs verification API call failed")
         return False
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
@@ -278,8 +284,10 @@ class CashUGateway(PaymentGatewayBase):
 
         # CashU يستخدم توقيع HMAC في Header
         received_sig = headers.get("X-Cashu-Signature", "")
-        payload_str = str(payload)
-        expected_sig = hmac.new(self.webhook_secret.encode(), payload_str.encode(), hashlib.sha256).hexdigest()
+        payload_bytes = (
+            json.dumps(payload, sort_keys=True).encode() if isinstance(payload, dict) else str(payload).encode()
+        )
+        expected_sig = hmac.new(self.webhook_secret.encode(), payload_bytes, hashlib.sha256).hexdigest()
 
         if not hmac.compare_digest(received_sig, expected_sig):
             return False
@@ -296,7 +304,7 @@ class CashUGateway(PaymentGatewayBase):
             response = requests.get(
                 f"{self.base_url}/transaction/{txn_id}",
                 headers={"Authorization": f"Bearer {self.encryption_key}"},
-                timeout=30,
+                timeout=(3, 27),
             )
             if response.status_code == 200:
                 data = response.json()
@@ -305,7 +313,7 @@ class CashUGateway(PaymentGatewayBase):
                         db.session.add(ProcessedEvent(event_id=f"cashu_{txn_id}", gateway="cashu", payload=payload))
                     return True
         except Exception:
-            pass
+            logger.exception("CashU verification API call failed")
         return False
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:

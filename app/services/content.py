@@ -1,6 +1,7 @@
 """خدمات المحتوى: الوحدات والدروس والمرفقات (رفع آمن عبر core/uploads)."""
 
 import bleach
+from sqlalchemy.orm import selectinload
 
 from app.core.db import tx
 from app.core.uploads import save_upload
@@ -79,7 +80,7 @@ def list_lessons(class_id: int, include_drafts: bool = True):
 
 
 def get_lesson(lesson_id: int) -> Lesson | None:
-    return Lesson.query.filter_by(id=lesson_id, deleted_at=None).first()
+    return Lesson.query.filter_by(id=lesson_id, deleted_at=None).options(selectinload(Lesson.attachments)).first()
 
 
 def create_lesson(

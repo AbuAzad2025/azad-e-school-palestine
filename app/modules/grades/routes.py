@@ -25,6 +25,7 @@ from app.services.gradebook import (
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
 
 from . import bp
 from .forms import AssignmentForm, CategoryForm, GradeItemForm, GradeSubmissionForm, SubmissionForm
@@ -38,7 +39,12 @@ def _class_or_404(class_id):
 
 
 def _students(class_id):
-    return ClassMember.query.filter_by(class_id=class_id, status="active").order_by(ClassMember.joined_at).all()
+    return (
+        ClassMember.query.filter_by(class_id=class_id, status="active")
+        .options(joinedload(ClassMember.user))
+        .order_by(ClassMember.joined_at)
+        .all()
+    )
 
 
 @bp.get("/<int:class_id>/assignments")

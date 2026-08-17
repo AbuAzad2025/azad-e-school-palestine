@@ -1,5 +1,7 @@
 """خدمات التقييم: اختبارات، أسئلة، محاولات، تصحيح آلي ونتائج."""
 
+from sqlalchemy.orm import joinedload, selectinload
+
 from app.core.db import tx
 from app.extensions import db
 from app.models.assessment import Answer, Question, Quiz, QuizAttempt
@@ -33,7 +35,12 @@ def create_quiz(
 
 
 def list_quizzes(class_id: int):
-    return Quiz.query.filter_by(class_id=class_id).order_by(Quiz.created_at.desc()).all()
+    return (
+        Quiz.query.filter_by(class_id=class_id)
+        .options(selectinload(Quiz.questions))
+        .order_by(Quiz.created_at.desc())
+        .all()
+    )
 
 
 def add_question(quiz: Quiz, qtype: str, prompt: str, options=None, correct_answer=None, mark=None) -> Question:
@@ -143,4 +150,7 @@ def grade_essay(answer: Answer, awarded_mark: float | None) -> None:
 
 
 def get_attempt(attempt_id: int) -> QuizAttempt | None:
-    return db.session.get(QuizAttempt, attempt_id)
+    return QuizAttempt.query.options(
+        joinedload(QuizAttempt.quiz).selectinload(Quiz.questions),
+        selectinload(QuizAttempt.answers),
+    ).get(attempt_id)

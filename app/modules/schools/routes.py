@@ -20,6 +20,7 @@ from app.services.schools import (
 from flask import abort, flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload, selectinload
 
 from . import bp
 from .forms import AssignTeacherForm, ClassForm, GradeForm, JoinClassForm, SchoolForm
@@ -135,9 +136,16 @@ def class_join():
 @bp.get("/classes")
 @login_required
 def my_classes():
-    from app.models.class_room import ClassMember
+    from app.models.class_room import ClassMember, ClassRoom
 
-    memberships = ClassMember.query.filter_by(user_id=current_user.id, status="active").all()
+    memberships = (
+        ClassMember.query.filter_by(user_id=current_user.id, status="active")
+        .options(
+            selectinload(ClassMember.class_room).joinedload(ClassRoom.subject),
+            selectinload(ClassMember.class_room).joinedload(ClassRoom.grade),
+        )
+        .all()
+    )
     return render_template("schools/my_classes.html", memberships=memberships)
 
 
@@ -170,7 +178,11 @@ def class_detail(class_id):
 def db_get_class(class_id):
     from app.models.class_room import ClassRoom
 
-    return ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+    return (
+        ClassRoom.query.filter_by(id=class_id, deleted_at=None)
+        .options(joinedload(ClassRoom.subject), joinedload(ClassRoom.grade), joinedload(ClassRoom.teacher))
+        .first()
+    )
 
 
 @bp.post("/class/<int:class_id>/code")

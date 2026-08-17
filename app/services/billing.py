@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy.orm import joinedload
+
 from app.core.db import TxError, tx
 from app.core.uploads import save_upload
 from app.extensions import db
@@ -157,7 +159,16 @@ def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> No
 
 
 def pending_payments():
-    return ManualPayment.query.filter_by(status="pending").order_by(ManualPayment.created_at.desc()).all()
+    return (
+        ManualPayment.query.filter_by(status="pending")
+        .options(
+            joinedload(ManualPayment.subscription).joinedload(Subscription.user),
+            joinedload(ManualPayment.subscription).joinedload(Subscription.plan),
+            joinedload(ManualPayment.receipts),
+        )
+        .order_by(ManualPayment.created_at.desc())
+        .all()
+    )
 
 
 def expire_subscriptions() -> int:

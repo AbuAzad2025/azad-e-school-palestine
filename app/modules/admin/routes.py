@@ -11,11 +11,12 @@ from app.models.class_room import ClassRoom
 from app.models.content import Lesson
 from app.models.gradebook import Assignment
 from app.models.school import School
-from app.models.user import User, UserApprovalStatus, UserRole
+from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
 
 from . import bp
 
@@ -123,7 +124,7 @@ def users_list():
 @bp.get("/users/<int:user_id>")
 @login_required
 def user_detail(user_id):
-    user = User.query.get_or_404(user_id)
+    user = User.query.options(selectinload(User.role_links).joinedload(UserRoleLink.school)).get_or_404(user_id)
     memberships = user.role_links
     return render_template("admin/user_detail.html", user=user, memberships=memberships)
 
@@ -219,7 +220,14 @@ def subscriptions_list():
     if status_filter:
         query = query.filter_by(status=status_filter)
 
-    pagination = query.order_by(Subscription.created_at.desc()).paginate(page=page, per_page=25, error_out=False)
+    pagination = (
+        query.options(
+            joinedload(Subscription.user),
+            joinedload(Subscription.plan),
+        )
+        .order_by(Subscription.created_at.desc())
+        .paginate(page=page, per_page=25, error_out=False)
+    )
 
     return render_template(
         "admin/subscriptions_list.html",
@@ -241,7 +249,16 @@ def subscription_cancel(sub_id):
 @bp.get("/payments/pending")
 @login_required
 def pending_payments():
-    payments = ManualPayment.query.filter_by(status="pending").order_by(ManualPayment.created_at.desc()).all()
+    payments = (
+        ManualPayment.query.filter_by(status="pending")
+        .options(
+            joinedload(ManualPayment.subscription).joinedload(Subscription.user),
+            joinedload(ManualPayment.subscription).joinedload(Subscription.plan),
+            joinedload(ManualPayment.receipts),
+        )
+        .order_by(ManualPayment.created_at.desc())
+        .all()
+    )
     return render_template("admin/pending_payments.html", payments=payments)
 
 

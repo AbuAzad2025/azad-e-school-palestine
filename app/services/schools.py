@@ -2,6 +2,8 @@
 
 import secrets
 
+from sqlalchemy.orm import joinedload
+
 from app.core.db import tx
 from app.extensions import db
 from app.models.class_room import ClassMember, ClassRoom
@@ -86,11 +88,22 @@ def regenerate_join_code(class_room: ClassRoom) -> str:
 def list_classes(school_id: int):
     from app.core.tenancy import scope_by_school
 
-    return scope_by_school(ClassRoom, school_id).filter_by(is_active=True).order_by(ClassRoom.id.desc()).all()
+    return (
+        scope_by_school(ClassRoom, school_id)
+        .filter_by(is_active=True)
+        .options(joinedload(ClassRoom.subject), joinedload(ClassRoom.grade), joinedload(ClassRoom.teacher))
+        .order_by(ClassRoom.id.desc())
+        .all()
+    )
 
 
 def get_class_members(class_room: ClassRoom):
-    return ClassMember.query.filter_by(class_id=class_room.id, status="active").order_by(ClassMember.joined_at).all()
+    return (
+        ClassMember.query.filter_by(class_id=class_room.id, status="active")
+        .options(joinedload(ClassMember.user))
+        .order_by(ClassMember.joined_at)
+        .all()
+    )
 
 
 def join_class(class_room: ClassRoom, user: User) -> str | None:

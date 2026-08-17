@@ -3,6 +3,8 @@
 M0: هيكل قابل للتشغيل. تُضاف الوحدات (blueprints) في مراحلها.
 """
 
+import logging
+
 from config import Config
 from flask import Flask, jsonify, render_template, request
 from flask_limiter import Limiter
@@ -10,6 +12,8 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
 from .extensions import babel, csrf, db, login_manager, migrate
+
+logger = logging.getLogger(__name__)
 
 
 def _select_locale():
@@ -142,6 +146,12 @@ def create_app(config_class=Config):
 
     @app.errorhandler(500)
     def server_error(e):
+        db.session.rollback()
+        return render_template("errors/500.html"), 500
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        logger.exception("Unhandled exception: %s", e)
         db.session.rollback()
         return render_template("errors/500.html"), 500
 

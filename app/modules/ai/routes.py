@@ -13,11 +13,13 @@ from . import bp
 def chat_page():
     """صفحة المحادثة مع المساعد الذكي."""
     from app.models.ai import AiSession
+    from sqlalchemy.orm import selectinload
 
     # Load user's chat sessions
     sessions_data = []
     for s in (
         AiSession.query.filter_by(user_id=current_user.id, session_type="student_helper")
+        .options(selectinload(AiSession.messages))
         .order_by(AiSession.created_at.desc())
         .all()
     ):

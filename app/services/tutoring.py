@@ -7,6 +7,8 @@ import hashlib
 import os
 import secrets
 
+from sqlalchemy.orm import joinedload
+
 from app.core.db import tx
 from app.extensions import db
 from app.models.tutoring import TutoringRequest, TutoringSession, TutorProfile
@@ -60,7 +62,7 @@ def search_tutors(q: str | None = None, subject: str | None = None):
         query = query.filter(TutorProfile.subject.ilike(f"%{subject}%"))
     if q:
         query = query.filter(db.or_(TutorProfile.subject.ilike(f"%{q}%"), TutorProfile.bio.ilike(f"%{q}%")))
-    return query.order_by(TutorProfile.updated_at.desc()).all()
+    return query.options(joinedload(TutorProfile.tutor)).order_by(TutorProfile.updated_at.desc()).all()
 
 
 def find_by_invite_code(code: str) -> TutorProfile | None:
@@ -165,11 +167,21 @@ def update_session(session_: TutoringSession, **fields) -> None:
 
 
 def list_requests_for_tutor(tutor_id: int):
-    return TutoringRequest.query.filter_by(tutor_id=tutor_id).order_by(TutoringRequest.created_at.desc()).all()
+    return (
+        TutoringRequest.query.filter_by(tutor_id=tutor_id)
+        .options(joinedload(TutoringRequest.student))
+        .order_by(TutoringRequest.created_at.desc())
+        .all()
+    )
 
 
 def list_requests_for_student(student_id: int):
-    return TutoringRequest.query.filter_by(student_id=student_id).order_by(TutoringRequest.created_at.desc()).all()
+    return (
+        TutoringRequest.query.filter_by(student_id=student_id)
+        .options(joinedload(TutoringRequest.tutor))
+        .order_by(TutoringRequest.created_at.desc())
+        .all()
+    )
 
 
 def list_sessions_for(user_id: int, as_tutor: bool):
@@ -178,6 +190,10 @@ def list_sessions_for(user_id: int, as_tutor: bool):
         if as_tutor
         else TutoringSession.query.filter_by(student_id=user_id)
     )
+    if as_tutor:
+        query = query.options(joinedload(TutoringSession.student))
+    else:
+        query = query.options(joinedload(TutoringSession.tutor))
     return query.order_by(TutoringSession.scheduled_at.desc()).all()
 
 

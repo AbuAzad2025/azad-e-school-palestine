@@ -7,6 +7,7 @@
 
 import asyncio
 import json
+import logging
 import os
 import random
 import time
@@ -19,6 +20,8 @@ from app.extensions import db
 from app.models.ai import AiMessage, AiSession, AiUsageLog
 from app.models.user import User, UserRole
 from app.services.base import tx
+
+logger = logging.getLogger(__name__)
 
 try:
     from openai import AsyncOpenAI
@@ -377,6 +380,85 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
     # ======================================================================
     # محادثة الطالب مع Streaming SSE
     # ======================================================================
+    def _get_or_create_session(self, user_id: int, class_id: int | None, lesson_id: int | None) -> "AiSession":
+        session = AiSession.query.filter_by(user_id=user_id, session_type="student_helper").first()
+        if not session:
+            session = AiSession(
+                user_id=user_id,
+                session_type="student_helper",
+                class_id=class_id,
+                lesson_id=lesson_id,
+            )
+            db.session.add(session)
+            db.session.commit()
+        return session
+
+    def _build_chat_messages(self, session_id: int, question: str, context: str | None) -> list[dict]:
+        system_prompt = (
+            "You are an AI tutor for Palestinian curriculum (K-12).\n"
+            "Language: Arabic (primary) / English.\n"
+            "Style: Encouraging, step-by-step, pedagogical.\n"
+            f"Current context: {context or 'General tutoring'}.\n"
+            "If math: show steps. If science: explain concepts. "
+            "If language: help with grammar/vocab.\n"
+            "Be concise but thorough. Use Arabic as primary language."
+        )
+        recent_messages = (
+            AiMessage.query.filter_by(session_id=session_id).order_by(AiMessage.created_at.desc()).limit(10).all()
+        )
+        history = [
+            {"role": msg.role, "content": msg.content}
+            for msg in reversed(recent_messages)
+            if msg.role in ("user", "assistant")
+        ]
+        return [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": question}]
+
+    async def _mock_stream(self, question: str, context: str | None):
+        mock_answer = self._mock_ai_answer(question, context)
+        for chunk in self._mock_stream_chunks(mock_answer):
+            yield f"data: {json.dumps({'delta': chunk})}\n\n"
+            await asyncio.sleep(0.02)
+        yield "data: [DONE]\n\n"
+
+    async def _real_stream(self, messages: list[dict], session_id: int):
+        can, msg = self._check_limits(2000)
+        if not can:
+            yield f"data: {json.dumps({'error': msg})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        client = self._get_client()
+        stream = await client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
+            temperature=self.config.temperature,
+            max_tokens=self.config.max_tokens,
+            stream=True,
+        )
+
+        full_answer = ""
+        prompt_tokens = 0
+        completion_tokens = 0
+
+        async for chunk in stream:
+            if chunk.choices[0].delta.content:
+                delta = chunk.choices[0].delta.content
+                full_answer += delta
+                yield f"data: {json.dumps({'delta': delta})}\n\n"
+            if chunk.usage:
+                prompt_tokens = chunk.usage.prompt_tokens
+                completion_tokens = chunk.usage.completion_tokens
+
+        yield "data: [DONE]\n\n"
+
+        if full_answer:
+            ai_msg = AiMessage(session_id=session_id, role="assistant", content=full_answer)
+            db.session.add(ai_msg)
+            db.session.commit()
+
+        if completion_tokens > 0:
+            self._record_usage(prompt_tokens or 100, completion_tokens, 0, "chat")
+
     async def ask_question_stream(
         self,
         user_id: int,
@@ -386,90 +468,22 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
         lesson_id: int | None = None,
     ):
         """محادثة تدفقية (SSE) مع الطالب."""
+        session = self._get_or_create_session(user_id, class_id, lesson_id)
 
-        # Get or create session
-        session = AiSession.query.filter_by(user_id=user_id, session_type="student_helper").first()
-        if not session:
-            session = AiSession(user_id=user_id, session_type="student_helper", class_id=class_id, lesson_id=lesson_id)
-            db.session.add(session)
-            db.session.commit()
-
-        # Save user message
         user_msg = AiMessage(session_id=session.id, role="user", content=question)
         db.session.add(user_msg)
         db.session.commit()
 
-        # Build context-aware system prompt
-        system_prompt = f"""You are an AI tutor for Palestinian curriculum (K-12).
-Language: Arabic (primary) / English.
-Style: Encouraging, step-by-step, pedagogical.
-Current context: {context or "General tutoring"}.
-If math: show steps. If science: explain concepts. If language: help with grammar/vocab.
-Be concise but thorough. Use Arabic as primary language."""
-
-        # Get recent conversation history
-        recent_messages = (
-            AiMessage.query.filter_by(session_id=session.id).order_by(AiMessage.created_at.desc()).limit(10).all()
-        )
-        history = []
-        for msg in reversed(recent_messages):
-            if msg.role in ("user", "assistant"):
-                history.append({"role": msg.role, "content": msg.content})
-
-        messages = [{"role": "system", "content": system_prompt}] + history + [{"role": "user", "content": question}]
+        messages = self._build_chat_messages(session.id, question, context)
 
         if not self.config.api_key or not OPENAI_AVAILABLE:
-            # Mock streaming
-            mock_answer = self._mock_ai_answer(question, context)
-            for chunk in self._mock_stream_chunks(mock_answer):
-                yield f"data: {json.dumps({'delta': chunk})}\n\n"
-                await asyncio.sleep(0.02)
-            yield "data: [DONE]\n\n"
+            async for chunk in self._mock_stream(question, context):
+                yield chunk
             return
 
         try:
-            can, msg = self._check_limits(2000)
-            if not can:
-                yield f"data: {json.dumps({'error': msg})}\n\n"
-                yield "data: [DONE]\n\n"
-                return
-
-            client = self._get_client()
-            stream = await client.chat.completions.create(
-                model=self.config.model,
-                messages=messages,
-                temperature=self.config.temperature,
-                max_tokens=self.config.max_tokens,
-                stream=True,
-            )
-
-            full_answer = ""
-            prompt_tokens = 0
-            completion_tokens = 0
-
-            async for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    delta = chunk.choices[0].delta.content
-                    full_answer += delta
-                    yield f"data: {json.dumps({'delta': delta})}\n\n"
-
-                # Track usage from stream
-                if chunk.usage:
-                    prompt_tokens = chunk.usage.prompt_tokens
-                    completion_tokens = chunk.usage.completion_tokens
-
-            yield "data: [DONE]\n\n"
-
-            # Save assistant response
-            if full_answer:
-                ai_msg = AiMessage(session_id=session.id, role="assistant", content=full_answer)
-                db.session.add(ai_msg)
-                db.session.commit()
-
-            # Log usage
-            if completion_tokens > 0:
-                self._record_usage(prompt_tokens or 100, completion_tokens, 0, "chat")
-
+            async for chunk in self._real_stream(messages, session.id):
+                yield chunk
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
             yield "data: [DONE]\n\n"
@@ -493,8 +507,8 @@ Be concise but thorough. Use Arabic as primary language."""
                     parsed = json.loads(data)
                     if "delta" in parsed:
                         full_answer += parsed["delta"]
-                except Exception:
-                    pass
+                except (json.JSONDecodeError, KeyError):
+                    logger.debug("Non-JSON SSE chunk skipped in ask_question")
 
         session = AiSession.query.filter_by(user_id=user_id, session_type="student_helper").first()
         return {"question": question, "answer": full_answer, "session_id": session.id if session else None}

@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from sqlalchemy.orm import joinedload
+
 from app.core.db import TxError, tx
 from app.core.uploads import save_upload
 from app.extensions import db
@@ -66,7 +68,12 @@ def submit_assignment(
 
 
 def list_submissions(assignment: Assignment):
-    return Submission.query.filter_by(assignment_id=assignment.id).order_by(Submission.submitted_at.desc()).all()
+    return (
+        Submission.query.filter_by(assignment_id=assignment.id)
+        .options(joinedload(Submission.student))
+        .order_by(Submission.submitted_at.desc())
+        .all()
+    )
 
 
 def grade_submission(submission: Submission, mark, feedback: str | None = None, graded_by=None) -> None:

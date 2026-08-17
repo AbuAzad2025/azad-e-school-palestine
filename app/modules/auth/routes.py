@@ -6,6 +6,7 @@ from flask import current_app, flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
 
 from . import bp
 from .forms import ForgotPasswordForm, LoginForm, RegisterForm, ResetPasswordForm
@@ -95,7 +96,14 @@ def dashboard():
     from app.models.user import User, UserRole
 
     # Common data
-    memberships = ClassMember.query.filter_by(user_id=current_user.id, status="active").all()
+    memberships = (
+        ClassMember.query.filter_by(user_id=current_user.id, status="active")
+        .options(
+            selectinload(ClassMember.class_room).joinedload(ClassRoom.subject),
+            selectinload(ClassMember.class_room).joinedload(ClassRoom.grade),
+        )
+        .all()
+    )
 
     # Role-specific data
     school_count = 0
@@ -148,7 +156,12 @@ def dashboard():
         subscription_count=subscription_count,
         memberships=memberships,
         my_classes=(
-            ClassRoom.query.filter_by(teacher_id=current_user.id, deleted_at=None).all()
+            ClassRoom.query.filter_by(teacher_id=current_user.id, deleted_at=None)
+            .options(
+                joinedload(ClassRoom.subject),
+                joinedload(ClassRoom.grade),
+            )
+            .all()
             if current_user.role == UserRole.teacher
             else []
         ),
