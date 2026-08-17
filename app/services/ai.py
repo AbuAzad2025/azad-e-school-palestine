@@ -29,6 +29,7 @@ except ImportError:
 
     class AsyncOpenAI:  # type: ignore[no-redef]
         """Placeholder when openai is not installed."""
+
         pass
 
 
