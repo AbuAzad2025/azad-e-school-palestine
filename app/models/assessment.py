@@ -26,6 +26,9 @@ class Quiz(PKMixin, db.Model):
     total_mark: Mapped[float | None] = mapped_column(Numeric(6, 2))
     status: Mapped[str] = mapped_column(String(10), default="draft", nullable=False)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    enable_proctoring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    max_tab_switches: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    fullscreen_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     questions: Mapped[list[Question]] = relationship(back_populates="quiz", cascade="all, delete-orphan")
 
@@ -71,3 +74,11 @@ class Answer(PKMixin, db.Model):
     awarded_mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
 
     attempt: Mapped[QuizAttempt] = relationship(back_populates="answers")
+
+
+class ProctoringLog(PKMixin, db.Model):
+    __tablename__ = "proctoring_logs"
+
+    attempt_id: Mapped[int] = mapped_column(ForeignKey("quiz_attempts.id"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(20), nullable=False)  # tab_switch/fullscreen_exit/auto_submit
+    timestamp = db.Column(db.DateTime(timezone=True), server_default=db.func.now())

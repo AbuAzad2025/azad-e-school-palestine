@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ _('بنك الأسئلة') }}{% endblock %}
+{% block content %}
+<div style="max-width:960px;margin:2rem auto">
+  <h1 class="page-title azad-title">{{ icon('quiz') }} {{ _('بنك الأسئلة') }}</h1>
+
+  <div class="azad-card" style="margin-bottom:1.5rem">
+    <form method="post" action="{{ url_for('assessment.question_bank_create') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h3 style="margin-bottom:1rem">{{ _('إضافة سؤال جديد') }}</h3>
+
+      <div class="form-group">
+        <label>{{ _('نص السؤال') }}</label>
+        <textarea name="question_text" class="form-control" rows="3" required placeholder="{{ _('اكتب السؤال هنا...') }}"></textarea>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label>{{ _('النوع') }}</label>
+          <select name="question_type" class="form-control" id="qb-type">
+            <option value="mcq">{{ _('اختيار من متعدد') }}</option>
+            <option value="true_false">{{ _('صح/خطأ') }}</option>
+            <option value="essay">{{ _('مقالي') }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>{{ _('المادة') }}</label>
+          <select name="subject_id" class="form-control">
+            <option value="">—</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name_ar }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>{{ _('الصعوبة') }}</label>
+          <select name="difficulty" class="form-control">
+            {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if i == 3 %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:end;padding-bottom:.5rem">
+          <label style="display:flex;gap:.5rem;cursor:pointer">
+            <input type="checkbox" name="is_shared"> {{ _('مشاركة مع المعلمين') }}
+          </label>
+        </div>
+      </div>
+
+      <div id="qb-mcq-opts" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+        <div class="form-group"><label>{{ _('أ') }}</label><input name="option_a" class="form-control"></div>
+        <div class="form-group"><label>{{ _('ب') }}</label><input name="option_b" class="form-control"></div>
+        <div class="form-group"><label>{{ _('ج') }}</label><input name="option_c" class="form-control"></div>
+        <div class="form-group"><label>{{ _('د') }}</label><input name="option_d" class="form-control"></div>
+        <div class="form-group">
+          <label>{{ _('الإجابة الصحيحة') }}</label>
+          <select name="correct_index" class="form-control">
+            <option value="0">أ</option><option value="1">ب</option>
+            <option value="2">ج</option><option value="3">د</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="qb-tf-opts" style="display:none" class="form-group">
+        <label>{{ _('الإجابة') }}</label>
+        <select name="correct_tf" class="form-control">
+          <option value="true">{{ _('صح') }}</option>
+          <option value="false">{{ _('خطأ') }}</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="azad-btn">{{ icon('plus') }} {{ _('إضافة') }}</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="azad-card">
+    <h3 style="margin-bottom:1rem">{{ _('الأسئلة المحفوظة') }} ({{ questions|length }})</h3>
+
+    {% if not questions %}
+      <p style="color:var(--azad-muted);text-align:center;padding:2rem">{{ _('لا توجد أسئلة في البنك.') }}</p>
+    {% else %}
+      {% for q in questions %}
+        <div style="border-bottom:1px solid var(--azad-border);padding:.75rem 0">
+          <div style="display:flex;justify-content:space-between;align-items:start;gap:1rem">
+            <div style="flex:1">
+              <span class="azad-badge-variant azad-badge-variant--info" style="font-size:.75rem">{{ q.question_type }}</span>
+              <span class="azad-badge-variant azad-badge-variant--info" style="font-size:.75rem">{{ _('صعوبة') }}: {{ q.difficulty }}</span>
+              {% if q.is_shared %}<span class="azad-badge-variant azad-badge-variant--success" style="font-size:.75rem">{{ _('مشارك') }}</span>{% endif %}
+              <p style="margin-top:.5rem">{{ q.question_text }}</p>
+            </div>
+            <form method="post" action="{{ url_for('assessment.question_bank_delete', question_id=q.id) }}" style="flex-shrink:0"
+                  onsubmit="return confirm('{{ _('هل أنت متأكد من الحذف؟') }}')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="azad-btn-outline" style="color:var(--azad-danger,#dc3545)">{{ icon('trash') }}</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var typeSelect = document.getElementById('qb-type');
+  var mcqOpts = document.getElementById('qb-mcq-opts');
+  var tfOpts = document.getElementById('qb-tf-opts');
+  function toggle() {
+    var v = typeSelect.value;
+    mcqOpts.style.display = v === 'mcq' ? '' : 'none';
+    tfOpts.style.display = v === 'true_false' ? '' : 'none';
+  }
+  typeSelect.addEventListener('change', toggle);
+  toggle();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ message.subject }}{% endblock %}
+{% block content %}
+<div style="max-width:800px;margin:2rem auto">
+  <h1 class="page-title azad-title" style="font-size:1.25rem">{{ message.subject }}</h1>
+
+  <div class="azad-card" style="margin-bottom:1rem">
+    <div style="padding:1rem;border-bottom:1px solid var(--azad-border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>{{ message.sender.name_ar }}</strong>
+        <span style="color:var(--azad-muted);font-size:.8rem">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      </div>
+      <p style="margin-top:.75rem;white-space:pre-wrap">{{ message.body }}</p>
+    </div>
+
+    {% for reply in replies %}
+      <div style="padding:1rem;border-bottom:1px solid var(--azad-border);{% if reply.sender_id == current_user.id %}background:var(--azad-blue-light,rgba(0,102,204,.04)){% endif %}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>{{ reply.sender.name_ar }}</strong>
+          <span style="color:var(--azad-muted);font-size:.8rem">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        <p style="margin-top:.75rem;white-space:pre-wrap">{{ reply.body }}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="azad-card">
+    <form method="post" action="{{ url_for('messages.compose', reply_to=message.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="recipient_id" value="{{ message.sender_id if message.sender_id != current_user.id else message.recipient_id }}">
+      <input type="hidden" name="subject" value="{{ _('رد: ') }}{{ message.subject }}">
+      <div class="form-group">
+        <textarea name="body" required class="form-control" rows="4"
+                  placeholder="{{ _('اكتب ردك...') }}"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="azad-btn">{{ icon('envelope') }} {{ _('إرسال الرد') }}</button>
+        <a href="{{ url_for('messages.inbox_view') }}" class="azad-btn-outline">{{ _('الصندوق') }}</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

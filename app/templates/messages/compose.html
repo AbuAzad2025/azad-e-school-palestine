@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ _('رسالة جديدة') }}{% endblock %}
+{% block content %}
+<div style="max-width:640px;margin:2rem auto">
+  <h1 class="page-title azad-title">{{ _('رسالة جديدة') }}</h1>
+
+  {% if parent %}
+    <div class="azad-card" style="margin-bottom:1rem;padding:1rem">
+      <p style="font-size:.85rem;color:var(--azad-muted)">{{ _('رد على:') }} {{ parent.subject }}</p>
+      <p style="margin-top:.5rem">{{ parent.body[:200] }}{% if parent.body|length > 200 %}...{% endif %}</p>
+    </div>
+  {% endif %}
+
+  <div class="azad-card">
+    <form method="post" action="{{ url_for('messages.compose', reply_to=parent.id if parent else None) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label for="recipient_id">{{ _('المستلم') }}</label>
+        <select name="recipient_id" id="recipient_id" required class="form-control">
+          <option value="">{{ _('اختر مستلم...') }}</option>
+          {% for u in users %}
+            <option value="{{ u.id }}" {% if request.args.get('to')|int == u.id %}selected{% endif %}>
+              {{ u.name_ar }} ({{ u.role.value }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="subject">{{ _('الموضوع') }}</label>
+        <input type="text" name="subject" id="subject" required class="form-control"
+               value="{{ parent.subject if parent else '' }}"
+               placeholder="{{ _('موضوع الرسالة') }}">
+      </div>
+
+      <div class="form-group">
+        <label for="body">{{ _('الرسالة') }}</label>
+        <textarea name="body" id="body" required class="form-control" rows="8"
+                  placeholder="{{ _('اكتب رسالتك هنا...') }}"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="azad-btn">{{ icon('envelope') }} {{ _('إرسال') }}</button>
+        <a href="{{ url_for('messages.inbox_view') }}" class="azad-btn-outline">{{ _('إلغاء') }}</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

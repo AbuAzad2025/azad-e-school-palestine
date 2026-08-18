@@ -93,6 +93,7 @@ def create_app(config_class=Config):
     from .modules.family import bp as family_bp
     from .modules.grades import bp as grades_bp
     from .modules.main import bp as main_bp
+    from .modules.messages import bp as messages_bp
     from .modules.notifications import bp as notifications_bp
     from .modules.payments import bp as payments_bp
     from .modules.progress import bp as progress_bp
@@ -116,6 +117,7 @@ def create_app(config_class=Config):
     app.register_blueprint(progress_bp)
     app.register_blueprint(calendar_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(messages_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة
     with app.app_context():

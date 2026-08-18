@@ -21,7 +21,7 @@ def create_quiz(
         return None, "عنوان الاختبار مطلوب."
 
     def _create():
-        return Quiz(
+        quiz = Quiz(
             class_id=class_id,
             title=title,
             duration_min=duration_min,
@@ -30,6 +30,8 @@ def create_quiz(
             show_answers_after=show_answers_after,
             created_by=created_by,
         )
+        db.session.add(quiz)
+        return quiz
 
     return tx(_create), None
 
@@ -45,7 +47,7 @@ def list_quizzes(class_id: int):
 
 def add_question(quiz: Quiz, qtype: str, prompt: str, options=None, correct_answer=None, mark=None) -> Question:
     def _add():
-        return Question(
+        q = Question(
             quiz_id=quiz.id,
             type=qtype,
             prompt=prompt.strip(),
@@ -53,6 +55,8 @@ def add_question(quiz: Quiz, qtype: str, prompt: str, options=None, correct_answ
             correct_answer=correct_answer,
             mark=mark,
         )
+        db.session.add(q)
+        return q
 
     return tx(_add)
 
@@ -74,7 +78,9 @@ def start_attempt(quiz: Quiz, student_id: int) -> tuple[QuizAttempt | None, str 
         return None, "استنفدت محاولاتك لهذا الاختبار."
 
     def _create():
-        return QuizAttempt(quiz_id=quiz.id, student_id=student_id, attempt_no=used + 1, status="in_progress")
+        attempt = QuizAttempt(quiz_id=quiz.id, student_id=student_id, attempt_no=used + 1, status="in_progress")
+        db.session.add(attempt)
+        return attempt
 
     return tx(_create), None
 
@@ -150,7 +156,11 @@ def grade_essay(answer: Answer, awarded_mark: float | None) -> None:
 
 
 def get_attempt(attempt_id: int) -> QuizAttempt | None:
-    return QuizAttempt.query.options(
-        joinedload(QuizAttempt.quiz).selectinload(Quiz.questions),
-        selectinload(QuizAttempt.answers),
-    ).get(attempt_id)
+    return db.session.execute(
+        db.select(QuizAttempt)
+        .options(
+            joinedload(QuizAttempt.quiz).selectinload(Quiz.questions),
+            selectinload(QuizAttempt.answers),
+        )
+        .where(QuizAttempt.id == attempt_id)
+    ).scalar_one_or_none()

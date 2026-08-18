@@ -32,7 +32,10 @@
 <div class="empty-state">{{ _('لا أسئلة بعد — أضف أول سؤال.') }}</div>
 {% endif %}
 
-<div class="section-head"><h2>{{ _('إضافة سؤال') }}</h2></div>
+<div class="section-head">
+  <h2>{{ _('إضافة سؤال') }}</h2>
+  <a href="{{ url_for('assessment.bank_import_page', quiz_id=quiz.id) }}" class="azad-btn-outline">{{ _('استيراد من البنك') }}</a>
+</div>
 <div class="card">
   <form method="post" novalidate>
     {{ form.hidden_tag() }}

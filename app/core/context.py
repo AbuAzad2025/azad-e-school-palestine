@@ -58,6 +58,7 @@ ICON_NAMES = {
     "arrow-right",
     "chevron-down",
     "copy",
+    "envelope",
     "shield",
     "attendance",
     "calendar-check",
@@ -189,11 +190,15 @@ def register(app):
     @app.context_processor
     def inject_app_context():
         unread = 0
+        msg_unread = 0
         impersonator = None
         if current_user.is_authenticated:
             from app.services.communication import unread_count
 
             unread = unread_count(current_user.id)
+            from app.services.messages import unread_count as msg_unread_count
+
+            msg_unread = msg_unread_count(current_user.id)
             from app.services.impersonation import impersonator_user
 
             impersonator = impersonator_user()
@@ -208,4 +213,5 @@ def register(app):
             "current_locale": str(get_locale()),
             "current_path": request.path,
             "unread_count": unread,
+            "message_unread_count": msg_unread,
         }

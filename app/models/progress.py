@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, Integer, SmallInteger, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -11,6 +12,9 @@ from app.extensions import db
 
 from .mixins import PKMixin
 from .user import User
+
+if TYPE_CHECKING:
+    from .content import Lesson
 
 
 class StudentProgress(PKMixin, db.Model):
@@ -31,6 +35,7 @@ class StudentProgress(PKMixin, db.Model):
     progress_pct: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)  # 0-100
 
     student: Mapped[User] = relationship("User", foreign_keys=[student_id])
+    lesson: Mapped[Lesson] = relationship("Lesson", foreign_keys=[lesson_id])
 
 
 class VideoProgress(PKMixin, db.Model):

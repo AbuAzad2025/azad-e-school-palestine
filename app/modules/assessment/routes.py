@@ -1,6 +1,8 @@
 """مسارات التقييم: قائمة اختبارات، إنشاء، محاولة، نتائج، تصحيح مقالي."""
 
-from app.models.assessment import Answer, Question, Quiz, QuizAttempt
+from app.core.db import tx
+from app.extensions import db
+from app.models.assessment import Answer, ProctoringLog, Question, Quiz, QuizAttempt
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
 from app.services.access import can_teach_class, can_view_class
@@ -17,7 +19,13 @@ from app.services.assessment import (
     submit_attempt,
 )
 from app.services.communication import audit, notify
-from flask import abort, flash, redirect, render_template, request, url_for
+from app.services.question_bank import (
+    create_bank_question,
+    delete_bank_question,
+    import_to_quiz,
+    list_bank_questions,
+)
+from flask import abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload, selectinload
@@ -290,3 +298,171 @@ def answer_grade(answer_id):
     grade_essay(answer, mark)
     flash(_("حُدّثت درجة السؤال المقالي."), "success")
     return redirect(url_for("assessment.attempt_result", attempt_id=answer.attempt_id))
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# بنك الأسئلة
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@bp.get("/question-bank")
+@login_required
+def question_bank_list():
+    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
+        abort(403)
+    from app.models.school import Subject
+
+    subjects = Subject.query.order_by(Subject.name_ar).all()
+    questions = list_bank_questions(
+        current_user.id,
+        subject_id=request.args.get("subject_id", type=int),
+        question_type=request.args.get("type"),
+        difficulty=request.args.get("difficulty", type=int),
+    )
+    return render_template(
+        "assessment/question_bank.html",
+        questions=questions,
+        subjects=subjects,
+    )
+
+
+@bp.post("/question-bank/new")
+@login_required
+def question_bank_create():
+    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
+        abort(403)
+    question_text = request.form.get("question_text", "").strip()
+    question_type = request.form.get("question_type", "mcq")
+    subject_id = request.form.get("subject_id", type=int)
+    difficulty = request.form.get("difficulty", 3, type=int)
+    is_shared = request.form.get("is_shared") == "on"
+
+    options = None
+    correct_answer = None
+    if question_type == "mcq":
+        opts = []
+        for label, key in [("أ", "option_a"), ("ب", "option_b"), ("ج", "option_c"), ("د", "option_d")]:
+            val = request.form.get(key, "").strip()
+            if val:
+                opts.append({"label": label, "text": val})
+        if opts:
+            options = {"items": opts}
+        correct_index = request.form.get("correct_index", type=int)
+        if correct_index is not None:
+            correct_answer = {"index": correct_index}
+    elif question_type == "true_false":
+        correct_answer = {"value": request.form.get("correct_tf") == "true"}
+
+    bq, error = create_bank_question(
+        teacher_id=current_user.id,
+        school_id=current_user.school_id or 0,
+        question_text=question_text,
+        question_type=question_type,
+        subject_id=subject_id,
+        options=options,
+        correct_answer=correct_answer,
+        difficulty=difficulty,
+        is_shared=is_shared,
+    )
+    if error:
+        flash(_(error), "danger")
+    else:
+        flash(_("أُضيف السؤال إلى البنك."), "success")
+    return redirect(url_for("assessment.question_bank_list"))
+
+
+@bp.post("/question-bank/<int:question_id>/delete")
+@login_required
+def question_bank_delete(question_id):
+    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
+        abort(403)
+    ok, error = delete_bank_question(question_id, current_user.id)
+    if error:
+        flash(_(error), "danger")
+    else:
+        flash(_("حُذف السؤال من البنك."), "success")
+    return redirect(url_for("assessment.question_bank_list"))
+
+
+@bp.get("/quiz/<int:quiz_id>/bank-import")
+@login_required
+def bank_import_page(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    class_room = _class_or_404(quiz.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    questions = list_bank_questions(current_user.id)
+    return render_template(
+        "assessment/bank_import.html",
+        class_room=class_room,
+        quiz=quiz,
+        questions=questions,
+    )
+
+
+@bp.post("/quiz/<int:quiz_id>/bank-import")
+@login_required
+def bank_import_action(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    class_room = _class_or_404(quiz.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    selected = request.form.getlist("question_ids")
+    question_ids = [int(qid) for qid in selected if qid.isdigit()]
+    count, error = import_to_quiz(quiz, question_ids, current_user.id)
+    if error:
+        flash(_(error), "danger")
+    else:
+        flash(_("تم استيراد %(count)d أسئلة.", count=count), "success")
+    return redirect(url_for("assessment.quiz_manage", class_id=class_room.id, quiz_id=quiz.id))
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# مراقبة الاختبارات (Proctoring)
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@bp.post("/attempt/<int:attempt_id>/proctor")
+@login_required
+def proctor_log(attempt_id):
+    attempt = get_attempt(attempt_id)
+    if not attempt or attempt.student_id != current_user.id:
+        return jsonify({"error": "forbidden"}), 403
+    event_type = request.json.get("event_type") if request.is_json else None
+    if event_type not in ("tab_switch", "fullscreen_exit", "auto_submit"):
+        return jsonify({"error": "invalid event_type"}), 400
+
+    def _log():
+        db.session.add(ProctoringLog(attempt_id=attempt_id, event_type=event_type))
+
+    tx(_log)
+
+    quiz = attempt.quiz
+    if event_type == "tab_switch":
+        tab_count = ProctoringLog.query.filter_by(
+            attempt_id=attempt_id,
+            event_type="tab_switch",
+        ).count()
+        if tab_count >= quiz.max_tab_switches:
+            if attempt.status == "in_progress":
+                for q in quiz.questions:
+                    value = request.json.get(f"q_{q.id}") if request.is_json else None
+                    if value is not None:
+                        save_answer(attempt, q.id, _parse_answer(q, value))
+                submit_attempt(attempt)
+                return jsonify({"auto_submit": True, "reason": "tab_switches_exceeded"})
+    elif event_type == "fullscreen_exit" and quiz.fullscreen_required:
+        exit_count = ProctoringLog.query.filter_by(
+            attempt_id=attempt_id,
+            event_type="fullscreen_exit",
+        ).count()
+        if exit_count >= 2:
+            if attempt.status == "in_progress":
+                for q in quiz.questions:
+                    value = request.json.get(f"q_{q.id}") if request.is_json else None
+                    if value is not None:
+                        save_answer(attempt, q.id, _parse_answer(q, value))
+                submit_attempt(attempt)
+                return jsonify({"auto_submit": True, "reason": "fullscreen_exit_exceeded"})
+
+    return jsonify({"ok": True, "event_type": event_type})

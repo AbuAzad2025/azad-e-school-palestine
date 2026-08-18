@@ -50,6 +50,12 @@
             <span class="badge-status badge-err">{{ unread_count }}</span>
           {% endif %}
         </a>
+        <a href="{{ url_for('messages.inbox_view') }}" class="nav-envelope">
+          {{ icon('envelope') }}
+          {% if message_unread_count %}
+            <span class="badge-status badge-err">{{ message_unread_count }}</span>
+          {% endif %}
+        </a>
 
         <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

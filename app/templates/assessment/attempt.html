@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ quiz.title }} — {{ _('محاولة') }}{% endblock %}
 {% block content %}
+{% if quiz.enable_proctoring %}
+<div class="azad-card" style="border-color:var(--azad-warning,#e67e22);margin-bottom:1rem;padding:1rem;display:flex;gap:.75rem;align-items:center">
+  <span style="color:var(--azad-warning,#e67e22)">{{ icon('shield') }}</span>
+  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switches) }}</span>
+</div>
+{% endif %}
+
 <h1 class="page-title azad-title">{{ quiz.title }}</h1>
 <p class="page-subtitle">{{ _('المحاولة') }} {{ attempt.attempt_no }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
 
@@ -51,6 +58,37 @@ document.addEventListener('DOMContentLoaded', function () {
       form.submit();
     });
   }
+
+  {% if quiz.enable_proctoring %}
+  var attemptId = {{ attempt.id }};
+  var csrfToken = '{{ csrf_token() }}';
+  var proctorUrl = '/classes/attempt/' + attemptId + '/proctor';
+
+  function postProctor(eventType, extra) {
+    var payload = Object.assign({event_type: eventType}, extra || {});
+    return fetch(proctorUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+      body: JSON.stringify(payload)
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.auto_submit) {
+        document.querySelector('form').submit();
+      }
+    });
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      postProctor('tab_switch');
+    }
+  });
+
+  document.addEventListener('fullscreenchange', function () {
+    if (!document.fullscreenElement && document.fullscreenEnabled !== undefined) {
+      postProctor('fullscreen_exit');
+    }
+  });
+  {% endif %}
 });
 </script>
 {% endblock %}

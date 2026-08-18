@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ _('استيراد من بنك الأسئلة') }} — {{ quiz.title }}{% endblock %}
+{% block content %}
+<div style="max-width:800px;margin:2rem auto">
+  <h1 class="page-title azad-title">{{ icon('copy') }} {{ _('استيراد من بنك الأسئلة') }}</h1>
+  <p style="color:var(--azad-muted);margin-bottom:1.5rem">{{ _('اختر الأسئلة لاستيرادها إلى اختبار:') }} {{ quiz.title }}</p>
+
+  {% if not questions %}
+    <div class="azad-card" style="text-align:center;padding:3rem">
+      <p style="color:var(--azad-muted)">{{ _('لا توجد أسئلة في بنكك. أضف أسئلة أولاً.') }}</p>
+      <a href="{{ url_for('assessment.question_bank_list') }}" class="azad-btn" style="margin-top:1rem">{{ icon('plus') }} {{ _('الذهاب إلى البنك') }}</a>
+    </div>
+  {% else %}
+    <form method="post" action="{{ url_for('assessment.bank_import_action', quiz_id=quiz.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="azad-card">
+        {% for q in questions %}
+          <label style="display:flex;gap:1rem;align-items:start;padding:.75rem;border-bottom:1px solid var(--azad-border);cursor:pointer">
+            <input type="checkbox" name="question_ids" value="{{ q.id }}" style="margin-top:.3rem">
+            <div>
+              <span class="azad-badge-variant azad-badge-variant--info" style="font-size:.7rem">{{ q.question_type }}</span>
+              <span class="azad-badge-variant" style="font-size:.7rem">{{ _('صعوبة') }} {{ q.difficulty }}</span>
+              <p style="margin-top:.25rem">{{ q.question_text }}</p>
+            </div>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="azad-btn">{{ icon('copy') }} {{ _('استيراد المحدد') }}</button>
+        <a href="{{ url_for('assessment.quiz_manage', class_id=class_room.id, quiz_id=quiz.id) }}" class="azad-btn-outline">{{ _('إلغاء') }}</a>
+      </div>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -4,7 +4,7 @@
 """
 
 from .ai import AiMessage, AiSession
-from .assessment import Answer, Question, Quiz, QuizAttempt
+from .assessment import Answer, ProctoringLog, Question, Quiz, QuizAttempt
 from .attendance import Attendance
 from .billing import ManualPayment, PaymentReceipt, Subscription, SubscriptionPlan
 from .calendar import AcademicEvent
@@ -13,8 +13,10 @@ from .communication import Announcement, Notification
 from .content import Lesson, LessonAttachment, Unit
 from .family import FamilyLink, FamilyLinkCode
 from .gradebook import Assignment, GradeCategory, GradeEntry, GradeItem, Submission
+from .message import Message
 from .mixins import PKMixin, SoftDeleteMixin
 from .progress import StudentProgress, VideoProgress
+from .question_bank import QuestionBank
 from .school import Grade, School, SchoolSetting, Subject, SubjectGradeLink
 from .system import AuditLog, Setting
 from .tenant import TenantQuota
@@ -40,10 +42,13 @@ __all__ = [
     "Lesson",
     "LessonAttachment",
     "ManualPayment",
+    "Message",
     "Notification",
     "PKMixin",
     "PaymentReceipt",
+    "ProctoringLog",
     "Question",
+    "QuestionBank",
     "Quiz",
     "QuizAttempt",
     "School",

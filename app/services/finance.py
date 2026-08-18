@@ -5,12 +5,16 @@ from decimal import Decimal
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models.billing import ManualPayment, Subscription
+from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
 
 
 def school_revenue_summary(school_id: int) -> dict:
     """ملخص إيرادات المدرسة."""
-    subs = Subscription.query.filter_by(school_id=school_id).all()
+    subs = (
+        Subscription.query.join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
+        .filter(SubscriptionPlan.school_id == school_id)
+        .all()
+    )
     sub_ids = [s.id for s in subs]
 
     if not sub_ids:
