@@ -4,6 +4,7 @@ from sqlalchemy import BigInteger, ForeignKey, Integer, SmallInteger, String, Te
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
+from app.models.class_room import ClassRoom
 
 from .mixins import PKMixin, SoftDeleteMixin
 
@@ -28,8 +29,14 @@ class Lesson(PKMixin, SoftDeleteMixin, db.Model):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     published_at = db.Column(db.DateTime(timezone=True))
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    is_shared: Mapped[bool] = mapped_column(default=False, nullable=False)
+    original_lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id"))
 
     attachments: Mapped[list["LessonAttachment"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
+    original_lesson: Mapped["Lesson | None"] = relationship(
+        "Lesson", remote_side="Lesson.id", foreign_keys=[original_lesson_id]
+    )
+    class_room: Mapped["ClassRoom"] = relationship("ClassRoom", foreign_keys=[class_id])
 
 
 class LessonAttachment(PKMixin, db.Model):

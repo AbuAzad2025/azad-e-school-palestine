@@ -174,3 +174,65 @@ def delete_attachment(attachment: LessonAttachment) -> None:
         db.session.delete(attachment)
 
     tx(_delete)
+
+
+def import_lesson(lesson_id: int, target_class_id: int, user_id: int) -> tuple[Lesson | None, str | None]:
+    """استيراد درس مشترك إلى صف جديد — نسخ عميق مع المرفقات."""
+    from app.models.class_room import ClassRoom
+
+    lesson = get_lesson(lesson_id)
+    if not lesson:
+        return None, "الدرس غير موجود."
+    if not lesson.is_shared:
+        return None, "هذا الدرس خاص ولا يمكن استيراده."
+    target_class = ClassRoom.query.filter_by(id=target_class_id, deleted_at=None).first()
+    if not target_class:
+        return None, "الصف الهدف غير موجود."
+
+    def _import():
+        new_lesson = Lesson(
+            class_id=target_class_id,
+            unit_id=None,
+            title=lesson.title,
+            body_html=lesson.body_html,
+            sort_order=lesson.sort_order,
+            status="draft",
+            version=1,
+            created_by=user_id,
+            is_shared=False,
+            original_lesson_id=lesson.id,
+        )
+        db.session.add(new_lesson)
+        db.session.flush()
+
+        for att in lesson.attachments:
+            new_att = LessonAttachment(
+                lesson_id=new_lesson.id,
+                kind=att.kind,
+                title=att.title,
+                stored_name=att.stored_name,
+                original_name=att.original_name,
+                mime=att.mime,
+                size_bytes=att.size_bytes,
+                youtube_url=att.youtube_url,
+                position=att.position,
+            )
+            db.session.add(new_att)
+
+        return new_lesson
+
+    return tx(_import), None
+
+
+def shared_lessons(school_id: int, subject_id: int | None = None) -> list[Lesson]:
+    """جلب الدروس المشتركة في المدرسة."""
+    from app.models.class_room import ClassRoom
+
+    query = Lesson.query.join(ClassRoom, Lesson.class_id == ClassRoom.id).filter(
+        ClassRoom.school_id == school_id,
+        Lesson.is_shared.is_(True),
+        Lesson.deleted_at.is_(None),
+    )
+    if subject_id is not None:
+        query = query.join(ClassRoom).filter(ClassRoom.subject_id == subject_id)
+    return query.order_by(Lesson.created_at.desc()).all()

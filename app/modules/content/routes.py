@@ -11,13 +11,15 @@ from app.services.content import (
     create_unit,
     delete_attachment,
     get_lesson,
+    import_lesson,
     list_lessons,
     list_units,
     publish_lesson,
+    shared_lessons,
     unpublish_lesson,
     update_lesson,
 )
-from flask import abort, current_app, flash, redirect, render_template, send_from_directory, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 
@@ -220,3 +222,47 @@ def attachment_download(att_id):
         as_attachment=True,
         download_name=att.original_name or att.stored_name,
     )
+
+
+@bp.get("/shared")
+@login_required
+def shared_library():
+    from app.core.tenancy import current_school_id
+    from app.models.school import Subject
+
+    school_id = current_school_id()
+    subject_id = request.args.get("subject_id", type=int)
+    lessons = shared_lessons(school_id, subject_id)  # type: ignore[arg-type]
+    subjects = Subject.query.all()
+    return render_template(
+        "content/shared_library.html",
+        lessons=lessons,
+        subjects=subjects,
+        selected_subject=subject_id,
+    )
+
+
+@bp.post("/import/<int:lesson_id>")
+@login_required
+def lesson_import(lesson_id):
+    from app.models.class_room import ClassRoom
+    from app.services.access import can_teach_class
+
+    target_class_id = request.args.get("target_class_id", type=int) or request.form.get("target_class_id", type=int)
+    if not target_class_id:
+        flash(_("يرجى تحديد الصف الهدف."), "danger")
+        return redirect(url_for("content.shared_library"))
+
+    target_class = ClassRoom.query.filter_by(id=target_class_id, deleted_at=None).first()
+    if not target_class or not can_teach_class(target_class, current_user):
+        abort(403)
+
+    new_lesson, error = import_lesson(lesson_id, target_class_id, current_user.id)
+    if error:
+        flash(_(error), "danger")
+    else:
+        assert new_lesson is not None
+        audit("lesson.import", "lessons", new_lesson.id)
+        flash(_("تم استيراد الدرس بنجاح."), "success")
+        return redirect(url_for("content.lesson_detail", class_id=target_class_id, lesson_id=new_lesson.id))
+    return redirect(url_for("content.shared_library"))

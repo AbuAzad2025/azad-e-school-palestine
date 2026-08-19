@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ _('تقييم الجلسة') }} — {{ session.subject }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('تقييم الجلسة') }}</h1>
+    <p class="page-subtitle">{{ session.subject }} — مع {{ session.tutor.name_ar }}</p>
+  </div>
+</div>
+
+<div class="azad-card" style="max-width: 600px;">
+  <div class="card-header">
+    <h3 class="card-title">{{ _('تقييمك مهم') }}</h3>
+  </div>
+  <div class="card-body">
+    <form method="post" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label">{{ _('التقييم') }}</label>
+        <div class="star-rating" role="radiogroup" aria-label="{{ _('اختر التقييم من 1 إلى 5') }}">
+          {% for i in range(1, 6) %}
+          <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" required hidden>
+          <label for="star{{ i }}" class="star-label" title="{{ i }}">{{ icon('star') }}</label>
+          {% endfor %}
+        </div>
+        <small class="form-hint">{{ _('انقر على النجوم للتقييم') }}</small>
+      </div>
+
+      <div class="form-group">
+        <label for="comment" class="form-label">{{ _('تعليق (اختياري)') }}</label>
+        <textarea id="comment" name="comment" rows="4" placeholder="{{ _('اكتب تعليقك هنا...') }}" style="width:100%"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="azad-btn">{{ _('إرسال التقييم') }}</button>
+        <a href="{{ url_for('tutoring.session_detail', session_id=session.id) }}" class="azad-btn-outline">{{ _('إلغاء') }}</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: var(--azad-amber);
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+.star-label {
+  font-size: 2.5rem;
+  cursor: pointer;
+  color: var(--azad-gray-400);
+  transition: color 0.2s, filter 0.2s;
+  user-select: none;
+}
+.star-label:active {
+  transform: scale(0.95);
+}
+</style>
+{% endblock %}

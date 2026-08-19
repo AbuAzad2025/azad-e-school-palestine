@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ _('مكتبة الدروس المشتركة') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('مكتبة الدروس المشتركة') }}</h1>
+    <p class="page-subtitle">{{ _('استعرض واستورد الدروس المشتركة من زملائك') }}</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem;">
+  <form method="get" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end">
+    <div class="form-group" style="flex:1;min-width:200px">
+      <label class="form-label">{{ _('تصفية حسب المادة') }}</label>
+      <select name="subject_id" class="form-select">
+        <option value="">{{ _('كل المواد') }}</option>
+        {% for s in subjects %}
+        <option value="{{ s.id }}" {% if s.id == selected_subject %}selected{% endif %}>{{ s.name_ar }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="azad-btn-outline">{{ _('تصفية') }}</button>
+    <a href="{{ url_for('content.shared_library') }}" class="azad-btn-outline">{{ _('إعادة تعيين') }}</a>
+  </form>
+</div>
+
+{% if lessons %}
+<div class="azad-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+  {% for lesson in lessons %}
+  <div class="azad-card">
+    <div class="card-body">
+      <h3 class="card-title">{{ lesson.title }}</h3>
+      <p class="card-text text-muted" style="font-size:0.875rem;">{{ lesson.body_html|striptags|truncate(100) if lesson.body_html else _('بدون محتوى نصي') }}</p>
+      <div class="item-meta" style="margin-top:0.75rem;font-size:0.8rem">
+        <span class="azad-badge">{{ lesson.class_room.subject.name_ar }}</span>
+        <span class="azad-badge" style="background:var(--azad-indigo)">{{ lesson.class_room.name }}</span>
+        <span class="text-muted">{{ _('بواسطة') }} {{ lesson.created_by_user.name_ar if lesson.created_by_user else '—' }}</span>
+      </div>
+    </div>
+    <div class="card-footer" style="border-top:1px solid var(--azad-border);padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
+      <a href="{{ url_for('content.lesson_import', lesson_id=lesson.id, target_class_id=request.args.get('target_class_id')) }}" class="azad-btn" onclick="return confirmImport(this)">{{ icon('download') }} {{ _('استيراد') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  {{ _('لا توجد دروس مشتركة حالياً.') }}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmImport(link) {
+  return confirm('{{ _('هل تريد استيراد هذا الدرس إلى صفك؟ سيتم نسخه كمسودة.') }}');
+}
+</script>
+{% endblock %}

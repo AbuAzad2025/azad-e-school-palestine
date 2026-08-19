@@ -1,8 +1,9 @@
 """مسارات الدروس الخصوصية — سوق حر بلا عزل مدرسة"""
 
+from datetime import UTC
 from decimal import Decimal
 
-from app.models.tutoring import TutoringRequest, TutoringSession
+from app.models.tutoring import TutoringRequest, TutoringSession, TutorReview
 from app.models.user import User, UserRole
 from app.services.communication import audit, notify
 from app.services.tutoring import (
@@ -12,9 +13,11 @@ from app.services.tutoring import (
     find_by_invite_code,
     generate_live_session_url,
     get_profile,
+    get_tutor_earnings,
     list_requests_for_student,
     list_requests_for_tutor,
     list_sessions_for,
+    rate_session,
     respond_request,
     search_tutors,
     update_profile,
@@ -301,3 +304,59 @@ def end_live_session(session_id):
     audit("tutoring.live_end", "tutoring_sessions", session_.id, {"user_id": current_user.id})
     flash(_("تم ending الجلسة المباشرة."), "success")
     return redirect(url_for("tutoring.session_detail", session_id=session_.id))
+
+
+@bp.route("/rate/<int:session_id>", methods=["GET", "POST"])
+@login_required
+def rate_session_view(session_id):
+    from datetime import datetime, timedelta
+
+    from app.models.tutoring import TutoringSession
+
+    session_ = TutoringSession.query.get_or_404(session_id)
+    if session_.student_id != current_user.id:
+        abort(403)
+    if session_.status not in ("completed", "ended"):
+        flash(_("لا يمكن تقييم جلسة لم تنتهِ بعد."), "danger")
+        return redirect(url_for("tutoring.session_detail", session_id=session_id))
+
+    end_time = session_.end_time or session_.scheduled_at
+    if session_.duration_min and session_.scheduled_at:
+        end_time = session_.scheduled_at + timedelta(minutes=session_.duration_min)
+    if end_time:
+        now = datetime.now(UTC)
+        if end_time.tzinfo is None:
+            end_time = end_time.replace(tzinfo=UTC)
+        if now - end_time > timedelta(hours=24):
+            flash(_("انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة)."), "danger")
+            return redirect(url_for("tutoring.session_detail", session_id=session_id))
+
+    existing = TutorReview.query.filter_by(session_id=session_id, student_id=current_user.id).first()
+    if existing:
+        flash(_("لقد قيّمت هذه الجلسة مسبقاً."), "info")
+        return redirect(url_for("tutoring.session_detail", session_id=session_id))
+
+    if request.method == "POST":
+        rating = request.form.get("rating", type=int)
+        comment = request.form.get("comment", "").strip() or None
+        if not rating or not (1 <= rating <= 5):
+            flash(_("التقييم يجب أن يكون بين 1 و 5."), "danger")
+        else:
+            review, error = rate_session(session_id, current_user.id, rating, comment)
+            if error:
+                flash(_(error), "danger")
+            else:
+                flash(_("شكراً لتقيميكم!"), "success")
+                return redirect(url_for("tutoring.session_detail", session_id=session_id))
+
+    return render_template("tutoring/rate_form.html", session=session_)
+
+
+@bp.get("/earnings")
+@login_required
+def tutor_earnings():
+    if current_user.role != UserRole.teacher:
+        abort(403)
+    earnings = get_tutor_earnings(current_user.id)
+    sessions = list_sessions_for(current_user.id, as_tutor=True)
+    return render_template("tutoring/earnings.html", earnings=earnings, sessions=sessions)

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ _('إحصائيات الاختبار') }} — {{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('إحصائيات الاختبار') }}</h1>
+    <p class="page-subtitle">{{ quiz.title }} — {{ class_room.subject.name_ar }}</p>
+  </div>
+  <a href="{{ url_for('assessment.quiz_results', quiz_id=quiz.id) }}" class="azad-btn-outline">{{ _('العودة للنتائج') }}</a>
+</div>
+
+{% if stats.total_attempts == 0 %}
+<div class="empty-state">{{ _('لا توجد محاولات مكتملة لهذا الاختبار بعد.') }}</div>
+{% else %}
+<div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+  {% call azad_stat_card(stats.total_attempts, _('المحاولات'), 'users', 'var(--azad-blue)') %}{% endcall %}
+  {% call azad_stat_card(stats.avg_score ~ '/' ~ (quiz.questions|sum(attribute='mark')|round(1)), _('المتوسط'), 'trending-up', 'var(--azad-green)') %}{% endcall %}
+  {% call azad_stat_card(stats.highest_score, _('الأعلى'), 'award', 'var(--azad-amber)') %}{% endcall %}
+  {% call azad_stat_card(stats.lowest_score, _('الأدنى'), 'award', 'var(--azad-red)') %}{% endcall %}
+  {% call azad_stat_card(stats.completion_rate ~ '%', _('معدل الإكمال'), 'check-circle', 'var(--azad-indigo)') %}{% endcall %}
+  {% call azad_stat_card(stats.std_deviation, _('الانحراف المعياري'), 'activity', 'var(--azad-purple)') %}{% endcall %}
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('توزيع الدرجات') }}</h2>
+  <canvas id="scoreHistogram" height="200"></canvas>
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('مؤشر الصعوبة لكل سؤال') }}</h2>
+  <canvas id="difficultyChart" height="250"></canvas>
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('تفاصيل كل سؤال') }}</h2>
+  <div class="azad-table-container">
+    <table class="azad-table">
+      <thead>
+        <tr>
+          <th>{{ _('السؤال') }}</th>
+          <th>{{ _('نوع') }}</th>
+          <th>{{ _('الدرجة') }}</th>
+          <th>{{ _('إجابات') }}</th>
+          <th>{{ _('صحيحة') }}</th>
+          <th>{{ _('خاطئة') }}</th>
+          <th>{{ _('مؤشر الصعوبة') }}</th>
+          <th>{{ _('مؤشر التمييز') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for qs in stats.question_stats %}
+        <tr>
+          <td>{{ qs.prompt[:80] }}{% if qs.prompt|length > 80 %}...{% endif %}</td>
+          <td><span class="azad-badge">{{ qs.question_id }}</span></td>
+          <td>{{ (quiz.questions | selectattr('id', 'equalto', qs.question_id) | first).mark if (quiz.questions | selectattr('id', 'equalto', qs.question_id) | first) else 0 }}</td>
+          <td>{{ qs.total_answers }}</td>
+          <td style="color:var(--azad-green)">{{ qs.correct_count }}</td>
+          <td style="color:var(--azad-red)">{{ qs.wrong_count }}</td>
+          <td>
+            {% set color = 'var(--azad-green)' if qs.difficulty_index > 0.7 else 'var(--azad-amber)' if qs.difficulty_index > 0.3 else 'var(--azad-red)' %}
+            <span style="color:{{ color }}">{{ (qs.difficulty_index * 100)|round(1) }}%</span>
+          </td>
+          <td>
+            {% if qs.discrimination_index is not none %}
+              {% set color = 'var(--azad-green)' if qs.discrimination_index > 0.3 else 'var(--azad-amber)' if qs.discrimination_index > 0 else 'var(--azad-red)' %}
+              <span style="color:{{ color }}">{{ qs.discrimination_index }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const dist = {{ stats.score_distribution|tojson }};
+  const labels = Object.keys(dist);
+  const data = Object.values(dist);
+
+  new Chart(document.getElementById('scoreHistogram'), {
+    type: 'bar',
+    data: { labels: labels, datasets: [{
+      label: '{{ _('عدد الطلاب') }}',
+      data: data,
+      backgroundColor: 'rgba(1, 78, 124, 0.7)',
+      borderColor: 'rgb(1, 78, 124)',
+      borderWidth: 1,
+      borderRadius: 6,
+    }]},
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  const qs = {{ stats.question_stats|tojson }};
+  const qLabels = qs.map(q => 'Q' + q.question_id);
+  const diffData = qs.map(q => q.difficulty_index * 100);
+
+  new Chart(document.getElementById('difficultyChart'), {
+    type: 'bar',
+    data: {
+      labels: qLabels,
+      datasets: [{
+        label: '{{ _("مؤشر الصعوبة") }} (%)',
+        data: diffData,
+        backgroundColor: diffData.map(v => v > 70 ? 'rgba(16, 185, 129, 0.7)' : v > 30 ? 'rgba(245, 158, 11, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } }
+    }
+  });
+});
+</script>
+{% endblock %}

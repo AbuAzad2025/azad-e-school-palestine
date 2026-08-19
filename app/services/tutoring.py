@@ -6,12 +6,13 @@
 import hashlib
 import os
 import secrets
+from datetime import UTC
 
 from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
 from app.extensions import db
-from app.models.tutoring import TutoringRequest, TutoringSession, TutorProfile
+from app.models.tutoring import TutoringRequest, TutoringSession, TutorProfile, TutorReview
 from app.models.user import UserRole
 
 
@@ -274,3 +275,83 @@ def get_active_sessions_for_tutor(tutor_id: int) -> list[TutoringSession]:
         .order_by(TutoringSession.scheduled_at.desc())
         .all()
     )
+
+
+def rate_session(
+    session_id: int, student_id: int, rating: int, comment: str | None = None
+) -> tuple[TutorReview | None, str | None]:
+    """تقييم جلسة خصوصية."""
+    from datetime import datetime, timedelta
+
+    from app.extensions import db
+
+    session_ = db.session.get(TutoringSession, session_id)
+    if not session_:
+        return None, "الجلسة غير موجودة."
+    if session_.student_id != student_id:
+        return None, "ليس لديك صلاحية تقييم هذه الجلسة."
+    if session_.status not in ("completed", "ended"):
+        return None, "لا يمكن تقييم جلسة لم تنتهِ بعد."
+
+    end_time = session_.end_time or session_.scheduled_at
+    if session_.duration_min and session_.scheduled_at:
+        end_time = session_.scheduled_at + timedelta(minutes=session_.duration_min)
+
+    if end_time:
+        now = datetime.now(UTC)
+        if end_time.tzinfo is None:
+            end_time = end_time.replace(tzinfo=UTC)
+        if now - end_time > timedelta(hours=24):
+            return None, "انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة)."
+
+    existing = db.session.execute(
+        db.select(TutorReview).where(TutorReview.session_id == session_id, TutorReview.student_id == student_id)
+    ).scalar_one_or_none()
+    if existing:
+        return None, "لقد قيّمت هذه الجلسة مسبقاً."
+
+    if not (1 <= rating <= 5):
+        return None, "التقييم يجب أن يكون بين 1 و 5."
+
+    def _rate():
+        review = TutorReview(
+            session_id=session_id,
+            student_id=student_id,
+            rating=rating,
+            comment=(comment or "").strip() or None,
+        )
+        db.session.add(review)
+        return review
+
+    return tx(_rate), None
+
+
+def get_tutor_earnings(tutor_id: int) -> dict:
+    """ملخص أرباح المعلم."""
+    from app.extensions import db
+    from app.models.tutoring import TutoringSession, TutorReview
+
+    sessions = (
+        db.session.execute(db.select(TutoringSession).where(TutoringSession.tutor_id == tutor_id)).scalars().all()
+    )
+    completed = [s for s in sessions if s.status in ("completed", "ended")]
+    total_earnings = sum(float(s.price or 0) for s in completed)
+    pending = sum(
+        float(s.price or 0) for s in sessions if s.payment_status == "pending" and s.status not in ("cancelled",)
+    )
+
+    reviews = (
+        db.session.execute(db.select(TutorReview).join(TutoringSession).where(TutoringSession.tutor_id == tutor_id))
+        .scalars()
+        .all()
+    )
+    avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else 0.0
+
+    return {
+        "total_earnings": round(total_earnings, 2),
+        "pending_payouts": round(pending, 2),
+        "avg_rating": avg_rating,
+        "review_count": len(reviews),
+        "completed_sessions": len(completed),
+        "total_sessions": len(sessions),
+    }

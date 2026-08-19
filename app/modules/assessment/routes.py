@@ -1,6 +1,7 @@
 """مسارات التقييم: قائمة اختبارات، إنشاء، محاولة، نتائج، تصحيح مقالي."""
 
 from app.core.db import tx
+from app.core.permissions import role_required
 from app.extensions import db
 from app.models.assessment import Answer, ProctoringLog, Question, Quiz, QuizAttempt
 from app.models.class_room import ClassRoom
@@ -25,6 +26,7 @@ from app.services.question_bank import (
     import_to_quiz,
     list_bank_questions,
 )
+from app.services.quiz_stats import get_quiz_stats
 from flask import abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
@@ -466,3 +468,22 @@ def proctor_log(attempt_id):
                 return jsonify({"auto_submit": True, "reason": "fullscreen_exit_exceeded"})
 
     return jsonify({"ok": True, "event_type": event_type})
+
+
+@bp.get("/quiz/<int:quiz_id>/stats")
+@login_required
+@role_required(UserRole.teacher, UserRole.school_admin)
+def quiz_stats(quiz_id):
+    from app.models.assessment import Quiz
+
+    quiz = Quiz.query.get_or_404(quiz_id)
+    class_room = ClassRoom.query.get_or_404(quiz.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+
+    stats = get_quiz_stats(quiz_id)
+    if not stats:
+        flash(_("لا توجد بيانات إحصائية لهذا الاختبار."), "info")
+        return redirect(url_for("assessment.quiz_results", quiz_id=quiz_id))
+
+    return render_template("assessment/quiz_stats.html", quiz=quiz, stats=stats, class_room=class_room)

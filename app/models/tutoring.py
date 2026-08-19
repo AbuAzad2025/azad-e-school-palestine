@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Numeric, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -65,7 +65,22 @@ class TutoringSession(PKMixin, db.Model):
     location: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(12), default="requested", nullable=False)
     payment_status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)
+    end_time = db.Column(db.DateTime(timezone=True))
 
     request: Mapped[TutoringRequest | None] = relationship()
     tutor: Mapped[User] = relationship("User", foreign_keys=[tutor_id])
+    student: Mapped[User] = relationship("User", foreign_keys=[student_id])
+    reviews: Mapped[list[TutorReview]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
+class TutorReview(PKMixin, db.Model):
+    __tablename__ = "tutor_reviews"
+    __table_args__ = (UniqueConstraint("session_id", "student_id", name="uq_tutor_review_per_session"),)
+
+    session_id: Mapped[int] = mapped_column(ForeignKey("tutoring_sessions.id"), nullable=False)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    rating: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    comment: Mapped[str | None] = mapped_column(Text)
+
+    session: Mapped[TutoringSession] = relationship(back_populates="reviews")
     student: Mapped[User] = relationship("User", foreign_keys=[student_id])

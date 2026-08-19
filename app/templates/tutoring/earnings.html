@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ _('أرباح المعلم') }}{% endblock %}
+{% from "macros/ui.html" import azad_stat_card, azad_table %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('أرباح المعلم') }}</h1>
+    <p class="page-subtitle">{{ _('ملخص مالي وتقييمات') }}</p>
+  </div>
+</div>
+
+<div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+  {{ azad_stat_card(earnings.total_earnings ~ ' ' ~ session.currency, _('إجمالي الأرباح'), 'credit-card', 'var(--azad-green)') }}
+  {{ azad_stat_card(earnings.pending_payouts ~ ' ' ~ session.currency, _('المستحقات المعلقة'), 'clock', 'var(--azad-amber)') }}
+  {{ azad_stat_card(earnings.avg_rating ~ '/5', _('متوسط التقييم'), 'star', 'var(--azad-indigo)') }}
+  {{ azad_stat_card(earnings.review_count, _('عدد التقييمات'), 'message-square', 'var(--azad-purple)') }}
+  {{ azad_stat_card(earnings.completed_sessions, _('جلسات مكتملة'), 'check-circle', 'var(--azad-blue)') }}
+  {{ azad_stat_card(earnings.total_sessions, _('إجمالي الجلسات'), 'calendar', 'var(--azad-gray-500)') }}
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('سجل الجلسات') }}</h2>
+  {% if sessions %}
+  <div class="azad-table-container">
+    <table class="azad-table">
+      <thead>
+        <tr>
+          <th>{{ _('التاريخ') }}</th>
+          <th>{{ _('الطالب') }}</th>
+          <th>{{ _('المادة') }}</th>
+          <th>{{ _('المدة') }}</th>
+          <th>{{ _('السعر') }}</th>
+          <th>{{ _('الحالة') }}</th>
+          <th>{{ _('التقييم') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for s in sessions %}
+        <tr>
+          <td>{{ s.scheduled_at|azad_datetime if s.scheduled_at else '—' }}</td>
+          <td>{{ s.student.name_ar }}</td>
+          <td>{{ s.subject }}</td>
+          <td>{{ s.duration_min or 0 }} {{ _('دقيقة') }}</td>
+          <td>{{ s.price or 0 }} {{ s.currency }}</td>
+          <td>
+            {% set status_color = {
+              'completed': 'var(--azad-green)',
+              'ended': 'var(--azad-green)',
+              'active': 'var(--azad-blue)',
+              'requested': 'var(--azad-amber)',
+              'cancelled': 'var(--azad-red)',
+            } %}
+            <span class="azad-badge" style="background:{{ status_color }}">{{ s.status }}</span>
+          </td>
+          <td>
+            {% set review = s.reviews|first if s.reviews else none %}
+            {% if review %}
+              <span style="color:var(--azad-amber)">{{ '★' * review.rating }}</span> ({{ review.rating }}/5)
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">{{ _('لا توجد جلسات بعد.') }}</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -22,10 +22,11 @@ from app.models.user import User, UserRole, UserApprovalStatus
 
 
 def _ensure_phase2_schema(db_engine):
-    """Ensure Phase 2 columns/tables exist (migration pending separately)."""
+    """Ensure Phase 2+ columns/tables exist (migration pending separately)."""
     from sqlalchemy import text
 
     try:
+        # Phase 2 (previous batch)
         db_engine.session.execute(
             text("ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS enable_proctoring BOOLEAN DEFAULT FALSE NOT NULL")
         )
@@ -65,6 +66,30 @@ def _ensure_phase2_schema(db_engine):
                 "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
             )
         )
+
+        # Phase 3 (current batch)
+        # Lessons: is_shared, original_lesson_id
+        db_engine.session.execute(
+            text("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT FALSE NOT NULL")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS original_lesson_id INTEGER REFERENCES lessons(id)")
+        )
+        # Tutoring sessions: end_time
+        db_engine.session.execute(
+            text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ")
+        )
+        # Tutor reviews table
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS tutor_reviews ("
+                "id SERIAL PRIMARY KEY, session_id INTEGER NOT NULL REFERENCES tutoring_sessions(id), "
+                "student_id INTEGER NOT NULL REFERENCES users(id), rating SMALLINT NOT NULL, "
+                "comment TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(), "
+                "UNIQUE(session_id, student_id))"
+            )
+        )
+
         db_engine.session.commit()
     except Exception:
         db_engine.session.rollback()
@@ -323,3 +348,42 @@ def make_tenant_quota(app, school_id, tier="free", **kw):
         _db.session.add(q)
         _db.session.commit()
         return q.id
+
+
+def make_tutor_profile(app, tutor_id, subject="رياضيات", price_hour=100.0):
+    with app.app_context():
+        from app.models.tutoring import TutorProfile
+        import secrets
+        code = secrets.token_urlsafe(8)
+        while TutorProfile.query.filter_by(invite_code=code).first():
+            code = secrets.token_urlsafe(8)
+        p = TutorProfile(tutor_id=tutor_id, subject=subject, price_hour=price_hour, invite_code=code, is_active=True)
+        _db.session.add(p)
+        _db.session.commit()
+        return p.id
+
+
+def make_tutoring_session(app, tutor_id, student_id, subject="رياضيات", status="completed", price=100.0, end_time=None):
+    with app.app_context():
+        from datetime import datetime, timedelta, timezone
+        from app.models.tutoring import TutoringSession
+        scheduled_at = datetime.now(timezone.utc) - timedelta(days=1)
+        if end_time is None:
+            end_time = scheduled_at + timedelta(hours=1)
+        s = TutoringSession(
+            tutor_id=tutor_id, student_id=student_id, subject=subject,
+            scheduled_at=scheduled_at, duration_min=60, price=price,
+            status=status, payment_status="paid", end_time=end_time,
+        )
+        _db.session.add(s)
+        _db.session.commit()
+        return s.id
+
+
+def make_tutor_review(app, session_id, student_id, rating=5, comment="جيد"):
+    with app.app_context():
+        from app.models.tutoring import TutorReview
+        r = TutorReview(session_id=session_id, student_id=student_id, rating=rating, comment=comment)
+        _db.session.add(r)
+        _db.session.commit()
+        return r.id

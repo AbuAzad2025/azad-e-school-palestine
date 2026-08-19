@@ -20,7 +20,7 @@ from .question_bank import QuestionBank
 from .school import Grade, School, SchoolSetting, Subject, SubjectGradeLink
 from .system import AuditLog, Setting
 from .tenant import TenantQuota
-from .tutoring import TutoringRequest, TutoringSession, TutorProfile
+from .tutoring import TutoringRequest, TutoringSession, TutorProfile, TutorReview
 from .user import User, UserRole, UserRoleLink
 
 __all__ = [
@@ -65,6 +65,7 @@ __all__ = [
     "TutorProfile",
     "TutoringRequest",
     "TutoringSession",
+    "TutorReview",
     "Unit",
     "User",
     "UserRole",
