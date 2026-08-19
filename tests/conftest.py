@@ -242,6 +242,10 @@ def app():
     a.config["TALISMAN_ENABLED"] = False
     a.config["SESSION_COOKIE_SECURE"] = False
     with a.app_context():
+        from sqlalchemy import text
+
+        _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
+        _db.session.commit()
         _db.create_all()
         _ensure_phase2_schema(_db)
     yield a
