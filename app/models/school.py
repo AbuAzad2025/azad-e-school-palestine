@@ -19,10 +19,15 @@ class School(PKMixin, db.Model):
     stages: Mapped[list | None] = mapped_column(JSONB)  # ["primary","prep","secondary"]
     settings: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     @property
     def display_name(self):
         return self.name_ar or self.name_en or "مدرسة"
+
+    @property
+    def is_individual_school(self) -> bool:
+        return bool(self.is_system)
 
 
 class SchoolSetting(PKMixin, db.Model):
@@ -62,6 +67,8 @@ class Subject(PKMixin, db.Model):
     name_en: Mapped[str | None] = mapped_column(Text)
     is_elective: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # مادة اختيارية
     icon: Mapped[str | None] = mapped_column(Text)
+    moe_code: Mapped[str | None] = mapped_column(String(50))
+    moe_curriculum_version: Mapped[str | None] = mapped_column(String(50))
 
     grade_links: Mapped[list["SubjectGradeLink"]] = relationship(back_populates="subject")
 

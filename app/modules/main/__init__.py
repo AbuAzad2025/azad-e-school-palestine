@@ -1,18 +1,27 @@
-"""Blueprint الرئيسي — الصفحة الافتتاحية + مبدّل اللغة"""
-
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
+from flask_login import current_user
 
 bp = Blueprint("main", __name__)
 
 
 @bp.get("/")
 def index():
-    return render_template("main/index.html")
+    if current_user.is_authenticated:
+        return redirect(url_for("auth.dashboard"))
+    stats = {"student_count": 0, "lesson_count": 150, "school_count": 0}
+    try:
+        from app.models.school import School
+        from app.models.user import User
+
+        stats["student_count"] = User.query.filter_by(role="student", is_active=True).count()
+        stats["school_count"] = School.query.filter_by(is_active=True).count()
+    except Exception:
+        pass
+    return render_template("landing.html", stats=stats)
 
 
 @bp.post("/set-locale/<lang>")
 def set_locale(lang):
-    """يحوّل اللغة (ar/en) عبر كوكي ويُعيد للمصدر. كلاسيكي وبدون DB."""
     available = current_app.config.get("LANGUAGES", ["ar"])
     if lang not in available:
         lang = current_app.config.get("DEFAULT_LOCALE", "ar")

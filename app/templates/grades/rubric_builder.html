@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state %}
+{% from "macros/forms.html" import azad_input, azad_textarea, azad_form_actions %}
+{% block title %}{{ _('منشئ المعايير') }} — {{ _('دفتر الدرجات') }}{% endblock %}
+{% block content %}
+{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('منشئ المعايير')}]) }}
+
+<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ _('منشئ معايير التقييم') }}</h1>
+
+{% call azad_card(_('إنشاء قالب تقييم'), '', 'edit') %}
+<form method="post" action="{{ url_for('grades.rubric_create', class_id=class_id) }}" id="rubric-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div style="display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-bottom:var(--sp-6)">
+    <div style="flex:2;min-width:200px">
+      <div class="azad-field">
+        <label class="azad-field__label" for="title">{{ _('اسم القالب') }}</label>
+        <input type="text" name="title" id="title" class="azad-field__input" required placeholder="{{ _('مثال: تقييم المقال') }}">
+      </div>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div class="azad-field">
+        <label class="azad-field__label" for="description">{{ _('الوصف') }}</label>
+        <input type="text" name="description" id="description" class="azad-field__input" placeholder="{{ _('وصف مختصر (اختياري)') }}">
+      </div>
+    </div>
+  </div>
+
+  <h2 style="margin-bottom:var(--sp-3)">{{ icon('list') }} {{ _('معايير التقييم') }}</h2>
+  <div id="criteria-container">
+    <div class="rubric-criteria-row" data-index="0" style="display:flex;gap:var(--sp-3);margin-bottom:var(--sp-3);flex-wrap:wrap;align-items:end;padding:var(--sp-3);background:var(--azad-slate);border-radius:var(--radius-lg)">
+      <div style="flex:3;min-width:160px">
+        <label class="azad-field__label">{{ _('عنوان المعيار') }}</label>
+        <input type="text" name="criteria[0][title]" class="azad-field__input" required placeholder="{{ _('مثال: المحتوى') }}">
+      </div>
+      <div style="flex:2;min-width:140px">
+        <label class="azad-field__label">{{ _('الوصف') }}</label>
+        <input type="text" name="criteria[0][description]" class="azad-field__input" placeholder="{{ _('وصف المعيار') }}">
+      </div>
+      <div style="flex:1;min-width:80px">
+        <label class="azad-field__label">{{ _('الدرجة القصوى') }}</label>
+        <input type="number" name="criteria[0][max_score]" class="azad-field__input" min="1" max="100" required value="25">
+      </div>
+      <div style="flex:0">
+        <button type="button" class="azad-btn-outline remove-criteria" style="color:var(--azad-red)" aria-label="{{ _('حذف') }}">{{ icon('trash') }}</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:var(--sp-4);margin:var(--sp-4) 0">
+    <button type="button" class="azad-btn-outline" id="add-criteria">{{ icon('plus') }} {{ _('إضافة معيار') }}</button>
+    <div style="margin-inline-start:auto;display:flex;align-items:center;gap:var(--sp-2)">
+      <span class="azad-field__label" style="margin:0">{{ _('المجموع') }}:</span>
+      <span id="weight-sum" class="azad-badge-variant azad-badge-variant--info">0</span>
+      <span style="color:var(--muted)">/ 100</span>
+    </div>
+  </div>
+
+  <div class="azad-form-actions">
+    <a href="{{ url_for('grades.gradebook', class_id=class_id) }}" class="azad-btn azad-btn-ghost">{{ _('إلغاء') }}</a>
+    <button type="submit" class="azad-btn" id="submit-btn">{{ _('حفظ القالب') }}</button>
+  </div>
+</form>
+{% endcall %}
+
+{% if templates %}
+<h2 style="margin:var(--sp-6) 0 var(--sp-3)">{{ icon('folder') }} {{ _('القوالب المحفوظة') }}</h2>
+<div style="display:grid;gap:var(--sp-4);grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+  {% for t in templates %}
+  {% call azad_card(t.title, t.description or '', 'file-text') %}
+    <div style="margin-bottom:var(--sp-3)">
+      {% for c in t.criteria %}
+      <div style="display:flex;justify-content:space-between;padding:var(--sp-2) 0;border-bottom:1px solid var(--border, #e2e8f0)">
+        <span>{{ c.title }}</span>
+        <span class="azad-badge-variant azad-badge-variant--info">{{ c.max_score }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  {% endcall %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  var idx = 1;
+  var container = document.getElementById('criteria-container');
+  var sumEl = document.getElementById('weight-sum');
+  var form = document.getElementById('rubric-form');
+  var submitBtn = document.getElementById('submit-btn');
+
+  function updateSum(){
+    var total = 0;
+    container.querySelectorAll('input[name$="[max_score]"]').forEach(function(el){
+      total += parseFloat(el.value) || 0;
+    });
+    sumEl.textContent = total;
+    sumEl.className = 'azad-badge-variant azad-badge-variant--' + (total === 100 ? 'success' : 'danger');
+    submitBtn.disabled = total !== 100;
+  }
+
+  document.getElementById('add-criteria').addEventListener('click', function(){
+    var row = document.querySelector('.rubric-criteria-row').cloneNode(true);
+    row.dataset.index = idx;
+    row.querySelectorAll('input').forEach(function(inp){
+      inp.name = inp.name.replace(/\[\d+\]/, '[' + idx + ']');
+      if(inp.name.indexOf('max_score') === -1) inp.value = '';
+      else inp.value = '25';
+    });
+    container.appendChild(row);
+    idx++;
+    updateSum();
+  });
+
+  container.addEventListener('click', function(e){
+    var btn = e.target.closest('.remove-criteria');
+    if(btn && container.children.length > 1){
+      btn.closest('.rubric-criteria-row').remove();
+      updateSum();
+    }
+  });
+
+  container.addEventListener('input', function(e){
+    if(e.target.name && e.target.name.indexOf('max_score') !== -1) updateSum();
+  });
+
+  form.addEventListener('submit', function(e){
+    if(parseInt(sumEl.textContent) !== 100){
+      e.preventDefault();
+      alert('{{ _("يجب أن تساوي المجموع 100") }}');
+    }
+  });
+
+  updateSum();
+})();
+</script>
+{% endblock %}

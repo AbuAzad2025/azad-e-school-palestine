@@ -15,6 +15,11 @@ class TutorProfileForm(FlaskForm):
         choices=[("both", _("أونلاين وحضوري")), ("online", _("أونلاين")), ("offline", _("حضوري"))],
         default="both",
     )
+    video_provider = SelectField(
+        _("منصة الفيديو"),
+        choices=[("jitsi", "Jitsi Meet"), ("zoom", "Zoom")],
+        default="jitsi",
+    )
     bio = TextAreaField(_("نبذة عنك"), validators=[Optional(), Length(max=1000)])
     submit = SubmitField(_("حفظ الملف"))
 
@@ -40,6 +45,11 @@ class SessionForm(FlaskForm):
         _("الطريقة"),
         choices=[("online", _("أونلاين")), ("offline", _("حضوري"))],
         default="online",
+    )
+    video_provider = SelectField(
+        _("منصة الفيديو"),
+        choices=[("jitsi", "Jitsi Meet"), ("zoom", "Zoom")],
+        default="jitsi",
     )
     online_link = StringField(_("رابط الاجتماع"), validators=[Optional(), Length(max=500)])
     location = StringField(_("المكان الحضوري"), validators=[Optional(), Length(max=300)])

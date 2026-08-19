@@ -46,3 +46,12 @@ class HealthCheck(PKMixin, db.Model):
     message: Mapped[str | None] = mapped_column(Text)
     latency_ms: Mapped[int | None] = mapped_column(BigInteger)
     checked_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+
+
+class CertificateTemplate(PKMixin, db.Model):
+    __tablename__ = "certificate_templates"
+
+    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id"), nullable=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    template_html: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

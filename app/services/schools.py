@@ -158,3 +158,65 @@ def create_school_with_defaults(name_ar: str, domain: str | None = None) -> tupl
     for level in range(1, 13):
         add_grade(school.id, level)
     return school, None
+
+
+SYSTEM_SCHOOL_DOMAIN = "individual.azad.edu.ps"
+
+
+def get_or_create_system_school() -> School:
+    """获取或创建系统学校「أزاد للتعليم الفردي»."""
+    school = School.query.filter_by(domain=SYSTEM_SCHOOL_DOMAIN).first()
+    if school:
+        return school
+
+    def _create():
+        s = School(
+            name_ar="أزاد للتعليم الفردي",
+            name_en="Azad Individual Learning",
+            domain=SYSTEM_SCHOOL_DOMAIN,
+            is_system=True,
+        )
+        db.session.add(s)
+        db.session.flush()
+        for level in range(1, 13):
+            existing = Grade.query.filter_by(school_id=s.id, grade_level=level).first()
+            if not existing:
+                db.session.add(Grade(school_id=s.id, grade_level=level, name_ar=f"صف {level}"))
+        return s
+
+    return tx(_create)
+
+
+def is_individual_user(user) -> bool:
+    """True if user has no active role link to a non-system school."""
+    return not user.belongs_to_school
+
+
+def has_active_subscription(student_id: int, class_id: int) -> bool:
+    """Check if student has an active subscription for a class."""
+    from app.models.billing import Subscription
+
+    return Subscription.query.filter_by(user_id=student_id, class_id=class_id, status="active").first() is not None
+
+
+def join_class_individual(student_id: int, class_id: int) -> tuple[ClassMember | None, str | None]:
+    """Individual student joins a public class. Returns (member_or_none, error_or_none)."""
+    user = db.session.get(User, student_id)
+    cls = db.session.get(ClassRoom, class_id)
+    if not user or not cls:
+        return None, "غير موجود."
+    if not cls.is_public:
+        return None, "هذا الصف غير متاح للاشتراك الفردي."
+    if is_member(cls, user):
+        return None, "أنت عضو في هذا الصف مسبقاً."
+    if cls.max_students:
+        current_count = ClassMember.query.filter_by(class_id=cls.id, status="active").count()
+        if current_count >= cls.max_students:
+            return None, "الصف ممتلئ."
+
+    def _join():
+        db.session.add(ClassMember(class_id=cls.id, user_id=user.id, status="active", joined_at=db.func.now()))
+
+    tx(_join)
+    member = ClassMember.query.filter_by(class_id=cls.id, user_id=user.id).first()
+    return member, None

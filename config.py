@@ -64,12 +64,12 @@ class Config:
     TALISMAN_STRICT_TRANSPORT_SECURITY_MAX_AGE = 31536000
     TALISMAN_CONTENT_SECURITY_POLICY = {
         "default-src": "'self'",
-        "script-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+        "script-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://browser.sentry-cdn.com",
         "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
         "font-src": "'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
         "img-src": "'self' data: https:",
-        "connect-src": "'self' https://api.stripe.com",
-        "frame-src": "'self' https://meet.jit.si https://meet.jit.si",
+        "connect-src": "'self' https://api.stripe.com https://*.sentry.io",
+        "frame-src": "'self' https://meet.jit.si",
         "frame-ancestors": "'none'",
         "form-action": "'self'",
         "base-uri": "'self'",
@@ -98,3 +98,27 @@ class Config:
 
     # 2FA
     TOTP_ISSUER = "Azad E-School"
+
+    # === Zoom Integration (optional) ===
+    VIDEO_PROVIDER_DEFAULT = os.getenv("VIDEO_PROVIDER_DEFAULT", "jitsi")
+    ZOOM_ACCOUNT_ID = os.getenv("ZOOM_ACCOUNT_ID", "")
+    ZOOM_CLIENT_ID = os.getenv("ZOOM_CLIENT_ID", "")
+    ZOOM_CLIENT_SECRET = os.getenv("ZOOM_CLIENT_SECRET", "")
+    ZOOM_SDK_KEY = os.getenv("ZOOM_SDK_KEY", "")
+    ZOOM_SDK_SECRET = os.getenv("ZOOM_SDK_SECRET", "")
+
+    # === Sentry ===
+    SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+    SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", "production")
+    SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
+
+    # === Backups ===
+    BACKUP_ENABLED = os.getenv("BACKUP_ENABLED", "0") == "1"
+    BACKUP_S3_ENDPOINT = os.getenv("BACKUP_S3_ENDPOINT", "")
+    BACKUP_S3_BUCKET = os.getenv("BACKUP_S3_BUCKET", "")
+    BACKUP_S3_ACCESS_KEY = os.getenv("BACKUP_S3_ACCESS_KEY", "")
+    BACKUP_S3_SECRET_KEY = os.getenv("BACKUP_S3_SECRET_KEY", "")
+    BACKUP_LOCAL_RETENTION_DAYS = int(os.getenv("BACKUP_LOCAL_RETENTION_DAYS", "7"))
+
+    # === Alerting ===
+    ALERT_EMAIL = os.getenv("ALERT_EMAIL", "")

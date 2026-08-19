@@ -1,29 +1,34 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state %}
+{% block title %}{{ _('التنزيلات بدون إنترنت') }}{% endblock %}
 {% block content %}
-<div class="container py-4" dir="rtl">
-  <h2>التنزيلات بدون إنترنت</h2>
-  {% if items %}
-  <table class="table">
-    <thead><tr><th>الدرس</th><th>المرفق</th><th>الحالة</th><th>يعمل حتى</th><th>إجراء</th></tr></thead>
-    <tbody>
-    {% for item in items %}
-    <tr>
-      <td>{{ item.lesson.title }}</td>
-      <td>{{ item.attachment.original_name or item.attachment.kind }}</td>
-      <td>{{ item.status }}</td>
-      <td>{{ item.expires_at.strftime('%Y-%m-%d') if item.expires_at else '-' }}</td>
-      <td>
-        <form method="post" action="{{ url_for('content.remove_offline', download_id=item.id) }}" style="display:inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="btn btn-sm btn-danger">إزالة</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="text-muted">لا توجد تنزيلات بعد.</p>
-  {% endif %}
+{{ azad_breadcrumb([{'label': _('التنزيلات بدون إنترنت')}]) }}
+
+<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('download') }} {{ _('التنزيلات بدون إنترنت') }}</h1>
+
+{% if items %}
+<div style="display:grid;gap:var(--sp-4)">
+  {% for item in items %}
+  {% call azad_card(item.lesson.title, '', 'file') %}
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--sp-3)">
+    <div style="flex:1">
+      <div style="font-weight:600">{{ item.attachment.original_name or item.attachment.kind }}</div>
+      <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-2);color:var(--muted);font-size:var(--text-sm)">
+        <span>{{ azad_badge(item.status, 'success' if item.status == 'ready' else 'warning') }}</span>
+        {% if item.expires_at %}
+        <span>{{ icon('clock') }} {{ _('يعمل حتى') }} {{ item.expires_at.strftime('%Y-%m-%d') }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <form method="post" action="{{ url_for('content.remove_offline', download_id=item.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="azad-btn-outline" style="color:var(--azad-red);font-size:var(--text-sm)">{{ icon('trash') }} {{ _('إزالة') }}</button>
+    </form>
+  </div>
+  {% endcall %}
+  {% endfor %}
 </div>
+{% else %}
+{{ azad_empty_state(_('لا توجد تنزيلات بعد'), _('يمكنك تحديد مرفقات الدروس للتنزيل ومشاهدتها بدون إنترنت.'), 'download') }}
+{% endif %}
 {% endblock %}

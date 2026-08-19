@@ -32,6 +32,9 @@ class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
     price_annual: Mapped[float | None] = mapped_column(Numeric(10, 2))
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
     max_students: Mapped[int | None] = mapped_column(SmallInteger)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    price: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    duration_days: Mapped[int | None] = mapped_column(SmallInteger)
 
     members: Mapped[list[ClassMember]] = relationship(back_populates="class_room", cascade="all, delete-orphan")
     subject: Mapped[Subject] = relationship("Subject")

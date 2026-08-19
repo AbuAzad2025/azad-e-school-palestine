@@ -279,3 +279,46 @@ html[data-theme="dark"] .azad-btn-outline:hover { background: #34d399; color: #0
 }
 .azad-footer a { color: var(--azad-red); font-weight: 600; text-decoration: none; }
 .azad-footer a:hover { text-decoration: underline; }
+
+/* ═══ Toggle Switch ═══ */
+.azad-toggle {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.azad-toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.azad-toggle__track {
+  display: block;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--azad-slate, #e2e8f0);
+  transition: background .2s;
+  position: relative;
+}
+.azad-toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s;
+}
+.azad-toggle__input:checked + .azad-toggle__track {
+  background: var(--azad-green, #009535);
+}
+.azad-toggle__input:checked + .azad-toggle__track::after {
+  transform: translateX(20px);
+}
+[data-theme="dark"] .azad-toggle__track {
+  background: #334155;
+}

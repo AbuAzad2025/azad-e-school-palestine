@@ -30,7 +30,7 @@ from .offline import OfflineDownload
 from .progress import StudentProgress, VideoProgress
 from .question_bank import QuestionBank
 from .school import Grade, School, SchoolSetting, Subject, SubjectGradeLink
-from .system import AuditLog, HealthCheck, OnboardingProgress, Setting
+from .system import AuditLog, CertificateTemplate, HealthCheck, OnboardingProgress, Setting
 from .tenant import TenantQuota
 from .tutoring import TutoringRequest, TutoringSession, TutorProfile, TutorReview
 from .user import User, UserRole, UserRoleLink
@@ -54,6 +54,7 @@ __all__ = [
     "GradeCategory",
     "GradeEntry",
     "GradeItem",
+    "CertificateTemplate",
     "HealthCheck",
     "Lesson",
     "LessonAttachment",

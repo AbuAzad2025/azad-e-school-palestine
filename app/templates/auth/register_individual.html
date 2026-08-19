@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ _('تسجيل كطالب فردي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="card card-centered">
+  <h1 class="page-title azad-title">{{ _('تسجيل كطالب فردي') }}</h1>
+  <p class="form-hint">{{ _('سجّل كطالب مستقل واستكشف الكورسات المتاحة مباشرة.') }}</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.name_ar.label }}
+      {{ form.name_ar(autocomplete="name", placeholder=_("الاسم الكامل")) }}
+      {% for e in form.name_ar.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-group">
+      {{ form.email.label }}
+      {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
+      {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-group">
+      {{ form.grade_level.label }}
+      {{ form.grade_level() }}
+      {% for e in form.grade_level.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-group">
+      {{ form.password.label }}
+      {{ form.password(autocomplete="new-password", placeholder=_("8 أحرف على الأقل")) }}
+      {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-group">
+      {{ form.confirm.label }}
+      {{ form.confirm(autocomplete="new-password") }}
+      {% for e in form.confirm.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class="azad-btn") }}
+    </div>
+  </form>
+  <p class="auth-alt">{{ _('لديك حساب بالفعل؟') }} <a href="{{ url_for('auth.login') }}">{{ _('سجّل الدخول') }}</a></p>
+  <p class="auth-alt">{{ _('مدرستك لديها كود انضمام؟') }} <a href="{{ url_for('auth.register') }}">{{ _('سجّل كطالب مدرسي') }}</a></p>
+</div>
+{% endblock %}

@@ -14,6 +14,11 @@
       <div class="item-meta">
         <span>{{ m.class_room.subject.name_ar }}</span>
         <span>{{ _('الصف') }} {{ m.class_room.grade.grade_level }}</span>
+        {% if m.class_room.max_students %}
+        <span class="meta-chip" style="background:{{ 'var(--azad-green)' if m.member_count < m.class_room.max_students else 'var(--azad-red)' }};color:#fff">
+          {{ m.member_count }}/{{ m.class_room.max_students }} {{ _('مقعد') }}
+        </span>
+        {% endif %}
       </div>
     </div>
     <div class="item-actions">

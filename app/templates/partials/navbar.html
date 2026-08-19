@@ -22,8 +22,15 @@
         <a href="{{ url_for('auth.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
 
         {% if is_student() %}
-          <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
-          <a href="{{ url_for('tutoring.index') }}">{{ icon('books') }} {{ _('دروس خصوصية') }}</a>
+          {% if is_individual() %}
+            <a href="{{ url_for('individual.my_courses') }}">{{ icon('book-open') }} {{ _('كورساتي') }}</a>
+            <a href="{{ url_for('individual.catalog') }}">{{ icon('search') }} {{ _('استكشف') }}</a>
+            <a href="{{ url_for('tutoring.index') }}">{{ icon('teacher') }} {{ _('دروس خصوصية') }}</a>
+            <a href="{{ url_for('ai.chat') }}">{{ icon('sparkles') }} {{ _('محادثة AI') }}</a>
+          {% else %}
+            <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
+            <a href="{{ url_for('tutoring.index') }}">{{ icon('books') }} {{ _('دروس خصوصية') }}</a>
+          {% endif %}
         {% elif is_teacher() %}
           <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
           <a href="{{ url_for('tutoring.my') }}">{{ icon('teacher') }} {{ _('دروسي الخصوصية') }}</a>
@@ -64,6 +71,7 @@
       {% else %}
         <a href="{{ url_for('auth.login') }}" class="azad-btn-outline nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
         <a href="{{ url_for('auth.register') }}" class="azad-btn nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn-outline nav-cta">{{ icon('user-plus') }} {{ _('طالب فردي') }}</a>
       {% endif %}
 
       <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'en' else 'ar') }}" style="display:inline">

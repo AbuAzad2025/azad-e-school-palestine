@@ -1,0 +1,234 @@
+{%- block doc -%}
+<!doctype html>
+{% set _locale = request.cookies.get('locale', config.DEFAULT_LOCALE) %}<html lang="{{ _locale }}" dir="{{ 'ltr' if _locale == 'en' else 'rtl' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#014e7c">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="{{ _('منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
+<title>{{ _('مدرسة أزاد الإلكترونية') }} — {{ _('تعليم إلكتروني متكامل') }}</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/azad-mark.svg') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script>
+(function(){var t=localStorage.getItem("azad-theme")||"system";var dark=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light";})();
+</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+<style>
+.l-nav{position:fixed;top:0;inset-inline:0;z-index:var(--z-navbar);padding:var(--sp-3) 0;transition:background .3s;}
+.l-nav.scrolled{background:var(--surface);box-shadow:var(--shadow-md);}
+.l-nav .container{display:flex;align-items:center;justify-content:space-between;}
+.l-brand{display:flex;align-items:center;gap:var(--sp-2);color:#fff;text-decoration:none;font-weight:700;font-size:var(--text-lg);transition:color .3s;}
+.l-nav.scrolled .l-brand{color:var(--text);}
+.l-brand img{width:32px;height:32px;}
+.l-nav-actions{display:flex;gap:var(--sp-2);align-items:center;}
+.l-theme-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;border-radius:var(--radius-md);padding:var(--sp-2);cursor:pointer;transition:background .3s;}
+.l-nav.scrolled .l-theme-btn{background:var(--surface-hover);color:var(--text);}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:var(--sp-20) var(--sp-4) var(--sp-16);background:var(--azad-gradient);color:#fff;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-60%;left:-30%;width:160%;height:220%;background:radial-gradient(ellipse at 30% 50%,rgba(255,255,255,0.07) 0%,transparent 60%);pointer-events:none;}
+.hero__inner{position:relative;z-index:1;max-width:720px;}
+.hero__badge{display:inline-flex;align-items:center;gap:var(--sp-2);background:rgba(255,255,255,0.15);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.2);padding:var(--sp-2) var(--sp-4);border-radius:var(--radius-full);font-size:var(--text-sm);margin-bottom:var(--sp-6);}
+.hero__title{font-size:clamp(2.2rem,6vw,4rem);font-weight:900;line-height:1.15;margin-bottom:var(--sp-4);}
+.hero__sub{font-size:clamp(1rem,2.5vw,1.3rem);opacity:0.9;margin-bottom:var(--sp-8);line-height:1.8;}
+.hero__btns{display:flex;gap:var(--sp-3);justify-content:center;flex-wrap:wrap;}
+.hero__btns .azad-btn{background:#fff;color:var(--azad-navy);box-shadow:var(--shadow-lg);font-weight:700;}
+.hero__btns .azad-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-xl);}
+.hero__btns .azad-btn-outline{border-color:rgba(255,255,255,0.6);color:#fff;background:transparent;}
+.hero__btns .azad-btn-outline:hover{background:rgba(255,255,255,0.15);border-color:#fff;color:#fff;}
+.section{padding:var(--sp-20) 0;}
+.section__title{text-align:center;font-size:var(--text-3xl);font-weight:800;margin-bottom:var(--sp-3);}
+.section__sub{text-align:center;color:var(--muted);margin-bottom:var(--sp-12);font-size:var(--text-lg);max-width:600px;margin-inline:auto;}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--sp-6);max-width:1000px;margin:0 auto;}
+.feat-card{text-align:center;padding:var(--sp-8) var(--sp-6);background:var(--surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-md);border:1px solid var(--border);transition:transform .3s var(--ease-default),box-shadow .3s;}
+.feat-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-xl);}
+.feat-card__ico{width:60px;height:60px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;margin:0 auto var(--sp-4);}
+.feat-card__ico .icon{width:30px;height:30px;}
+.feat-card__ico--green{background:var(--color-success-light);color:var(--azad-green);}
+.feat-card__ico--blue{background:var(--color-info-light);color:var(--azad-blue);}
+.feat-card__ico--gold{background:var(--color-warning-light);color:var(--azad-gold);}
+.feat-card__h{font-size:var(--text-xl);font-weight:700;margin-bottom:var(--sp-2);}
+.feat-card__p{color:var(--muted);line-height:1.6;}
+.steps{display:flex;justify-content:center;gap:var(--sp-6);flex-wrap:wrap;max-width:800px;margin:0 auto;}
+.step{text-align:center;flex:1;min-width:180px;max-width:240px;}
+.step__num{width:52px;height:52px;border-radius:50%;background:var(--azad-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:var(--text-xl);margin:0 auto var(--sp-3);box-shadow:var(--shadow-md);}
+.step__h{font-weight:700;margin-bottom:var(--sp-1);}
+.step__p{color:var(--muted);font-size:var(--text-sm);}
+.step__arrow{display:flex;align-items:center;color:var(--muted);font-size:var(--text-2xl);padding-top:var(--sp-4);}
+.pricing{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--sp-6);max-width:700px;margin:0 auto;}
+.price-card{text-align:center;padding:var(--sp-8) var(--sp-6);background:var(--surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-md);border:2px solid var(--border);transition:border-color .3s;}
+.price-card--green{border-color:var(--azad-green);}
+.price-card__label{font-size:var(--text-sm);color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:var(--sp-2);}
+.price-card__price{font-size:var(--text-3xl);font-weight:900;color:var(--azad-green);margin-bottom:var(--sp-2);}
+.price-card__note{color:var(--muted);font-size:var(--text-sm);margin-bottom:var(--sp-4);}
+.trust{display:flex;justify-content:center;gap:var(--sp-10);flex-wrap:wrap;text-align:center;}
+.trust__item{min-width:120px;}
+.trust__num{font-size:var(--text-3xl);font-weight:900;color:var(--azad-navy);}
+.trust__lbl{color:var(--muted);font-size:var(--text-sm);}
+.cta{text-align:center;padding:var(--sp-16) var(--sp-4);background:var(--azad-gradient);color:#fff;border-radius:var(--radius-xl);margin:var(--sp-8) var(--sp-4);}
+.cta__h{font-size:var(--text-3xl);font-weight:800;margin-bottom:var(--sp-4);}
+.cta .azad-btn{background:#fff;color:var(--azad-navy);font-weight:700;}
+.ft{text-align:center;padding:var(--sp-6) var(--sp-4);color:var(--muted);font-size:var(--text-sm);}
+.ft a{color:var(--azad-red);font-weight:600;text-decoration:none;}
+.ft a:hover{text-decoration:underline;}
+.l-fade{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
+.l-fade.vis{opacity:1;transform:translateY(0);}
+@media(max-width:640px){.hero{min-height:auto;padding-top:120px;padding-bottom:var(--sp-12);}.steps{flex-direction:column;align-items:center;}.step__arrow{transform:rotate(90deg);padding:0;}}
+html[data-theme="dark"] .feat-card,html[data-theme="dark"] .price-card{background:var(--surface);}
+html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
+</style>
+</head>
+<body style="margin:0;background:var(--bg);">
+  <nav class="l-nav" id="l-nav">
+    <div class="container">
+      <a class="l-brand" href="/">
+        <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="">
+        <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
+      </a>
+      <div class="l-nav-actions">
+        <button class="l-theme-btn" type="button" data-theme-toggle aria-label="{{ _('تبديل المظهر') }}">
+          <span data-theme-icon-light hidden>{{ icon('sun') }}</span>
+          <span data-theme-icon-dark hidden>{{ icon('moon') }}</span>
+        </button>
+        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;font-size:var(--text-sm);padding:.4rem 1rem">{{ icon('login') }} {{ _('دخول') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn" style="background:#fff;color:var(--azad-navy);font-size:var(--text-sm);padding:.4rem 1rem">{{ icon('sparkles') }} {{ _('سجّل') }}</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero" id="hero">
+    <div class="hero__inner">
+      <div class="hero__badge">{{ icon('shield-check') }} {{ _('تعليم إلكتروني موثوق') }}</div>
+      <h1 class="hero__title">{{ _('مدرستك الثانية... أونلاين') }}</h1>
+      <p class="hero__sub">{{ _('تعليم إضافي منظم للتوجيهي — دروس مسجلة، اختبارات تفاعلية، دروس خصوصية أونلاين') }}</p>
+      <div class="hero__btns">
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('user-plus') }} {{ _('سجّل كطالب فردي') }}</a>
+        <a href="{{ url_for('auth.register') }}" class="azad-btn-outline azad-btn-lg">{{ icon('school') }} {{ _('سجّل مدرستك') }}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section l-fade">
+    <div class="container">
+      <h2 class="section__title">{{ _('لماذا أزاد؟') }}</h2>
+      <p class="section__sub">{{ _('كل ما تحتاجه للنجاح في التوجيهي في مكان واحد') }}</p>
+      <div class="feat-grid">
+        <div class="feat-card l-fade">
+          <div class="feat-card__ico feat-card__ico--green">{{ icon('video') }}</div>
+          <h3 class="feat-card__h">{{ _('دروس مسجلة منظمة') }}</h3>
+          <p class="feat-card__p">{{ _('محتوى تعليمي عالي الجودة من أفضل المعلمين، مرتّب حسب المناهج الرسمية.') }}</p>
+        </div>
+        <div class="feat-card l-fade">
+          <div class="feat-card__ico feat-card__ico--blue">{{ icon('shield-check') }}</div>
+          <h3 class="feat-card__h">{{ _('اختبارات تفاعلية مراقبة') }}</h3>
+          <p class="feat-card__p">{{ _('اختبارات ذكية مع مراقبة النزاهة ونتائج فورية لتحسين الأداء.') }}</p>
+        </div>
+        <div class="feat-card l-fade">
+          <div class="feat-card__ico feat-card__ico--gold">{{ icon('users') }}</div>
+          <h3 class="feat-card__h">{{ _('دروس خصوصية أونلاين') }}</h3>
+          <p class="feat-card__p">{{ _('احجز جلسات فردية مع معلمين متخصصين في أي مادة وفي أي وقت.') }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section l-fade" style="background:var(--surface)">
+    <div class="container">
+      <h2 class="section__title">{{ _('كيف يعمل؟') }}</h2>
+      <p class="section__sub">{{ _('ثلاث خطوات فقط للبدء') }}</p>
+      <div class="steps">
+        <div class="step l-fade">
+          <div class="step__num">1</div>
+          <h3 class="step__h">{{ _('سجّل') }}</h3>
+          <p class="step__p">{{ _('أنشئ حسابك مجاناً في ثوانٍ') }}</p>
+        </div>
+        <div class="step__arrow">←</div>
+        <div class="step l-fade">
+          <div class="step__num">2</div>
+          <h3 class="step__h">{{ _('اشترك بالكورس') }}</h3>
+          <p class="step__p">{{ _('اختر الكورس المناسب وابدأ الاشتراك') }}</p>
+        </div>
+        <div class="step__arrow">←</div>
+        <div class="step l-fade">
+          <div class="step__num">3</div>
+          <h3 class="step__h">{{ _('تعلّم') }}</h3>
+          <p class="step__p">{{ _('تابع الدروس وحلّ الاختبارات وتطور') }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section l-fade">
+    <div class="container">
+      <h2 class="section__title">{{ _('خطط الأسعار') }}</h2>
+      <div class="pricing">
+        <div class="price-card l-fade">
+          <div class="price-card__label">{{ _('للطلاب الفردي') }}</div>
+          <div class="price-card__price">50 ₪+</div>
+          <p class="price-card__note">{{ _('ابداً من 50 شيكل / كورس / شهرياً') }}</p>
+          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn" style="width:100%">{{ icon('user-plus') }} {{ _('سجّل الآن') }}</a>
+        </div>
+        <div class="price-card price-card--green l-fade">
+          <div class="price-card__label">{{ _('للمدارس') }}</div>
+          <div class="price-card__price">{{ _('تسعير خاص') }}</div>
+          <p class="price-card__note">{{ _('حساب مدرسي كامل مع إدارة وتحليلات') }}</p>
+          <a href="{{ url_for('auth.register') }}" class="azad-btn" style="width:100%">{{ icon('school') }} {{ _('تواصل معنا') }}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section l-fade" style="background:var(--surface)">
+    <div class="container">
+      <div class="trust">
+        <div class="trust__item l-fade">
+          <div class="trust__num">{{ stats.lesson_count or 150 }}+</div>
+          <div class="trust__lbl">{{ _('درس') }}</div>
+        </div>
+        <div class="trust__item l-fade">
+          <div class="trust__num">{{ stats.student_count or 50 }}+</div>
+          <div class="trust__lbl">{{ _('طالب') }}</div>
+        </div>
+        <div class="trust__item l-fade">
+          <div class="trust__num">288</div>
+          <div class="trust__lbl">{{ _('اختبار أمان') }}</div>
+        </div>
+        <div class="trust__item l-fade">
+          <div class="trust__num">{{ icon('sparkles') }}</div>
+          <div class="trust__lbl">{{ _('مدعوم بالذكاء الاصطناعي') }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta l-fade">
+    <h2 class="cta__h">{{ _('ابدأ رحلتك التعليمية الآن') }}</h2>
+    <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+  </div>
+
+  <footer class="ft">
+    <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+    <p style="margin-top:var(--sp-2)">
+      <a href="{{ url_for('auth.login') }}">{{ _('دخول') }}</a> ·
+      <a href="{{ url_for('auth.register') }}">{{ _('تسجيل مدارس') }}</a> ·
+      <a href="{{ url_for('auth.register_individual') }}">{{ _('تسجيل فردي') }}</a>
+    </p>
+  </footer>
+
+  <div class="azad-toast-container" id="azad-toasts" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+  (function(){
+    var nav=document.getElementById('l-nav');
+    if(nav){window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>40);});}
+    var els=document.querySelectorAll('.l-fade');
+    if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('vis');});return;}
+    var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -30px 0px'});
+    els.forEach(function(e){obs.observe(e);});
+  })();
+  </script>
+</body>
+</html>
+{%- endblock -%}

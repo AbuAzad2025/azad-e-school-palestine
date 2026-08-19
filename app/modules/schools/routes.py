@@ -17,7 +17,7 @@ from app.services.schools import (
     list_schools,
     regenerate_join_code,
 )
-from flask import abort, flash, redirect, render_template, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload, selectinload
@@ -137,6 +137,7 @@ def class_join():
 @login_required
 def my_classes():
     from app.models.class_room import ClassMember, ClassRoom
+    from sqlalchemy import func
 
     memberships = (
         ClassMember.query.filter_by(user_id=current_user.id, status="active")
@@ -146,6 +147,15 @@ def my_classes():
         )
         .all()
     )
+    class_ids = [m.class_room.id for m in memberships]
+    counts = dict(
+        ClassMember.query.filter(ClassMember.class_room_id.in_(class_ids), ClassMember.status == "active")
+        .with_entities(ClassMember.class_room_id, func.count())
+        .group_by(ClassMember.class_room_id)
+        .all()
+    )
+    for m in memberships:
+        m.member_count = counts.get(m.class_room.id, 0)
     return render_template("schools/my_classes.html", memberships=memberships)
 
 
@@ -226,3 +236,45 @@ def class_assign_teacher(class_id):
             audit("class.assign_teacher", "classes", class_room.id)
             flash(_("تم تعيين المعلم."), "success")
     return redirect(url_for("schools.class_detail", class_id=class_room.id))
+
+
+@bp.get("/onboarding/<int:step>")
+@login_required
+def onboarding_step(step):
+    from app.services.onboarding import get_onboarding_status, get_wizard_steps, start_onboarding
+
+    sid = current_school_id()
+    if not sid:
+        flash(_("لا توجد مدرسة مرتبطة بحسابك."), "danger")
+        return redirect(url_for("main.index"))
+    steps = get_wizard_steps()
+    start_onboarding(sid)
+    status = get_onboarding_status(sid)
+    if status["is_complete"]:
+        flash(_("تم إعداد المدرسة بالفعل."), "info")
+        return redirect(url_for("admin.school_admin_dashboard"))
+    from app.services.onboarding import get_onboarding
+
+    progress = get_onboarding(sid)
+    data = progress.completed_steps if progress else {}
+    return render_template("schools/onboarding.html", steps=steps, current_step=step, data=data)
+
+
+@bp.post("/onboarding/<int:step>")
+@login_required
+def onboarding_step_save(step):
+    from app.services.onboarding import complete_step
+
+    sid = current_school_id()
+    if not sid:
+        flash(_("لا توجد مدرسة مرتبطة بحسابك."), "danger")
+        return redirect(url_for("main.index"))
+    step_data = {}
+    for key, val in request.form.items():
+        if key != "csrf_token":
+            step_data[key] = val
+    complete_step(sid, step, step_data)
+    if step < 5:
+        return redirect(url_for("schools.onboarding_step", step=step + 1))
+    flash(_("تم إعداد المدرسة بنجاح!"), "success")
+    return redirect(url_for("admin.school_admin_dashboard"))

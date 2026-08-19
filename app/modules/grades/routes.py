@@ -330,3 +330,153 @@ def report_card_pdf(class_id, student_id):
         mimetype="application/pdf",
         headers={"Content-Disposition": f"inline; filename=report_card_{student_id}.pdf"},
     )
+
+
+# ======================================================================
+# معايير التقييم (Rubric)
+# ======================================================================
+@bp.get("/<int:class_id>/rubric/new")
+@login_required
+def rubric_new(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    from app.services.rubric import list_rubric_templates
+
+    templates = list_rubric_templates(current_user.id)
+    return render_template("grades/rubric_builder.html", class_id=class_id, templates=templates)
+
+
+@bp.post("/<int:class_id>/rubric")
+@login_required
+def rubric_create(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    from app.services.rubric import create_rubric_template
+
+    title = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    criteria = []
+    i = 0
+    while True:
+        ct = request.form.get(f"criteria[{i}][title]")
+        if ct is None:
+            break
+        cs = request.form.get(f"criteria[{i}][max_score]", type=float)
+        cd = request.form.get(f"criteria[{i}][description]", "")
+        if ct.strip() and cs is not None:
+            criteria.append({"title": ct.strip(), "max_score": cs, "description": cd or None})
+        i += 1
+    if not title:
+        flash(_("اسم القالب مطلوب."), "danger")
+    elif not criteria:
+        flash(_("أضف معياراً واحداً على الأقل."), "danger")
+    else:
+        create_rubric_template(current_user.id, class_room.school_id, title, description, criteria)
+        flash(_("تم حفظ القالب."), "success")
+    return redirect(url_for("grades.rubric_new", class_id=class_id))
+
+
+@bp.get("/rubric/<int:template_id>/grade/<int:submission_id>")
+@login_required
+def rubric_grade(template_id, submission_id):
+    from app.models.gradebook import Submission
+    from app.services.rubric import get_rubric_grades, get_rubric_template
+
+    submission = Submission.query.get_or_404(submission_id)
+    class_room = _class_or_404(submission.assignment.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    template = get_rubric_template(template_id)
+    if not template:
+        abort(404)
+    existing = get_rubric_grades(submission_id)
+    existing_grades = {g.criterion_id: g.score for g in existing}
+    existing_comments = {g.criterion_id: g.comment or "" for g in existing}
+    return render_template(
+        "grades/rubric_grade.html",
+        class_id=class_room.id,
+        submission=submission,
+        template=template,
+        existing_grades=existing_grades,
+        existing_comments=existing_comments,
+    )
+
+
+@bp.post("/rubric/grade/<int:submission_id>")
+@login_required
+def rubric_grade_save(submission_id):
+    from app.models.gradebook import Submission
+    from app.services.rubric import grade_with_rubric
+
+    submission = Submission.query.get_or_404(submission_id)
+    class_room = _class_or_404(submission.assignment.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    grades = []
+    for key, val in request.form.items():
+        if key.startswith("score_"):
+            cid = int(key.split("_", 1)[1])
+            score = float(val) if val else 0
+            comment = request.form.get(f"comment_{cid}", "")
+            grades.append({"criterion_id": cid, "score": score, "comment": comment or None})
+    if grades:
+        grade_with_rubric(submission_id, grades, current_user.id)
+        flash(_("تم حفظ التقييم."), "success")
+    return redirect(url_for("grades.assignment_detail", class_id=class_room.id, assignment_id=submission.assignment_id))
+
+
+# ======================================================================
+# اعتراضات الدرجات
+# ======================================================================
+@bp.get("/<int:class_id>/appeals")
+@login_required
+def appeals_list(class_id):
+    class_room = _class_or_404(class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    from app.services.grade_appeals import get_class_appeals
+
+    appeals = get_class_appeals(class_id)
+    return render_template("grades/appeals_queue.html", class_room=class_room, appeals=appeals)
+
+
+@bp.post("/submissions/<int:submission_id>/appeal")
+@login_required
+def appeal_submit(submission_id):
+    from app.models.gradebook import Submission
+    from app.services.grade_appeals import submit_appeal
+
+    submission = Submission.query.get_or_404(submission_id)
+    if current_user.id != submission.student_id:
+        abort(403)
+    reason = request.form.get("reason", "").strip()
+    if not reason:
+        flash(_("اكتب سبب الاعتراض."), "danger")
+    else:
+        appeal = submit_appeal(submission.id, current_user.id, reason)
+        if appeal:
+            flash(_("تم إرسال الاعتراض."), "success")
+        else:
+            flash(_("لديك اعتراض مسبق على هذا التسليم."), "warning")
+    class_id = submission.assignment.class_id
+    return redirect(url_for("grades.assignment_detail", class_id=class_id, assignment_id=submission.assignment_id))
+
+
+@bp.post("/appeals/<int:appeal_id>/review")
+@login_required
+def appeal_review(appeal_id):
+    from app.models.gradebook import GradeAppeal
+    from app.services.grade_appeals import review_appeal
+
+    appeal = GradeAppeal.query.get_or_404(appeal_id)
+    class_room = _class_or_404(appeal.submission.assignment.class_id)
+    if not can_teach_class(class_room, current_user):
+        abort(403)
+    action = request.form.get("action")
+    response = request.form.get("response", "").strip()
+    if action in ("approved", "rejected"):
+        review_appeal(appeal_id, action, response or None, current_user.id)
+        flash(_("تم تحديث الاعتراض."), "success")
+    return redirect(url_for("grades.appeals_list", class_id=class_room.id))

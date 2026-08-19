@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb %}
+{% from "macros/forms.html" import azad_textarea, azad_form_actions %}
+{% block title %}{{ _('اعتراض على الدرجة') }}{% endblock %}
+{% block content %}
+{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('اعتراض على الدرجة')}] }}
+
+<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ _('اعتراض على الدرجة') }}</h1>
+
+{% call azad_card('', '', 'alert-triangle') %}
+<div style="margin-bottom:var(--sp-4);padding:var(--sp-4);background:var(--azad-slate);border-radius:var(--radius-lg)">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-2)">
+    <div>
+      <span style="color:var(--muted)">{{ _('الواجب') }}:</span>
+      <strong>{{ submission.assignment.title }}</strong>
+    </div>
+    <div>
+      <span style="color:var(--muted)">{{ _('درجتك') }}:</span>
+      <span class="azad-badge-variant azad-badge-variant--info" style="font-size:var(--text-lg)">{{ submission.mark if submission.mark is not none else '—' }} / {{ submission.assignment.max_mark or '—' }}</span>
+    </div>
+  </div>
+  {% if submission.feedback %}
+  <div style="margin-top:var(--sp-3);padding-top:var(--sp-3);border-top:1px solid var(--border, #e2e8f0)">
+    <span style="color:var(--muted)">{{ _('ملاحظة المعلم') }}:</span>
+    <span>{{ submission.feedback }}</span>
+  </div>
+  {% endif %}
+</div>
+
+<form method="post" action="{{ url_for('grades.appeal_submit', submission_id=submission.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="azad-field" style="margin-bottom:var(--sp-4)">
+    <label class="azad-field__label" for="reason">{{ _('سبب الاعتراض') }}</label>
+    <textarea name="reason" id="reason" class="azad-field__textarea" rows="5" required placeholder="{{ _('اشرح سبب اعتراضك على هذه الدرجة...') }}"></textarea>
+  </div>
+  <div class="azad-form-actions">
+    <a href="{{ url_for('grades.assignment_detail', class_id=class_id, assignment_id=submission.assignment_id) }}" class="azad-btn azad-btn-ghost">{{ _('إلغاء') }}</a>
+    <button type="submit" class="azad-btn" style="background:var(--azad-gold);color:#fff">{{ icon('send') }} {{ _('إرسال الاعتراض') }}</button>
+  </div>
+</form>
+{% endcall %}
+{% endblock %}

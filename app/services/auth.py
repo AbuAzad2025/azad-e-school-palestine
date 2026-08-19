@@ -167,3 +167,44 @@ def reset_password(token: str, new_password: str) -> str | None:
 
     tx(_reset)
     return None
+
+
+def register_individual(
+    email: str,
+    name_ar: str,
+    password: str,
+    grade_level: int | None = None,
+    phone: str | None = None,
+) -> tuple[User | None, str | None]:
+    email = email.strip().lower()
+    if User.query.filter_by(email=email).first():
+        return None, "هذا البريد مسجّل مسبقاً."
+
+    ok, msg = validate_password_policy(password)
+    if not ok:
+        return None, msg
+
+    from app.services.schools import get_or_create_system_school
+
+    system_school = get_or_create_system_school()
+
+    def _create():
+        user = User(
+            email=email,
+            name_ar=name_ar.strip(),
+            role=UserRole.student,
+            password_hash=hash_password(password),
+            is_verified=True,
+            approval_status=UserApprovalStatus.approved,
+            is_individual=True,
+        )
+        user.add_password_to_history(user.password_hash)
+        db.session.add(user)
+        db.session.flush()
+
+        rl = UserRoleLink(user_id=user.id, school_id=system_school.id, role=UserRole.student)
+        db.session.add(rl)
+
+        return user
+
+    return tx(_create), None

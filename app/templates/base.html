@@ -9,6 +9,10 @@
 <meta name="description" content="{{ _('منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
 <title>{% block title %}{{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}</title>
 <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/azad-mark.svg') }}">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 {# Preload critical assets #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -68,10 +72,39 @@
   </main>
   {% include "partials/footer.html" %}
 
+  <div id="pwa-install-banner" style="display:none;position:fixed;bottom:0;inset-inline:0;z-index:var(--z-toast);background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--shadow-xl);padding:var(--sp-3) var(--sp-4);">
+    <div class="container" style="display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <strong style="display:block;margin-bottom:var(--sp-1)">{{ icon('download') }} {{ _('تثبيت أزاد على شاشتك') }}</strong>
+        <small style="color:var(--muted)">{{ _('استخدم التطبيق كتطبيق أصلي على جهازك') }}</small>
+      </div>
+      <div style="display:flex;gap:var(--sp-2);">
+        <button id="pwa-install-btn" class="azad-btn azad-btn-sm">{{ icon('download') }} {{ _('تثبيت') }}</button>
+        <button id="pwa-install-dismiss" class="azad-btn-outline azad-btn-sm" style="color:var(--muted);border-color:var(--border)">{{ icon('x') }}</button>
+      </div>
+    </div>
+  </div>
+
   {# Toast container for JS #}
   <div class="azad-toast-container" id="azad-toasts" aria-live="polite"></div>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}').catch(function(){});}
+  </script>
+  <script>
+  (function(){
+    var deferredPrompt=null;
+    var banner=document.getElementById('pwa-install-banner');
+    var installBtn=document.getElementById('pwa-install-btn');
+    var dismissBtn=document.getElementById('pwa-install-dismiss');
+    if(!banner||!installBtn)return;
+    window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;banner.style.display='flex';});
+    installBtn.addEventListener('click',function(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;banner.style.display='none';});});
+    if(dismissBtn){dismissBtn.addEventListener('click',function(){banner.style.display='none';localStorage.setItem('azad-pwa-dismissed','1');});}
+    if(localStorage.getItem('azad-pwa-dismissed')){banner.style.display='none';}
+  })();
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

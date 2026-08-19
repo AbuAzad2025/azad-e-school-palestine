@@ -45,6 +45,16 @@
       </form>
     </div>
     {% endif %}
+    {% if not can_teach and att.stored_name %}
+    <div class="item-actions">
+      <form method="post" action="{{ url_for('content.mark_offline') }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="attachment_id" value="{{ att.id }}">
+        <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+        <button type="submit" class="azad-btn-outline" style="font-size:var(--text-sm)" title="{{ _('تحميل بدون إنترنت') }}">{{ icon('download') }}</button>
+      </form>
+    </div>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

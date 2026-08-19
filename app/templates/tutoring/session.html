@@ -13,6 +13,7 @@
     <div class="stat-card"><strong>{{ session_.mode }}</strong><small>{{ _('الطريقة') }}</small></div>
     <div class="stat-card"><strong>{{ session_.price or '—' }}</strong><small>{{ _('السعر') }}</small></div>
     <div class="stat-card"><strong><span class="badge-status badge-{{ 'ok' if session_.status == 'completed' else 'warn' }}">{{ session_.status }}</span></strong><small>{{ _('الحالة') }}</small></div>
+    <div class="stat-card"><strong>{{ session_.video_provider|capitalize if session_.video_provider else 'Jitsi' }}</strong><small>{{ _('المنصة') }}</small></div>
   </div>
 
   {% if session_.online_link %}<p>{{ _('رابط الاجتماع:') }} <a href="{{ session_.online_link }}" dir="ltr">{{ session_.online_link }}</a></p>{% endif %}

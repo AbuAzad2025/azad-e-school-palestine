@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_empty_state %}
+{% block title %}{{ _('كورساتي') }}{% endblock %}
+{% block content %}
+
+<h1 class="page-title">{{ icon('book-open') }} {{ _('كورساتي') }}</h1>
+
+<div class="quick-actions">
+  <a href="{{ url_for('individual.catalog') }}" class="azad-btn azad-btn--primary">{{ icon('search') }} {{ _('استكشف كورسات جديدة') }}</a>
+  <a href="{{ url_for('tutoring.index') }}" class="azad-btn-outline">{{ icon('teacher') }} {{ _('دروس خصوصية') }}</a>
+  <a href="{{ url_for('ai.chat') }}" class="azad-btn-outline">{{ icon('sparkles') }} {{ _('محادثة AI') }}</a>
+</div>
+
+{% if memberships %}
+<div class="cards-grid">
+  {% for m in memberships %}
+  {% call azad_card(m.class_room.subject.name_ar, '', 'book') %}
+    <div class="card-content">
+      <div>
+        <div class="card-title">{{ m.class_room.name or m.class_room.subject.name_ar }}</div>
+        <div class="card-meta">
+          {{ _('الصف') }} {{ m.class_room.grade.grade_level }} · {{ m.class_room.semester or '' }}
+        </div>
+      </div>
+      <a href="{{ url_for('content.class_lessons', class_id=m.class_room.id) }}" class="azad-btn-outline azad-btn-sm">{{ icon('play') }} {{ _('فتح') }}</a>
+    </div>
+  {% endcall %}
+  {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(
+    _('لم تسجل في أي كورس بعد'),
+    _('استكشف الكورسات المتاحة وابدأ رحلتك التعليمية.'),
+    'book-open'
+) }}
+<div class="text-center mt-4">
+  <a href="{{ url_for('individual.catalog') }}" class="azad-btn azad-btn--primary">{{ icon('search') }} {{ _('استكشف الكورسات') }}</a>
+</div>
+{% endif %}
+{% endblock %}

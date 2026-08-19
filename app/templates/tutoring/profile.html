@@ -16,6 +16,7 @@
     {% if prof.price_hour %}<div class="stat-card"><strong>{{ prof.price_hour }}</strong><small>{{ _('سعر الساعة') }}</small></div>{% endif %}
     {% if prof.price_session %}<div class="stat-card"><strong>{{ prof.price_session }}</strong><small>{{ _('سعر الجلسة') }}</small></div>{% endif %}
     <div class="stat-card"><strong>{{ prof.mode }}</strong><small>{{ _('الطريقة') }}</small></div>
+    <div class="stat-card"><strong>{{ prof.video_provider|capitalize if prof.video_provider else 'Jitsi' }}</strong><small>{{ _('منصة الفيديو') }}</small></div>
   </div>
 
   {% if prof.bio %}<p>{{ prof.bio }}</p>{% endif %}

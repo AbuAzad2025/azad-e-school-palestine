@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC
 
 import pytest
-
 from app import create_app
 from app.core.security import hash_password
 from app.extensions import db as _db
@@ -18,7 +18,7 @@ from app.models.gradebook import GradeCategory, GradeEntry, GradeItem
 from app.models.progress import StudentProgress, VideoProgress
 from app.models.school import Grade, School, Subject
 from app.models.tenant import TenantQuota
-from app.models.user import User, UserRole, UserApprovalStatus
+from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 
 
 def _ensure_phase2_schema(db_engine):
@@ -76,9 +76,7 @@ def _ensure_phase2_schema(db_engine):
             text("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS original_lesson_id INTEGER REFERENCES lessons(id)")
         )
         # Tutoring sessions: end_time
-        db_engine.session.execute(
-            text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ")
-        )
+        db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ"))
         # Tutor reviews table
         db_engine.session.execute(
             text(
@@ -95,13 +93,9 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(
             text("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS auto_activated_at TIMESTAMPTZ")
         )
-        db_engine.session.execute(
-            text("ALTER TABLE subscriptions ALTER COLUMN status TYPE VARCHAR(20)")
-        )
+        db_engine.session.execute(text("ALTER TABLE subscriptions ALTER COLUMN status TYPE VARCHAR(20)"))
         # ManualPayments: gateway
-        db_engine.session.execute(
-            text("ALTER TABLE manual_payments ADD COLUMN IF NOT EXISTS gateway VARCHAR(20)")
-        )
+        db_engine.session.execute(text("ALTER TABLE manual_payments ADD COLUMN IF NOT EXISTS gateway VARCHAR(20)"))
         # ReminderLogs table
         db_engine.session.execute(
             text(
@@ -117,9 +111,7 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(
             text("ALTER TABLE user_role_links ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES users(id)")
         )
-        db_engine.session.execute(
-            text("ALTER TABLE user_role_links ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ")
-        )
+        db_engine.session.execute(text("ALTER TABLE user_role_links ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ"))
 
         # Phase 6: Rubric, Appeals, Offline, Notification Prefs, Health
         db_engine.session.execute(
@@ -162,9 +154,7 @@ def _ensure_phase2_schema(db_engine):
             )
         )
 
-        db_engine.session.execute(
-            text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS max_students SMALLINT")
-        )
+        db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS max_students SMALLINT"))
 
         db_engine.session.execute(
             text(
@@ -196,6 +186,47 @@ def _ensure_phase2_schema(db_engine):
                 "updated_at TIMESTAMPTZ DEFAULT NOW())"
             )
         )
+
+        # Phase 8: MOE Integration & Certificate Templates
+        db_engine.session.execute(
+            text("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS moe_code VARCHAR(50)")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS moe_curriculum_version VARCHAR(50)")
+        )
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS certificate_templates ("
+                "id SERIAL PRIMARY KEY, school_id INTEGER REFERENCES schools(id), "
+                "name TEXT NOT NULL, template_html TEXT DEFAULT '' NOT NULL, "
+                "is_active BOOLEAN DEFAULT TRUE NOT NULL, "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+
+        # Phase 9: Zoom + Production Hardening
+        db_engine.session.execute(
+            text("ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL")
+        )
+        db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_meeting_id VARCHAR(64)"))
+        db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_join_url TEXT"))
+        db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_start_url TEXT"))
+
+        # Phase 7: Hybrid Tenancy
+        db_engine.session.execute(
+            text("ALTER TABLE schools ADD COLUMN IF NOT EXISTS is_system BOOLEAN DEFAULT FALSE NOT NULL")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_individual BOOLEAN DEFAULT FALSE NOT NULL")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE NOT NULL")
+        )
+        db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS price NUMERIC(10,2)"))
+        db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS duration_days SMALLINT"))
 
         db_engine.session.commit()
     except Exception:
@@ -429,7 +460,6 @@ def make_video_progress(app, student_id, attachment_id, lesson_id, class_id, sec
 
 def make_academic_event(app, school_id, title, event_type, start_date, end_date=None):
     with app.app_context():
-        from datetime import date as _d
 
         e = AcademicEvent(
             school_id=school_id,
@@ -459,8 +489,10 @@ def make_tenant_quota(app, school_id, tier="free", **kw):
 
 def make_tutor_profile(app, tutor_id, subject="رياضيات", price_hour=100.0):
     with app.app_context():
-        from app.models.tutoring import TutorProfile
         import secrets
+
+        from app.models.tutoring import TutorProfile
+
         code = secrets.token_urlsafe(8)
         while TutorProfile.query.filter_by(invite_code=code).first():
             code = secrets.token_urlsafe(8)
@@ -472,15 +504,23 @@ def make_tutor_profile(app, tutor_id, subject="رياضيات", price_hour=100.0
 
 def make_tutoring_session(app, tutor_id, student_id, subject="رياضيات", status="completed", price=100.0, end_time=None):
     with app.app_context():
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
+
         from app.models.tutoring import TutoringSession
-        scheduled_at = datetime.now(timezone.utc) - timedelta(days=1)
+
+        scheduled_at = datetime.now(UTC) - timedelta(days=1)
         if end_time is None:
             end_time = scheduled_at + timedelta(hours=1)
         s = TutoringSession(
-            tutor_id=tutor_id, student_id=student_id, subject=subject,
-            scheduled_at=scheduled_at, duration_min=60, price=price,
-            status=status, payment_status="paid", end_time=end_time,
+            tutor_id=tutor_id,
+            student_id=student_id,
+            subject=subject,
+            scheduled_at=scheduled_at,
+            duration_min=60,
+            price=price,
+            status=status,
+            payment_status="paid",
+            end_time=end_time,
         )
         _db.session.add(s)
         _db.session.commit()
@@ -490,6 +530,7 @@ def make_tutoring_session(app, tutor_id, student_id, subject="رياضيات", s
 def make_tutor_review(app, session_id, student_id, rating=5, comment="جيد"):
     with app.app_context():
         from app.models.tutoring import TutorReview
+
         r = TutorReview(session_id=session_id, student_id=student_id, rating=rating, comment=comment)
         _db.session.add(r)
         _db.session.commit()
@@ -499,6 +540,7 @@ def make_tutor_review(app, session_id, student_id, rating=5, comment="جيد"):
 def make_reminder_log(app, subscription_id, reminder_type="7d"):
     with app.app_context():
         from app.models.billing import ReminderLog
+
         r = ReminderLog(subscription_id=subscription_id, reminder_type=reminder_type)
         _db.session.add(r)
         _db.session.commit()
@@ -506,7 +548,8 @@ def make_reminder_log(app, subscription_id, reminder_type="7d"):
 
 def make_user_role_link(app, user_id, school_id, role="teacher", approved_by=None, approved_at=None, is_active=True):
     with app.app_context():
-        from app.models.user import UserRoleLink, UserRole
+        from app.models.user import UserRole, UserRoleLink
+
         rl = UserRoleLink(
             user_id=user_id,
             school_id=school_id,
@@ -522,8 +565,55 @@ def make_user_role_link(app, user_id, school_id, role="teacher", approved_by=Non
 
 def make_revenue_ledger_entry(app, school_id, amount, currency="ILS", gateway="manual", subscription_id=None):
     with app.app_context():
-        from app.models.billing import ManualPayment, Subscription
+
         # This is a helper to create test revenue data
         # We'll use ManualPayment as the ledger entry
         pass
         return r.id
+
+
+def make_system_school(app):
+    with app.app_context():
+        from app.services.schools import get_or_create_system_school
+
+        s = get_or_create_system_school()
+        return s.id
+
+
+def make_individual_user(app, school_id=None, **kw):
+    """Create an individual (non-school) user."""
+    with app.app_context():
+        u = User(
+            email=kw.get("email", _email()),
+            name_ar=kw.get("name_ar", f"طالب فردي {_uid()}"),
+            role=UserRole.student,
+            password_hash=hash_password("TestPass123!"),
+            approval_status=UserApprovalStatus.approved,
+            is_active=True,
+            is_individual=True,
+        )
+        _db.session.add(u)
+        _db.session.commit()
+        if school_id:
+            rl = UserRoleLink(user_id=u.id, school_id=school_id, role=UserRole.student)
+            _db.session.add(rl)
+            _db.session.commit()
+        return u.id
+
+
+def make_public_class(app, school_id, grade_id, subject_id, teacher_id=None, price=50.0):
+    with app.app_context():
+        c = ClassRoom(
+            school_id=school_id,
+            grade_id=grade_id,
+            subject_id=subject_id,
+            teacher_id=teacher_id,
+            join_code=f"PC-{_uid()[:6]}",
+            name=f"صف عام {_uid()}",
+            is_public=True,
+            price=price,
+            duration_days=30,
+        )
+        _db.session.add(c)
+        _db.session.commit()
+        return c.id

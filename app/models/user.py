@@ -45,6 +45,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
     approval_status: Mapped[UserApprovalStatus] = mapped_column(
         db.Enum(UserApprovalStatus, name="user_approval_status"), default=UserApprovalStatus.pending, nullable=False
     )
+    is_individual: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_login_at = db.Column(db.DateTime(timezone=True))
     # حماية من brute force
     failed_login_attempts: Mapped[int] = mapped_column(default=0, nullable=False)
@@ -64,6 +65,14 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
     def is_approved(self) -> bool:
         """تحقق مما إذا كان الحساب مقبولاً ومفعّلاً."""
         return self.is_active and self.approval_status == UserApprovalStatus.approved
+
+    @property
+    def belongs_to_school(self) -> bool:
+        """True if user has an active role link to a non-system school."""
+        for link in self.role_links:
+            if link.is_active and not link.school.is_system:
+                return True
+        return False
 
     @property
     def school_id(self) -> int | None:

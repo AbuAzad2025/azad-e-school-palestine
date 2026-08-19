@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_badge %}
+{% block title %}{{ _('إعداد المدرسة') }} — {{ _('المعالج') }}{% endblock %}
+{% block content %}
+
+<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('rocket') }} {{ _('إعداد المدرسة الأولي') }}</h1>
+
+<div class="onboarding-steps" style="display:flex;justify-content:center;gap:var(--sp-2);margin-bottom:var(--sp-6)">
+  {% for step_num in range(1, 6) %}
+  <div class="step-indicator" data-step="{{ step_num }}" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .2s;{% if step_num < current_step %}background:var(--azad-green);color:#fff{% elif step_num == current_step %}background:var(--azad-blue);color:#fff;box-shadow:var(--shadow-ring){% else %}background:var(--azad-slate);color:var(--muted){% endif %}">
+    {% if step_num < current_step %}{{ icon('check') }}{% else %}{{ step_num }}{% endif %}
+  </div>
+  {% if step_num < 5 %}<div style="width:40px;height:2px;background:{% if step_num < current_step %}var(--azad-green){% else %}var(--azad-slate){% endif %};align-self:center"></div>{% endif %}
+  {% endfor %}
+</div>
+
+{% call azad_card(steps[current_step - 1].title, steps[current_step - 1].description, 'file-text') %}
+<form method="post" action="{{ url_for('schools.onboarding_step', step=current_step) }}" id="onboarding-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  {% if current_step == 1 %}
+  <div class="azad-field" style="margin-bottom:var(--sp-4)">
+    <label class="azad-field__label" for="school_name">{{ _('اسم المدرسة') }}</label>
+    <input type="text" name="school_name" id="school_name" class="azad-field__input" required placeholder="{{ _('مدرسة النور') }}" value="{{ data.get('school_name', '') }}">
+  </div>
+  <div class="azad-field" style="margin-bottom:var(--sp-4)">
+    <label class="azad-field__label" for="school_domain">{{ _('المجال (اختياري)') }}</label>
+    <input type="text" name="school_domain" id="school_domain" class="azad-field__input" placeholder="{{ _('alnoor.edu.ps') }}" value="{{ data.get('school_domain', '') }}">
+  </div>
+
+  {% elif current_step == 2 %}
+  <p style="color:var(--muted);margin-bottom:var(--sp-4)">{{ _('حدد المراحل الدراسية المتاحة في مدرستك') }}</p>
+  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  <label class="azad-checkbox" style="margin-bottom:var(--sp-3);display:flex;gap:var(--sp-2)">
+    <input type="checkbox" name="stages" value="{{ stage_key }}" class="azad-checkbox__input" {{ 'checked' if stage_key in data.get('stages', []) }}>
+    <span class="azad-checkbox__mark"></span>
+    <span class="azad-checkbox__text">{{ stage_label }}</span>
+  </label>
+  {% endfor %}
+
+  {% elif current_step == 3 %}
+  <p style="color:var(--muted);margin-bottom:var(--sp-4)">{{ _('أضف المواد الدراسية (فصل بفاصلة)') }}</p>
+  <div class="azad-field" style="margin-bottom:var(--sp-4)">
+    <label class="azad-field__label" for="subjects">{{ _('المواد') }}</label>
+    <input type="text" name="subjects" id="subjects" class="azad-field__input" placeholder="{{ _('رياضيات, علوم, لغة عربية, إنجليزي') }}" value="{{ data.get('subjects', '') }}">
+  </div>
+
+  {% elif current_step == 4 %}
+  <p style="color:var(--muted);margin-bottom:var(--sp-4)">{{ _('أدخل بريد المعلمين المطلوب دعوتهم (كل بريد في سطر)') }}</p>
+  <div class="azad-field" style="margin-bottom:var(--sp-4)">
+    <label class="azad-field__label" for="teacher_emails">{{ _('بريد المعلمين') }}</label>
+    <textarea name="teacher_emails" id="teacher_emails" class="azad-field__textarea" rows="5" placeholder="{{ _('teacher1@school.ps&#10;teacher2@school.ps') }}">{{ data.get('teacher_emails', '') }}</textarea>
+  </div>
+
+  {% elif current_step == 5 %}
+  <div style="padding:var(--sp-4);background:var(--azad-slate);border-radius:var(--radius-lg);margin-bottom:var(--sp-4)">
+    <h3 style="margin:0 0 var(--sp-3)">{{ icon('clipboard-check') }} {{ _('ملخص الإعداد') }}</h3>
+    <div style="display:grid;gap:var(--sp-2)">
+      <div><strong>{{ _('المدرسة') }}:</strong> {{ data.get('school_name', '—') }}</div>
+      <div><strong>{{ _('المراحل') }}:</strong> {{ data.get('stages', [])|join(', ') or '—' }}</div>
+      <div><strong>{{ _('المواد') }}:</strong> {{ data.get('subjects', '—') }}</div>
+      <div><strong>{{ _('المعلمين') }}:</strong> {{ data.get('teacher_emails', '—')|length > 0 and data.get('teacher_emails', '').count('\n') + 1 or 0 }} {{ _('معلم') }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="azad-form-actions">
+    {% if current_step > 1 %}
+    <a href="{{ url_for('schools.onboarding_step', step=current_step - 1) }}" class="azad-btn azad-btn-ghost">{{ icon('arrow-right') }} {{ _('السابق') }}</a>
+    {% endif %}
+    <a href="{{ url_for('admin.school_admin_dashboard') }}" class="azad-btn azad-btn-ghost">{{ _('تخطي') }}</a>
+    {% if current_step < 5 %}
+    <button type="submit" class="azad-btn">{{ _('التالي') }} {{ icon('arrow-left') }}</button>
+    {% else %}
+    <button type="submit" class="azad-btn" style="background:var(--azad-green);color:#fff">{{ icon('check') }} {{ _('إنهاء الإعداد') }}</button>
+    {% endif %}
+  </div>
+</form>
+{% endcall %}
+{% endblock %}

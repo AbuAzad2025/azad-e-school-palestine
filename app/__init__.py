@@ -4,9 +4,11 @@ M0: هيكل قابل للتشغيل. تُضاف الوحدات (blueprints) ف�
 """
 
 import logging
+import time as _time
+from collections import deque
 
 from config import Config
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, g, jsonify, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
@@ -14,6 +16,8 @@ from flask_talisman import Talisman
 from .extensions import babel, csrf, db, login_manager, mail, migrate
 
 logger = logging.getLogger(__name__)
+
+_response_times: deque[int] = deque(maxlen=1000)
 
 
 def _select_locale():
@@ -74,7 +78,47 @@ def create_app(config_class=Config):
     babel.init_app(app, locale_selector=_select_locale)
     mail.init_app(app)
 
-    from . import models  # noqa: F401  — تسجيل الجداول
+    if app.config.get("SENTRY_DSN"):
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+        sentry_sdk.init(
+            dsn=app.config["SENTRY_DSN"],
+            environment=app.config.get("SENTRY_ENVIRONMENT", "production"),
+            integrations=[FlaskIntegration(), SqlalchemyIntegration()],
+            traces_sample_rate=app.config.get("SENTRY_TRACES_SAMPLE_RATE", 0.1),
+            _experiments={"profiles_sample_rate": 0.1},
+        )
+
+    @app.before_request
+    def _track_response_time():
+        g._request_start = _time.monotonic()
+        if app.config.get("SENTRY_DSN"):
+            from flask_login import current_user
+
+            if current_user.is_authenticated:
+                try:
+                    import sentry_sdk
+
+                    sentry_sdk.set_user(
+                        {
+                            "id": str(current_user.id),
+                            "email": current_user.email,
+                            "role": getattr(current_user.role, "value", str(current_user.role)),
+                        }
+                    )
+                except Exception:
+                    pass
+
+    @app.after_request
+    def _track_response_end(response):
+        if hasattr(g, "_request_start"):
+            elapsed_ms = int((_time.monotonic() - g._request_start) * 1000)
+            _response_times.append(elapsed_ms)
+        return response
+
+    from . import models  # noqa: F401
     from .models.user import User
 
     @login_manager.user_loader
@@ -92,6 +136,7 @@ def create_app(config_class=Config):
     from .modules.export import bp as export_bp
     from .modules.family import bp as family_bp
     from .modules.grades import bp as grades_bp
+    from .modules.individual import bp as individual_bp
     from .modules.main import bp as main_bp
     from .modules.messages import bp as messages_bp
     from .modules.notifications import bp as notifications_bp
@@ -122,6 +167,7 @@ def create_app(config_class=Config):
     app.register_blueprint(export_bp)
     app.register_blueprint(messages_bp)
     app.register_blueprint(school_approvals_bp)
+    app.register_blueprint(individual_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة
     with app.app_context():
@@ -145,7 +191,107 @@ def create_app(config_class=Config):
 
     @app.get("/health")
     def health():
-        return jsonify(status="ok", app="azad-e-school")
+        import shutil
+        from datetime import UTC, datetime
+        from pathlib import Path as _Path
+
+        from sqlalchemy import text as sql_text
+
+        checks = {}
+        overall = "healthy"
+
+        start = _time.monotonic()
+        try:
+            db.session.execute(sql_text("SELECT 1"))
+            checks["database"] = {"status": "ok", "response_ms": int((_time.monotonic() - start) * 1000)}
+        except Exception:
+            checks["database"] = {"status": "error", "response_ms": int((_time.monotonic() - start) * 1000)}
+            overall = "down"
+
+        try:
+            usage = shutil.disk_usage(".")
+            free_pct = int((usage.free / usage.total) * 100)
+            disk_status = "ok" if free_pct > 10 else ("warning" if free_pct > 2 else "error")
+            checks["disk"] = {"status": disk_status, "free_percent": free_pct}
+            if disk_status == "error":
+                overall = "degraded"
+        except Exception:
+            checks["disk"] = {"status": "error", "free_percent": 0}
+
+        avg_ms = round(sum(_response_times) / len(_response_times)) if _response_times else 0
+        checks["performance"] = {"status": "ok", "avg_response_ms": avg_ms, "sample_count": len(_response_times)}
+
+        backup_file = None
+        backup_dir = app.config.get("BACKUP_DIR")
+        if backup_dir:
+            bp = _Path(str(backup_dir))
+            if bp.exists():
+                backups = sorted(bp.glob("backup_*"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if backups:
+                    backup_file = datetime.fromtimestamp(backups[0].stat().st_mtime, tz=UTC).isoformat()
+        checks["backup"] = {"status": "ok" if backup_file else "warning", "last_backup": backup_file or "none"}
+
+        if any(c["status"] == "error" for c in checks.values()):
+            overall = "down"
+        elif any(c["status"] == "warning" for c in checks.values()):
+            overall = "degraded"
+
+        alert_email = app.config.get("ALERT_EMAIL")
+        if overall == "down" and alert_email:
+            try:
+                from flask_mail import Message
+
+                msg = Message(
+                    subject=f"[Azad] Health Alert: {overall}",
+                    recipients=[alert_email],
+                    body=f"System status: {overall}. Checks: {checks}",
+                )
+                mail.send(msg)
+            except Exception:
+                pass
+
+        return jsonify(
+            status=overall,
+            timestamp=datetime.now(UTC).isoformat(),
+            checks=checks,
+            version=app.config.get("APP_VERSION", "1.0.0"),
+        )
+
+    @app.get("/health/deep")
+    def health_deep():
+        from flask_login import current_user
+        from werkzeug.exceptions import Forbidden, Unauthorized
+
+        if not current_user.is_authenticated:
+            raise Unauthorized()
+        if not hasattr(current_user, "role") or current_user.role.value != "super_admin":
+            raise Forbidden()
+
+        import shutil
+
+        test_app = app.test_client()
+        with app.app_context():
+            resp = test_app.get("/health")
+            checks = resp.get_json() if resp.status_code == 200 else {}
+
+        try:
+            usage = shutil.disk_usage(".")
+            checks["disk_detail"] = {
+                "total_gb": round(usage.total / (1024**3), 1),
+                "used_gb": round(usage.used / (1024**3), 1),
+                "free_gb": round(usage.free / (1024**3), 1),
+            }
+        except Exception:
+            checks["disk_detail"] = {}
+
+        checks["response_times"] = {
+            "avg_ms": round(sum(_response_times) / len(_response_times)) if _response_times else 0,
+            "p95_ms": sorted(_response_times)[int(len(_response_times) * 0.95)] if _response_times else 0,
+            "max_ms": max(_response_times) if _response_times else 0,
+            "sample_count": len(_response_times),
+        }
+
+        return jsonify(checks)
 
     @app.errorhandler(404)
     def not_found(e):

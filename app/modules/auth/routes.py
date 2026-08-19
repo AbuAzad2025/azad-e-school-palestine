@@ -9,7 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
 from . import bp
-from .forms import ForgotPasswordForm, LoginForm, RegisterForm, ResetPasswordForm
+from .forms import ForgotPasswordForm, IndividualRegisterForm, LoginForm, RegisterForm, ResetPasswordForm
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -85,6 +85,28 @@ def reset_password(token):
         flash(_("تم تحديث كلمة المرور. سجّل الدخول الآن."), "success")
         return redirect(url_for("auth.login"))
     return render_template("auth/reset.html", form=form, token=token)
+
+
+@bp.route("/register-individual", methods=["GET", "POST"])
+def register_individual():
+    from app.services.auth import register_individual as do_register_individual
+
+    if current_user.is_authenticated:
+        return redirect(url_for("auth.dashboard"))
+    form = IndividualRegisterForm()
+    if form.validate_on_submit():
+        user, error = do_register_individual(
+            email=form.email.data,
+            name_ar=form.name_ar.data,
+            password=form.password.data,
+            grade_level=form.grade_level.data if form.grade_level.data else None,
+        )
+        if error:
+            flash(_(error), "danger")
+            return render_template("auth/register_individual.html", form=form)
+        flash(_("تم إنشاء حسابك بنجاح! يمكنك تسجيل الدخول الآن."), "success")
+        return redirect(url_for("auth.login"))
+    return render_template("auth/register_individual.html", form=form)
 
 
 @bp.route("/dashboard")

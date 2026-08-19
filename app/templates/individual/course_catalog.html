@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_empty_state %}
+{% block title %}{{ _('استكشف الكورسات') }}{% endblock %}
+{% block content %}
+
+<h1 class="page-title">{{ icon('search') }} {{ _('استكشف الكورسات') }}</h1>
+
+<form method="get" class="filter-form">
+  <div class="form-group">
+    <label for="subject_id">{{ _('المادة') }}</label>
+    <select name="subject_id" id="subject_id">
+      <option value="">{{ _('الكل') }}</option>
+      {% for s in subjects %}
+      <option value="{{ s.id }}" {{ 'selected' if selected_subject == s.id }}>{{ s.name_ar }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="grade_level">{{ _('المستوى') }}</label>
+    <select name="grade_level" id="grade_level">
+      <option value="">{{ _('الكل') }}</option>
+      {% for i in range(1, 13) %}
+      <option value="{{ i }}" {{ 'selected' if selected_grade == i }}>صف {{ i }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="azad-btn">{{ icon('search') }} {{ _('بحث') }}</button>
+</form>
+
+{% if classes %}
+<div class="cards-grid">
+  {% for c in classes %}
+  {% call azad_card(c.subject.name_ar, '', 'book') %}
+    <div class="card-content">
+      <div class="card-title">{{ c.name or c.subject.name_ar }}</div>
+      <div class="card-meta">
+        {{ _('الصف') }} {{ c.grade.grade_level }} · {{ c.semester or '' }}
+        {% if c.teacher %} · {{ c.teacher.name_ar }}{% endif %}
+      </div>
+    </div>
+    {% if c.price %}
+    <div class="card-price">
+      <span class="price-value">{{ c.price }} {{ c.currency }}</span>
+      {% if c.duration_days %}
+      <span class="price-duration">/ {{ c.duration_days }} {{ _('يوم') }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+    <form method="post" action="{{ url_for('individual.subscribe', class_id=c.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="azad-btn azad-btn--primary azad-btn--full">{{ icon('credit-card') }} {{ _('اشترك الآن') }}</button>
+    </form>
+  {% endcall %}
+  {% endfor %}
+</div>
+{% else %}
+{{ azad_empty_state(
+    _('لا توجد كورسات متاحة حالياً'),
+    _('جرّب تغيير معايير البحث أو تحقق لاحقاً.'),
+    'search'
+) }}
+{% endif %}
+{% endblock %}

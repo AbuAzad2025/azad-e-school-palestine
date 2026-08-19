@@ -2,7 +2,7 @@
 
 from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
-from wtforms import EmailField, PasswordField, RadioField, StringField, SubmitField
+from wtforms import EmailField, PasswordField, RadioField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
 
 
@@ -51,3 +51,20 @@ class ResetPasswordForm(FlaskForm):
         validators=[DataRequired(), EqualTo("password", message=_("كلمتا المرور غير متطابقتين"))],
     )
     submit = SubmitField(_("حفظ كلمة المرور الجديدة"))
+
+
+class IndividualRegisterForm(FlaskForm):
+    name_ar = StringField(_("الاسم الكامل"), validators=[DataRequired(), Length(min=2, max=120)])
+    email = EmailField(_("البريد الإلكتروني"), validators=[DataRequired(), Email()])
+    grade_level = SelectField(
+        _("المستوى الدراسي"),
+        choices=[("", "— اختر —")] + [(str(i), f"صف {i}") for i in range(1, 13)],
+        default="",
+        validators=[],
+    )
+    password = PasswordField(_("كلمة المرور"), validators=[DataRequired(), password_policy_validator])
+    confirm = PasswordField(
+        _("تأكيد كلمة المرور"),
+        validators=[DataRequired(), EqualTo("password", message=_("كلمتا المرور غير متطابقتين"))],
+    )
+    submit = SubmitField(_("إنشاء الحساب"))

@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-سكريبت النسخ الاحتياطي الآلي — يعمل عبر cron
-يدعم: pg_dump مضغوط، retention، إشعارات، تحقق من التكامل
-"""
-
 import os
 import sys
 import subprocess
@@ -12,33 +7,29 @@ import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# إضافة مسار المشروع
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import create_app
-from app.extensions import db
-
-# إعدادات من متغيرات البيئة
 BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "backups"))
 BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_URL = os.getenv("DATABASE_URL")
 if not DB_URL:
-    print("ERROR: DATABASE_URL غير مضبوط", file=sys.stderr)
+    print("ERROR: DATABASE_URL not set", file=sys.stderr)
     sys.exit(1)
 
-RETENTION_DAYS = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
-MAX_BACKUPS = int(os.getenv("MAX_BACKUPS", "50"))
-COMPRESS = os.getenv("BACKUP_COMPRESS", "1") == "1"
-NOTIFY_WEBHOOK = os.getenv("BACKUP_NOTIFY_WEBHOOK", "")
+BACKUP_ENABLED = os.getenv("BACKUP_ENABLED", "0") == "1"
+S3_ENDPOINT = os.getenv("BACKUP_S3_ENDPOINT", "")
+S3_BUCKET = os.getenv("BACKUP_S3_BUCKET", "")
+S3_ACCESS_KEY = os.getenv("BACKUP_S3_ACCESS_KEY", "")
+S3_SECRET_KEY = os.getenv("BACKUP_S3_SECRET_KEY", "")
+LOCAL_RETENTION_DAYS = int(os.getenv("BACKUP_LOCAL_RETENTION_DAYS", "7"))
+WEEKLY_RETENTION = int(os.getenv("BACKUP_WEEKLY_RETENTION", "4"))
+MONTHLY_RETENTION = int(os.getenv("BACKUP_MONTHLY_RETENTION", "12"))
 
 
 def run_cmd(cmd, timeout=300):
-    """تشغيل أمر والتحقق من النتيجة"""
     try:
-        result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=timeout
-        )
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
         return result.returncode == 0, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
         return False, "", f"Timeout after {timeout}s"
@@ -46,137 +37,142 @@ def run_cmd(cmd, timeout=300):
         return False, "", str(e)
 
 
-def create_backup():
-    """إنشاء نسخة احتياطية مضغوطة"""
+def create_db_backup():
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"backup_{timestamp}.sql"
+    filename = f"backup_{timestamp}.sql.gz"
     filepath = BACKUP_DIR / filename
+    print(f"[{datetime.utcnow().isoformat()}] Starting DB backup: {filename}")
 
-    print(f"[{datetime.utcnow().isoformat()}] بدء النسخ الاحتياطي: {filename}")
-
-    # pg_dump مع خيارات محسنة
-    cmd = f'pg_dump "{DB_URL}" --no-owner --no-acl --clean --if-exists -f "{filepath}"'
-    success, stdout, stderr = run_cmd(cmd)
-
+    raw_path = BACKUP_DIR / f"backup_{timestamp}.sql"
+    cmd = f'pg_dump "{DB_URL}" --no-owner --no-acl --clean --if-exists -f "{raw_path}"'
+    success, _, stderr = run_cmd(cmd)
     if not success:
-        print(f"ERROR: فشل النسخ الاحتياطي: {stderr}", file=sys.stderr)
-        return False, None
+        print(f"ERROR: pg_dump failed: {stderr}", file=sys.stderr)
+        return None
 
-    # ضغط الملف
-    if COMPRESS:
-        gz_path = filepath.with_suffix(".sql.gz")
-        print(f"[{datetime.utcnow().isoformat()}] ضغط الملف...")
-        try:
-            with open(filepath, "rb") as f_in:
-                with gzip.open(gz_path, "wb", compresslevel=6) as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-            filepath.unlink()  # حذف الأصل
-            filepath = gz_path
-            filename = gz_path.name
-            print(f"[{datetime.utcnow().isoformat()}] تم الضغط: {gz_path.name}")
-        except Exception as e:
-            print(f"WARNING: فشل الضغط: {e}", file=sys.stderr)
+    try:
+        with open(raw_path, "rb") as f_in:
+            with gzip.open(filepath, "wb", compresslevel=6) as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        raw_path.unlink()
+    except Exception as e:
+        print(f"WARNING: compression failed: {e}", file=sys.stderr)
+        filepath = raw_path
 
-    # تحقق من التكامل
-    size = filepath.stat().st_size
-    if size == 0:
-        print("ERROR: ملف النسخ الاحتياطي فارغ", file=sys.stderr)
-        return False, None
+    if filepath.stat().st_size == 0:
+        print("ERROR: backup file is empty", file=sys.stderr)
+        return None
 
-    print(f"[{datetime.utcnow().isoformat()}] اكتمل النسخ الاحتياطي: {filename} ({filepath.stat().st_size / 1024 / 1024:.1f} MB)")
-    return True, filepath
+    size_mb = filepath.stat().st_size / (1024 * 1024)
+    print(f"[{datetime.utcnow().isoformat()}] DB backup complete: {filename} ({size_mb:.1f} MB)")
+    return filepath
 
 
-def cleanup_old_backups():
-    """حذف النسخ القديمة حسب السياسة"""
-    backups = sorted(BACKUP_DIR.glob("backup_*.sql*"), key=lambda p: p.stat().st_mtime, reverse=True)
+def create_uploads_backup():
+    uploads_dir = Path("instance/uploads")
+    if not uploads_dir.exists():
+        print("No uploads directory found, skipping")
+        return None
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filepath = BACKUP_DIR / f"uploads_{timestamp}.tar.gz"
+    print(f"[{datetime.utcnow().isoformat()}] Starting uploads backup")
+    cmd = f'tar -czf "{filepath}" -C instance uploads'
+    success, _, stderr = run_cmd(cmd)
+    if not success:
+        print(f"WARNING: uploads backup failed: {stderr}", file=sys.stderr)
+        return None
+    size_mb = filepath.stat().st_size / (1024 * 1024)
+    print(f"[{datetime.utcnow().isoformat()}] Uploads backup: {filepath.name} ({size_mb:.1f} MB)")
+    return filepath
 
-    # حذف القديم حسب العمر
-    cutoff = datetime.utcnow() - timedelta(days=RETENTION_DAYS)
+
+def upload_to_s3(filepath):
+    if not all([S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY]):
+        print("S3 not configured, skipping upload")
+        return False
+    try:
+        import boto3
+        from botocore.config import Config as BotoConfig
+
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=S3_ENDPOINT,
+            aws_access_key_id=S3_ACCESS_KEY,
+            aws_secret_access_key=S3_SECRET_KEY,
+            config=BotoConfig(signature_version="s3v4"),
+        )
+        key = f"backups/{filepath.name}"
+        s3.upload_file(str(filepath), S3_BUCKET, key)
+        print(f"[{datetime.utcnow().isoformat()}] Uploaded to S3: {key}")
+        return True
+    except Exception as e:
+        print(f"WARNING: S3 upload failed: {e}", file=sys.stderr)
+        return False
+
+
+def cleanup_retention():
+    cutoff_daily = datetime.utcnow() - timedelta(days=LOCAL_RETENTION_DAYS)
+    cutoff_weekly = datetime.utcnow() - timedelta(weeks=WEEKLY_RETENTION)
+    cutoff_monthly = datetime.utcnow() - timedelta(days=MONTHLY_RETENTION * 30)
+
+    all_backups = sorted(BACKUP_DIR.glob("backup_*"), key=lambda p: p.stat().st_mtime, reverse=True)
     deleted = 0
-    for b in backups:
-        mtime = datetime.fromtimestamp(b.stat().st_mtime)
-        if mtime < cutoff:
-            b.unlink()
-            deleted += 1
-            print(f"[{datetime.utcnow().isoformat()}] حُذف نسخة قديمة: {b.name}")
 
-    # حذف الزائد عن الحد الأقصى
-    backups = sorted(BACKUP_DIR.glob("backup_*.sql*"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if len(backups) > MAX_BACKUPS:
-        for b in backups[MAX_BACKUPS:]:
+    for b in all_backups:
+        mtime = datetime.utcfromtimestamp(b.stat().st_mtime)
+        name = b.name
+        is_weekly = "_W" in name
+        is_monthly = "_M" in name
+
+        if is_monthly and mtime < cutoff_monthly:
             b.unlink()
             deleted += 1
-            print(f"[{datetime.utcnow().isoformat()}] حُذف نسخة زائدة: {b.name}")
+        elif is_weekly and mtime < cutoff_weekly:
+            b.unlink()
+            deleted += 1
+        elif not is_weekly and not is_monthly and mtime < cutoff_daily:
+            b.unlink()
+            deleted += 1
 
     if deleted:
-        print(f"[{datetime.utcnow().isoformat()}] تم حذف {deleted} نسخة احتياطية قديمة")
+        print(f"[{datetime.utcnow().isoformat()}] Cleaned up {deleted} old backups")
 
 
 def verify_backup(filepath):
-    """التحقق من صلاحية ملف النسخ الاحتياطي"""
     try:
-        # محاولة قراءة أول أسطر الملف للتحقق من صلاحيته
-        if filepath.suffix == ".gz":
-            import gzip
-            opener = gzip.open
-        else:
-            opener = open
-
+        opener = gzip.open if filepath.suffix == ".gz" else open
         with opener(filepath, "rt", encoding="utf-8", errors="ignore") as f:
             first_lines = [next(f) for _ in range(5)]
-
-        # التحقق من وجود أوامر SQL صحيحة
         content = "".join(first_lines)
-        if "CREATE" in content or "INSERT" in content or "COPY" in content or "--" in content:
-            return True
-
-        print(f"WARNING: ملف النسخ الاحتياطي قد يكون تالفاً: {filepath.name}", file=sys.stderr)
+        return any(kw in content for kw in ("CREATE", "INSERT", "COPY", "--"))
+    except Exception:
         return False
-    except Exception as e:
-        print(f"ERROR: فشل التحقق من {filepath.name}: {e}", file=sys.stderr)
-        return False
-
-
-def send_notification(message, status="info"):
-    """إرسال إشعار عبر webhook إذا مُضبوط"""
-    if not NOTIFY_WEBHOOK:
-        return
-
-    import requests
-    try:
-        payload = {
-            "text": message,
-            "status": status,
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-        requests.post(NOTIFY_WEBHOOK, json=payload, timeout=10)
-    except Exception as e:
-        print(f"WARNING: فشل إرسال الإشعار: {e}", file=sys.stderr)
 
 
 def main():
-    print(f"[{datetime.utcnow().isoformat()}] ===== بدء عملية النسخ الاحتياطي =====")
+    print(f"[{datetime.utcnow().isoformat()}] ===== Backup started =====")
 
-    # 1. إنشاء النسخة
-    success, filepath = create_backup()
-    if not success:
-        send_notification("❌ فشل النسخ الاحتياطي", "error")
+    if not BACKUP_ENABLED:
+        print("BACKUP_ENABLED is false, skipping")
+        sys.exit(0)
+
+    db_path = create_db_backup()
+    if not db_path:
         sys.exit(1)
 
-    # 2. التحقق من التكامل
-    if not verify_backup(filepath):
-        send_notification(f"⚠️ النسخة الاحتياطية قد تكون تالفة: {filepath.name}", "warning")
+    if not verify_backup(db_path):
+        print("ERROR: backup verification failed", file=sys.stderr)
         sys.exit(1)
 
-    # 3. تنظيف النسخ القديمة
-    cleanup_old_backups()
+    upload_to_s3(db_path)
 
-    # 3. إشعار النجاح
-    size_mb = filepath.stat().st_size / 1024 / 1024
-    send_notification(f"✅ تم النسخ الاحتياطي بنجاح: {filepath.name} ({size_mb:.1f} MB)", "success")
+    uploads_path = create_uploads_backup()
+    if uploads_path:
+        upload_to_s3(uploads_path)
 
-    print(f"[{datetime.utcnow().isoformat()}] ===== اكتملت العملية بنجاح =====")
+    cleanup_retention()
+
+    print(f"[{datetime.utcnow().isoformat()}] ===== Backup completed =====")
 
 
 if __name__ == "__main__":

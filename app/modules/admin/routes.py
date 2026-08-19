@@ -557,3 +557,57 @@ def revenue_dashboard():
 
     data = get_revenue_dashboard_data(days=days)
     return render_template("admin/revenue.html", data=data, days=days)
+
+
+@bp.get("/health")
+@login_required
+@role_required(UserRole.super_admin)
+def system_health():
+    from app.services.health import get_recent_checks, get_system_status, run_all_checks
+
+    run_all_checks()
+    checks = get_recent_checks(hours=24)
+    status = get_system_status()
+    return render_template("admin/health.html", checks=checks, status=status)
+
+
+@bp.get("/moe-export")
+@login_required
+@role_required(UserRole.super_admin)
+def moe_export():
+    schools = School.query.filter_by(is_active=True).order_by(School.name_ar).all()
+    return render_template("admin/moe_export.html", schools=schools)
+
+
+@bp.post("/moe-export")
+@login_required
+@role_required(UserRole.super_admin)
+def moe_export_download():
+    import io as _io
+
+    from flask import send_file
+
+    school_id = request.form.get("school_id", type=int)
+    academic_year = request.form.get("academic_year", "").strip() or None
+    term = request.app.config.get("term") if hasattr(request, "app") else None
+    from app.services.export import export_moe_format
+
+    data = export_moe_format(school_id=school_id, academic_year=academic_year, term=term)
+    buf = _io.BytesIO(data)
+    buf.seek(0)
+    return send_file(
+        buf,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="moe_export.xlsx",
+    )
+
+
+@bp.get("/certificates")
+@login_required
+@role_required(UserRole.super_admin)
+def certificates_list():
+    from app.models.system import CertificateTemplate
+
+    templates = CertificateTemplate.query.order_by(CertificateTemplate.id.desc()).all()
+    return render_template("admin/certificates.html", templates=templates)

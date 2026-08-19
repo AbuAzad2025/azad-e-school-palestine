@@ -205,24 +205,107 @@ def can_access(user, session_: TutoringSession) -> bool:
     return user.id in (session_.tutor_id, session_.student_id)
 
 
+def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, str | None]:
+    import base64
+    import json
+    import os
+    import urllib.error
+    import urllib.request
+
+    session_ = db.session.get(TutoringSession, session_id)
+    if not session_:
+        return None, "الجلسة غير موجودة."
+    if session_.tutor_id != user_id and session_.student_id != user_id:
+        return None, "غير مصرح."
+
+    account_id = os.getenv("ZOOM_ACCOUNT_ID", "")
+    client_id = os.getenv("ZOOM_CLIENT_ID", "")
+    client_secret = os.getenv("ZOOM_CLIENT_SECRET", "")
+
+    if not all([account_id, client_id, client_secret]):
+        return None, "إعدادات Zoom غير مكتملة."
+
+    token_url = f"https://zoom.us/oauth/token?grant_type=account_credentials&account_id={account_id}"
+    token_data = f"{client_id}:{client_secret}".encode()
+    token_auth = base64.b64encode(token_data).decode()
+
+    try:
+        req = urllib.request.Request(token_url, method="POST")
+        req.add_header("Authorization", f"Basic {token_auth}")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            token_resp = json.loads(resp.read())
+        access_token = token_resp["access_token"]
+    except Exception as e:
+        return None, f"فشل الحصول على رمز Zoom: {e}"
+
+    start_time = session_.scheduled_at.isoformat() if session_.scheduled_at else None
+    duration = session_.duration_min or 60
+    topic = f"أزاد - {session_.subject} - جلسة #{session_id}"
+
+    meeting_payload = {
+        "topic": topic,
+        "type": 2,
+        "start_time": start_time,
+        "duration": duration,
+        "timezone": "Asia/Jerusalem",
+        "settings": {
+            "waiting_room": True,
+            "host_video": True,
+            "participant_video": True,
+            "join_before_host": False,
+        },
+    }
+
+    try:
+        req = urllib.request.Request(
+            "https://api.zoom.us/v2/users/me/meetings",
+            data=json.dumps(meeting_payload).encode(),
+            method="POST",
+        )
+        req.add_header("Authorization", f"Bearer {access_token}")
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            meeting_resp = json.loads(resp.read())
+
+        zoom_meeting_id = str(meeting_resp.get("id", ""))
+        zoom_join_url = meeting_resp.get("join_url", "")
+        zoom_start_url = meeting_resp.get("start_url", "")
+
+        def _update():
+            session_.zoom_meeting_id = zoom_meeting_id
+            session_.zoom_join_url = zoom_join_url
+            session_.zoom_start_url = zoom_start_url
+            session_.video_provider = "zoom"
+
+        tx(_update)
+
+        return zoom_join_url, None
+    except urllib.error.HTTPError as e:
+        body = e.read().decode() if e.fp else str(e)
+        return None, f"Zoom API error: {e.code} — {body}"
+    except Exception as e:
+        return None, f"خطأ غير متوقع: {e}"
+
+
 def generate_live_session_url(session_id: int, user_id: int) -> str | None:
-    """
-    يولد URL لجلسة مباشرة (Jitsi Meet) لجلسة محددة.
-    يُستدعى من المعلم أو الطالب بناءً على الدور.
-    """
     session_ = TutoringSession.query.get_or_404(session_id)
-    # التحقق من الصلاحية: المعلم أو الطالب في هذه الجلسة
     if session_.tutor_id != user_id and session_.student_id != user_id:
         return None
 
-    # إعدادات Jitsi Meet - قابلة للتكوين عبر متغيرات البيئة
+    provider = getattr(session_, "video_provider", "jitsi") or "jitsi"
+
+    if provider == "zoom":
+        if session_.zoom_join_url:
+            return session_.zoom_join_url
+        join_url, error = generate_zoom_meeting(session_id, user_id)
+        if join_url:
+            return join_url
+        return None
+
     jitsi_domain = os.getenv("JITSI_DOMAIN", "meet.jit.si")
-    # توليد اسم غرفة آمن: بادئة + session_id + hash عشوائي للأمان
     salt = os.getenv("JITSI_ROOM_SALT", "azad-e-school-salt")
     room_hash = hashlib.sha256(f"{session_id}:{user_id}:{salt}".encode()).hexdigest()[:12]
     room_name = f"azad-tutoring-{session_id}-{room_hash}"
-
-    # بناء URL مع معاملات إضافية للتحكم في الغرفة
     params = {
         "userInfo.displayName": f"User-{user_id}",
         "config.prejoinPageEnabled": "false",
@@ -230,7 +313,6 @@ def generate_live_session_url(session_id: int, user_id: int) -> str | None:
         "config.startWithVideoMuted": "true",
     }
     query_string = "&".join(f"{k}={v}" for k, v in params.items())
-
     return f"https://{jitsi_domain}/{room_name}?{query_string}"
 
 

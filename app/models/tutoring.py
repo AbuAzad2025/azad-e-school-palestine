@@ -28,6 +28,7 @@ class TutorProfile(PKMixin, db.Model):
     bio: Mapped[str | None] = mapped_column(Text)
     invite_code: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    video_provider: Mapped[str] = mapped_column(String(10), default="jitsi", nullable=False)
 
     tutor: Mapped[User] = relationship("User")
 
@@ -66,6 +67,10 @@ class TutoringSession(PKMixin, db.Model):
     status: Mapped[str] = mapped_column(String(12), default="requested", nullable=False)
     payment_status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)
     end_time = db.Column(db.DateTime(timezone=True))
+    video_provider: Mapped[str] = mapped_column(String(10), default="jitsi", nullable=False)
+    zoom_meeting_id: Mapped[str | None] = mapped_column(String(64))
+    zoom_join_url: Mapped[str | None] = mapped_column(Text)
+    zoom_start_url: Mapped[str | None] = mapped_column(Text)
 
     request: Mapped[TutoringRequest | None] = relationship()
     tutor: Mapped[User] = relationship("User", foreign_keys=[tutor_id])

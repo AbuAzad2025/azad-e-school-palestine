@@ -73,6 +73,8 @@ ICON_NAMES = {
     "archive",
     "download-cloud",
     "upload-cloud",
+    "user-plus",
+    "credit-card",
 }
 
 
@@ -135,6 +137,12 @@ def is_parent() -> bool:
     return current_user.is_authenticated and current_user.role == UserRole.parent
 
 
+def is_individual() -> bool:
+    if not current_user.is_authenticated:
+        return False
+    return bool(current_user.is_individual) and not current_user.belongs_to_school
+
+
 def can_access_admin() -> bool:
     """تحقق من صلاحية الوصول للوحة الإدارة."""
     return current_user.is_authenticated and current_user.role in (UserRole.super_admin, UserRole.school_admin)
@@ -182,6 +190,7 @@ def register(app):
     app.jinja_env.globals["is_teacher"] = is_teacher
     app.jinja_env.globals["is_student"] = is_student
     app.jinja_env.globals["is_parent"] = is_parent
+    app.jinja_env.globals["is_individual"] = is_individual
     app.jinja_env.globals["can_access_admin"] = can_access_admin
     app.jinja_env.globals["can_manage_schools"] = can_manage_schools
     app.jinja_env.globals["can_teach_class"] = can_teach_class
