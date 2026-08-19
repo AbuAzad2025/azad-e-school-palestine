@@ -6,9 +6,18 @@
   "scripts": {
     "check:biome": "biome check app/static/js",
     "lint": "npm run check:biome",
-    "format": "biome format --write app/static/js"
+    "format": "biome format --write app/static/js",
+    "test:js": "vitest run",
+    "test:js:watch": "vitest",
+    "test:js:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.8"
+    "@biomejs/biome": "^2.5.8",
+    "@playwright/test": "^1.52.0",
+    "vitest": "^3.2.1",
+    "@vitest/coverage-v8": "^3.2.1",
+    "jsdom": "^26.1.0"
   }
 }

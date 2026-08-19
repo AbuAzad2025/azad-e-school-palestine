@@ -40,3 +40,7 @@ Thumbs.db
 node_modules/
 messages.pot
 .mypy_cache/
+
+# ===== Test Artifacts =====
+coverage/
+test-results/
