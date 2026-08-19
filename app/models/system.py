@@ -1,6 +1,6 @@
 """سجل التدقيق + إعدادات النظام"""
 
-from sqlalchemy import BigInteger, ForeignKey, String, Text
+from sqlalchemy import BigInteger, Boolean, ForeignKey, SmallInteger, String, Text
 from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,3 +25,24 @@ class Setting(PKMixin, db.Model):
 
     key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     value: Mapped[dict] = mapped_column(JSONB)
+
+
+class OnboardingProgress(PKMixin, db.Model):
+    __tablename__ = "onboarding_progress"
+
+    school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False, unique=True)
+    current_step: Mapped[int] = mapped_column(SmallInteger, default=1, nullable=False)
+    total_steps: Mapped[int] = mapped_column(SmallInteger, default=5, nullable=False)
+    completed_steps: Mapped[dict | None] = mapped_column(JSONB)
+    is_complete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    completed_at = db.Column(db.DateTime(timezone=True))
+
+
+class HealthCheck(PKMixin, db.Model):
+    __tablename__ = "health_checks"
+
+    component: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(10), nullable=False)
+    message: Mapped[str | None] = mapped_column(Text)
+    latency_ms: Mapped[int | None] = mapped_column(BigInteger)
+    checked_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())

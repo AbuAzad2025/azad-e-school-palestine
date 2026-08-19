@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4" dir="rtl">
+  <h2>التنزيلات بدون إنترنت</h2>
+  {% if items %}
+  <table class="table">
+    <thead><tr><th>الدرس</th><th>المرفق</th><th>الحالة</th><th>يعمل حتى</th><th>إجراء</th></tr></thead>
+    <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.lesson.title }}</td>
+      <td>{{ item.attachment.original_name or item.attachment.kind }}</td>
+      <td>{{ item.status }}</td>
+      <td>{{ item.expires_at.strftime('%Y-%m-%d') if item.expires_at else '-' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('content.remove_offline', download_id=item.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-danger">إزالة</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted">لا توجد تنزيلات بعد.</p>
+  {% endif %}
+</div>
+{% endblock %}

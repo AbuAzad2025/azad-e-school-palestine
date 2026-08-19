@@ -121,6 +121,82 @@ def _ensure_phase2_schema(db_engine):
             text("ALTER TABLE user_role_links ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ")
         )
 
+        # Phase 6: Rubric, Appeals, Offline, Notification Prefs, Health
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS rubric_templates ("
+                "id SERIAL PRIMARY KEY, teacher_id INTEGER NOT NULL REFERENCES users(id), "
+                "school_id INTEGER NOT NULL REFERENCES schools(id), "
+                "title TEXT NOT NULL, description TEXT, "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS rubric_criteria ("
+                "id SERIAL PRIMARY KEY, template_id INTEGER NOT NULL REFERENCES rubric_templates(id), "
+                "title TEXT NOT NULL, description TEXT, max_score NUMERIC(5,2) NOT NULL, "
+                "sort_order SMALLINT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS rubric_grades ("
+                "id SERIAL PRIMARY KEY, submission_id INTEGER NOT NULL REFERENCES submissions(id), "
+                "criterion_id INTEGER NOT NULL REFERENCES rubric_criteria(id), "
+                "score NUMERIC(5,2) NOT NULL, comment TEXT, graded_by INTEGER REFERENCES users(id), "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(), "
+                "UNIQUE(submission_id, criterion_id))"
+            )
+        )
+
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS grade_appeals ("
+                "id SERIAL PRIMARY KEY, submission_id INTEGER NOT NULL REFERENCES submissions(id), "
+                "student_id INTEGER NOT NULL REFERENCES users(id), reason TEXT NOT NULL, "
+                "status VARCHAR(15) DEFAULT 'pending' NOT NULL, teacher_response TEXT, "
+                "reviewed_by INTEGER REFERENCES users(id), reviewed_at TIMESTAMPTZ, "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(), "
+                "UNIQUE(submission_id, student_id))"
+            )
+        )
+
+        db_engine.session.execute(
+            text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS max_students SMALLINT")
+        )
+
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS notification_preferences ("
+                "id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), "
+                "notif_type TEXT NOT NULL, email_enabled BOOLEAN DEFAULT TRUE NOT NULL, "
+                "in_app_enabled BOOLEAN DEFAULT TRUE NOT NULL, "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(), "
+                "UNIQUE(user_id, notif_type))"
+            )
+        )
+
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS onboarding_progress ("
+                "id SERIAL PRIMARY KEY, school_id INTEGER NOT NULL REFERENCES schools(id) UNIQUE, "
+                "current_step SMALLINT DEFAULT 1 NOT NULL, total_steps SMALLINT DEFAULT 5 NOT NULL, "
+                "completed_steps JSONB, is_complete BOOLEAN DEFAULT FALSE NOT NULL, "
+                "completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS health_checks ("
+                "id SERIAL PRIMARY KEY, component VARCHAR(50) NOT NULL, "
+                "status VARCHAR(10) NOT NULL, message TEXT, latency_ms BIGINT, "
+                "checked_at TIMESTAMPTZ DEFAULT NOW(), created_at TIMESTAMPTZ DEFAULT NOW(), "
+                "updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+
         db_engine.session.commit()
     except Exception:
         db_engine.session.rollback()

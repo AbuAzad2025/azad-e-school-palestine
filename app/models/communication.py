@@ -27,3 +27,15 @@ class Notification(PKMixin, db.Model):
     body: Mapped[str | None] = mapped_column(Text)
     link: Mapped[str | None] = mapped_column(Text)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class NotificationPreference(PKMixin, db.Model):
+    """تفضيلات إشعارات المستخدم — يتحكم في أنواع الإشعارات المطلوبة."""
+
+    __tablename__ = "notification_preferences"
+    __table_args__ = (db.UniqueConstraint("user_id", "notif_type", name="uq_notif_pref"),)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    notif_type: Mapped[str] = mapped_column(Text, nullable=False)
+    email_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

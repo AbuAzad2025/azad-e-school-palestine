@@ -14,6 +14,10 @@ from .base import tx
 
 def notify(user_id: int, type: str, title: str, body: str | None = None, link: str | None = None) -> None:
     """إشعار داخل المنصة (نتيجة، واجب جديد، اشتراك...)."""
+    from app.services.notification_preferences import should_notify
+
+    if not should_notify(user_id, type, "in_app"):
+        return
 
     def _notify():
         db.session.add(Notification(user_id=user_id, type=type, title=title, body=body, link=link))

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ _('شاراتي') }} — {{ _('ملفي') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('شاراتي وإنجازاتي') }}</h1>
+    <p class="page-subtitle">{{ _('اجمع الشارات بإكمال الأنشطة والتحديات') }}</p>
+  </div>
+</div>
+
+{% if badges %}
+<div class="azad-section">
+  <h2 class="section-title">{{ _('الشارات المكتسبة') }} ({{ badges|length }})</h2>
+  <div class="azad-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+    {% for sb in badges %}
+    <div class="azad-card badge-card">
+      <div class="card-body" style="text-align:center; padding:1.5rem;">
+        <div class="badge-icon" style="font-size:3rem; margin-bottom:0.5rem; color:var(--azad-amber);">{{ icon(sb.badge.icon_name) }}</div>
+        <h3 class="card-title" style="margin:0.5rem 0;">{{ sb.badge.name }}</h3>
+        <p class="card-text text-muted" style="font-size:0.85rem;">{{ sb.badge.description }}</p>
+        <div class="item-meta" style="margin-top:0.5rem;">
+          <span class="azad-badge" style="background:var(--azad-amber);">{{ sb.earned_at.strftime('%Y-%m-%d') }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+<div class="empty-state">
+  {{ _('لا شارات بعد') }}
+  <p class="text-muted">{{ _('ابدأ رحلتك واكسب أول شارة!') }}</p>
+  <a href="{{ url_for('auth.dashboard') }}" class="azad-btn">{{ _('ابدأ الآن') }}</a>
+</div>
+{% endif %}
+
+<div class="azad-section" style="margin-top:2rem;">
+  <h2 class="section-title">{{ _('شارات متاحة للكسب') }}</h2>
+  <div class="azad-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+    {% for badge in all_badges if badge.id not in (sb.badge.id for sb in badges) %}
+    <div class="azad-card badge-card locked">
+      <div class="card-body" style="text-align:center; padding:1.5rem; opacity:0.6;">
+        <div class="badge-icon" style="font-size:3rem; margin-bottom:0.5rem; color:var(--azad-gray-400);">{{ icon(badge.icon_name) }}</div>
+        <h3 class="card-title" style="margin:0.5rem 0;">{{ badge.name }}</h3>
+        <p class="card-text text-muted" style="font-size:0.85rem;">{{ badge.description }}</p>
+        <div class="item-meta" style="margin-top:0.5rem;">
+          <span class="azad-badge" style="background:var(--azad-gray-400);">{{ _('مقفل') }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-check for badges on page load
+  fetch('/profile/badges/check', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({ event_type: 'daily_login' })
+  }).then(r => r.json()).then(data => {
+    if (data.awarded > 0) {
+      location.reload();
+    }
+  }).catch(console.error);
+});
+</script>
+{% endblock %}

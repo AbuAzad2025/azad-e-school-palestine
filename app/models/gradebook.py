@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, Numeric, String, Text
+from sqlalchemy import ForeignKey, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
@@ -84,3 +84,62 @@ class GradeEntry(PKMixin, db.Model):
     note: Mapped[str | None] = mapped_column(Text)
 
     item: Mapped[GradeItem] = relationship(back_populates="entries")
+
+
+class RubricTemplate(PKMixin, db.Model):
+    """قالب تقييم بالمعيار (Rubric) — يُعاد استخدامه في أكثر من بند."""
+
+    __tablename__ = "rubric_templates"
+
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+
+    criteria: Mapped[list[RubricCriterion]] = relationship(back_populates="template", cascade="all, delete-orphan")
+
+
+class RubricCriterion(PKMixin, db.Model):
+    """معيار واحد ضمن قالب التقييم."""
+
+    __tablename__ = "rubric_criteria"
+
+    template_id: Mapped[int] = mapped_column(ForeignKey("rubric_templates.id"), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    max_score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    sort_order: Mapped[int | None] = mapped_column(SmallInteger)
+
+    template: Mapped[RubricTemplate] = relationship(back_populates="criteria")
+
+
+class RubricGrade(PKMixin, db.Model):
+    """درجة الطالب في معيار محدد — يتكرر لكل معيار في كل تسليم."""
+
+    __tablename__ = "rubric_grades"
+    __table_args__ = (db.UniqueConstraint("submission_id", "criterion_id", name="uq_rubric_grade"),)
+
+    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), nullable=False)
+    criterion_id: Mapped[int] = mapped_column(ForeignKey("rubric_criteria.id"), nullable=False)
+    score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    comment: Mapped[str | None] = mapped_column(Text)
+    graded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+
+    submission: Mapped[Submission] = relationship("Submission")
+    criterion: Mapped[RubricCriterion] = relationship("RubricCriterion")
+
+
+class GradeAppeal(PKMixin, db.Model):
+    __tablename__ = "grade_appeals"
+    __table_args__ = (db.UniqueConstraint("submission_id", "student_id", name="uq_grade_appeal"),)
+
+    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), nullable=False)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(15), default="pending", nullable=False)
+    teacher_response: Mapped[str | None] = mapped_column(Text)
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at = db.Column(db.DateTime(timezone=True))
+
+    submission: Mapped[Submission] = relationship("Submission")
+    student: Mapped[User] = relationship("User", foreign_keys=[student_id])

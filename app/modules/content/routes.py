@@ -266,3 +266,43 @@ def lesson_import(lesson_id):
         flash(_("تم استيراد الدرس بنجاح."), "success")
         return redirect(url_for("content.lesson_detail", class_id=target_class_id, lesson_id=new_lesson.id))
     return redirect(url_for("content.shared_library"))
+
+
+# === وضع عدم الاتصال ===
+
+
+@bp.get("/offline")
+@login_required
+def offline_downloads():
+    from app.services.offline import get_offline_items
+
+    items = get_offline_items(current_user.id)
+    return render_template("content/offline_downloads.html", items=items)
+
+
+@bp.post("/offline/mark")
+@login_required
+def mark_offline():
+    from app.services.offline import mark_for_download
+
+    attachment_id = request.form.get("attachment_id", type=int)
+    lesson_id = request.form.get("lesson_id", type=int)
+    if not attachment_id or not lesson_id:
+        flash(_("بيانات ناقصة"), "danger")
+        return redirect(url_for("content.offline_downloads"))
+    result = mark_for_download(current_user.id, attachment_id, lesson_id)
+    if result:
+        flash(_("تم التحديد للتنزيل"), "success")
+    else:
+        flash(_("المرفق محدد للتنزيل مسبقاً"), "warning")
+    return redirect(url_for("content.offline_downloads"))
+
+
+@bp.post("/offline/<int:download_id>/remove")
+@login_required
+def remove_offline(download_id):
+    from app.services.offline import remove_offline as _remove_offline
+
+    _remove_offline(download_id)
+    flash(_("تم الإزالة"), "success")
+    return redirect(url_for("content.offline_downloads"))

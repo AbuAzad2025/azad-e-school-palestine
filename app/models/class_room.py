@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Numeric, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,6 +31,7 @@ class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
     price_second_term: Mapped[float | None] = mapped_column(Numeric(10, 2))
     price_annual: Mapped[float | None] = mapped_column(Numeric(10, 2))
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
+    max_students: Mapped[int | None] = mapped_column(SmallInteger)
 
     members: Mapped[list[ClassMember]] = relationship(back_populates="class_room", cascade="all, delete-orphan")
     subject: Mapped[Subject] = relationship("Subject")

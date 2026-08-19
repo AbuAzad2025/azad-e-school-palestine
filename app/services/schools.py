@@ -113,6 +113,10 @@ def join_class(class_room: ClassRoom, user: User) -> str | None:
     existing = ClassMember.query.filter_by(class_id=class_room.id, user_id=user.id).first()
     if existing:
         return "أنت عضو في هذا الصف مسبقاً."
+    if class_room.max_students:
+        current_count = ClassMember.query.filter_by(class_id=class_room.id, status="active").count()
+        if current_count >= class_room.max_students:
+            return "الصف ممتلئ. لا يمكن الانضمام."
 
     def _join():
         db.session.add(ClassMember(class_id=class_room.id, user_id=user.id, status="active", joined_at=db.func.now()))
