@@ -179,6 +179,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
+          PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-test-key-not-for-production
           FLASK_APP: run.py
@@ -245,6 +246,7 @@ jobs:
 
       - name: Verify app creates successfully
         env:
+          PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-test-key
           FLASK_APP: run.py
