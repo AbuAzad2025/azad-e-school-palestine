@@ -23,6 +23,7 @@ def register():
             name_ar=form.name_ar.data,
             role=form.role.data,
             password=form.password.data,
+            school_join_code=form.school_join_code.data.strip().upper() if form.school_join_code.data else None,
         )
         if error:
             flash(_(error), "danger")

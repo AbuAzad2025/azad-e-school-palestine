@@ -52,7 +52,9 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
     # تاريخ كلمات المرور (لتجنب إعادة الاستخدام)
     password_history: Mapped[list[str]] = mapped_column(db.JSON, default=list, nullable=False)
 
-    role_links: Mapped[list["UserRoleLink"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    role_links: Mapped[list["UserRoleLink"]] = relationship(
+        back_populates="user", foreign_keys="UserRoleLink.user_id", cascade="all, delete-orphan"
+    )
 
     @property
     def is_authenticated_prop(self):
@@ -112,6 +114,9 @@ class UserRoleLink(PKMixin, db.Model):
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
     role: Mapped[UserRole] = mapped_column(db.Enum(UserRole, name="user_role"), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    approved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    approved_at = db.Column(db.DateTime(timezone=True))
 
-    user: Mapped[User] = relationship(back_populates="role_links")
+    user: Mapped[User] = relationship(back_populates="role_links", foreign_keys=[user_id])
     school: Mapped[School] = relationship("School")
+    approver: Mapped[User | None] = relationship("User", foreign_keys=[approved_by])

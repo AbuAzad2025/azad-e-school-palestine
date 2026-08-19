@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}{{ _('لوحة الإيرادات') }} — {{ _('إدارة المنصة') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('لوحة الإيرادات') }}</h1>
+    <p class="page-subtitle">{{ _('تتبع إيرادات المنصة وتحليل الأداء') }}</p>
+  </div>
+  <form method="get" style="display:flex;gap:.5rem;align-items:end">
+    <label class="form-label">{{ _('الفترة') }}</label>
+    <select name="days" class="form-select" onchange="this.form.submit()" style="width:auto">
+      <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
+      <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوم') }}</option>
+      <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوم') }}</option>
+      <option value="365" {% if days == 365 %}selected{% endif %}>{{ _('آخر سنة') }}</option>
+    </select>
+  </form>
+</div>
+
+{% set s = data.summary %}
+<div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+  {% call azad_stat_card(s.total_revenue ~ ' ' ~ s.currency, _('إجمالي الإيرادات'), 'credit-card', 'var(--azad-green)') %}{% endcall %}
+  {% call azad_stat_card(s.transaction_count, _('عدد المعاملات'), 'shopping-cart', 'var(--azad-blue)') %}{% endcall %}
+  {% call azad_stat_card(data.growth_rate ~ '%', _('معدل النمو'), 'trending-up', 'var(--azad-amber)' if data.growth_rate >= 0 else 'var(--azad-red)') %}{% endcall %}
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('الإيرادات حسب بوابة الدفع') }}</h2>
+  <canvas id="gatewayChart" height="250"></canvas>
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('أعلى 10 مدارس من حيث الإيرادات') }}</h2>
+  <canvas id="schoolChart" height="300"></canvas>
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('الاتجاه الشهري للإيرادات') }}</h2>
+  <canvas id="trendChart" height="300"></canvas>
+</div>
+
+{% if data.by_school %}
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('تفاصيل الإيرادات حسب المدرسة') }}</h2>
+  <div class="azad-table-container">
+    <table class="azad-table">
+      <thead>
+        <tr>
+          <th>{{ _('المدرسة') }}</th>
+          <th>{{ _('عدد المعاملات') }}</th>
+          <th>{{ _('إجمالي الإيرادات') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for school in data.by_school %}
+        <tr>
+          <td>{{ school.school_name }}</th>
+          <td>{{ school.count }}</td>
+          <td>{{ school.total }} {{ s.currency }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Gateway Pie Chart
+  const gatewayData = {{ data.by_gateway | tojson }};
+  const gatewayLabels = gatewayData.map(g => g.gateway);
+  const gatewayCounts = gatewayData.map(g => g.total);
+
+  new Chart(document.getElementById('gatewayChart'), {
+    type: 'pie',
+    data: {
+      labels: gatewayLabels,
+      datasets: [{
+        data: gatewayCounts,
+        backgroundColor: [
+          'rgba(1, 78, 124, 0.7)',
+          'rgba(16, 185, 129, 0.7)',
+          'rgba(245, 158, 11, 0.7)',
+          'rgba(239, 68, 68, 0.7)',
+          'rgba(139, 92, 246, 0.7)'
+        ],
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = ((context.raw / total) * 100).toFixed(1);
+              return context.label + ': ' + context.raw + ' ILS (' + pct + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // School Bar Chart
+  const schoolData = {{ data.by_school | tojson }};
+  const schoolLabels = schoolData.map(s => s.school_name.length > 20 ? s.school_name.substring(0, 20) + '...' : s.school_name);
+  const schoolTotals = schoolData.map(s => s.total);
+
+  new Chart(document.getElementById('schoolChart'), {
+    type: 'bar',
+    data: {
+      labels: schoolLabels,
+      datasets: [{
+        label: 'الإيرادات (ILS)',
+        data: schoolTotals,
+        backgroundColor: 'rgba(1, 78, 124, 0.7)',
+        borderColor: 'rgb(1, 78, 124)',
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+
+  // Monthly Trend Line Chart
+  const trendData = {{ data.monthly_trend | tojson }};
+  const trendLabels = trendData.map(t => t.month);
+  const trendTotals = trendData.map(t => t.total);
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'الإيرادات (ILS)',
+        data: trendTotals,
+        fill: true,
+        backgroundColor: 'rgba(1, 78, 124, 0.1)',
+        borderColor: 'rgb(1, 78, 124)',
+        borderWidth: 2,
+        tension: 0.3,
+        pointBackgroundColor: 'rgb(1, 78, 124)',
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+});
+</script>
+{% endblock %}

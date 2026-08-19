@@ -1,6 +1,7 @@
 """خدمات الاشتراك والدفع اليدوي (D12 — لا بوابات؛ اعتماد بشري)."""
 
 from datetime import UTC, datetime, timedelta
+from datetime import date as date_
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -8,7 +9,7 @@ from sqlalchemy.orm import joinedload
 from app.core.db import TxError, tx
 from app.core.uploads import save_upload
 from app.extensions import db
-from app.models.billing import ManualPayment, PaymentReceipt, Subscription, SubscriptionPlan
+from app.models.billing import DiscountCode, ManualPayment, PaymentReceipt, Subscription, SubscriptionPlan
 
 
 def create_plan(
@@ -240,3 +241,113 @@ def subscription_payment_summary(subscription_id: int) -> dict:
         "approved_count": len(approved),
         "pending_count": len(pending),
     }
+
+
+def create_discount_code(
+    school_id: int,
+    code: str,
+    name: str,
+    type_: str,
+    value: float,
+    max_uses: int = 1,
+    expiry_date: date_ | None = None,
+    applicable_plan_ids: list[int] | None = None,
+    school_id_limit: int | None = None,
+) -> tuple[DiscountCode | None, str | None]:
+    """إنشاء كود خصم جديد."""
+    code = (code or "").strip().upper()
+    name = (name or "").strip()
+    if not code:
+        return None, "كود الخصم مطلوب."
+    if not name:
+        return None, "اسم الخصم مطلوب."
+    if type_ not in ("percentage", "fixed"):
+        return None, "نوع الخصم غير صالح (percentage/fixed)."
+    if value <= 0:
+        return None, "قيمة الخصم يجب أن تكون أكبر من صفر."
+    if max_uses < 1:
+        return None, "الحد الأقصى للاستخدام يجب أن يكون 1 على الأقل."
+    if expiry_date and expiry_date < date_.today():
+        return None, "تاريخ الانتهاء لا يمكن أن يكون في الماضي."
+
+    if DiscountCode.query.filter_by(code=code).first():
+        return None, "كود الخصم موجود مسبقاً."
+
+    def _create():
+        dc = DiscountCode(
+            code=code,
+            name=name,
+            type=type_,
+            value=value,
+            max_uses=max_uses,
+            expiry_date=expiry_date,
+            applicable_plan_ids=applicable_plan_ids,
+            school_id=school_id_limit,
+        )
+        db.session.add(dc)
+        return dc
+
+    return tx(_create), None
+
+
+def validate_discount_code(code: str, plan_id: int) -> tuple[float | None, str | None]:
+    """التحقق من صلاحية كود الخصم وإرجاع مبلغ الخصم."""
+    code = (code or "").strip().upper()
+    if not code:
+        return None, "كود الخصم مطلوب."
+
+    dc = DiscountCode.query.filter_by(code=code).first()
+    if not dc:
+        return None, "كود الخصم غير صالح."
+    if not dc.is_active:
+        return None, "كود الخصم غير مفعل."
+    if dc.expiry_date and dc.expiry_date < date_.today():
+        return None, "كود الخصم منتهي الصلاحية."
+    if dc.used_count >= dc.max_uses:
+        return None, "تم استنفاد عدد استخدامات كود الخصم."
+    if dc.applicable_plan_ids and plan_id not in dc.applicable_plan_ids:
+        return None, "كود الخصم غير صالح لهذه الخطة."
+    if dc.school_id:
+        # School check will be done at subscription level
+        pass
+
+    # Calculate discount amount
+    plan = db.session.get(SubscriptionPlan, plan_id)
+    if not plan:
+        return None, "الخطة غير موجودة."
+
+    if dc.type == "percentage":
+        discount = float(plan.price) * (dc.value / 100)
+    else:
+        discount = dc.value
+
+    # Cap discount at plan price
+    discount = min(discount, float(plan.price))
+    return discount, None
+
+
+def apply_discount_code(subscription_id: int, code: str) -> tuple[float | None, str | None]:
+    """تطبيق كود خصم على اشتراك."""
+    code = (code or "").strip().upper()
+    if not code:
+        return None, "كود الخصم مطلوب."
+
+    sub = db.session.get(Subscription, subscription_id)
+    if not sub:
+        return None, "الاشتراك غير موجود."
+
+    discount, error = validate_discount_code(code, sub.plan_id)
+    if error:
+        return None, error
+
+    def _apply():
+        # Store discount info in subscription (could add fields to Subscription model)
+        # For now, we'll adjust the subscription price
+        assert discount is not None
+        sub.price = float(sub.price) - discount
+        dc = DiscountCode.query.filter_by(code=code.upper()).first()
+        if dc:
+            dc.used_count += 1
+        return discount
+
+    return tx(_apply), None

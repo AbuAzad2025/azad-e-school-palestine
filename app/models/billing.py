@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date as date_
+
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.extensions import db
 
 from .mixins import PKMixin
+from .school import School
 from .user import User
 
 
@@ -99,3 +102,22 @@ class ReminderLog(PKMixin, db.Model):
     subscription: Mapped[Subscription] = relationship()
 
     __table_args__ = (db.UniqueConstraint("subscription_id", "reminder_type", name="uq_reminder_log_unique"),)
+
+
+class DiscountCode(PKMixin, db.Model):
+    """كود خصم للاشتراكات"""
+
+    __tablename__ = "discount_codes"
+
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[str] = mapped_column(String(15), nullable=False)  # percentage/fixed
+    value: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    max_uses: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    used_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    expiry_date: Mapped[date_ | None] = mapped_column(db.Date, nullable=True)
+    applicable_plan_ids: Mapped[list[int] | None] = mapped_column(JSONB, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id"), nullable=True)
+
+    school: Mapped[School] = relationship()

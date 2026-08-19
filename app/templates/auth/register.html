@@ -26,6 +26,12 @@
       {% for e in form.role.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
     <div class="form-group">
+      {{ form.school_join_code.label }}
+      {{ form.school_join_code(placeholder="كود المدرسة (اختياري)") }}
+      {% for e in form.school_join_code.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      <small class="form-hint">{{ _('إذا كنت معلماً/طالباً/ولي أمر، أدخل كود المدرسة للانضمام مباشرة.') }}</small>
+    </div>
+    <div class="form-group">
       {{ form.password.label }}
       {{ form.password(autocomplete="new-password", placeholder="8 أحرف على الأقل") }}
       {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}

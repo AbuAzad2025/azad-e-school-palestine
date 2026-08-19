@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from app.core.permissions import _has_any
+from app.core.permissions import _has_any, role_required
 from app.extensions import db
 from app.models.ai import AiUsageLog
 from app.models.billing import ManualPayment, Subscription
@@ -12,6 +12,7 @@ from app.models.content import Lesson
 from app.models.gradebook import Assignment
 from app.models.school import School
 from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
+from app.services.revenue import get_revenue_dashboard_data
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
@@ -540,3 +541,19 @@ def registration_reject(user_id):
     db.session.commit()
     flash(_("تم رفض تسجيل المستخدم."), "warning")
     return redirect(url_for("admin.pending_registrations"))
+
+
+# ======================================================================
+# تتبع الإيرادات (السوبر أدمن)
+# ======================================================================
+@bp.get("/revenue")
+@login_required
+@role_required(UserRole.super_admin)
+def revenue_dashboard():
+    """لوحة تحكم الإيرادات للسوبر أدمن."""
+    days = request.args.get("days", 30, type=int)
+    if days not in [7, 30, 90, 365]:
+        days = 30
+
+    data = get_revenue_dashboard_data(days=days)
+    return render_template("admin/revenue.html", data=data, days=days)

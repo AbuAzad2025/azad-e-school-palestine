@@ -24,6 +24,7 @@ class RegisterForm(FlaskForm):
         default="student",
         validators=[DataRequired()],
     )
+    school_join_code = StringField(_("كود الانضمام للمدرسة (اختياري)"), validators=[Length(max=20)])
     password = PasswordField(_("كلمة المرور"), validators=[DataRequired(), password_policy_validator])
     confirm = PasswordField(
         _("تأكيد كلمة المرور"),

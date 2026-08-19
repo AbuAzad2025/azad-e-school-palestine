@@ -1,17 +1,27 @@
 """خدمات المصادقة — منطق موحّد مُعاد الاستخدام من الويب والـ API"""
 
 from flask import current_app
+from flask_babel import _
 from flask_login import current_user
 
+from app.core.db import tx
 from app.core.security import check_password_reuse, hash_password, validate_password_policy, verify_password
 from app.core.tokens import make_reset_token, read_reset_token
 from app.extensions import db
-from app.models.user import User, UserApprovalStatus, UserRole
+from app.models.school import School
+from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 
-from .base import tx
+from .communication import notify
+from .school_approvals import get_school_admins
 
 
-def register_user(email: str, name_ar: str, role: str, password: str) -> tuple[User | None, str | None]:
+def register_user(
+    email: str,
+    name_ar: str,
+    role: str,
+    password: str,
+    school_join_code: str | None = None,
+) -> tuple[User | None, str | None]:
     """ينشئ حساباً بذرّية كاملة بحالة pending. يعيد (user, error)."""
     email = email.strip().lower()
     if User.query.filter_by(email=email).first():
@@ -24,6 +34,14 @@ def register_user(email: str, name_ar: str, role: str, password: str) -> tuple[U
     if not ok:
         return None, msg
 
+    # التحقق من كود الانضمام للمدرسة (للمعلمين والطلاب وأولياء الأمور)
+    school_id = None
+    if school_join_code and role in {"teacher", "student", "parent"}:
+        school = School.query.filter_by(join_code=school_join_code.strip().upper()).first()
+        if not school:
+            return None, "كود الانضمام للمدرسة غير صحيح."
+        school_id = school.id
+
     def _create():
         user = User(
             email=email,
@@ -31,11 +49,29 @@ def register_user(email: str, name_ar: str, role: str, password: str) -> tuple[U
             role=UserRole(role),
             password_hash=hash_password(password),
             is_verified=False,
-            approval_status=UserApprovalStatus.pending,  # في انتظار موافقة السوبر أدمن
+            approval_status=UserApprovalStatus.pending,
         )
         # إضافة الهاش للتاريخ
         user.add_password_to_history(user.password_hash)
         db.session.add(user)
+        db.session.flush()
+
+        # إنشاء رابط الدور للمدرسة
+        if school_id:
+            rl = UserRoleLink(user_id=user.id, school_id=school_id, role=UserRole(role))
+            db.session.add(rl)
+
+        # إشعار مشرفي المدرسة
+        if school_id:
+            admins = get_school_admins(school_id)
+            for admin_link in admins:
+                notify(
+                    admin_link.user_id,
+                    "registration",
+                    _("طلب انضمام جديد"),
+                    _("طلب مستخدم جديد ({}) الانضمام لمدرستك.").format(role),
+                )
+
         return user
 
     return tx(_create), None

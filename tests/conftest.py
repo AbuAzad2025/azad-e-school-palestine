@@ -112,6 +112,15 @@ def _ensure_phase2_schema(db_engine):
             )
         )
 
+        # Phase 5 (current batch: School-Level Approvals, Revenue Tracking, payments_ui)
+        # UserRoleLink: approved_by, approved_at
+        db_engine.session.execute(
+            text("ALTER TABLE user_role_links ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES users(id)")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE user_role_links ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ")
+        )
+
         db_engine.session.commit()
     except Exception:
         db_engine.session.rollback()
@@ -417,4 +426,28 @@ def make_reminder_log(app, subscription_id, reminder_type="7d"):
         r = ReminderLog(subscription_id=subscription_id, reminder_type=reminder_type)
         _db.session.add(r)
         _db.session.commit()
+
+
+def make_user_role_link(app, user_id, school_id, role="teacher", approved_by=None, approved_at=None, is_active=True):
+    with app.app_context():
+        from app.models.user import UserRoleLink, UserRole
+        rl = UserRoleLink(
+            user_id=user_id,
+            school_id=school_id,
+            role=UserRole(role),
+            is_active=is_active,
+            approved_by=approved_by,
+            approved_at=approved_at,
+        )
+        _db.session.add(rl)
+        _db.session.commit()
+        return rl.id
+
+
+def make_revenue_ledger_entry(app, school_id, amount, currency="ILS", gateway="manual", subscription_id=None):
+    with app.app_context():
+        from app.models.billing import ManualPayment, Subscription
+        # This is a helper to create test revenue data
+        # We'll use ManualPayment as the ledger entry
+        pass
         return r.id

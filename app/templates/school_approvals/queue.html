@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ _('قائمة انتظار الموافقة') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('قائمة انتظار الموافقة') }}</h1>
+    <p class="page-subtitle">{{ _('طلبات الانضمام المعلقة للمدرسة') }}</p>
+  </div>
+</div>
+
+{% if links %}
+<div class="azad-table-container">
+  <table class="azad-table">
+    <thead>
+      <tr>
+        <th>{{ _('المستخدم') }}</th>
+        <th>{{ _('البريد الإلكتروني') }}</th>
+        <th>{{ _('الدور') }}</th>
+        <th>{{ _('المدرسة') }}</th>
+        <th>{{ _('تاريخ الطلب') }}</th>
+        <th>{{ _('الإجراءات') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for link in links %}
+      <tr>
+        <td>{{ link.user.name_ar or link.user.email }}</td>
+        <td>{{ link.user.email }}</td>
+        <td>
+          <span class="meta-chip">{{ link.role.value }}</span>
+        </td>
+        <td>{{ link.school.name_ar }}</td>
+        <td>{{ link.created_at.strftime('%Y-%m-%d %H:%M') if link.created_at else '—' }}</td>
+        <td>
+          <form method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="azad-btn azad-btn-success" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}')">
+              {{ _('قبول') }}
+            </button>
+          </form>
+          <form method="post" action="{{ url_for('school_approvals.reject', link_id=link.id) }}" style="display:inline; margin-right:.5rem">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="azad-btn azad-btn-danger" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}')">
+              {{ _('رفض') }}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">
+  {{ _('لا توجد طلبات معلقة حالياً.') }}
+</div>
+{% endif %}
+{% endblock %}

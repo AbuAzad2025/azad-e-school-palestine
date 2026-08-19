@@ -96,7 +96,9 @@ def create_app(config_class=Config):
     from .modules.messages import bp as messages_bp
     from .modules.notifications import bp as notifications_bp
     from .modules.payments import bp as payments_bp
+    from .modules.payments import payments_ui_bp
     from .modules.progress import bp as progress_bp
+    from .modules.school_approvals import bp as school_approvals_bp
     from .modules.schools import bp as schools_bp
     from .modules.tutoring import bp as tutoring_bp
 
@@ -113,11 +115,13 @@ def create_app(config_class=Config):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(ai_bp)
     app.register_blueprint(payments_bp)
+    app.register_blueprint(payments_ui_bp)
     app.register_blueprint(family_bp)
     app.register_blueprint(progress_bp)
     app.register_blueprint(calendar_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(messages_bp)
+    app.register_blueprint(school_approvals_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة
     with app.app_context():

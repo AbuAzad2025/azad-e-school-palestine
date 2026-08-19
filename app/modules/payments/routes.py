@@ -4,7 +4,7 @@ import os
 
 from app.models.billing import Subscription
 from app.services.payments import PaymentGateway, get_payment_service
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 bp = Blueprint("payments_webhook", __name__, url_prefix="/api/payments")
@@ -60,10 +60,24 @@ def whatsapp_webhook():
 payments_ui_bp = Blueprint("payments_ui", __name__, url_prefix="/payments")
 
 
+@payments_ui_bp.get("/")
+@login_required
+def payment_methods_page():
+    """صفحة طرق الدفع المتاحة"""
+    methods = [
+        {"id": "stripe", "name": "Stripe (بطاقة)", "enabled": True, "currencies": ["USD", "EUR", "ILS"]},
+        {"id": "paytabs", "name": "PayTabs", "enabled": True, "currencies": ["USD", "SAR", "AED", "ILS"]},
+        {"id": "cashu", "name": "CashU", "enabled": True, "currencies": ["ILS", "USD"]},
+        {"id": "whatsapp", "name": "WhatsApp (يدوي)", "enabled": True, "currencies": ["ILS", "USD", "JOD"]},
+        {"id": "manual", "name": "تحويل بنكي / كاش", "enabled": True, "currencies": ["ILS", "USD", "JOD"]},
+    ]
+    return render_template("payments_ui/index.html", methods=methods)
+
+
 @payments_ui_bp.get("/methods")
 @login_required
 def payment_methods():
-    """عرض طرق الدفع المتاحة"""
+    """عرض طرق الدفع المتاحة (API)"""
     return jsonify(
         {
             "methods": [

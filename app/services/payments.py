@@ -429,8 +429,8 @@ class PaymentService:
             if config:
                 self.gateways[gateway_type] = gateway_class(config)
 
-    def _get_gateway_config(self, gateway_type: PaymentGateway) -> dict | None:
-        configs = {
+    def _get_gateway_config(self, gateway_type: PaymentGateway) -> dict[str, Any] | None:
+        configs: dict[PaymentGateway, dict[str, Any]] = {
             PaymentGateway.STRIPE: {
                 "secret_key": os.getenv("STRIPE_SECRET_KEY"),
                 "webhook_secret": os.getenv("STRIPE_WEBHOOK_SECRET"),
@@ -451,7 +451,7 @@ class PaymentService:
                 "whatsapp_number": os.getenv("WHATSAPP_BUSINESS_NUMBER"),
                 "verification_token": os.getenv("WHATSAPP_VERIFY_TOKEN"),
             },
-            PaymentGateway.MANUAL: {},
+            PaymentGateway.MANUAL: {"enabled": True},
         }
         return configs.get(gateway_type)
 

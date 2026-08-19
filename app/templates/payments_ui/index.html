@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ _('طرق الدفع') }}{% endblock %}
+{% block content %}
+<div class="section-head">
+  <div>
+    <h1 class="page-title azad-title" style="margin:0">{{ _('طرق الدفع المتاحة') }}</h1>
+    <p class="page-subtitle">{{ _('اختر طريقة الدفع المناسبة لك') }}</p>
+  </div>
+</div>
+
+<div class="azad-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+  {% for method in methods %}
+  <div class="azad-card">
+    <div class="card-body">
+      <h3 class="card-title">{{ method.name }}</h3>
+      <p class="card-text text-muted">{{ _('العملات المدعومة:') }} {{ method.currencies|join(', ') }}</p>
+      {% if method.enabled %}
+      <span class="azad-badge" style="background:var(--azad-green)">{{ _('مفعل') }}</span>
+      {% else %}
+      <span class="azad-badge" style="background:var(--azad-gray-500)">{{ _('معطل') }}</span>
+      {% endif %}
+    </div>
+    <div class="card-footer" style="border-top:1px solid var(--azad-border);padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
+      <button class="azad-btn" onclick="selectPaymentMethod('{{ method.id }}')">{{ _('اختيار') }}</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectPaymentMethod(methodId) {
+  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  console.log('Selected payment method:', methodId);
+  alert('تم اختيار: ' + methodId);
+}
+</script>
+{% endblock %}
