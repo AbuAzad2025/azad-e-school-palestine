@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ _('رسائل التواصل') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block content %}
+<div class="azad-section">
+  <h2 class="azad-section__title">{{ icon('mail') }} {{ _('صندوق وارد رسائل التواصل') }}</h2>
+</div>
+
+{% if messages %}
+<div class="azad-table-container">
+  <table class="azad-table">
+    <thead>
+      <tr>
+        <th>{{ _('الاسم') }}</th>
+        <th>{{ _('البريد') }}</th>
+        <th>{{ _('الموضوع') }}</th>
+        <th>{{ _('الحالة') }}</th>
+        <th>{{ _('التاريخ') }}</th>
+        <th>{{ _('الإجراءات') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for msg in messages %}
+      <tr>
+        <td>{{ msg.name }}</td>
+        <td>{{ msg.email }}</td>
+        <td>{{ msg.subject }}</td>
+        <td>
+          {% set status_color = {
+            'new': 'var(--azad-red)',
+            'read': 'var(--azad-blue)',
+            'replied': 'var(--azad-green)',
+          } %}
+          <span class="azad-badge" style="background:{{ status_color.get(msg.status, 'var(--azad-gray)') }}">
+            {{ _('جديدة') if msg.status == 'new' else (_('مقروءة') if msg.status == 'read' else _('تم الرد')) }}
+          </span>
+        </td>
+        <td>{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if msg.status == 'new' %}
+          <form method="post" action="{{ url_for('admin.contact_mark_read', message_id=msg.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="azad-btn-outline azad-btn-sm">{{ icon('check') }} {{ _('تعليم كمقروء') }}</button>
+          </form>
+          {% endif %}
+          <button type="button" class="azad-btn-outline azad-btn-sm" onclick="openReplyModal({{ msg.id }}, '{{ msg.email | escapejs }}', '{{ msg.subject | escapejs }}')">
+            {{ icon('reply') }} {{ _('رد') }}
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا توجد رسائل تواصل بعد.') }}</div>
+{% endif %}
+
+{# Reply Modal #}
+<div id="reply-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="reply-modal-title">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="reply-modal-title">{{ _('الرد على الرسالة') }}</h3>
+      <button class="modal-close" onclick="closeReplyModal()" aria-label="{{ _('إغلاق') }}">{{ icon('x') }}</button>
+    </div>
+    <form method="post" id="reply-form">
+      <div class="modal-body">
+        <div class="azad-field">
+          <label class="azad-field__label">{{ _('إلى') }}</label>
+          <input type="email" id="reply-to" class="azad-field__input" readonly style="background:var(--surface-2)">
+        </div>
+        <div class="azad-field">
+          <label class="azad-field__label">{{ _('الموضوع') }}</label>
+          <input type="text" id="reply-subject" class="azad-field__input" readonly style="background:var(--surface-2)">
+        </div>
+        <div class="azad-field">
+          <label class="azad-field__label">{{ _('نص الرد') }}</label>
+          <textarea name="reply_text" id="reply-text" class="azad-field__textarea" rows=6 required placeholder="{{ _('اكتب ردك هنا...') }}"></textarea>
+        </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="azad-btn-outline" onclick="closeReplyModal()">{{ _('إلغاء') }}</button>
+        <button type="submit" class="azad-btn">{{ icon('send') }} {{ _('إرسال الرد') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openReplyModal(messageId, email, subject) {
+  document.getElementById('reply-form').action = '{{ url_for("admin.contact_reply", message_id=0) }}'.replace('/0', '/' + messageId);
+  document.getElementById('reply-to').value = email;
+  document.getElementById('reply-subject').value = 'Re: ' + subject;
+  document.getElementById('reply-text').value = '';
+  document.getElementById('reply-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReplyModal() {
+  document.getElementById('reply-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('reply-form').addEventListener('submit', function(e) {
+  // Form submits normally
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeReplyModal();
+});
+</script>
+{% endblock %}

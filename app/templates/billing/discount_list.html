@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ _('أكواد الخصم') }} — {{ _('لوحة الفوترة') }}{% endblock %}
+{% block content %}
+<div class="azad-section">
+  <div class="azad-section__title">
+    {{ icon('tag') }} {{ _('إدارة أكواد الخصم') }}
+  </div>
+  <div class="azad-card__actions">
+    <a href="{{ url_for('billing.discount_create') }}" class="azad-btn">{{ icon('plus') }} {{ _('كود خصم جديد') }}</a>
+  </div>
+</div>
+
+{% if discounts %}
+<div class="azad-table-container">
+  <table class="azad-table">
+    <thead>
+      <tr>
+        <th>{{ _('الكود') }}</th>
+        <th>{{ _('الاسم') }}</th>
+        <th>{{ _('النوع') }}</th>
+        <th>{{ _('القيمة') }}</th>
+        <th>{{ _('الحد الأقصى') }}</th>
+        <th>{{ _('الاستخدامات') }}</th>
+        <th>{{ _('الانتهاء') }}</th>
+        <th>{{ _('الحالة') }}</th>
+        <th>{{ _('تاريخ الإنشاء') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in discounts %}
+      <tr>
+        <td><code>{{ d.code }}</code></td>
+        <td>{{ d.name }}</td>
+        <td>
+          <span class="azad-badge-variant azad-badge-variant--{{ 'info' if d.type == 'percentage' else 'success' }}">
+            {{ _('نسبة') if d.type == 'percentage' else _('مبلغ ثابت') }}
+          </span>
+        </td>
+        <td>
+          {% if d.type == 'percentage' %}{{ d.value }}%{% else %}{{ d.value }} ₪{% endif %}
+        </td>
+        <td>{{ d.max_uses }}</td>
+        <td>{{ d.used_count }} / {{ d.max_uses }}</td>
+        <td>{{ d.expiry_date.strftime('%Y-%m-%d') if d.expiry_date else '—' }}</td>
+        <td>
+          <span class="azad-badge-variant azad-badge-variant--{{ 'success' if d.is_active else 'danger' }}">
+            {{ _('نشط') if d.is_active else _('غير نشط') }}
+          </span>
+        </td>
+        <td>{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا توجد أكواد خصم بعد.') }} <a href="{{ url_for('billing.discount_create') }}">{{ _('أضف كود خصم جديد') }}</a></div>
+{% endif %}
+{% endblock %}

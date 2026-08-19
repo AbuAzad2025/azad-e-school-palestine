@@ -9,7 +9,7 @@ from .attendance import Attendance
 from .billing import DiscountCode, ManualPayment, PaymentReceipt, ReminderLog, Subscription, SubscriptionPlan
 from .calendar import AcademicEvent
 from .class_room import ClassMember, ClassRoom
-from .communication import Announcement, Notification, NotificationPreference
+from .communication import Announcement, ContactMessage, Notification, NotificationPreference
 from .content import Lesson, LessonAttachment, Unit
 from .family import FamilyLink, FamilyLinkCode
 from .gamification import Badge, StudentBadge
@@ -32,7 +32,7 @@ from .question_bank import QuestionBank
 from .school import Grade, School, SchoolSetting, Subject, SubjectGradeLink
 from .system import AuditLog, CertificateTemplate, HealthCheck, OnboardingProgress, Setting
 from .tenant import TenantQuota
-from .tutoring import TutoringRequest, TutoringSession, TutorProfile, TutorReview
+from .tutoring import TutorCommission, TutoringRequest, TutoringSession, TutorPayout, TutorProfile, TutorReview
 from .user import User, UserRole, UserRoleLink
 
 __all__ = [
@@ -46,6 +46,7 @@ __all__ = [
     "Badge",
     "ClassMember",
     "ClassRoom",
+    "ContactMessage",
     "DiscountCode",
     "FamilyLink",
     "FamilyLinkCode",
@@ -87,7 +88,9 @@ __all__ = [
     "Subscription",
     "SubscriptionPlan",
     "TenantQuota",
+    "TutorCommission",
     "TutorProfile",
+    "TutorPayout",
     "TutoringRequest",
     "TutoringSession",
     "TutorReview",

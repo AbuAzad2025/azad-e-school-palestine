@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ _('تواصل معنا') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="azad-section__title">{{ _('تواصل معنا') }}</h2>
+  <p style="color:var(--muted);text-align:center;max-width:700px;margin:0 auto">
+    {{ _('نحن هنا للمساعدة. املأ النموذج وسنرد عليك في أقرب وقت ممكن.') }}
+  </p>
+</div>
+
+<div class="card" style="max-width:700px;margin:2rem auto;padding:2rem">
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="azad-field">
+      {{ form.name.label(class="azad-field__label") }}
+      {{ form.name(class="azad-field__input", placeholder=_("اسمك الكامل")) }}
+      {% for error in form.name.errors %}
+      <ul class="form-errors"><li>{{ error }}</li></ul>
+      {% endfor %}
+    </div>
+    <div class="azad-field">
+      {{ form.email.label(class="azad-field__label") }}
+      {{ form.email(class="azad-field__input", placeholder=_("بريدك الإلكتروني"), type="email") }}
+      {% for error in form.email.errors %}
+      <ul class="form-errors"><li>{{ error }}</li></ul>
+      {% endfor %}
+    </div>
+    <div class="azad-field">
+      {{ form.phone.label(class="azad-field__label") }}
+      {{ form.phone(class="azad-field__input", placeholder=_("رقم الهاتف (اختياري)")) }}
+      {% for error in form.phone.errors %}
+      <ul class="form-errors"><li>{{ error }}</li></ul>
+      {% endfor %}
+    </div>
+    <div class="azad-field">
+      {{ form.subject.label(class="azad-field__label") }}
+      {{ form.subject(class="azad-field__input", placeholder=_("موضوع الرسالة")) }}
+      {% for error in form.subject.errors %}
+      <ul class="form-errors"><li>{{ error }}</li></ul>
+      {% endfor %}
+    </div>
+    <div class="azad-field">
+      {{ form.message.label(class="azad-field__label") }}
+      {{ form.message(class="azad-field__textarea", placeholder=_("اكتب رسالتك هنا..."), rows=6) }}
+      {% for error in form.message.errors %}
+      <ul class="form-errors"><li>{{ error }}</li></ul>
+      {% endfor %}
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class="azad-btn", style="width:100%") }}
+    </div>
+  </form>
+</div>
+
+<div class="azad-section" style="margin-top:3rem;text-align:center">
+  <h2 class="azad-section__title">{{ _('طرق التواصل الأخرى') }}</h2>
+  <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem">
+    <a href="mailto:info@azad-school.ps" class="azad-btn-outline" style="display:flex;align-items:center;gap:.5rem">
+      {{ icon('mail') }} {{ _('بريد إلكتروني') }}
+    </a>
+    {% if config.WHATSAPP_BUSINESS_NUMBER %}
+    <a href="https://wa.me/{{ config.WHATSAPP_BUSINESS_NUMBER }}?text={{ _('مرحباً، أحتاج مساعدة') | urlencode }}" target="_blank" rel="noopener" class="azad-btn-outline" style="display:flex;align-items:center;gap:.5rem;background:#25D366;border-color:#25D366;color:#fff">
+      {{ icon('message-circle') }} {{ _('واتساب') }}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

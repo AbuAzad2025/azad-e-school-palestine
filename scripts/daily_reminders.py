@@ -15,6 +15,7 @@ from app import create_app
 from app.extensions import db
 from app.models.billing import Subscription, ReminderLog
 from app.services.email import send_payment_reminder_email
+from app.core.db import tx
 from datetime import datetime, timedelta, UTC
 
 
@@ -62,13 +63,15 @@ def run_daily_reminders(app=None):
                 # إرسال الإيميل - يحتاج لتحميل العلاقات
                 if send_payment_reminder_email(sub, days_until):
                     # تسجيل في السجل
-                    log = ReminderLog(
-                        subscription_id=sub.id,
-                        reminder_type=reminder_type,
-                        sent_at=datetime.now(UTC),
-                    )
-                    db.session.add(log)
-                    db.session.commit()
+                    def _log():
+                        log = ReminderLog(
+                            subscription_id=sub.id,
+                            reminder_type=reminder_type,
+                            sent_at=datetime.now(UTC),
+                        )
+                        db.session.add(log)
+                        return log
+                    tx(_log)
                     sent_count += 1
                     print(f"Sent {reminder_type} reminder for subscription {sub.id} (user {sub.user_id})")
                 else:

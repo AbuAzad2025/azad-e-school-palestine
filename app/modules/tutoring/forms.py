@@ -3,7 +3,7 @@
 from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
 from wtforms import DateTimeLocalField, DecimalField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 
 class TutorProfileForm(FlaskForm):
@@ -59,3 +59,8 @@ class SessionForm(FlaskForm):
 class PaySessionForm(FlaskForm):
     session_id = HiddenField(validators=[DataRequired()])
     submit = SubmitField(_("تأكيد استلام الدفع"))
+
+
+class PayoutRequestForm(FlaskForm):
+    amount = DecimalField(_("المبلغ المطلوب (حد أدنى 200₪)"), validators=[DataRequired(), NumberRange(min=200)])
+    submit = SubmitField(_("طلب سحب"))

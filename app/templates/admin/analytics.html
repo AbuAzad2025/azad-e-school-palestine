@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ _('لوحة التحليلات') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block content %}
+<div class="azad-section">
+  <h2 class="azad-section__title">{{ icon('bar-chart') }} {{ _('لوحة التحليلات') }}</h2>
+</div>
+
+<div class="azad-section" style="margin-bottom:1rem">
+  <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+    <span style="color:var(--muted)">{{ _('فترة:') }}</span>
+    <form method="get" style="display:inline">
+      <select name="days" class="azad-field__select" style="width:auto;min-width:140px" onchange="this.form.submit()">
+        <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوماً') }}</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوماً') }}</option>
+      </select>
+    </form>
+  </div>
+</div>
+
+{% from "macros/ui.html" import azad_stat_card %}
+<div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));margin-bottom:2rem">
+  {{ azad_stat_card(data.total_lessons, _('إجمالي الدروس المنشورة'), 'book-open', 'var(--azad-blue)') }}
+  {{ azad_stat_card(data.tutoring_sessions, _('الجلسات الخصوصية المكتملة'), 'users', 'var(--azad-green)') }}
+  {{ azad_stat_card(data.family_links, _('روابط أولياء الأمور'), 'user-plus', 'var(--azad-purple)') }}
+  {{ azad_stat_card(data.new_users | length, _('تسجيلات جديدة في الفترة'), 'user-plus', 'var(--azad-amber)') }}
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:2rem;margin-top:2rem">
+  <div class="azad-card">
+    <div class="azad-card__header">
+      <div class="azad-card__header-left">
+        <div class="azad-card__icon">{{ icon('activity') }}</div>
+        <div>
+          <h3 class="azad-card__title">{{ _('المستخدمون النشطون يومياً (DAU) - 7 أيام') }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="azad-card__body" style="height:300px">
+      <canvas id="dauChart"></canvas>
+    </div>
+  </div>
+
+  <div class="azad-card">
+    <div class="azad-card__header">
+      <div class="azad-card__header-left">
+        <div class="azad-card__icon">{{ icon('users') }}</div>
+        <div>
+          <h3 class="azad-card__title">{{ _('التسجيلات الجديدة اليومية') }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="azad-card__body" style="height:300px">
+      <canvas id="registrationsChart"></canvas>
+    </div>
+  </div>
+
+  <div class="azad-card">
+    <div class="azad-card__header">
+      <div class="azad-card__header-left">
+        <div class="azad-card__icon">{{ icon('pie-chart') }}</div>
+        <div>
+          <h3 class="azad-card__title">{{ _('توزيع الأدوار') }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="azad-card__body" style="height:300px">
+      <canvas id="rolesChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const data = {{ data | tojson }};
+
+const colors = {
+  primary: getComputedStyle(document.documentElement).getPropertyValue('--azad-blue').trim(),
+  success: getComputedStyle(document.documentElement).getPropertyValue('--azad-green').trim(),
+  warning: getComputedStyle(document.documentElement).getPropertyValue('--azad-amber').trim(),
+  danger: getComputedStyle(document.documentElement).getPropertyValue('--azad-red').trim(),
+  info: getComputedStyle(document.documentElement).getPropertyValue('--azad-indigo').trim(),
+  purple: getComputedStyle(document.documentElement).getPropertyValue('--azad-purple').trim(),
+  gray: getComputedStyle(document.documentElement).getPropertyValue('--azad-gray-500').trim(),
+};
+
+const palette = [colors.primary, colors.success, colors.warning, colors.danger, colors.info, colors.purple];
+
+// DAU Chart
+new Chart(document.getElementById('dauChart'), {
+  type: 'line',
+  data: {
+    labels: data.dau.map(d => d.date),
+    datasets: [{
+      label: '{{ _('مستخدمين نشطين') }}',
+      data: data.dau.map(d => d.count),
+      borderColor: colors.primary,
+      backgroundColor: colors.primary + '20',
+      tension: 0.3,
+      fill: true,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'var(--border)' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Registrations Chart
+new Chart(document.getElementById('registrationsChart'), {
+  type: 'bar',
+  data: {
+    labels: data.new_users.map(d => d.date),
+    datasets: [{
+      label: '{{ _('تسجيلات') }}',
+      data: data.new_users.map(d => d.count),
+      backgroundColor: colors.success,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'var(--border)' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Roles Chart
+const roleLabels = Object.keys(data.role_distribution);
+const roleData = Object.values(data.role_distribution);
+new Chart(document.getElementById('rolesChart'), {
+  type: 'doughnut',
+  data: {
+    labels: roleLabels.map(r => r.charAt(0).toUpperCase() + r.slice(1)),
+    datasets: [{
+      data: roleData,
+      backgroundColor: palette.slice(0, roleLabels.length),
+      borderWidth: 2,
+      borderColor: 'var(--surface)',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { padding: 16 } } },
+    cutout: '60%',
+  }
+});
+</script>
+{% endblock %}

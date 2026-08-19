@@ -164,3 +164,21 @@ def send_payment_reminder_email(subscription, days_until_expiry: int) -> bool:
     </div>
     """
     return _send(user.email, f"تذكير: تجديد اشتراكك خلال {days_until_expiry} يوم — منصة مدرسة أزاد الإلكترونية", html)
+
+
+def send_contact_reply_email(contact_msg, reply_text: str) -> bool:
+    """إرسال رد على رسالة تواصل للمستخدم."""
+    html = f"""
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #014e7c;">رد على رسالتك</h2>
+        <p>مرحباً {contact_msg.name}،</p>
+        <p>شكراً لتواصلكم معنا. بخصوص رسالتكم: <strong>{contact_msg.subject}</strong></p>
+        <div style="background: #f5f5f5; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+            <p style="margin: 0; white-space: pre-wrap;">{reply_text}</p>
+        </div>
+        <p style="margin-top: 2rem; color: #666; font-size: 0.9em;">
+            هذه رسالة تلقائية، يُرجى عدم الرد عليها.
+        </p>
+    </div>
+    """
+    return _send(contact_msg.email, f"رد: {contact_msg.subject} — منصة مدرسة أزاد الإلكترونية", html)

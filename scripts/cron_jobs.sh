@@ -42,6 +42,9 @@ for f in Path('backups').glob('backup_*.sql*'):
 # PAYMENT JOBS
 # ============================================================
 
+# Daily payment reminders - 7:00 AM
+0 7 * * * /path/to/venv/bin/python /path/to/scripts/daily_reminders.py >> /var/log/azad_reminders.log 2>&1
+
 # Process pending payments every 5 minutes
 */5 * * * * /path/to/venv/bin/python -c "
 import os, sys

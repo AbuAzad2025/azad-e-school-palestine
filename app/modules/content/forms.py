@@ -2,7 +2,7 @@
 
 from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
-from wtforms import FileField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import BooleanField, FileField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
 
@@ -15,6 +15,7 @@ class LessonForm(FlaskForm):
     title = StringField(_("عنوان الدرس"), validators=[DataRequired(), Length(max=300)])
     unit_id = SelectField(_("الوحدة"), coerce=int, validators=[Optional()])
     body_html = TextAreaField(_("محتوى الدرس (HTML)"), validators=[Optional()])
+    is_offline_available = BooleanField(_("متاح للوضع غير المتصل"), default=False)
     submit = SubmitField(_("حفظ الدرس"))
 
 

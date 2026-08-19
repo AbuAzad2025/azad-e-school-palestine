@@ -1,4 +1,4 @@
-"""التواصل: إعلانات الصف + إشعارات داخلية"""
+"""التواصل: إعلانات الصف + إشعارات داخلية + نموذج التواصل"""
 
 from sqlalchemy import Boolean, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -39,3 +39,17 @@ class NotificationPreference(PKMixin, db.Model):
     notif_type: Mapped[str] = mapped_column(Text, nullable=False)
     email_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class ContactMessage(PKMixin, db.Model):
+    """رسائل صفحة التواصل."""
+
+    __tablename__ = "contact_messages"
+
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    email: Mapped[str] = mapped_column(Text, nullable=False)
+    phone: Mapped[str | None] = mapped_column(Text)
+    subject: Mapped[str] = mapped_column(Text, nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(Text, default="new", nullable=False)  # new/read/replied
+    replied_at = db.Column(db.DateTime(timezone=True))

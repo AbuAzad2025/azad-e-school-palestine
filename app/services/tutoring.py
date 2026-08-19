@@ -8,11 +8,19 @@ import os
 import secrets
 from datetime import UTC
 
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
 from app.extensions import db
-from app.models.tutoring import TutoringRequest, TutoringSession, TutorProfile, TutorReview
+from app.models.tutoring import (
+    TutorCommission,
+    TutoringRequest,
+    TutoringSession,
+    TutorPayout,
+    TutorProfile,
+    TutorReview,
+)
 from app.models.user import UserRole
 
 
@@ -408,11 +416,11 @@ def rate_session(
     return tx(_rate), None
 
 
+COMMISSION_RATE = 20.0  # 20% platform fee
+
+
 def get_tutor_earnings(tutor_id: int) -> dict:
     """ملخص أرباح المعلم."""
-    from app.extensions import db
-    from app.models.tutoring import TutoringSession, TutorReview
-
     sessions = (
         db.session.execute(db.select(TutoringSession).where(TutoringSession.tutor_id == tutor_id)).scalars().all()
     )
@@ -429,6 +437,21 @@ def get_tutor_earnings(tutor_id: int) -> dict:
     )
     avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else 0.0
 
+    # Commission calculations
+    commission_amount = round(total_earnings * COMMISSION_RATE / 100, 2)
+    net_earnings = round(total_earnings - commission_amount, 2)
+
+    # Withdrawable (from TutorCommission where status == "pending")
+    pending_commissions = TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending").all()
+    withdrawable = sum(float(c.tutor_net) for c in pending_commissions)
+
+    total_payouts = (
+        db.session.query(func.sum(TutorPayout.amount))
+        .filter(TutorPayout.tutor_id == tutor_id, TutorPayout.status == "approved")
+        .scalar()
+        or 0
+    )
+
     return {
         "total_earnings": round(total_earnings, 2),
         "pending_payouts": round(pending, 2),
@@ -436,4 +459,54 @@ def get_tutor_earnings(tutor_id: int) -> dict:
         "review_count": len(reviews),
         "completed_sessions": len(completed),
         "total_sessions": len(sessions),
+        "commission_amount": commission_amount,
+        "net_earnings": net_earnings,
+        "withdrawable": round(withdrawable, 2),
+        "total_payouts": round(float(total_payouts), 2),
+        "commission_rate": COMMISSION_RATE,
     }
+
+
+def create_commission_record(session: TutoringSession) -> TutorCommission | None:
+    """ينشئ سجل عمولة عند اكتمال الجلسة."""
+    if session.status not in ("completed", "ended"):
+        return None
+    existing = TutorCommission.query.filter_by(session_id=session.id).first()
+    if existing:
+        return None
+
+    amount = float(session.price or 0)
+    commission = round(amount * COMMISSION_RATE / 100, 2)
+    net = round(amount - commission, 2)
+
+    def _create():
+        c = TutorCommission(
+            session_id=session.id,
+            tutor_id=session.tutor_id,
+            session_amount=amount,
+            commission_rate=COMMISSION_RATE,
+            commission_amount=commission,
+            tutor_net=net,
+        )
+        db.session.add(c)
+        return c
+
+    return tx(_create)
+
+
+def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, str | None]:
+    """طلب سحب أرباح — الحد الأدنى 200₪."""
+    if amount < 200:
+        return None, "الحد الأدنى للسحب 200₪."
+    # Check withdrawable balance
+    pending = TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending").all()
+    withdrawable = sum(float(c.tutor_net) for c in pending)
+    if amount > withdrawable:
+        return None, f"المبلغ المطلوب ({amount}) يتجاوز الرصيد المتاح ({withdrawable})."
+
+    def _create():
+        p = TutorPayout(tutor_id=tutor_id, amount=amount)
+        db.session.add(p)
+        return p
+
+    return tx(_create), None

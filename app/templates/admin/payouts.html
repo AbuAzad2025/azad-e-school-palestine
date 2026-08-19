@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ _('طلبات سحب أرباح المعلمين') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block content %}
+<div class="azad-section">
+  <h2 class="azad-section__title">{{ icon('credit-card') }} {{ _('طلبات سحب أرباح المعلمين') }}</h2>
+</div>
+
+{% if payouts %}
+<div class="azad-table-container">
+  <table class="azad-table">
+    <thead>
+      <tr>
+        <th>{{ _('المعلم') }}</th>
+        <th>{{ _('المبلغ') }}</th>
+        <th>{{ _('الحالة') }}</th>
+        <th>{{ _('تاريخ الطلب') }}</th>
+        <th>{{ _('الإجراءات') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payouts %}
+      <tr>
+        <td>{{ p.tutor.name_ar }} ({{ p.tutor.email }})</td>
+        <td>{{ p.amount }} ₪</td>
+        <td>
+          <span class="azad-badge-variant azad-badge-variant--{{ 'warning' if p.status == 'pending' else ('success' if p.status == 'approved' else 'danger') }}">
+            {{ _('معلق') if p.status == 'pending' else (_('مقبول') if p.status == 'approved' else _('مرفوض')) }}
+          </span>
+        </td>
+        <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if p.status == 'pending' %}
+          <form method="post" action="{{ url_for('admin.review_payout', payout_id=p.id, result='approve') }}" style="display:inline" onsubmit="return confirm('{{ _('تأكيد اعتماد طلب السحب؟') }}')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="azad-btn-outline azad-btn-sm" style="margin:2px">{{ icon('check') }} {{ _('اعتماد') }}</button>
+          </form>
+          <button type="button" class="azad-btn-outline azad-btn-sm azad-btn-danger" style="margin:2px" onclick="openRejectModal({{ p.id }})">
+            {{ icon('x') }} {{ _('رفض') }}
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty-state">{{ _('لا توجد طلبات سحب معلقة.') }}</div>
+{% endif %}
+
+{# Reject Modal #}
+<div id="reject-modal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="reject-modal-title">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3 class="modal-title" id="reject-modal-title">{{ _('رفض طلب السحب') }}</h3>
+      <button class="modal-close" onclick="closeRejectModal()" aria-label="{{ _('إغلاق') }}">{{ icon('x') }}</button>
+    </div>
+    <form method="post" id="reject-form">
+      <div class="modal-body">
+        <div class="azad-field">
+          <label class="azad-field__label">{{ _('سبب الرفض') }}</label>
+          <textarea name="note" class="azad-field__textarea" rows=4 required placeholder="{{ _('أدخل سبب الرفض...') }}"></textarea>
+        </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="azad-btn-outline" onclick="closeRejectModal()">{{ _('إلغاء') }}</button>
+        <button type="submit" class="azad-btn azad-btn-danger">{{ icon('x') }} {{ _('تأكيد الرفض') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRejectModal(payoutId) {
+  document.getElementById('reject-form').action = '{{ url_for("admin.review_payout", payout_id=0, result="reject") }}'.replace('/0', '/' + payoutId);
+  document.getElementById('reject-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRejectModal() {
+  document.getElementById('reject-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeRejectModal();
+});
+</script>
+{% endblock %}

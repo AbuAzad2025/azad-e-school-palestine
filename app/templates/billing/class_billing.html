@@ -79,4 +79,76 @@
   </form>
 </div>
 {% endif %}
+
+{% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') and plans %}
+<div class="section-head"><h2>{{ _('كود خصم') }}</h2></div>
+<div class="card" style="margin-bottom:1rem">
+  <form id="discount-form" method="post" action="{{ url_for('billing.validate_code') }}" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="azad-field" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:end">
+      <div style="flex:1;min-width:200px">
+        <label class="azad-field__label">{{ _('أدخل كود الخصم') }}</label>
+        <input type="text" name="code" id="discount-code-input" class="azad-field__input" placeholder="{{ _('مثال: WELCOME20') }}" required>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <label class="azad-field__label">{{ _('اختر الخطة') }}</label>
+        <select name="plan_id" id="discount-plan-select" class="azad-field__select" required>
+          {% for p in plans %}
+          <option value="{{ p.id }}">{{ p.name }} ({{ p.price }} {{ p.currency }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="azad-btn" style="min-height:48px">{{ icon('tag') }} {{ _('تحقق') }}</button>
+      </div>
+    </div>
+    <div id="discount-result" class="form-hint" style="margin-top:.5rem;display:none"></div>
+  </form>
+</div>
+{% endif %}
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('discount-form');
+  const resultDiv = document.getElementById('discount-result');
+  if (!form) return;
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '{{ icon("loader") }} {{ _('جاري التحقق...') }}';
+    submitBtn.disabled = true;
+    resultDiv.style.display = 'none';
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await response.json();
+      if (data.error) {
+        resultDiv.innerHTML = '<span style="color:var(--azad-red)">{{ icon("alert") }} ' + data.error + '</span>';
+        resultDiv.style.display = 'block';
+      } else {
+        resultDiv.innerHTML = '<span style="color:var(--azad-green)">{{ icon("check") }} {{ _('تم التحقق بنجاح! مبلغ الخصم:') }} ' + data.discount + ' {{ session.currency if my_sub else "₪" }}</span>';
+        resultDiv.style.display = 'block';
+        // Store discount for use in subscription
+        localStorage.setItem('azad_discount_' + formData.get('plan_id'), JSON.stringify({
+          code: formData.get('code'),
+          discount: data.discount
+        }));
+      }
+    } catch (err) {
+      resultDiv.innerHTML = '<span style="color:var(--azad-red)">{{ icon("alert") }} {{ _('حدث خطأ، يرجى المحاولة مرة أخرى') }}</span>';
+      resultDiv.style.display = 'block';
+    } finally {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+});
+</script>

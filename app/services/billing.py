@@ -316,13 +316,14 @@ def validate_discount_code(code: str, plan_id: int) -> tuple[float | None, str |
     if not plan:
         return None, "الخطة غير موجودة."
 
+    plan_price = float(plan.price)
     if dc.type == "percentage":
-        discount = float(plan.price) * (dc.value / 100)
+        discount = plan_price * (float(dc.value) / 100)
     else:
-        discount = dc.value
+        discount = float(dc.value)
 
     # Cap discount at plan price
-    discount = min(discount, float(plan.price))
+    discount = min(discount, plan_price)
     return discount, None
 
 

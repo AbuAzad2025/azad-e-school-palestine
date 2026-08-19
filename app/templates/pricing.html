@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ _('خطط الأسعار') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="azad-section__title">{{ _('خطط الأسعار') }}</h2>
+  <p style="color:var(--muted);text-align:center;max-width:700px;margin:0 auto">
+    {{ _('اختر الخطة التي تناسب احتياجاتك — لا توجد رسوم مخفية') }}
+  </p>
+</div>
+
+<div class="pricing" style="margin-top:2rem">
+  {% for plan in plans %}
+  <div class="price-card {{ 'price-card--popular' if plan.popular else '' }} l-fade">
+    {% if plan.popular %}
+    <div class="price-card__popular-badge">{{ _('الأكثر شعبية') }}</div>
+    {% endif %}
+    <div class="price-card__label">{{ plan.name }}</div>
+    <div class="price-card__price">
+      <span class="price-card__amount">{{ plan.price }}</span>
+      <span class="price-card__currency">{{ plan.currency }}</span>
+      <span class="price-card__period">{{ plan.period }}</span>
+    </div>
+    <ul class="price-card__features">
+      {% for feature in plan.features %}
+      <li>{{ icon('check') }} {{ feature }}</li>
+      {% endfor %}
+    </ul>
+    <a href="{{ plan.cta_url }}" class="azad-btn {{ 'azad-btn-primary' if plan.popular else 'azad-btn-outline' }}" style="width:100%;margin-top:1rem">
+      {{ plan.cta_text }}
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="azad-section" style="margin-top:4rem">
+  <h2 class="azad-section__title">{{ _('الأسئلة الشائعة') }}</h2>
+  <div class="azad-list" style="max-width:800px;margin:0 auto">
+    <div class="azad-item">
+      <div class="item-title">{{ _('هل يمكنني تغيير خطتي لاحقاً؟') }}</div>
+      <div class="item-meta">{{ _('نعم، يمكنك الترقية أو خفض الخطة في أي وقت من إعدادات حسابك.') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('ما طرق الدفع المتاحة؟') }}</div>
+      <div class="item-meta">{{ _('نقبل الدفع عبر البطاقات البنكية، تحويل بنكي، والمحافظ الإلكترونية.') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('هل هناك فترة تجريبية مجانية؟') }}</div>
+      <div class="item-meta">{{ _('نعم، نقدم 7 أيام تجربة مجانية للخطط الفردية.') }}</div>
+    </div>
+    <div class="azad-item">
+      <div class="item-title">{{ _('هل يمكنني إلغاء الاشتراك في أي وقت؟') }}</div>
+      <div class="item-meta">{{ _('نعم، يمكنك إلغاء الاشتراك في أي وقت وسيظل حسابك نشطاً حتى نهاية فترة الفوترة.') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="cta l-fade" style="margin-top:4rem">
+  <h2 class="cta__h">{{ _('مستعد للبدء؟') }}</h2>
+  <p style="margin-bottom:1.5rem;opacity:0.9">{{ _('انضم لآلاف الطلاب والمدارس الذين يثقون بأزاد') }}</p>
+  <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg" style="background:#fff;color:var(--azad-navy)">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+</div>
+{% endblock %}

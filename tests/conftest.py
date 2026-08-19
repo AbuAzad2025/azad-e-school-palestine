@@ -75,6 +75,10 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(
             text("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS original_lesson_id INTEGER REFERENCES lessons(id)")
         )
+        # Offline Client-Side: is_offline_available
+        db_engine.session.execute(
+            text("ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_offline_available BOOLEAN DEFAULT FALSE NOT NULL")
+        )
         # Tutoring sessions: end_time
         db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ"))
         # Tutor reviews table
@@ -215,6 +219,27 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_join_url TEXT"))
         db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_start_url TEXT"))
 
+        # Teacher Commission System
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS tutor_commissions ("
+                "id SERIAL PRIMARY KEY, session_id INTEGER NOT NULL REFERENCES tutoring_sessions(id) UNIQUE, "
+                "tutor_id INTEGER NOT NULL REFERENCES users(id), session_amount NUMERIC(10,2) NOT NULL, "
+                "commission_rate NUMERIC(5,2) DEFAULT 20.0 NOT NULL, commission_amount NUMERIC(10,2) NOT NULL, "
+                "tutor_net NUMERIC(10,2) NOT NULL, status VARCHAR(10) DEFAULT 'pending' NOT NULL, "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS tutor_payouts ("
+                "id SERIAL PRIMARY KEY, tutor_id INTEGER NOT NULL REFERENCES users(id), "
+                "amount NUMERIC(10,2) NOT NULL, status VARCHAR(10) DEFAULT 'pending' NOT NULL, "
+                "reviewed_by INTEGER REFERENCES users(id), reviewed_at TIMESTAMPTZ, note TEXT, "
+                "created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+        )
+
         # Phase 7: Hybrid Tenancy
         db_engine.session.execute(
             text("ALTER TABLE schools ADD COLUMN IF NOT EXISTS is_system BOOLEAN DEFAULT FALSE NOT NULL")
@@ -295,6 +320,25 @@ def make_user(app, role="student", school_id=None, approved=True, **kw):
             _db.session.add(rl)
             _db.session.commit()
         return u.id
+
+
+@pytest.fixture()
+def admin_user(app):
+    """Create an admin user for testing."""
+    with app.app_context():
+        from app.models.user import User, UserRole
+        from app.core.security import hash_password
+        u = User(
+            email="admin@test.com",
+            name_ar="مدير اختبار",
+            role=UserRole.super_admin,
+            password_hash=hash_password("TestPass123!"),
+            approval_status=UserApprovalStatus.approved,
+            is_active=True,
+        )
+        _db.session.add(u)
+        _db.session.commit()
+        return u
 
 
 def make_grade(app, school_id, grade_level=1):

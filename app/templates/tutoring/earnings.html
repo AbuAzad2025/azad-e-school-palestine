@@ -11,11 +11,34 @@
 
 <div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
   {{ azad_stat_card(earnings.total_earnings ~ ' ' ~ session.currency, _('إجمالي الأرباح'), 'credit-card', 'var(--azad-green)') }}
-  {{ azad_stat_card(earnings.pending_payouts ~ ' ' ~ session.currency, _('المستحقات المعلقة'), 'clock', 'var(--azad-amber)') }}
+  {{ azad_stat_card(earnings.commission_amount ~ ' ' ~ session.currency, _('عمولة المنصة (20%)'), 'percent', 'var(--azad-red)') }}
+  {{ azad_stat_card(earnings.net_earnings ~ ' ' ~ session.currency, _('صافي الأرباح'), 'credit-card', 'var(--azad-blue)') }}
+  {{ azad_stat_card(earnings.withdrawable ~ ' ' ~ session.currency, _('المتاح للسحب'), 'wallet', 'var(--azad-green)') }}
+  {{ azad_stat_card(earnings.total_payouts ~ ' ' ~ session.currency, _('إجمالي السحوبات'), 'arrow-up-circle', 'var(--azad-blue)') }}
   {{ azad_stat_card(earnings.avg_rating ~ '/5', _('متوسط التقييم'), 'star', 'var(--azad-indigo)') }}
   {{ azad_stat_card(earnings.review_count, _('عدد التقييمات'), 'message-square', 'var(--azad-purple)') }}
   {{ azad_stat_card(earnings.completed_sessions, _('جلسات مكتملة'), 'check-circle', 'var(--azad-blue)') }}
   {{ azad_stat_card(earnings.total_sessions, _('إجمالي الجلسات'), 'calendar', 'var(--azad-gray-500)') }}
+</div>
+
+<div class="azad-section" style="margin-top:2rem">
+  <h2 class="section-title">{{ _('طلب سحب أرباح') }}</h2>
+  <div class="card" style="max-width:500px">
+    <form method="post" action="{{ url_for('tutoring.payout_request') }}" novalidate>
+      {{ payout_form.hidden_tag() }}
+      <div class="azad-field">
+        {{ payout_form.amount.label(class="azad-field__label") }}
+        {{ payout_form.amount(class="azad-field__input", placeholder="200") }}
+        {% for error in payout_form.amount.errors %}
+        <ul class="form-errors"><li>{{ error }}</li></ul>
+        {% endfor %}
+        <small class="azad-field__help">{{ _('الحد الأدنى للسحب: 200₪. المتاح: ') ~ (earnings.withdrawable if earnings.withdrawable else 0) ~ ' ' ~ (session.currency if session else '₪') }}</small>
+      </div>
+      <div class="form-actions">
+        {{ payout_form.submit(class="azad-btn", style="width:100%") }}
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="azad-section" style="margin-top:2rem">

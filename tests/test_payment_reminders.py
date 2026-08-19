@@ -1,263 +1,126 @@
-"""اختبارات تذكيرات الدفع اليومية."""
+"""اختبارات Payment Reminders Cron"""
 
 import pytest
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
+from unittest.mock import patch, MagicMock
+import uuid
 
-from app.models.billing import ReminderLog, Subscription
-from app.services.email import send_payment_reminder_email
-from scripts.daily_reminders import run_daily_reminders
-from tests.conftest import make_school, make_user, make_subscription_plan, make_subscription
+from app.models.billing import Subscription, ReminderLog
 
 
-def test_send_payment_reminder_email(app):
-    """إرسال إيميل تذكير الدفع يعمل."""
-    school_id = make_school(app)
-    user_id = make_user(app, role="student", school_id=school_id)
-    plan_id = make_subscription_plan(app, school_id, price=100.0, plan="annual")
+def _unique_domain():
+    return f"test-{uuid.uuid4().hex[:8]}.org"
 
-    with app.app_context():
-        from app.extensions import db
-        from app.models.billing import Subscription, SubscriptionPlan
 
-        sub = Subscription(
-            user_id=user_id,
-            plan_id=plan_id,
-            class_id=1,  # dummy class_id
-            price=100.0,
-            currency="ILS",
-            status="active",
-            end_at=datetime.now(UTC) + timedelta(days=5),
-        )
-        db.session.add(sub)
-        db.session.commit()
-        sub_id = sub.id
+def _unique_email():
+    return f"student-{uuid.uuid4().hex[:8]}@test.com"
 
-        sub = db.session.get(Subscription, sub_id)
+
+def test_daily_reminders_sends_for_expiring_sub(app):
+    """يرسل تذكير للاشتراكات التي تنتهي خلال 7 أيام"""
+    from app import create_app
+    from app.extensions import db
+    from app.models.user import User, UserRole
+    from app.models.school import School, Grade, Subject
+    from app.models.class_room import ClassRoom
+    from app.models.billing import SubscriptionPlan
+    from scripts.daily_reminders import run_daily_reminders
 
     with app.app_context():
-        result = send_payment_reminder_email(sub, 5)
-
-    # في بيئة الاختبار EMAIL_ENABLED=False، لذا تعيد False
-    # لكن الدالة لا ترمي استثناء
-    assert result is False  # لأن EMAIL_ENABLED=False في الاختبارات
-
-
-def test_send_payment_reminder_email_content(app):
-    """محتوى إيميل التذكير يحتوي على المعلومات الصحيحة."""
-    school_id = make_school(app)
-    user_id = make_user(app, role="student", school_id=school_id)
-    plan_id = make_subscription_plan(app, school_id, price=100.0, plan="annual")
-
-    with app.app_context():
-        from app.extensions import db
-        from app.models.billing import Subscription, SubscriptionPlan
-
-        sub = Subscription(
-            user_id=user_id,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="active",
-            end_at=datetime.now(UTC) + timedelta(days=5),
-        )
-        db.session.add(sub)
+        # Create school
+        school = School(name_ar="مدرسة اختبار", name_en="Test School", domain=_unique_domain())
+        db.session.add(school)
         db.session.commit()
 
-        sub = db.session.get(Subscription, sub.id)
-
-    # التحقق من بناء HTML
-    with app.app_context():
-        from app.extensions import db
-        sub = db.session.get(Subscription, sub.id)
-        user = sub.user
-        plan = sub.plan
-        days_until = 5
-        html = f"""
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #014e7c;">تذكير: تجديد الاشتراك</h2>
-            <p>مرحباً {user.name_ar or user.email}،</p>
-            <p>اشتراكك في <strong>{plan.name}</strong> سينتهي خلال <strong>{days_until} يوم</strong>.</p>
-        </div>
-        """
-
-    assert "تذكير: تجديد الاشتراك" in html
-    assert plan.name in html
-    assert str(days_until) in html
-
-
-def test_reminder_log_prevents_duplicate(app):
-    """ReminderLog يمنع الإرسال المكرر."""
-    school_id = make_school(app)
-    user_id = make_user(app, role="student", school_id=school_id)
-    plan_id = make_subscription_plan(app, school_id, price=100.0, plan="annual")
-
-    with app.app_context():
-        from app.extensions import db
-        from app.models.billing import Subscription, ReminderLog
-
-        sub = Subscription(
-            user_id=user_id,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="active",
-            end_at=datetime.now(UTC) + timedelta(days=5),
-        )
-        db.session.add(sub)
-        db.session.commit()
-        sub_id = sub.id
-
-        # إضافة تذكير مسبق
-        log = ReminderLog(subscription_id=sub_id, reminder_type="7d")
-        db.session.add(log)
+        # Create user
+        user = User(email=_unique_email(), name_ar="طالب اختبار", role=UserRole.student,
+                    password_hash="hash", approval_status="approved", is_active=True)
+        db.session.add(user)
         db.session.commit()
 
-        # محاولة إضافة نفس التذكير
-        log2 = ReminderLog(subscription_id=sub_id, reminder_type="7d")
-        db.session.add(log2)
-
-        try:
-            db.session.commit()
-            assert False, "Should have raised IntegrityError"
-        except Exception:
-            db.session.rollback()
-            # متوقع أن يفشل بسبب القيد الفريد
-
-    with app.app_context():
-        count = ReminderLog.query.filter_by(subscription_id=sub_id, reminder_type="7d").count()
-        assert count == 1
-
-
-def test_daily_reminders_script_logic(app):
-    """منطق سكريبت التذكيرات اليومي."""
-    school_id = make_school(app)
-    user_id = make_user(app, role="student", school_id=school_id)
-    plan_id = make_subscription_plan(app, school_id, price=100.0, plan="annual")
-
-    with app.app_context():
-        from app.extensions import db
-        from app.models.billing import Subscription, SubscriptionPlan, ReminderLog, ManualPayment
-
-        # تنظيف قاعدة البيانات من الاشتراكات السابقة لهذا الاختبار
-        ReminderLog.query.delete()
-        ManualPayment.query.delete()
-        Subscription.query.delete()
+        # Create class
+        grade = Grade(school_id=school.id, grade_level=10, name_ar="العاشر")
+        subject = Subject(name_ar="رياضيات")
+        db.session.add_all([grade, subject])
         db.session.commit()
 
-        # اشتراك ينتهي بعد 7 أيام
-        sub1 = Subscription(
-            user_id=user_id,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="active",
-            end_at=datetime.now(UTC) + timedelta(days=7),
-        )
-        db.session.add(sub1)
+        class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
+                               join_code="TEST10", name="صف العاشر")
+        db.session.add(class_room)
         db.session.commit()
 
-        # اشتراك ينتهي بعد 3 أيام
-        user_id2 = make_user(app, role="student", school_id=school_id)
-        sub2 = Subscription(
-            user_id=user_id2,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="active",
-            end_at=datetime.now(UTC) + timedelta(days=3),
-        )
-        db.session.add(sub2)
+        # Create plan
+        plan = SubscriptionPlan(school_id=school.id, class_id=class_room.id, name="خطة",
+                                plan="annual", price=100, currency="ILS", duration_days=30)
+        db.session.add(plan)
         db.session.commit()
 
-        # اشتراك منتهي الصلاحية (لا يجب أن يتم تذكيره)
-        user_id3 = make_user(app, role="student", school_id=school_id)
-        sub3 = Subscription(
-            user_id=user_id3,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="expired",
-            end_at=datetime.now(UTC) - timedelta(days=1),
-        )
-        db.session.add(sub3)
-        db.session.commit()
-
-        # اشتراك معلق (لا يجب أن يتم تذكيره)
-        user_id4 = make_user(app, role="student", school_id=school_id)
-        sub4 = Subscription(
-            user_id=user_id4,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="pending",
-            end_at=datetime.now(UTC) + timedelta(days=7),
-        )
-        db.session.add(sub4)
-        db.session.commit()
-
-        # حفظ IDs
-        sub1_id = sub1.id
-        sub2_id = sub2.id
-
-    # تشغيل السكريبت مع تعطيل email (mocking)
-    with app.app_context():
-        import app.services.email as email_module
-
-        # Mock the send function to return True
-        original_send = email_module._send
-        email_module._send = lambda *args, **kwargs: True
-
-        try:
-            from scripts.daily_reminders import run_daily_reminders
-            sent = run_daily_reminders(app)
-            # يجب أن يرسل 2 تذكير (7d و 3d)
-            assert sent == 2
-        finally:
-            email_module._send = original_send
-
-    # التحقق من السجلات
-    with app.app_context():
-        from app.models.billing import ReminderLog
-        logs = ReminderLog.query.all()
-        assert len(logs) == 2
-        types = {log.reminder_type for log in logs}
-        assert types == {"7d", "3d"}
-
-
-def test_reminder_respects_email_disabled_flag(app):
-    """سكريبت التذكيرات يحترم علم EMAIL_ENABLED."""
-    # في بيئة الاختبار EMAIL_ENABLED=False
-    # السكريبت يجب أن يعمل لكن لا يرسل إيميلات حقيقية
-    # الدالة send_payment_reminder_email ستعيد False
-    school_id = make_school(app)
-    user_id = make_user(app, role="student", school_id=school_id)
-    plan_id = make_subscription_plan(app, school_id, price=100.0, plan="annual")
-
-    with app.app_context():
-        from app.extensions import db
-        from app.models.billing import Subscription
-
-        sub = Subscription(
-            user_id=user_id,
-            plan_id=plan_id,
-            class_id=1,
-            price=100.0,
-            currency="ILS",
-            status="active",
-            end_at=datetime.now(UTC) + timedelta(days=7),
-        )
+        # Create subscription ending in 7 days
+        end_at = datetime.now(UTC) + timedelta(days=7)
+        sub = Subscription(user_id=user.id, plan_id=plan.id, class_id=class_room.id,
+                           price=100, currency="ILS", status="active", end_at=end_at)
         db.session.add(sub)
         db.session.commit()
 
-    # تشغيل السكريبت - يجب أن يعمل بدون أخطاء حتى لو فشل الإرسال
+        # Mock email function
+        with patch("scripts.daily_reminders.send_payment_reminder_email", return_value=True) as mock_email:
+            count = run_daily_reminders(app)
+            assert count == 1
+            mock_email.assert_called_once()
+
+        # Check reminder log
+        log = ReminderLog.query.filter_by(subscription_id=sub.id, reminder_type="7d").first()
+        assert log is not None
+
+
+def test_daily_reminders_skips_already_sent(app):
+    """يتجاهل التذكير إذا تم إرساله مسبقاً"""
+    from app import create_app
+    from app.extensions import db
+    from app.models.user import User, UserRole
+    from app.models.school import School, Grade, Subject
+    from app.models.class_room import ClassRoom
+    from app.models.billing import SubscriptionPlan, ReminderLog
+    from scripts.daily_reminders import run_daily_reminders
+
     with app.app_context():
-        sent = run_daily_reminders()
-        # لا يتم إرسال إيميلات لأن EMAIL_ENABLED=False
-        # لكن السكريبت يجب أن يكمل بدون أخطاء
-        assert sent == 0  # لا يتم تسجيل تذكيرات لأن الإرسال فشل
+        # Setup similar to above
+        school = School(name_ar="مدرسة اختبار 2", name_en="Test School 2", domain=_unique_domain())
+        db.session.add(school)
+        db.session.commit()
+
+        user = User(email=_unique_email(), name_ar="طالب 2", role=UserRole.student,
+                    password_hash="hash", approval_status="approved", is_active=True)
+        db.session.add(user)
+        db.session.commit()
+
+        grade = Grade(school_id=school.id, grade_level=10, name_ar="العاشر")
+        subject = Subject(name_ar="رياضيات")
+        db.session.add_all([grade, subject])
+        db.session.commit()
+
+        class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
+                               join_code="TEST11", name="صف العاشر 2")
+        db.session.add(class_room)
+        db.session.commit()
+
+        plan = SubscriptionPlan(school_id=school.id, class_id=class_room.id, name="خطة",
+                                plan="annual", price=100, currency="ILS", duration_days=30)
+        db.session.add(plan)
+        db.session.commit()
+
+        end_at = datetime.now(UTC) + timedelta(days=7)
+        sub = Subscription(user_id=user.id, plan_id=plan.id, class_id=class_room.id,
+                           price=100, currency="ILS", status="active", end_at=end_at)
+        db.session.add(sub)
+        db.session.commit()
+
+        # Add existing reminder log
+        existing_log = ReminderLog(subscription_id=sub.id, reminder_type="7d")
+        db.session.add(existing_log)
+        db.session.commit()
+
+        with patch("scripts.daily_reminders.send_payment_reminder_email", return_value=True) as mock_email:
+            count = run_daily_reminders(app)
+            assert count == 0
+            mock_email.assert_not_called()

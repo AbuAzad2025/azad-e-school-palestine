@@ -1,4 +1,5 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
+from flask_babel import _
 from flask_login import current_user
 
 bp = Blueprint("main", __name__)
@@ -18,6 +19,74 @@ def index():
     except Exception:
         pass
     return render_template("landing.html", stats=stats)
+
+
+@bp.get("/pricing")
+def pricing():
+    """صفحة الأسعار العامة — لا تحتاج تسجيل دخول."""
+    plans = [
+        {
+            "name": _("الفرد الأساسي"),
+            "price": "29",
+            "currency": "₪",
+            "period": "/شهر",
+            "features": [
+                _("دورة واحدة"),
+                _("اختبارات أساسية"),
+                _("دعم عبر البريد"),
+            ],
+            "cta_text": _("سجّل الآن"),
+            "cta_url": url_for("auth.register_individual"),
+            "popular": False,
+        },
+        {
+            "name": _("الفرد Pro"),
+            "price": "59",
+            "currency": "₪",
+            "period": "/شهر",
+            "features": [
+                _("5 دورات"),
+                _("اختبارات متقدمة"),
+                _("دروس خصوصية"),
+                _("شهادات إتمام"),
+            ],
+            "cta_text": _("سجّل الآن"),
+            "cta_url": url_for("auth.register_individual"),
+            "popular": True,
+        },
+        {
+            "name": _("المدرسة Pro"),
+            "price": "499",
+            "currency": "₪",
+            "period": "/شهر",
+            "features": [
+                _("50 طالب"),
+                _("إدارة الدرجات"),
+                _("تقارير أولياء الأمور"),
+                _("تصدير Excel"),
+            ],
+            "cta_text": _("تواصل معنا"),
+            "cta_url": url_for("auth.register"),
+            "popular": False,
+        },
+        {
+            "name": _("المدرسة Premium"),
+            "price": "999",
+            "currency": "₪",
+            "period": "/شهر",
+            "features": [
+                _("طلاب غير محدود"),
+                _("ذكاء اصطناعي"),
+                _("CRM مدمج"),
+                _("Zoom مدمج"),
+                _("Backup S3"),
+            ],
+            "cta_text": _("تواصل معنا"),
+            "cta_url": url_for("auth.register"),
+            "popular": False,
+        },
+    ]
+    return render_template("pricing.html", plans=plans)
 
 
 @bp.post("/set-locale/<lang>")

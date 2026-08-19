@@ -7,6 +7,7 @@ from app.models.user import UserRole
 from app.services.access import can_teach_class, can_view_class
 from app.services.billing import (
     approve_payment,
+    create_discount_code,
     create_plan,
     expire_subscriptions,
     get_plan,
@@ -16,6 +17,7 @@ from app.services.billing import (
     record_manual_payment,
     reject_payment,
     subscribe,
+    validate_discount_code,
 )
 from app.services.communication import audit, notify
 from flask import abort, flash, redirect, render_template, url_for
@@ -23,7 +25,7 @@ from flask_babel import _
 from flask_login import current_user, login_required
 
 from . import bp
-from .forms import PaymentForm, PlanForm, SubscribeForm
+from .forms import DiscountCodeForm, PaymentForm, PlanForm, SubscribeForm, ValidateDiscountForm
 
 
 def _class_or_404(class_id):
@@ -195,6 +197,61 @@ def review(payment_id, result):
     else:
         abort(404)
     return redirect(url_for("billing.admin"))
+
+
+# ======================================================================
+# أكواد الخصم (Admin)
+# ======================================================================
+@bp.get("/discounts")
+@login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
+def discount_list():
+    """قائمة أكواد الخصم."""
+    from app.models.billing import DiscountCode
+
+    discounts = DiscountCode.query.order_by(DiscountCode.created_at.desc()).all()
+    return render_template("billing/discount_list.html", discounts=discounts)
+
+
+@bp.route("/discounts/new", methods=["GET", "POST"])
+@login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
+def discount_create():
+    """إنشاء كود خصم جديد."""
+    form = DiscountCodeForm()
+    if form.validate_on_submit():
+        school_id: int = getattr(current_user, "school_id", 0) or 1
+        discount, error = create_discount_code(
+            school_id=school_id,
+            code=form.code.data,
+            name=form.name.data,
+            type_=form.type.data,
+            value=form.value.data,
+            max_uses=form.max_uses.data,
+            expiry_date=form.expiry_date.data,
+        )
+        if error:
+            flash(_(error), "danger")
+        elif discount is not None:
+            flash(_("تم إنشاء كود الخصم."), "success")
+            return redirect(url_for("billing.discount_list"))
+    return render_template("billing/discount_form.html", form=form, editing=False)
+
+
+# ======================================================================
+# التحقق من كود الخصم (AJAX)
+# ======================================================================
+@bp.post("/validate-code")
+@login_required
+def validate_code():
+    """AJAX endpoint — يتحقق من كود الخصم وإرجاع مبلغ الخصم."""
+    form = ValidateDiscountForm()
+    if form.validate_on_submit():
+        discount, error = validate_discount_code(form.code.data, form.plan_id.data)
+        if error:
+            return {"discount": None, "error": _(error)}, 400
+        return {"discount": discount, "error": None}
+    return {"discount": None, "error": _("بيانات غير صالحة")}, 400
 
 
 # ======================================================================

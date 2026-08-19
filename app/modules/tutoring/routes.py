@@ -8,6 +8,7 @@ from app.models.user import User, UserRole
 from app.services.communication import audit, notify
 from app.services.tutoring import (
     can_access,
+    create_commission_record,
     create_request,
     create_tutor_profile,
     find_by_invite_code,
@@ -18,6 +19,7 @@ from app.services.tutoring import (
     list_requests_for_tutor,
     list_sessions_for,
     rate_session,
+    request_payout,
     respond_request,
     search_tutors,
     update_profile,
@@ -29,7 +31,7 @@ from flask_babel import _
 from flask_login import current_user, login_required
 
 from . import bp
-from .forms import BookingForm, PaySessionForm, SessionForm, TutorProfileForm
+from .forms import BookingForm, PayoutRequestForm, PaySessionForm, SessionForm, TutorProfileForm
 
 
 @bp.get("/")
@@ -243,9 +245,11 @@ def session_status(session_id, value):
     session_ = TutoringSession.query.get_or_404(session_id)
     if not can_access(current_user, session_):
         abort(403)
-    if value not in ("completed", "cancelled"):
+    if value not in ("completed", "ended", "cancelled"):
         abort(404)
     update_session(session_, status=value)
+    if value in ("completed", "ended"):
+        create_commission_record(session_)
     audit("tutoring.session_status", "tutoring_sessions", session_.id, {"status": value})
     flash(_("تم تحديث حالة الجلسة."), "success")
     return redirect(url_for("tutoring.session_detail", session_id=session_.id))
@@ -359,4 +363,25 @@ def tutor_earnings():
         abort(403)
     earnings = get_tutor_earnings(current_user.id)
     sessions = list_sessions_for(current_user.id, as_tutor=True)
-    return render_template("tutoring/earnings.html", earnings=earnings, sessions=sessions)
+    form = PayoutRequestForm()
+    return render_template(
+        "tutoring/earnings.html",
+        earnings=earnings,
+        sessions=sessions,
+        payout_form=form,
+    )
+
+
+@bp.post("/payout-request")
+@login_required
+def payout_request():
+    if current_user.role != UserRole.teacher:
+        abort(403)
+    form = PayoutRequestForm()
+    if form.validate_on_submit():
+        payout, error = request_payout(current_user.id, form.amount.data)
+        if error:
+            flash(_(error), "danger")
+        elif payout:
+            flash(_("تم إرسال طلب السحب."), "success")
+    return redirect(url_for("tutoring.tutor_earnings"))

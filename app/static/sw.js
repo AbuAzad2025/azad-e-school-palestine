@@ -7,6 +7,7 @@ var STATIC_ASSETS = [
   "/static/manifest.json",
   "/static/offline.html"
 ];
+var LESSON_CACHE = "azad-lessons-v1";
 
 self.addEventListener("install", function(event) {
   event.waitUntil(
@@ -21,7 +22,7 @@ self.addEventListener("activate", function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {
       return Promise.all(
-        names.filter(function(name) { return name !== CACHE_NAME; }).map(function(name) { return caches.delete(name); })
+        names.filter(function(name) { return name !== CACHE_NAME && name !== LESSON_CACHE; }).map(function(name) { return caches.delete(name); })
       );
     })
   );
@@ -39,6 +40,17 @@ self.addEventListener("fetch", function(event) {
           return response;
         });
       })
+    );
+    return;
+  }
+  // Network-first for lesson content with offline fallback
+  if (url.pathname.startsWith("/content/lessons/") || url.pathname.startsWith("/content/units/")) {
+    event.respondWith(
+      fetch(event.request).then(function(response) {
+        var clone = response.clone();
+        caches.open(LESSON_CACHE).then(function(cache) { cache.put(event.request, clone); });
+        return response;
+      }).catch(function() { return caches.match(event.request); })
     );
     return;
   }

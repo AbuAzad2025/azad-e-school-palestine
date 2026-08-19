@@ -64,11 +64,15 @@ class Config:
     TALISMAN_STRICT_TRANSPORT_SECURITY_MAX_AGE = 31536000
     TALISMAN_CONTENT_SECURITY_POLICY = {
         "default-src": "'self'",
-        "script-src": "'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://browser.sentry-cdn.com",
+        "script-src": (
+            "'self' 'unsafe-inline' "
+            "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
+            "https://browser.sentry-cdn.com https://plausible.io"
+        ),
         "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
         "font-src": "'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
         "img-src": "'self' data: https:",
-        "connect-src": "'self' https://api.stripe.com https://*.sentry.io",
+        "connect-src": ("'self' https://api.stripe.com https://*.sentry.io https://plausible.io"),
         "frame-src": "'self' https://meet.jit.si",
         "frame-ancestors": "'none'",
         "form-action": "'self'",
@@ -122,3 +126,7 @@ class Config:
 
     # === Alerting ===
     ALERT_EMAIL = os.getenv("ALERT_EMAIL", "")
+
+    # === Analytics & Contact ===
+    PLAUSIBLE_SCRIPT_URL = os.getenv("PLAUSIBLE_SCRIPT_URL", "")
+    WHATSAPP_BUSINESS_NUMBER = os.getenv("WHATSAPP_BUSINESS_NUMBER", "")

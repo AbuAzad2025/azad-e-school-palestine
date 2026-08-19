@@ -550,6 +550,31 @@
     });
   }
 
+  /* ─────────── Offline Progress Sync ─────────── */
+  function initOfflineSync() {
+    if (!("serviceWorker" in navigator)) return;
+    const PENDING_KEY = "azad-offline-progress";
+
+    async function syncPending() {
+      const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]");
+      if (!pending.length) return;
+      const synced = [];
+      for (const entry of pending) {
+        try {
+          await fetch(entry.url, { method: "POST", headers: entry.headers, body: entry.body });
+          synced.push(entry);
+        } catch {
+          /* keep for next sync */
+        }
+      }
+      const remaining = pending.filter((e) => !synced.includes(e));
+      localStorage.setItem(PENDING_KEY, JSON.stringify(remaining));
+    }
+
+    window.addEventListener("online", syncPending);
+    if (navigator.onLine) syncPending();
+  }
+
   /* ─────────── Init All ─────────── */
   document.addEventListener("DOMContentLoaded", () => {
     initTheme();
@@ -567,5 +592,6 @@
     initTouchGestures();
     initKeyboardHandling();
     initLazyImages();
+    initOfflineSync();
   });
 })();

@@ -571,6 +571,23 @@ def system_health():
     return render_template("admin/health.html", checks=checks, status=status)
 
 
+# ======================================================================
+# لوحة التحليلات (السوبر أدمن)
+# ======================================================================
+@bp.get("/analytics")
+@login_required
+@role_required(UserRole.super_admin)
+def analytics():
+    """لوحة التحليلات — DAU، تسجيلات، تفاعل، توظيف."""
+    days = request.args.get("days", 30, type=int)
+    if days not in [7, 30, 90]:
+        days = 30
+    from app.services.analytics import get_analytics_data
+
+    data = get_analytics_data(days=days)
+    return render_template("admin/analytics.html", data=data, days=days)
+
+
 @bp.get("/moe-export")
 @login_required
 @role_required(UserRole.super_admin)
@@ -611,3 +628,99 @@ def certificates_list():
 
     templates = CertificateTemplate.query.order_by(CertificateTemplate.id.desc()).all()
     return render_template("admin/certificates.html", templates=templates)
+
+
+# ======================================================================
+# إدارة رسائل التواصل (السوبر أدمن)
+# ======================================================================
+@bp.get("/contact")
+@login_required
+@role_required(UserRole.super_admin)
+def contact_inbox():
+    """صندوق وارد رسائل التواصل"""
+    from app.models.communication import ContactMessage
+
+    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+    return render_template("admin/contact_inbox.html", messages=messages)
+
+
+@bp.post("/contact/<int:message_id>/read")
+@login_required
+@role_required(UserRole.super_admin)
+def contact_mark_read(message_id):
+    """تمييز رسالة كمقروءة"""
+    from app.models.communication import ContactMessage
+
+    msg = ContactMessage.query.get_or_404(message_id)
+    if msg.status == "new":
+        msg.status = "read"
+        db.session.commit()
+    return redirect(url_for("admin.contact_inbox"))
+
+
+@bp.post("/contact/<int:message_id>/reply")
+@login_required
+@role_required(UserRole.super_admin)
+def contact_reply(message_id):
+    """الرد على رسالة تواصل"""
+    from app.models.communication import ContactMessage
+    from app.services.email import send_contact_reply_email
+
+    msg = ContactMessage.query.get_or_404(message_id)
+    reply_text = request.form.get("reply_text", "").strip()
+    if not reply_text:
+        flash(_("نص الرد مطلوب"), "danger")
+        return redirect(url_for("admin.contact_inbox"))
+
+    if send_contact_reply_email(msg, reply_text):
+        msg.status = "replied"
+        msg.replied_at = db.func.now()
+        db.session.commit()
+        flash(_("تم إرسال الرد بنجاح"), "success")
+    else:
+        flash(_("فشل إرسال الرد"), "danger")
+    return redirect(url_for("admin.contact_inbox"))
+
+
+# ======================================================================
+# إدارة طلبات سحب أرباح المعلمين (السوبر أدمن)
+# ======================================================================
+@bp.get("/payouts")
+@login_required
+@role_required(UserRole.super_admin)
+def payouts_queue():
+    """قائمة طلبات سحب أرباح المعلمين المعلقة"""
+    from app.models.tutoring import TutorPayout
+
+    payouts = TutorPayout.query.filter_by(status="pending").order_by(TutorPayout.created_at.desc()).all()
+    return render_template("admin/payouts.html", payouts=payouts)
+
+
+@bp.post("/payouts/<int:payout_id>/<result>")
+@login_required
+@role_required(UserRole.super_admin)
+def review_payout(payout_id, result):
+    """اعتماد أو رفض طلب سحب"""
+    from app.models.tutoring import TutorCommission, TutorPayout
+
+    payout = TutorPayout.query.get_or_404(payout_id)
+    if result == "approve":
+        payout.status = "approved"
+        payout.reviewed_by = current_user.id
+        payout.reviewed_at = db.func.now()
+        # Mark corresponding commissions as withdrawn
+        commissions = TutorCommission.query.filter_by(tutor_id=payout.tutor_id, status="pending").all()
+        for c in commissions:
+            c.status = "withdrawn"
+        db.session.commit()
+        flash(_("تم اعتماد طلب السحب."), "success")
+    elif result == "reject":
+        payout.status = "rejected"
+        payout.reviewed_by = current_user.id
+        payout.reviewed_at = db.func.now()
+        payout.note = request.form.get("note", "")
+        db.session.commit()
+        flash(_("تم رفض طلب السحب."), "warning")
+    else:
+        abort(404)
+    return redirect(url_for("admin.payouts_queue"))

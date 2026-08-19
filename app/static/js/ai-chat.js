@@ -259,7 +259,7 @@
     renderMessages();
 
     try {
-      const response = await fetch(API_BASE + "/chat/stream", {
+      const response = await fetch(`${API_BASE}/chat/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -403,7 +403,7 @@
   }
 
   function generateId() {
-    return "chat_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+    return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   function getCsrfToken() {
@@ -422,7 +422,7 @@
   function autoResizeTextarea() {
     const textarea = elements.messageInput;
     textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   }
 
   function copyToClipboard(text) {

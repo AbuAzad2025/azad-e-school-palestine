@@ -31,6 +31,7 @@ class Lesson(PKMixin, SoftDeleteMixin, db.Model):
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     is_shared: Mapped[bool] = mapped_column(default=False, nullable=False)
     original_lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id"))
+    is_offline_available: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     attachments: Mapped[list["LessonAttachment"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")
     original_lesson: Mapped["Lesson | None"] = relationship(

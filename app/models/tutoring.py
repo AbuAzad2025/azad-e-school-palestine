@@ -89,3 +89,32 @@ class TutorReview(PKMixin, db.Model):
 
     session: Mapped[TutoringSession] = relationship(back_populates="reviews")
     student: Mapped[User] = relationship("User", foreign_keys=[student_id])
+
+
+class TutorCommission(PKMixin, db.Model):
+    """عمولة المنصة على كل جلسة مكتملة (20%)."""
+
+    __tablename__ = "tutor_commissions"
+
+    session_id: Mapped[int] = mapped_column(ForeignKey("tutoring_sessions.id"), unique=True, nullable=False)
+    tutor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    session_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    commission_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=20.0, nullable=False)
+    commission_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    tutor_net: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/withdrawn
+
+    session: Mapped[TutoringSession] = relationship()
+
+
+class TutorPayout(PKMixin, db.Model):
+    """طلب سحب أرباح المعلم."""
+
+    __tablename__ = "tutor_payouts"
+
+    tutor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/approved/rejected
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at = db.Column(db.DateTime(timezone=True))
+    note: Mapped[str | None] = mapped_column(Text)
