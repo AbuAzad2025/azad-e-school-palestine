@@ -50,16 +50,18 @@
     .admin-sidebar {
       position: fixed; inset-inline-start: 0; top: var(--nav-height); bottom: 0; z-index: 60;
       transform: translateX(calc(-100% - 1rem)); box-shadow: var(--shadow-md);
-      transition: transform .22s ease;
+      transition: transform .22s ease; overscroll-behavior-y: contain;
     }
     [dir="ltr"] .admin-sidebar { transform: translateX(calc(100% + 1rem)); }
     body.sidebar-open .admin-sidebar { transform: translateX(0); }
     body.sidebar-open .admin-nav-overlay {
       display: block; position: fixed; inset: var(--nav-height) 0 0 0; background: rgba(2, 20, 34, .5); z-index: 55;
-      backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px); animation: azadFadeIn .15s ease;
     }
     .admin-drawer-toggle, .admin-sidebar-close { display: inline-flex; }
     .admin-content { padding: 1rem; }
+    .admin-nav-item { min-height: 48px; padding: 0.8rem 1rem; }
+    .admin-sidebar-close { min-width: 44px; min-height: 44px; }
   }
   @media (max-width: 767px) {
     .admin-table { display: block; overflow-x: auto; white-space: nowrap; }

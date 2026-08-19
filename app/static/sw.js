@@ -1,10 +1,11 @@
-var CACHE_NAME = "azad-v1";
+var CACHE_NAME = "azad-v2";
 var STATIC_ASSETS = [
   "/static/css/brand.css",
   "/static/css/app.css",
   "/static/js/app.js",
   "/static/img/azad-mark.svg",
-  "/static/manifest.json"
+  "/static/manifest.json",
+  "/static/offline.html"
 ];
 
 self.addEventListener("install", function(event) {

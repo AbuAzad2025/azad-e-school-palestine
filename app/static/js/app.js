@@ -30,6 +30,16 @@
         applyTheme(next);
       });
     }
+    const bottomBtn = document.querySelector("[data-theme-toggle-bottom]");
+    if (bottomBtn) {
+      bottomBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const current = localStorage.getItem(THEME_KEY) || "system";
+        const next = current === "dark" ? "light" : "dark";
+        localStorage.setItem(THEME_KEY, next);
+        applyTheme(next);
+      });
+    }
   }
 
   /* ─────────── Mobile Nav ─────────── */
@@ -321,6 +331,225 @@
     });
   }
 
+  /* ─────────── Mobile Bottom Nav: Scroll Behavior ─────────── */
+  function initBottomNav() {
+    const nav = document.querySelector(".azad-bottom-nav");
+    if (!nav) return;
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!ticking) {
+          window.requestAnimationFrame(() => {
+            const curY = window.scrollY;
+            if (curY > lastY && curY > 120) {
+              nav.classList.add("hide-on-scroll");
+            } else {
+              nav.classList.remove("hide-on-scroll");
+            }
+            lastY = curY;
+            ticking = false;
+          });
+          ticking = true;
+        }
+      },
+      { passive: true },
+    );
+  }
+
+  /* ─────────── Touch Gestures ─────────── */
+  function initTouchGestures() {
+    const SWIPE_THRESHOLD = 40;
+
+    function addSwipeListener(el, callbacks) {
+      let startX = 0,
+        startY = 0,
+        swiping = false;
+      el.addEventListener(
+        "touchstart",
+        (e) => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          swiping = true;
+        },
+        { passive: true },
+      );
+      el.addEventListener("touchmove", () => {}, { passive: true });
+      el.addEventListener(
+        "touchend",
+        (e) => {
+          if (!swiping) return;
+          swiping = false;
+          const dx = e.changedTouches[0].clientX - startX;
+          const dy = e.changedTouches[0].clientY - startY;
+          if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+            if (dx > 0 && callbacks.right) callbacks.right(e);
+            if (dx < 0 && callbacks.left) callbacks.left(e);
+          }
+        },
+        { passive: true },
+      );
+    }
+
+    const navLinks = document.querySelector("[data-nav-links]");
+    if (navLinks) {
+      addSwipeListener(navLinks, {
+        left: () => {
+          if (navLinks.classList.contains("open")) {
+            navLinks.classList.remove("open");
+            document.body.style.overflow = "";
+            const navToggle = document.querySelector("[data-nav-toggle]");
+            if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+          }
+        },
+      });
+    }
+
+    const sidebar = document.querySelector(".admin-sidebar");
+    if (sidebar) {
+      addSwipeListener(document.body, {
+        right: (e) => {
+          if (window.innerWidth < 1024 && !document.body.classList.contains("sidebar-open")) {
+            const touchX = e.changedTouches[0].clientX;
+            const isRTL = document.documentElement.dir === "rtl";
+            const nearEdge = isRTL ? touchX > window.innerWidth - 30 : touchX < 30;
+            if (nearEdge) document.body.classList.add("sidebar-open");
+          }
+        },
+        left: () => {
+          if (document.body.classList.contains("sidebar-open")) {
+            document.body.classList.remove("sidebar-open");
+          }
+        },
+      });
+    }
+
+    document.querySelectorAll(".tabs").forEach((tabBar) => {
+      addSwipeListener(tabBar, {
+        left: () => {
+          const active = tabBar.querySelector(".tab.active");
+          if (active?.nextElementSibling?.classList.contains("tab")) {
+            active.nextElementSibling.click();
+          }
+        },
+        right: () => {
+          const active = tabBar.querySelector(".tab.active");
+          if (active?.previousElementSibling?.classList.contains("tab")) {
+            active.previousElementSibling.click();
+          }
+        },
+      });
+    });
+
+    let longPressTimer = null;
+    document.querySelectorAll(".azad-item, .azad-card").forEach((el) => {
+      el.addEventListener(
+        "touchstart",
+        () => {
+          longPressTimer = setTimeout(() => {
+            el.style.transform = "scale(0.97)";
+            el.style.transition = "transform 0.15s";
+            setTimeout(() => {
+              el.style.transform = "";
+              el.style.transition = "";
+            }, 300);
+          }, 500);
+        },
+        { passive: true },
+      );
+      el.addEventListener(
+        "touchend",
+        () => {
+          clearTimeout(longPressTimer);
+        },
+        { passive: true },
+      );
+      el.addEventListener(
+        "touchmove",
+        () => {
+          clearTimeout(longPressTimer);
+        },
+        { passive: true },
+      );
+    });
+
+    document.querySelectorAll("video").forEach((vid) => {
+      let lastTap = 0;
+      vid.addEventListener("touchend", (e) => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+          e.preventDefault();
+          if (vid.requestFullscreen) vid.requestFullscreen();
+          else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
+        }
+        lastTap = now;
+      });
+    });
+
+    let pullStartY = 0;
+    let pullRefreshing = false;
+    window.addEventListener(
+      "touchstart",
+      (e) => {
+        if (window.scrollY === 0) pullStartY = e.touches[0].clientY;
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      "touchend",
+      (e) => {
+        if (pullRefreshing) return;
+        const dy = e.changedTouches[0].clientY - pullStartY;
+        if (dy > 100 && window.scrollY === 0) {
+          pullRefreshing = true;
+          window.location.reload();
+        }
+      },
+      { passive: true },
+    );
+  }
+
+  /* ─────────── Keyboard: Scroll inputs into view ─────────── */
+  function initKeyboardHandling() {
+    if (!("visualViewport" in window)) return;
+    window.visualViewport.addEventListener("resize", () => {
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT")
+      ) {
+        setTimeout(() => {
+          active.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 100);
+      }
+    });
+  }
+
+  /* ─────────── Lazy Load Images ─────────── */
+  function initLazyImages() {
+    if (!("IntersectionObserver" in window)) return;
+    const lazyImgs = document.querySelectorAll("img[data-src]");
+    if (!lazyImgs.length) return;
+    const imgObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.removeAttribute("data-src");
+            imgObserver.unobserve(img);
+          }
+        });
+      },
+      { rootMargin: "200px" },
+    );
+    lazyImgs.forEach((img) => {
+      imgObserver.observe(img);
+    });
+  }
+
   /* ─────────── Init All ─────────── */
   document.addEventListener("DOMContentLoaded", () => {
     initTheme();
@@ -334,5 +563,9 @@
     initTabs();
     initDropdowns();
     initPageTransitions();
+    initBottomNav();
+    initTouchGestures();
+    initKeyboardHandling();
+    initLazyImages();
   });
 })();

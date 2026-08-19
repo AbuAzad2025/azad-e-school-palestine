@@ -88,6 +88,51 @@
   {# Toast container for JS #}
   <div class="azad-toast-container" id="azad-toasts" aria-live="polite"></div>
 
+  {# Mobile Bottom Navigation #}
+  {% if current_user.is_authenticated %}
+  <nav class="azad-bottom-nav" aria-label="{{ _('التنقل السفلي') }}" role="navigation">
+    <a href="{{ url_for('auth.dashboard') }}" class="azad-bottom-nav__item {% if request.endpoint == 'auth.dashboard' %}active{% endif %}">
+      {{ icon('home') }}<span>{{ _('الرئيسية') }}</span>
+    </a>
+    {% if is_student() %}
+      {% if is_individual() %}
+        <a href="{{ url_for('individual.my_courses') }}" class="azad-bottom-nav__item {% if 'individual' in request.endpoint|default('') %}active{% endif %}">
+          {{ icon('book-open') }}<span>{{ _('كورساتي') }}</span>
+        </a>
+      {% else %}
+        <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item {% if 'schools' in request.endpoint|default('') and 'class' in request.endpoint|default('') %}active{% endif %}">
+          {{ icon('school') }}<span>{{ _('صفوفي') }}</span>
+        </a>
+      {% endif %}
+    {% elif is_teacher() %}
+      <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item {% if 'schools' in request.endpoint|default('') and 'class' in request.endpoint|default('') %}active{% endif %}">
+        {{ icon('school') }}<span>{{ _('صفوفي') }}</span>
+      </a>
+    {% elif is_school_admin() or is_super_admin() %}
+      <a href="{{ url_for('admin.dashboard') }}" class="azad-bottom-nav__item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+        {{ icon('dashboard') }}<span>{{ _('لوحة الإدارة') }}</span>
+      </a>
+    {% elif is_parent() %}
+      <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item">
+        {{ icon('school') }}<span>{{ _('صفوف أبنائي') }}</span>
+      </a>
+    {% endif %}
+    <a href="{{ url_for('notifications.index') }}" class="azad-bottom-nav__item {% if request.endpoint == 'notifications.index' %}active{% endif %}">
+      {{ icon('bell') }}<span>{{ _('الإشعارات') }}</span>
+      {% if unread_count %}<span class="azad-bottom-nav__badge">{{ unread_count }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('messages.inbox_view') }}" class="azad-bottom-nav__item {% if 'messages' in request.endpoint|default('') %}active{% endif %}">
+      {{ icon('envelope') }}<span>{{ _('الرسائل') }}</span>
+      {% if message_unread_count %}<span class="azad-bottom-nav__badge">{{ message_unread_count }}</span>{% endif %}
+    </a>
+    <a href="{{ url_for('auth.dashboard') }}" class="azad-bottom-nav__item" data-theme-toggle-bottom aria-label="{{ _('تبديل المظهر') }}">
+      <span data-theme-icon-light>{{ icon('sun') }}</span>
+      <span data-theme-icon-dark>{{ icon('moon') }}</span>
+      <span>{{ _('السمة') }}</span>
+    </a>
+  </nav>
+  {% endif %}
+
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   <script>
   if('serviceWorker' in navigator){navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}').catch(function(){});}
