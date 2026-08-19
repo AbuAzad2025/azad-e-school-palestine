@@ -13,12 +13,20 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.extensions import db
 from app.models.billing import ProcessedEvent
 
+if TYPE_CHECKING:
+    from app.models.billing import Subscription
+
 logger = logging.getLogger(__name__)
+
+
+# ---- Fraud Detection Configuration ----
+FRAUD_THRESHOLD_MULTIPLIER = 3
+FRAUD_LOOKBACK_DAYS = 90
 
 
 class PaymentGateway(Enum):
@@ -484,9 +492,171 @@ class PaymentService:
 
     def _handle_successful_payment(self, payload: dict, gateway: PaymentGateway):
         """معالجة دفع ناجح — يُستدعى بعد تحقق ناجح"""
-        # استخراج معلومات الدفع من payload
-        # تحديث قاعدة البيانات، إرسال إشعارات، إلخ
-        pass
+        from app.extensions import db
+        from app.models.billing import Subscription
+        from app.services.billing import _activate
+        from app.services.communication import audit, notify
+        from app.services.email import send_payment_approved_email
+
+        # استخراج معلومات الدفع من payload حسب البوابة
+        subscription_id = self._extract_subscription_id(payload, gateway)
+        if not subscription_id:
+            logger.warning(f"Could not extract subscription_id from {gateway.value} payload")
+            return
+
+        subscription = db.session.get(Subscription, subscription_id)
+        if not subscription:
+            logger.warning(f"Subscription {subscription_id} not found")
+            return
+
+        amount = self._extract_amount(payload, gateway)
+        if amount is None:
+            logger.warning(f"Could not extract amount from {gateway.value} payload")
+            return
+
+        # احتيال: تحقق مما إذا كان المبلغ > 3x المتوسط لـ 90 يوماً
+        # الحصول على school_id عبر class_id أو plan
+        school_id = None
+        if subscription.class_id:
+            from app.models.class_room import ClassRoom
+
+            class_room = db.session.get(ClassRoom, subscription.class_id)
+            if class_room:
+                school_id = class_room.school_id
+        if not school_id and subscription.plan_id:
+            from app.models.billing import SubscriptionPlan
+
+            plan = db.session.get(SubscriptionPlan, subscription.plan_id)
+            if plan:
+                school_id = plan.school_id
+
+        if school_id and self._is_suspicious_amount(school_id, amount):
+            # وضع علامة للمراجعة اليدوية
+            subscription.status = "pending_review"
+            db.session.commit()
+            logger.warning(f"Subscription {subscription_id} flagged for review: amount {amount} suspicious")
+            # إشعار المشرفين
+            from app.models.user import User, UserRole
+
+            admins = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin])).all()
+            for admin in admins:
+                notify(
+                    admin.id,
+                    "payment_review",
+                    "دفع مشبوه يتطلب مراجعة",
+                    f"اشتراك #{subscription_id} بمبلغ {amount} يتطلب مراجعة يدوية",
+                )
+            return
+
+        # تفعيل الاشتراك
+        _activate(subscription, auto_activate=True)
+
+        # إنشاء إدخال في الدفتر المحاسبي (ledger credit)
+        self._create_ledger_entry(subscription, amount, gateway)
+
+        # إرسال إيميل إيصال
+        try:
+            send_payment_approved_email(subscription.payments[-1] if subscription.payments else None)
+        except Exception:
+            logger.exception("Failed to send payment approved email")
+
+        # تسجيل تدقيق
+        audit(
+            "billing.gateway_auto_activate",
+            "subscriptions",
+            subscription.id,
+            amount=float(amount),
+            currency=subscription.currency,
+            gateway=gateway.value,
+            subscription_id=subscription.id,
+        )
+
+        logger.info(f"Subscription {subscription_id} auto-activated via {gateway.value} for amount {amount}")
+
+    def _extract_subscription_id(self, payload: dict, gateway: PaymentGateway) -> int | None:
+        """استخراج subscription_id من payload حسب البوابة"""
+        if gateway == PaymentGateway.STRIPE:
+            # Stripe: metadata.subscription_id
+            pi = payload.get("data", {}).get("object", {})
+            return int(pi.get("metadata", {}).get("subscription_id", 0)) or None
+        elif gateway == PaymentGateway.PAYTABS:
+            # PayTabs: cart_id أو metadata
+            return int(payload.get("metadata", {}).get("subscription_id", 0)) or None
+        elif gateway == PaymentGateway.CASHU:
+            # CashU: metadata
+            return int(payload.get("metadata", {}).get("subscription_id", 0)) or None
+        elif gateway in (PaymentGateway.WHATSAPP, PaymentGateway.MANUAL):
+            # WhatsApp/Manual: لا يتم تفعيل تلقائي
+            return None
+        return None
+
+    def _extract_amount(self, payload: dict, gateway: PaymentGateway) -> Decimal | None:
+        """استخراج المبلغ من payload حسب البوابة"""
+        if gateway == PaymentGateway.STRIPE:
+            pi = payload.get("data", {}).get("object", {})
+            amount = pi.get("amount_received") or pi.get("amount")
+            if amount:
+                return Decimal(str(amount)) / 100
+        elif gateway == PaymentGateway.PAYTABS:
+            amount = payload.get("cart_amount") or payload.get("amount")
+            if amount:
+                return Decimal(str(amount))
+        elif gateway == PaymentGateway.CASHU:
+            amount = payload.get("amount")
+            if amount:
+                return Decimal(str(amount))
+        return None
+
+    def _is_suspicious_amount(self, school_id: int, amount: Decimal) -> bool:
+        """كشف الاحتيال: المبلغ > 3x المتوسط لـ 90 يوماً"""
+        from sqlalchemy import func
+
+        from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
+
+        try:
+            # حساب متوسط المدفوعات المعتمدة للمدرسة في آخر 90 يوماً
+            cutoff = datetime.now() - timedelta(days=FRAUD_LOOKBACK_DAYS)
+            avg_amount = (
+                db.session.query(func.avg(ManualPayment.amount))
+                .join(Subscription, ManualPayment.subscription_id == Subscription.id)
+                .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
+                .filter(
+                    SubscriptionPlan.school_id == school_id,
+                    ManualPayment.status == "approved",
+                    ManualPayment.created_at >= cutoff,
+                )
+                .scalar()
+            )
+
+            if avg_amount is None:
+                return False  # لا توجد بيانات سابقة للمقارنة
+
+            avg_decimal = Decimal(str(avg_amount))
+            threshold = avg_decimal * FRAUD_THRESHOLD_MULTIPLIER
+            return amount > threshold
+        except Exception:
+            logger.exception("Fraud detection check failed")
+            return False
+
+    def _create_ledger_entry(self, subscription: "Subscription", amount: Decimal, gateway: PaymentGateway):
+        """إنشاء إدخال دفتر محاسبي (ledger credit)"""
+        from app.extensions import db
+        from app.models.billing import ManualPayment
+
+        # البحث عن الدفع اليدوي المقابل أو إنشاء سجل جديد
+        payment = (
+            ManualPayment.query.filter_by(
+                subscription_id=subscription.id,
+                status="approved",
+            )
+            .order_by(ManualPayment.created_at.desc())
+            .first()
+        )
+
+        if payment:
+            payment.gateway = gateway.value
+            payment.amount = float(amount)
+            db.session.commit()
 
     def cleanup_expired_intents(self, max_age_hours: int = 24) -> int:
         """

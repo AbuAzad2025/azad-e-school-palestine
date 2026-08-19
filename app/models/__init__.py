@@ -6,7 +6,7 @@
 from .ai import AiMessage, AiSession
 from .assessment import Answer, ProctoringLog, Question, Quiz, QuizAttempt
 from .attendance import Attendance
-from .billing import ManualPayment, PaymentReceipt, Subscription, SubscriptionPlan
+from .billing import ManualPayment, PaymentReceipt, ReminderLog, Subscription, SubscriptionPlan
 from .calendar import AcademicEvent
 from .class_room import ClassMember, ClassRoom
 from .communication import Announcement, Notification
@@ -51,6 +51,7 @@ __all__ = [
     "QuestionBank",
     "Quiz",
     "QuizAttempt",
+    "ReminderLog",
     "School",
     "SchoolSetting",
     "Setting",

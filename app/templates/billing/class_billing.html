@@ -15,10 +15,11 @@
 <div class="card" style="margin-bottom:1rem">
   <h2 style="font-size:1rem">{{ _('اشتراكك الحالي') }}</h2>
   <div class="item-meta" style="margin-top:.5rem">
-    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else 'err') }}">{{ my_sub.status }}</span>
+    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ my_sub.status }}</span>
     <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
     <span>{{ _('المبلغ:') }} {{ my_sub.price }} {{ my_sub.currency }}</span>
     {% if my_sub.end_at %}<span>{{ _('ينتهي:') }} {{ my_sub.end_at.strftime('%Y-%m-%d') }}</span>{% endif %}
+    {% if my_sub.auto_activated_at %}<span class="auto-badge">{{ _('تم التفعيل تلقائياً:') }} {{ my_sub.auto_activated_at.strftime('%Y-%m-%d %H:%M') }}</span>{% endif %}
   </div>
 </div>
 {% endif %}

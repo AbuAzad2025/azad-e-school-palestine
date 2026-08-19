@@ -129,3 +129,38 @@ def send_absence_alert_email(parent_user, student, days) -> bool:
     </div>
     """
     return _send(parent_user.email, "تنبيه: غياب الطالب — منصة مدرسة أزاد الإلكترونية", html)
+
+
+def send_payment_reminder_email(subscription, days_until_expiry: int) -> bool:
+    """رسالة تذكير بتجديد الاشتراك."""
+    # تحميل العلاقات المطلوبة لتجنب DetachedInstanceError
+    from app.extensions import db
+
+    sub = db.session.get(subscription.__class__, subscription.id)
+    if not sub:
+        return False
+    user = sub.user
+    plan = sub.plan
+    html = f"""
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #014e7c;">تذكير: تجديد الاشتراك</h2>
+        <p>مرحباً {user.name_ar or user.email}،</p>
+        <p>اشتراكك في <strong>{plan.name}</strong> سينتهي خلال
+           <strong>{days_until_expiry} يوم</strong>.</p>
+        <p>
+            لتجنب انقطاع الخدمة، يرجى تجديد الاشتراك قبل تاريخ الانتهاء:
+            <strong>{sub.end_at.strftime("%Y-%m-%d") if sub.end_at else "—"}</strong>.
+        </p>
+        <p style="margin-top: 1.5rem;">
+            <a href="{{ url_for('billing.class_billing', class_id={sub.class_id}, _external=True) }}"
+               style="background: #014e7c; color: white; padding: 0.75rem 1.5rem;
+                      text-decoration: none; border-radius: 4px; display: inline-block;">
+                تجديد الاشتراك الآن
+            </a>
+        </p>
+        <p style="margin-top: 2rem; color: #666; font-size: 0.9em;">
+            هذه رسالة تلقائية، يُرجى عدم الرد عليها.
+        </p>
+    </div>
+    """
+    return _send(user.email, f"تذكير: تجديد اشتراكك خلال {days_until_expiry} يوم — منصة مدرسة أزاد الإلكترونية", html)

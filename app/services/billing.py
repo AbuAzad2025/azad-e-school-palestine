@@ -127,12 +127,15 @@ def record_manual_payment(
     return tx(_record), None
 
 
-def _activate(subscription: Subscription, duration_days: int | None = None) -> None:
+def _activate(subscription: Subscription, duration_days: int | None = None, auto_activate: bool = False) -> None:
     days = duration_days or subscription.plan.duration_days or 180
     now = datetime.now(UTC)
     subscription.start_at = now
     subscription.end_at = now + timedelta(days=days)
     subscription.status = "active"
+    if auto_activate:
+        subscription.auto_activated_at = now
+        subscription.source = "gateway"
 
 
 def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> Subscription:

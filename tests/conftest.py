@@ -90,6 +90,28 @@ def _ensure_phase2_schema(db_engine):
             )
         )
 
+        # Phase 4 (current batch: Payment Gateway Auto-Activation, Payment Reminders, Discount/Coupon)
+        # Subscriptions: auto_activated_at, status pending_review
+        db_engine.session.execute(
+            text("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS auto_activated_at TIMESTAMPTZ")
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE subscriptions ALTER COLUMN status TYPE VARCHAR(20)")
+        )
+        # ManualPayments: gateway
+        db_engine.session.execute(
+            text("ALTER TABLE manual_payments ADD COLUMN IF NOT EXISTS gateway VARCHAR(20)")
+        )
+        # ReminderLogs table
+        db_engine.session.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS reminder_logs ("
+                "id SERIAL PRIMARY KEY, subscription_id INTEGER NOT NULL REFERENCES subscriptions(id), "
+                "reminder_type VARCHAR(10) NOT NULL, sent_at TIMESTAMPTZ DEFAULT NOW(), "
+                "UNIQUE(subscription_id, reminder_type))"
+            )
+        )
+
         db_engine.session.commit()
     except Exception:
         db_engine.session.rollback()
@@ -384,6 +406,15 @@ def make_tutor_review(app, session_id, student_id, rating=5, comment="جيد"):
     with app.app_context():
         from app.models.tutoring import TutorReview
         r = TutorReview(session_id=session_id, student_id=student_id, rating=rating, comment=comment)
+        _db.session.add(r)
+        _db.session.commit()
+        return r.id
+
+
+def make_reminder_log(app, subscription_id, reminder_type="7d"):
+    with app.app_context():
+        from app.models.billing import ReminderLog
+        r = ReminderLog(subscription_id=subscription_id, reminder_type=reminder_type)
         _db.session.add(r)
         _db.session.commit()
         return r.id

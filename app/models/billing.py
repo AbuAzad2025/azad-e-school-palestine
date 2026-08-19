@@ -39,8 +39,9 @@ class Subscription(PKMixin, db.Model):
     end_at = db.Column(db.DateTime(timezone=True))
     status: Mapped[str] = mapped_column(
         String(10), default="pending", nullable=False
-    )  # pending/active/expired/cancelled
+    )  # pending/active/expired/cancelled/pending_review
     source: Mapped[str] = mapped_column(String(10), default="manual", nullable=False)  # manual/gateway
+    auto_activated_at = db.Column(db.DateTime(timezone=True))
 
     payments: Mapped[list[ManualPayment]] = relationship(back_populates="subscription", cascade="all, delete-orphan")
     user: Mapped[User] = relationship("User")
@@ -57,6 +58,7 @@ class ManualPayment(PKMixin, db.Model):
     status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/approved/rejected
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     reviewed_at = db.Column(db.DateTime(timezone=True))
+    gateway: Mapped[str | None] = mapped_column(String(20))  # stripe/paytabs/cashu/manual
 
     subscription: Mapped[Subscription] = relationship(back_populates="payments")
     receipts: Mapped[list[PaymentReceipt]] = relationship(back_populates="payment", cascade="all, delete-orphan")
@@ -83,3 +85,17 @@ class ProcessedEvent(PKMixin, db.Model):
     gateway: Mapped[str] = mapped_column(String(20), nullable=False)
     payload: Mapped[dict | None] = mapped_column(JSONB)
     processed_at = db.Column(db.DateTime(timezone=True), default=db.func.now())
+
+
+class ReminderLog(PKMixin, db.Model):
+    """سجل التذكيرات المرسلة — لمنع الإرسال المكرر"""
+
+    __tablename__ = "reminder_logs"
+
+    subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"), nullable=False, index=True)
+    reminder_type: Mapped[str] = mapped_column(String(10), nullable=False)  # 7d/3d/1d
+    sent_at = db.Column(db.DateTime(timezone=True), default=db.func.now())
+
+    subscription: Mapped[Subscription] = relationship()
+
+    __table_args__ = (db.UniqueConstraint("subscription_id", "reminder_type", name="uq_reminder_log_unique"),)
