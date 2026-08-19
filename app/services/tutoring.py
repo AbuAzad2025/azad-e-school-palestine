@@ -232,7 +232,7 @@ def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, st
     try:
         req = urllib.request.Request(token_url, method="POST")
         req.add_header("Authorization", f"Basic {token_auth}")
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310 — Zoom OAuth endpoint over HTTPS
             token_resp = json.loads(resp.read())
         access_token = token_resp["access_token"]
     except Exception as e:
@@ -264,7 +264,7 @@ def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, st
         )
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Content-Type", "application/json")
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310 — Zoom API endpoint over HTTPS
             meeting_resp = json.loads(resp.read())
 
         zoom_meeting_id = str(meeting_resp.get("id", ""))
