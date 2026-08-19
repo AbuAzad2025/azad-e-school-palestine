@@ -121,7 +121,7 @@ jobs:
         continue-on-error: true
 
       - name: Hadolint (Dockerfile lint)
-        if: hashFiles('Dockerfile') != ''
+        if: always()
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
@@ -278,7 +278,7 @@ jobs:
           name: coverage-data
 
       - name: Enforce coverage floor
-        if: hashFiles('coverage.xml') != ''
+        if: always()
         run: |
           pip install coverage
           coverage xml 2>/dev/null || true
@@ -291,7 +291,6 @@ jobs:
     name: Docker build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: hashFiles('Dockerfile') != ''
     steps:
       - uses: actions/checkout@v4
 
