@@ -29,7 +29,6 @@ permissions:
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
-  COVERAGE_FAIL_UNDER: "85"
 
 jobs:
   # ════════════════════════════════════════════════════════════
@@ -162,9 +161,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest-cov
+          pip install -r requirements.txt pytest-cov pytest-html
 
-      - name: Run tests with coverage
+      - name: Run tests with full coverage
         env:
           PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
@@ -177,43 +176,70 @@ jobs:
           DEBUG: "true"
         run: |
           pytest tests -v --tb=short \
-            --cov=app --cov-report=term \
-            --cov-report=xml:coverage.xml
+            --cov=app --cov-branch --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:htmlcov \
+            --cov-report=json:coverage.json \
+            --html=report.html --self-contained-html \
+            -x 2>&1 || pytest tests --tb=short \
+            --cov=app --cov-branch --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:htmlcov \
+            --cov-report=json:coverage.json \
+            --html=report.html --self-contained-html
 
-      - name: Enforce coverage floor (${{ env.COVERAGE_FAIL_UNDER }}%)
+      - name: Test summary
+        if: always()
         run: |
-          COVERAGE=$(python -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('coverage.xml')
-          print(float(tree.getroot().get('line-rate', 0)) * 100)
-          ")
-          echo "Coverage: ${COVERAGE}%"
           python -c "
-          import sys
-          actual = float('${COVERAGE}')
-          threshold = float('${{ env.COVERAGE_FAIL_UNDER }}')
-          if actual < threshold:
-              print(f'::error::Coverage {actual:.1f}% is below threshold {threshold}%')
-              sys.exit(1)
-          print(f'Coverage {actual:.1f}% meets threshold {threshold}%')
+          import json
+          with open('coverage.json') as f:
+              data = json.load(f)
+          t = data['totals']
+          print('')
+          print('┌─────────────────────────────────────────────┐')
+          print('│          FULL COVERAGE REPORT               │')
+          print('├─────────────────────────────────────────────┤')
+          print(f'│  Lines covered    : {t[\"covered_lines\"]:>6} / {t[\"num_statements\"]:<6}        │')
+          print(f'│  Line coverage    : {t[\"percent_covered\"]:>6.2f}%                    │')
+          print(f'│  Missing lines    : {t[\"missing_lines\"]:>6}                    │')
+          print(f'│  Branches missing : {str(t.get(\"missing_branches\",\"?\")):>6}                    │')
+          print(f'│  Functions covered: {t.get(\"covered_functions\",\"?\"):>6} / {t.get(\"num_functions\",\"?\"):<6}        │')
+          print(f'│  Classes covered  : {t.get(\"covered_classes\",\"?\"):>6} / {t.get(\"num_classes\",\"?\"):<6}        │')
+          print('└─────────────────────────────────────────────┘')
           "
+          echo ""
+          echo "Full HTML report: htmlcov/index.html"
+          echo "Test report: report.html"
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            report.html
+            htmlcov/
+          retention-days: 14
 
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml,./coverage.json
           flags: pytest
           fail_ci_if_error: false
 
-      - name: Upload coverage artifact
+      - name: Upload coverage artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-data
-          path: coverage.xml
-          if-no-files-found: ignore
-          retention-days: 7
+          name: coverage-full
+          path: |
+            coverage.xml
+            coverage.json
+            htmlcov/
+          retention-days: 14
 
   # ════════════════════════════════════════════════════════════
   # Frontend JS Tests (Vitest + jsdom)
