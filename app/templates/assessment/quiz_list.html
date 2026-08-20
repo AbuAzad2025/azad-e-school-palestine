@@ -19,7 +19,7 @@
       <div class="item-title">{{ q.title }}</div>
       <div class="item-meta">
         <span>{{ _('أسئلة:') }} {{ q.questions|length }}</span>
-        {% if q.duration_min %}<span>{{ _('مدة:') }} {{ q.duration_min }} د</span>{% endif %}
+        {% if q.duration_min %}<span>{{ _('مدة:') }} {{ q.duration_min }} {{ _('د') }}</span>{% endif %}
         <span>{{ _('محاولات:') }} {{ q.attempts_allowed }}</span>
         <span class="badge-status badge-{{ 'ok' if q.status == 'published' else 'warn' }}">{{ q.status }}</span>
       </div>

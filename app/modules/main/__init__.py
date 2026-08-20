@@ -97,3 +97,9 @@ def set_locale(lang):
     resp = redirect(request.referrer or url_for("main.index"))
     resp.set_cookie("locale", lang, max_age=60 * 60 * 24 * 365, samesite="Lax")
     return resp
+
+
+@bp.get("/offline")
+def offline():
+    """صفحة عدم الاتصال — متاحة للجميع (PWA fallback)."""
+    return render_template("offline.html")

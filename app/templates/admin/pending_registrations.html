@@ -57,7 +57,7 @@
 
 <div class="pagination-wrapper" style="margin-top:1.5rem;">
   {% if pagination.pages > 1 %}
-  <nav class="pagination" aria-label="تنقل الصفحات">
+  <nav class="pagination" aria-label="{{ _('تنقل الصفحات') }}">
     {% if pagination.has_prev %}
       <a href="{{ url_for('admin.pending_registrations', page=pagination.prev_num, search=search) }}">{{ icon('chevron-right') }} {{ _('السابق') }}</a>
     {% else %}

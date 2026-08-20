@@ -19,8 +19,8 @@
     <div class="form-group">
       <label>{{ _('اللغة الافتراضية') }}</label>
       <select name="default_locale" class="form-control">
-        <option value="ar" {% if settings.get('default_locale') and settings['default_locale'].value == 'ar' %}selected{% endif %}>العربية</option>
-        <option value="en" {% if settings.get('default_locale') and settings['default_locale'].value == 'en' %}selected{% endif %}>English</option>
+        <option value="ar" {% if settings.get('default_locale') and settings['default_locale'].value == 'ar' %}selected{% endif %}>{{ _('العربية') }}</option>
+        <option value="en" {% if settings.get('default_locale') and settings['default_locale'].value == 'en' %}selected{% endif %}>{{ _('English') }}</option>
       </select>
     </div>
     <div class="form-group">

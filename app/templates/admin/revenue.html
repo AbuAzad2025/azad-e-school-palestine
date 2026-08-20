@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     data: {
       labels: schoolLabels,
       datasets: [{
-        label: 'الإيرادات (ILS)',
+        label: {{ _('الإيرادات (ILS)') | tojson }},
         data: schoolTotals,
         backgroundColor: 'rgba(1, 78, 124, 0.7)',
         borderColor: 'rgb(1, 78, 124)',
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
     data: {
       labels: trendLabels,
       datasets: [{
-        label: 'الإيرادات (ILS)',
+        label: {{ _('الإيرادات (ILS)') | tojson }},
         data: trendTotals,
         fill: true,
         backgroundColor: 'rgba(1, 78, 124, 0.1)',

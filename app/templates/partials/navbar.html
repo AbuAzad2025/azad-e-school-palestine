@@ -76,7 +76,7 @@
 
       <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'en' else 'ar') }}" style="display:inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="azad-btn-outline nav-cta">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else 'عربي' }}</button>
+        <button type="submit" class="azad-btn-outline nav-cta">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else _('العربية') }}</button>
       </form>
     </div>
   </div>

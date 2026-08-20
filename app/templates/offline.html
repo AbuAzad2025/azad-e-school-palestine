@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#014e7c">
-<title>أنت غير متصل — أزاد</title>
-<link rel="stylesheet" href="/static/css/brand.css">
+<title>{{ _('أنت غير متصل — أزاد') }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
 <style>
 body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:"Cairo",sans-serif;background:var(--bg);color:var(--text);text-align:center;padding:2rem;}
 .box{max-width:400px;}
@@ -19,10 +19,10 @@ p{color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
 <body>
 <div class="box">
 <div class="icon-big">📡</div>
-<h1>أنت غير متصل بالإنترنت</h1>
-<p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
-<button class="btn" onclick="location.reload()">إعادة المحاولة</button>
-<p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+<h1>{{ _('أنت غير متصل بالإنترنت') }}</h1>
+<p>{{ _('يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.') }}</p>
+<button class="btn" onclick="location.reload()">{{ _('إعادة المحاولة') }}</button>
+<p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">{{ _('يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.') }}</p>
 </div>
 </body>
 </html>

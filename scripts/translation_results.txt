@@ -1,0 +1,286 @@
+
+=== app\templates\admin\pending_registrations.html ===
+  L60: "تنقل"  ->  <nav class="pagination" aria-label="تنقل الصفحات">
+  L60: "الصفحات"  ->  <nav class="pagination" aria-label="تنقل الصفحات">
+
+=== app\templates\admin\revenue.html ===
+  L122: "الإيرادات"  ->  label: 'الإيرادات (ILS)',
+  L149: "الإيرادات"  ->  label: 'الإيرادات (ILS)',
+
+=== app\templates\admin\settings.html ===
+  L13: "مدرسة"  ->  <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar
+  L13: "أزاد"  ->  <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar
+  L13: "الإلكترونية"  ->  <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar
+  L22: "العربية"  ->  <option value="ar" {% if settings.get('default_locale') and settings['default_locale'].value == 'ar' %}selected{% endif %}>العربية</option>
+
+=== app\templates\ai\chat.html ===
+  L15: "سريع،"  ->  <option value="gpt-4o-mini">GPT-4o Mini (سريع، اقتصادي)</option>
+  L15: "اقتصادي"  ->  <option value="gpt-4o-mini">GPT-4o Mini (سريع، اقتصادي)</option>
+  L16: "أقوى،"  ->  <option value="gpt-4o">GPT-4o (أقوى، أبطأ)</option>
+  L16: "أبطأ"  ->  <option value="gpt-4o">GPT-4o (أقوى، أبطأ)</option>
+  L18: "سريع"  ->  <option value="gpt-3.5-turbo">GPT-3.5 Turbo (سريع)</option>
+  L59: "اشرح"  ->  <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">{{ _('شرح نظرية فيثاغورس') }}</button>
+  L59: "لي"  ->  <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">{{ _('شرح نظرية فيثاغورس') }}</button>
+  L59: "نظرية"  ->  <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">{{ _('شرح نظرية فيثاغورس') }}</button>
+  L59: "فيثاغورس"  ->  <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">{{ _('شرح نظرية فيثاغورس') }}</button>
+  L59: "بالتفصيل"  ->  <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">{{ _('شرح نظرية فيثاغورس') }}</button>
+  L60: "ساعدني"  ->  <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">{{ _('حل معادلة') }}</button>
+  L60: "في"  ->  <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">{{ _('حل معادلة') }}</button>
+  L60: "حل"  ->  <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">{{ _('حل معادلة') }}</button>
+  L60: "هذه"  ->  <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">{{ _('حل معادلة') }}</button>
+  L60: "المعادلة"  ->  <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">{{ _('حل معادلة') }}</button>
+  L61: "اكتب"  ->  <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
+  L61: "لي"  ->  <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
+  L61: "مقالاً"  ->  <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
+  L61: "عن"  ->  <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
+  L61: "أهمية"  ->  <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
+  L61: "الرياضة"  ->  <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
+  L62: "ما"  ->  <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">{{ _('قوانين نيوتن') }}</button>
+  L62: "هي"  ->  <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">{{ _('قوانين نيوتن') }}</button>
+  L62: "قوانين"  ->  <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">{{ _('قوانين نيوتن') }}</button>
+  L62: "نيوتن"  ->  <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">{{ _('قوانين نيوتن') }}</button>
+  L62: "الثلاثة؟"  ->  <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">{{ _('قوانين نيوتن') }}</button>
+
+=== app\templates\assessment\attempt.html ===
+  L7: "تم"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "تفعيل"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "المراقبة"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "تبديل"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "التبويبات"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "أكثر"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "من"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "مرات"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "أو"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "الخروج"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "من"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "وضع"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "الشاشة"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "الكاملة"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "قد"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "يؤدي"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "إلى"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "تسليم"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+  L7: "تلقائي"  ->  <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switc
+
+=== app\templates\assessment\question_bank.html ===
+  L58: "أ"  ->  <option value="0">أ</option><option value="1">ب</option>
+  L58: "ب"  ->  <option value="0">أ</option><option value="1">ب</option>
+  L59: "ج"  ->  <option value="2">ج</option><option value="3">د</option>
+  L59: "د"  ->  <option value="2">ج</option><option value="3">د</option>
+
+=== app\templates\assessment\quiz_list.html ===
+  L22: "د"  ->  {% if q.duration_min %}<span>{{ _('مدة:') }} {{ q.duration_min }} د</span>{% endif %}
+
+=== app\templates\assessment\quiz_manage.html ===
+  L68: "أسئلة"  ->  <option value="3">3 أسئلة</option>
+  L69: "أسئلة"  ->  <option value="5" selected>5 أسئلة</option>
+  L70: "أسئلة"  ->  <option value="10">10 أسئلة</option>
+  L79: "متوسط"  ->  <option value="medium">متوسط</option>
+  L81: "صعب"  ->  <option value="hard">صعب</option>
+  L84: "سيقوم"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "الذكاء"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "الاصطناعي"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "بإنشاء"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "أسئلة"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "بناءً"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "على"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "الموضوع"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L84: "المحدد"  ->  <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+  L124: "علامات"  ->  item.innerHTML += `<div class="item-meta">MCQ - ${q.mark} علامات</div>`;
+  L126: "علامات"  ->  item.innerHTML += `<div class="item-meta">True/False - ${q.mark} علامات</div>`;
+  L128: "علامات"  ->  item.innerHTML += `<div class="item-meta">Essay - ${q.mark} علامات</div>`;
+  L144: "حدث"  ->  alert('حدث خطأ في توليد الأسئلة');
+  L144: "خطأ"  ->  alert('حدث خطأ في توليد الأسئلة');
+  L144: "في"  ->  alert('حدث خطأ في توليد الأسئلة');
+  L144: "توليد"  ->  alert('حدث خطأ في توليد الأسئلة');
+  L144: "الأسئلة"  ->  alert('حدث خطأ في توليد الأسئلة');
+
+=== app\templates\auth\dashboard.html ===
+  L9: "،"  ->  <p class="page-subtitle">{{ _('مرحباً') }}، {{ current_user.name_ar }}!</p>
+
+=== app\templates\auth\register.html ===
+  L11: "الاسم"  ->  {{ form.name_ar(autocomplete="name", placeholder="الاسم الكامل") }}
+  L11: "الكامل"  ->  {{ form.name_ar(autocomplete="name", placeholder="الاسم الكامل") }}
+  L30: "كود"  ->  {{ form.school_join_code(placeholder="كود المدرسة (اختياري)") }}
+  L30: "المدرسة"  ->  {{ form.school_join_code(placeholder="كود المدرسة (اختياري)") }}
+  L30: "اختياري"  ->  {{ form.school_join_code(placeholder="كود المدرسة (اختياري)") }}
+  L36: "أحرف"  ->  {{ form.password(autocomplete="new-password", placeholder="8 أحرف على الأقل") }}
+  L36: "على"  ->  {{ form.password(autocomplete="new-password", placeholder="8 أحرف على الأقل") }}
+  L36: "الأقل"  ->  {{ form.password(autocomplete="new-password", placeholder="8 أحرف على الأقل") }}
+
+=== app\templates\base.html ===
+  L54: "أنت"  ->  <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, 
+  L54: "تتصفح"  ->  <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, 
+  L54: "الآن"  ->  <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, 
+  L54: "كـ"  ->  <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, 
+  L54: "بواسطة"  ->  <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, 
+
+=== app\templates\billing\invoice.html ===
+  L5: "فاتورة"  ->  <title>فاتورة {{ invoice_number }}</title>
+  L29: "منصة"  ->  <h1>منصة مدرسة أزاد الإلكترونية</h1>
+  L29: "مدرسة"  ->  <h1>منصة مدرسة أزاد الإلكترونية</h1>
+  L29: "أزاد"  ->  <h1>منصة مدرسة أزاد الإلكترونية</h1>
+  L29: "الإلكترونية"  ->  <h1>منصة مدرسة أزاد الإلكترونية</h1>
+  L30: "فاتورة"  ->  <div class="invoice-no">فاتورة رقم: {{ invoice_number }}</div>
+  L30: "رقم"  ->  <div class="invoice-no">فاتورة رقم: {{ invoice_number }}</div>
+  L35: "بيانات"  ->  <h3>بيانات الاشتراك</h3>
+  L35: "الاشتراك"  ->  <h3>بيانات الاشتراك</h3>
+  L36: "الطالب"  ->  <p><strong>الطالب:</strong> {{ subscription.user.name_ar or subscription.user.email }}</p>
+  L37: "الخطة"  ->  <p><strong>الخطة:</strong> {{ subscription.plan.name }}</p>
+  L38: "المدة"  ->  <p><strong>المدة:</strong> {{ subscription.start_at.strftime('%Y-%m-%d') if subscription.start_at else '—' }} إلى {{ subscription.end_at.strftime('%Y-
+  L38: "إلى"  ->  <p><strong>المدة:</strong> {{ subscription.start_at.strftime('%Y-%m-%d') if subscription.start_at else '—' }} إلى {{ subscription.end_at.strftime('%Y-
+  L41: "تفاصيل"  ->  <h3>تفاصيل الفاتورة</h3>
+  L41: "الفاتورة"  ->  <h3>تفاصيل الفاتورة</h3>
+  L42: "رقم"  ->  <p><strong>رقم الاشتراك:</strong> #{{ subscription.id }}</p>
+  L42: "الاشتراك"  ->  <p><strong>رقم الاشتراك:</strong> #{{ subscription.id }}</p>
+  L43: "الحالة"  ->  <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
+  L43: "معلق"  ->  <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
+  L43: "نشط"  ->  <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
+  L43: "منتهي"  ->  <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
+  L43: "ملغي"  ->  <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
+  L44: "التاريخ"  ->  <p><strong>التاريخ:</strong> {{ subscription.created_at.strftime('%Y-%m-%d') }}</p>
+  L50: "البيان"  ->  <th>البيان</th>
+  L51: "المبلغ"  ->  <th>المبلغ</th>
+  L54: "اشتراك"  ->  <td>اشتراك {{ subscription.plan.name }}</td>
+  L58: "المدفوع"  ->  <td>المدفوع</td>
+  L62: "المتبقي"  ->  <td>المتبقي</td>
+  L68: "منصة"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+  L68: "مدرسة"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+  L68: "أزاد"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+  L68: "الإلكترونية"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+  L68: "هذه"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+  L68: "فاتورة"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+  L68: "تلقائية"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+
+=== app\templates\grades\attendance.html ===
+  L36: "حاضر"  ->  {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
+  L36: "غائب"  ->  {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
+  L36: "متأخر"  ->  {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
+  L36: "بعذر"  ->  {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
+
+=== app\templates\grades\report_card.html ===
+  L5: "تقرير"  ->  <title>تقرير الدرجات — {{ student.name_ar or student.email }}</title>
+  L5: "الدرجات"  ->  <title>تقرير الدرجات — {{ student.name_ar or student.email }}</title>
+  L30: "تقرير"  ->  <h1>تقرير الدرجات</h1>
+  L30: "الدرجات"  ->  <h1>تقرير الدرجات</h1>
+  L31: "الصف"  ->  <h2>{{ class_room.name or class_room.subject.name_ar }} — الصف {{ class_room.grade.grade_level }}</h2>
+  L35: "الاسم"  ->  <div><strong>الاسم:</strong> {{ student.name_ar or student.email }}</div>
+  L36: "البريد"  ->  <div><strong>البريد:</strong> {{ student.email }}</div>
+  L37: "المادة"  ->  <div><strong>المادة:</strong> {{ class_room.subject.name_ar }}</div>
+  L38: "المعلم"  ->  <div><strong>المعلم:</strong> {{ class_room.teacher.name_ar if class_room.teacher else '—' }}</div>
+  L41: "الدرجات"  ->  <h3 class="section-title">الدرجات حسب الأقسام</h3>
+  L41: "حسب"  ->  <h3 class="section-title">الدرجات حسب الأقسام</h3>
+  L41: "الأقسام"  ->  <h3 class="section-title">الدرجات حسب الأقسام</h3>
+  L45: "وزن"  ->  <th colspan="4">{{ cat.name }} (وزن: {{ (cat.weight * 100)|int }}%)</th>
+  L48: "البند"  ->  <th>البند</th>
+  L49: "الدرجة"  ->  <th>الدرجة القصوى</th>
+  L49: "القصوى"  ->  <th>الدرجة القصوى</th>
+  L50: "الدرجة"  ->  <th>الدرجة المحصّلة</th>
+  L50: "المحصّلة"  ->  <th>الدرجة المحصّلة</th>
+  L51: "النسبة"  ->  <th>النسبة %</th>
+  L62: "متوسط"  ->  <td colspan="3">متوسط القسم</td>
+  L62: "القسم"  ->  <td colspan="3">متوسط القسم</td>
+  L71: "الدرجة"  ->  <div class="stat-label">الدرجة النهائية</div>
+  L71: "النهائية"  ->  <div class="stat-label">الدرجة النهائية</div>
+  L75: "التقدير"  ->  <div class="stat-label">التقدير</div>
+  L79: "متوسط"  ->  <div class="stat-label">متوسط التقدم</div>
+  L79: "التقدم"  ->  <div class="stat-label">متوسط التقدم</div>
+  L84: "منصة"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "مدرسة"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "أزاد"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "الإلكترونية"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "هذا"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "التقرير"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "أُنشأ"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+  L84: "تلقائياً"  ->  <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+
+=== app\templates\individual\course_catalog.html ===
+  L23: "صف"  ->  <option value="{{ i }}" {{ 'selected' if selected_grade == i }}>صف {{ i }}</option>
+
+=== app\templates\landing.html ===
+  L212: "مدرسة"  ->  <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+  L212: "أزاد"  ->  <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+  L212: "الإلكترونية"  ->  <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+  L212: "جميع"  ->  <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+  L212: "الحقوق"  ->  <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+  L212: "محفوظة"  ->  <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
+
+=== app\templates\macros\forms.html ===
+  L40: "إظهار"  ->  <button type="button" class="azad-field__toggle" data-password-toggle aria-label="إظهار كلمة المرور">
+  L40: "كلمة"  ->  <button type="button" class="azad-field__toggle" data-password-toggle aria-label="إظهار كلمة المرور">
+  L40: "المرور"  ->  <button type="button" class="azad-field__toggle" data-password-toggle aria-label="إظهار كلمة المرور">
+  L117: "حفظ"  ->  {% macro azad_form_actions(submit_text='حفظ', submit_class='azad-btn', cancel_url='') %}
+  L120: "إلغاء"  ->  <a href="{{ cancel_url }}" class="azad-btn azad-btn-ghost">إلغاء</a>
+  L127: "بحث"  ->  {% macro azad_search(name='q', value='', placeholder='بحث...') %}
+
+=== app\templates\macros\ui.html ===
+  L108: "مسار"  ->  <nav class="azad-breadcrumb" aria-label="مسار التنقل">
+  L108: "التنقل"  ->  <nav class="azad-breadcrumb" aria-label="مسار التنقل">
+  L130: "التنقل"  ->  <nav class="azad-pagination" aria-label="التنقل بين الصفحات">
+  L130: "بين"  ->  <nav class="azad-pagination" aria-label="التنقل بين الصفحات">
+  L130: "الصفحات"  ->  <nav class="azad-pagination" aria-label="التنقل بين الصفحات">
+  L132: "عرض"  ->  عرض {{ pagination.page_start }}–{{ pagination.page_end }} من {{ pagination.total }}
+  L132: "من"  ->  عرض {{ pagination.page_start }}–{{ pagination.page_end }} من {{ pagination.total }}
+  L137: "السابق"  ->  {{ icon('arrow-left') }} السابق
+  L153: "التالي"  ->  التالي {{ icon('arrow-right') }}
+  L204: "إغلاق"  ->  <button class="azad-flash__close" onclick="this.parentElement.remove()" aria-label="إغلاق">
+
+=== app\templates\offline.html ===
+  L7: "أنت"  ->  <title>أنت غير متصل — أزاد</title>
+  L7: "غير"  ->  <title>أنت غير متصل — أزاد</title>
+  L7: "متصل"  ->  <title>أنت غير متصل — أزاد</title>
+  L7: "أزاد"  ->  <title>أنت غير متصل — أزاد</title>
+  L22: "أنت"  ->  <h1>أنت غير متصل بالإنترنت</h1>
+  L22: "غير"  ->  <h1>أنت غير متصل بالإنترنت</h1>
+  L22: "متصل"  ->  <h1>أنت غير متصل بالإنترنت</h1>
+  L22: "بالإنترنت"  ->  <h1>أنت غير متصل بالإنترنت</h1>
+  L23: "يرجى"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "التحقق"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "من"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "اتصالك"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "بالشبكة"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "والمحاولة"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "مرة"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L23: "أخرى"  ->  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  L24: "إعادة"  ->  <button class="btn" onclick="location.reload()">إعادة المحاولة</button>
+  L24: "المحاولة"  ->  <button class="btn" onclick="location.reload()">إعادة المحاولة</button>
+  L25: "يمكنك"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  L25: "مشاهدة"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  L25: "المحتوى"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  L25: "المخزّن"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  L25: "مسبقاً"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  L25: "بدون"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  L25: "إنترنت"  ->  <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+
+=== app\templates\partials\breadcrumbs.html ===
+  L2: "مسار"  ->  <nav class="breadcrumb" aria-label="مسار التنقل" style="margin-block: 1rem;">
+  L2: "التنقل"  ->  <nav class="breadcrumb" aria-label="مسار التنقل" style="margin-block: 1rem;">
+
+=== app\templates\partials\navbar.html ===
+  L79: "عربي"  ->  <button type="submit" class="azad-btn-outline nav-cta">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else 'عربي' }}</button>
+
+=== app\templates\payments_ui\index.html ===
+  L34: "يمكن"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L34: "إضافة"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L34: "منطق"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L34: "اختيار"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L34: "طريقة"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L34: "الدفع"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L34: "هنا"  ->  // يمكن إضافة منطق اختيار طريقة الدفع هنا
+  L36: "تم"  ->  alert('تم اختيار: ' + methodId);
+  L36: "اختيار"  ->  alert('تم اختيار: ' + methodId);
+
+=== app\templates\schools\class_detail.html ===
+  L4: "مسار"  ->  <nav class="breadcrumb" aria-label="مسار التنقل" style="margin-block: 1rem;">
+  L4: "التنقل"  ->  <nav class="breadcrumb" aria-label="مسار التنقل" style="margin-block: 1rem;">
+
+=== app\templates\schools\onboarding.html ===
+  L33: "المرحلة"  ->  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  L33: "الابتدائية"  ->  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  L33: "المرحلة"  ->  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  L33: "المتوسطة"  ->  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  L33: "المرحلة"  ->  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  L33: "الثانوية"  ->  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+
+=== app\templates\tutoring\rate_form.html ===
+  L7: "مع"  ->  <p class="page-subtitle">{{ session.subject }} — مع {{ session.tutor.name_ar }}</p>

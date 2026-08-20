@@ -37,7 +37,7 @@
     <span class="azad-field__icon">{{ icon('lock') }}</span>
     {{ field(class="azad-field__input azad-field__input--icon", placeholder=placeholder, type="password") }}
     {% if toggle %}
-    <button type="button" class="azad-field__toggle" data-password-toggle aria-label="إظهار كلمة المرور">
+    <button type="button" class="azad-field__toggle" data-password-toggle aria-label="{{ _('إظهار كلمة المرور') }}">
       {{ icon('eye') }}
     </button>
     {% endif %}
@@ -114,17 +114,17 @@
 {% endmacro %}
 
 {# ─── Form Actions ─── #}
-{% macro azad_form_actions(submit_text='حفظ', submit_class='azad-btn', cancel_url='') %}
+{% macro azad_form_actions(submit_text=_('حفظ'), submit_class='azad-btn', cancel_url='') %}
 <div class="azad-form-actions">
   {% if cancel_url %}
-  <a href="{{ cancel_url }}" class="azad-btn azad-btn-ghost">إلغاء</a>
+  <a href="{{ cancel_url }}" class="azad-btn azad-btn-ghost">{{ _('إلغاء') }}</a>
   {% endif %}
   <button type="submit" class="{{ submit_class }}">{{ submit_text }}</button>
 </div>
 {% endmacro %}
 
 {# ─── Search Input ─── #}
-{% macro azad_search(name='q', value='', placeholder='بحث...') %}
+{% macro azad_search(name='q', value='', placeholder=_('بحث...')) %}
 <div class="azad-search">
   <span class="azad-search__icon">{{ icon('search') }}</span>
   <input type="search" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="azad-search__input">

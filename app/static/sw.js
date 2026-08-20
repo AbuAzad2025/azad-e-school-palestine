@@ -5,7 +5,7 @@ var STATIC_ASSETS = [
   "/static/js/app.js",
   "/static/img/azad-mark.svg",
   "/static/manifest.json",
-  "/static/offline.html"
+  "/offline"
 ];
 var LESSON_CACHE = "azad-lessons-v1";
 
@@ -57,7 +57,7 @@ self.addEventListener("fetch", function(event) {
   event.respondWith(
     fetch(event.request).catch(function() {
       if (event.request.mode === "navigate") {
-        return caches.match("/static/offline.html");
+        return caches.match("/offline");
       }
       return new Response("", { status: 503, statusText: "Offline" });
     })

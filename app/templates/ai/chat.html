@@ -12,10 +12,10 @@
     </div>
     <div class="ai-chat-controls">
       <select id="model-select" class="form-select" style="width:auto;min-width:180px">
-        <option value="gpt-4o-mini">GPT-4o Mini (سريع، اقتصادي)</option>
-        <option value="gpt-4o">GPT-4o (أقوى، أبطأ)</option>
-        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-        <option value="gpt-3.5-turbo">GPT-3.5 Turbo (سريع)</option>
+        <option value="gpt-4o-mini">{{ _('GPT-4o Mini (سريع، اقتصادي)') }}</option>
+        <option value="gpt-4o">{{ _('GPT-4o (أقوى، أبطأ)') }}</option>
+        <option value="gpt-4-turbo">{{ _('GPT-4 Turbo') }}</option>
+        <option value="gpt-3.5-turbo">{{ _('GPT-3.5 Turbo (سريع)') }}</option>
       </select>
       <button id="new-chat-btn" class="azad-btn-outline">{{ _('محادثة جديدة') }}</button>
     </div>
@@ -56,10 +56,10 @@
           <div class="welcome-icon">{{ icon('sparkles') }}</div>
           <h2>{{ _('مرحباً! كيف يمكنني مساعدتك اليوم؟') }}</h2>
           <div class="suggested-prompts">
-            <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">{{ _('شرح نظرية فيثاغورس') }}</button>
-            <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">{{ _('حل معادلة') }}</button>
-            <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">{{ _('كتابة مقال') }}</button>
-            <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">{{ _('قوانين نيوتن') }}</button>
+            <button class="prompt-chip" data-prompt="{{ _('اشرح لي نظرية فيثاغورس بالتفصيل') }}">{{ _('شرح نظرية فيثاغورس') }}</button>
+            <button class="prompt-chip" data-prompt="{{ _('ساعدني في حل هذه المعادلة: 2x + 5 = 15') }}">{{ _('حل معادلة') }}</button>
+            <button class="prompt-chip" data-prompt="{{ _('اكتب لي مقالاً عن أهمية الرياضة') }}">{{ _('كتابة مقال') }}</button>
+            <button class="prompt-chip" data-prompt="{{ _('ما هي قوانين نيوتن الثلاثة؟') }}">{{ _('قوانين نيوتن') }}</button>
           </div>
         </div>
         {% endif %}

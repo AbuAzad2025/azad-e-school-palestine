@@ -65,9 +65,9 @@
     <input type="text" name="topic" placeholder="{{ _('موضوع الأسئلة') }}" style="width:100%;padding:.5rem;font-size:.9rem;margin-bottom:.5rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
     <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
       <select name="count" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
-        <option value="3">3 أسئلة</option>
-        <option value="5" selected>5 أسئلة</option>
-        <option value="10">10 أسئلة</option>
+        <option value="3">{{ _('3 أسئلة') }}</option>
+        <option value="5" selected>{{ _('5 أسئلة') }}</option>
+        <option value="10">{{ _('10 أسئلة') }}</option>
       </select>
       <select name="question_types" multiple="multiple" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
         <option value="mcq">MCQ</option>
@@ -76,12 +76,12 @@
       </select>
     </div>
     <select name="difficulty" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
-      <option value="medium">متوسط</option>
-      <option value="easy"> facile</option>
-      <option value="hard">صعب</option>
+      <option value="medium">{{ _('متوسط') }}</option>
+      <option value="easy">{{ _('سهل') }}</option>
+      <option value="hard">{{ _('صعب') }}</option>
     </select>
     <button class="azad-btn-outline" type="submit">{{ _('توليد') }}</button>
-    <small style="margin-top:.5rem;display:block;opacity:.8">سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد</small>
+    <small style="margin-top:.5rem;display:block;opacity:.8">{{ _('سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد') }}</small>
   </form>
 </div>
 {% endblock %}

@@ -105,7 +105,7 @@
 
 {# ─── Breadcrumb ─── #}
 {% macro azad_breadcrumb(items) %}
-<nav class="azad-breadcrumb" aria-label="مسار التنقل">
+<nav class="azad-breadcrumb" aria-label="{{ _('مسار التنقل') }}">
   <ol class="azad-breadcrumb__list">
     <li class="azad-breadcrumb__item">
       <a href="{{ url_for('main.index') }}" class="azad-breadcrumb__link">{{ icon('home') }}</a>
@@ -127,14 +127,14 @@
 {# ─── Pagination ─── #}
 {% macro azad_pagination(pagination) %}
 {% if pagination.pages > 1 %}
-<nav class="azad-pagination" aria-label="التنقل بين الصفحات">
+<nav class="azad-pagination" aria-label="{{ _('التنقل بين الصفحات') }}">
   <div class="azad-pagination__info">
-    عرض {{ pagination.page_start }}–{{ pagination.page_end }} من {{ pagination.total }}
+    {{ _('عرض %(start)s–%(end)s من %(total)s', start=pagination.page_start, end=pagination.page_end, total=pagination.total) }}
   </div>
   <div class="azad-pagination__links">
     {% if pagination.has_prev %}
     <a href="?page={{ pagination.prev_num }}" class="azad-pagination__link" rel="prev">
-      {{ icon('arrow-left') }} السابق
+      {{ icon('arrow-left') }} {{ _('السابق') }}
     </a>
     {% endif %}
     {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
@@ -150,7 +150,7 @@
     {% endfor %}
     {% if pagination.has_next %}
     <a href="?page={{ pagination.next_num }}" class="azad-pagination__link" rel="next">
-      التالي {{ icon('arrow-right') }}
+      {{ _('التالي') }} {{ icon('arrow-right') }}
     </a>
     {% endif %}
   </div>
@@ -201,7 +201,7 @@
         {% endif %}
       </div>
       <div class="azad-flash__content">{{ message }}</div>
-      <button class="azad-flash__close" onclick="this.parentElement.remove()" aria-label="إغلاق">
+      <button class="azad-flash__close" onclick="this.parentElement.remove()" aria-label="{{ _('إغلاق') }}">
         {{ icon('x') }}
       </button>
     </div>
