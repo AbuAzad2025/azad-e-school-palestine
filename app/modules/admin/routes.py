@@ -1,5 +1,7 @@
 """مسارات لوحة المشرف — إدارة كاملة للمنصة"""
 
+import os
+import shutil
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -22,6 +24,28 @@ from sqlalchemy.orm import joinedload, selectinload
 from . import bp
 
 
+def _find_pg_tool(name: str) -> str:
+    """Find pg_dump / psql: PATH first, then common Windows locations."""
+    on_path = shutil.which(name)
+    if on_path:
+        return on_path
+    for base in (
+        os.path.expandvars(r"%ProgramFiles%\PostgreSQL"),
+        os.path.expandvars(r"%ProgramFiles(x86)%\PostgreSQL"),
+    ):
+        if not os.path.isdir(base):
+            continue
+        for version_dir in sorted(os.listdir(base), reverse=True):
+            candidate = os.path.join(base, version_dir, "bin", f"{name}.exe")
+            if os.path.isfile(candidate):
+                return candidate
+    return name
+
+
+PG_DUMP = _find_pg_tool("pg_dump")
+PSQL = _find_pg_tool("psql")
+
+
 @bp.app_context_processor
 def admin_nav_context():
     """عدّادات شريط التنقل في لوحة المشرف (تُحقن لصفحات اللوحة فقط)."""
@@ -30,6 +54,7 @@ def admin_nav_context():
     return {
         "subs_pending": Subscription.query.filter_by(status="pending").count(),
         "pending_payments": ManualPayment.query.filter_by(status="pending").count(),
+        "pending_reg_count": User.query.filter_by(approval_status=UserApprovalStatus.pending, is_active=True).count(),
     }
 
 
@@ -253,6 +278,17 @@ def subscription_cancel(sub_id):
     return redirect(url_for("admin.subscriptions_list"))
 
 
+@bp.get("/subscriptions/<int:sub_id>")
+@login_required
+def subscription_detail(sub_id):
+    sub = Subscription.query.options(
+        joinedload(Subscription.user),
+        joinedload(Subscription.plan),
+        joinedload(Subscription.payments).joinedload(ManualPayment.receipts),
+    ).get_or_404(sub_id)
+    return render_template("admin/subscription_detail.html", sub=sub)
+
+
 @bp.get("/payments/pending")
 @login_required
 def pending_payments():
@@ -317,8 +353,6 @@ def ai_usage():
 @bp.get("/backups")
 @login_required
 def backups_list():
-    import os
-
     backup_dir = os.getenv("BACKUP_DIR", "backups")
     backups = []
     if os.path.exists(backup_dir):
@@ -340,7 +374,6 @@ def backups_list():
 @login_required
 def backup_create():
     """إنشاء نسخة احتياطية يدوية"""
-    import os
     import subprocess
 
     backup_dir = os.getenv("BACKUP_DIR", "backups")
@@ -355,11 +388,13 @@ def backup_create():
         return redirect(url_for("admin.backups_list"))
 
     try:
-        result = subprocess.run(["pg_dump", db_url, "-f", filepath], capture_output=True, text=True, timeout=300)
+        result = subprocess.run([PG_DUMP, db_url, "-f", filepath], capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             flash(_("تم إنشاء النسخة الاحتياطية بنجاح"), "success")
         else:
             flash(f"فشل النسخ الاحتياطي: {result.stderr}", "danger")
+    except FileNotFoundError:
+        flash(_("لم يتم العثور على pg_dump — تأكد من تثبيت PostgreSQL"), "danger")
     except Exception as e:
         flash(f"خطأ: {e}", "danger")
 
@@ -370,7 +405,6 @@ def backup_create():
 @login_required
 def backup_restore(filename):
     """استعادة نسخة احتياطية — يتطلب تأكيد"""
-    import os
     import subprocess
 
     backup_dir = os.getenv("BACKUP_DIR", "backups")
@@ -390,11 +424,13 @@ def backup_restore(filename):
         flash(_("DATABASE_URL غير مضبوط"), "danger")
         return redirect(url_for("admin.backups_list"))
     try:
-        result = subprocess.run(["psql", db_url, "-f", filepath], capture_output=True, text=True, timeout=300)
+        result = subprocess.run([PSQL, db_url, "-f", filepath], capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             flash(_("تمت الاستعادة بنجاح"), "success")
         else:
             flash(f"فشل الاستعادة: {result.stderr}", "danger")
+    except FileNotFoundError:
+        flash(_("لم يتم العثور على psql — تأكد من تثبيت PostgreSQL"), "danger")
     except Exception as e:
         flash(f"خطأ: {e}", "danger")
 
@@ -692,7 +728,12 @@ def payouts_queue():
     """قائمة طلبات سحب أرباح المعلمين المعلقة"""
     from app.models.tutoring import TutorPayout
 
-    payouts = TutorPayout.query.filter_by(status="pending").order_by(TutorPayout.created_at.desc()).all()
+    payouts = (
+        TutorPayout.query.filter_by(status="pending")
+        .options(selectinload(TutorPayout.tutor))
+        .order_by(TutorPayout.created_at.desc())
+        .all()
+    )
     return render_template("admin/payouts.html", payouts=payouts)
 
 

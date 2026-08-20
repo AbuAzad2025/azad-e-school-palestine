@@ -78,7 +78,7 @@
 
       <div class="admin-nav-section">{{ _('الإدارة') }}</div>
       <a href="{{ url_for('admin.users_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}">{{ icon('users') }} {{ _('المستخدمون') }}{% if pagination and pagination.total > 0 %}<span class="badge badge-primary">{{ pagination.total }}</span>{% endif %}</a>
-      <a href="{{ url_for('admin.pending_registrations') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_registrations' %}active{% endif %}">{{ icon('user-plus') }} {{ _('التسجيلات المعلقة') }}{% set pending_reg_count = User.query.filter_by(approval_status=UserApprovalStatus.pending, is_active=True).count() %}{% if pending_reg_count > 0 %}<span class="badge badge-warn">{{ pending_reg_count }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.pending_registrations') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_registrations' %}active{% endif %}">{{ icon('user-plus') }} {{ _('التسجيلات المعلقة') }}{% if pending_reg_count > 0 %}<span class="badge badge-warn">{{ pending_reg_count }}</span>{% endif %}</a>
       <a href="{{ url_for('admin.schools_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.schools_list' or request.endpoint == 'admin.school_detail' %}active{% endif %}">{{ icon('school') }} {{ _('المدارس') }}</a>
 
       <div class="admin-nav-section">{{ _('الاشتراكات والفوترة') }}</div>

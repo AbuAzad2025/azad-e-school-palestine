@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
 
+from .class_room import ClassRoom
 from .mixins import PKMixin
 from .school import School
 from .user import User
@@ -49,6 +50,7 @@ class Subscription(PKMixin, db.Model):
     payments: Mapped[list[ManualPayment]] = relationship(back_populates="subscription", cascade="all, delete-orphan")
     user: Mapped[User] = relationship("User")
     plan: Mapped[SubscriptionPlan] = relationship("SubscriptionPlan")
+    class_room: Mapped[ClassRoom] = relationship("ClassRoom", foreign_keys=[class_id])
 
 
 class ManualPayment(PKMixin, db.Model):

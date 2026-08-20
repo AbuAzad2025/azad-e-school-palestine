@@ -99,16 +99,16 @@
     </a>
     {% if is_student() %}
       {% if is_individual() %}
-        <a href="{{ url_for('individual.my_courses') }}" class="azad-bottom-nav__item {% if 'individual' in request.endpoint|default('') %}active{% endif %}">
+        <a href="{{ url_for('individual.my_courses') }}" class="azad-bottom-nav__item {% if request.endpoint and 'individual' in request.endpoint %}active{% endif %}">
           {{ icon('book-open') }}<span>{{ _('كورساتي') }}</span>
         </a>
       {% else %}
-        <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item {% if 'schools' in request.endpoint|default('') and 'class' in request.endpoint|default('') %}active{% endif %}">
+        <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item {% if request.endpoint and 'schools' in request.endpoint and 'class' in request.endpoint %}active{% endif %}">
           {{ icon('school') }}<span>{{ _('صفوفي') }}</span>
         </a>
       {% endif %}
     {% elif is_teacher() %}
-      <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item {% if 'schools' in request.endpoint|default('') and 'class' in request.endpoint|default('') %}active{% endif %}">
+      <a href="{{ url_for('schools.my_classes') }}" class="azad-bottom-nav__item {% if request.endpoint and 'schools' in request.endpoint and 'class' in request.endpoint %}active{% endif %}">
         {{ icon('school') }}<span>{{ _('صفوفي') }}</span>
       </a>
     {% elif is_school_admin() or is_super_admin() %}
@@ -124,7 +124,7 @@
       {{ icon('bell') }}<span>{{ _('الإشعارات') }}</span>
       {% if unread_count %}<span class="azad-bottom-nav__badge">{{ unread_count }}</span>{% endif %}
     </a>
-    <a href="{{ url_for('messages.inbox_view') }}" class="azad-bottom-nav__item {% if 'messages' in request.endpoint|default('') %}active{% endif %}">
+    <a href="{{ url_for('messages.inbox_view') }}" class="azad-bottom-nav__item {% if request.endpoint and 'messages' in request.endpoint %}active{% endif %}">
       {{ icon('envelope') }}<span>{{ _('الرسائل') }}</span>
       {% if message_unread_count %}<span class="azad-bottom-nav__badge">{{ message_unread_count }}</span>{% endif %}
     </a>

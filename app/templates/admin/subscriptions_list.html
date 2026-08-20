@@ -32,7 +32,7 @@
       </div>
     </div>
     <div class="item-actions">
-      <a class="azad-btn-outline" href="{{ url_for('admin.subscriptions_list') }}#sub-{{ sub.id }}">{{ _('تفاصيل') }}</a>
+      <a class="azad-btn-outline" href="{{ url_for('admin.subscription_detail', sub_id=sub.id) }}">{{ _('تفاصيل') }}</a>
       {% if sub.status == 'active' %}
       <form method="post" action="{{ url_for('admin.subscription_cancel', sub_id=sub.id) }}" style="display:inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% from 'macros/ui.html' import azad_badge, azad_empty_state %}
+{% block title %}{{ _('تفاصيل الاشتراك') }} — {{ _('إدارة المنصة') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ _('تفاصيل الاشتراك') }}</h1>
+  <a href="{{ url_for('admin.subscriptions_list') }}" class="azad-btn-outline">{{ icon('arrow-left') }} {{ _('العودة') }}</a>
+</div>
+
+<div class="azad-card" style="margin-bottom:var(--space-lg)">
+  <h3>{{ _('المستخدم') }}</h3>
+  <p>{{ sub.user.name_ar }} — {{ sub.user.email }}</p>
+  <h3>{{ _('الخطة') }}</h3>
+  <p>{{ sub.plan.name if sub.plan else _('—') }}</p>
+  <h3>{{ _('الحالة') }}</h3>
+  <p>{{ azad_badge(sub.status, 'ok' if sub.status == 'active' else ('warn' if sub.status == 'pending' else 'err')) }}</p>
+  <h3>{{ _('السعر') }}</h3>
+  <p>{{ sub.price }} {{ sub.currency }}</p>
+  <h3>{{ _('الفترة') }}</h3>
+  <p>{{ sub.start_at.strftime('%Y-%m-%d %H:%M') if sub.start_at else _('—') }} — {{ sub.end_at.strftime('%Y-%m-%d %H:%M') if sub.end_at else _('—') }}</p>
+  <h3>{{ _('المصدر') }}</h3>
+  <p>{{ sub.source }}</p>
+</div>
+
+{% if sub.payments %}
+<div class="azad-card">
+  <h3>{{ _('الدفعات') }}</h3>
+  <div class="azad-list">
+    {% for p in sub.payments %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ p.amount }} {{ sub.currency }} — {{ p.reference }}</div>
+        <div class="item-meta">
+          <span>{{ azad_badge(p.status, 'ok' if p.status == 'approved' else ('warn' if p.status == 'pending' else 'err')) }}</span>
+          <span>{{ p.created_at.strftime('%Y-%m-%d %H:%M') if p.created_at else '' }}</span>
+          {% if p.note %}<span>{{ p.note }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+  {{ azad_empty_state(_('لا توجد دفعات')) }}
+{% endif %}
+{% endblock %}

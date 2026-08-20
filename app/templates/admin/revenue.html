@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/ui.html' import azad_stat_card %}
 {% block title %}{{ _('لوحة الإيرادات') }} — {{ _('إدارة المنصة') }}{% endblock %}
 {% block content %}
 <div class="section-head">
@@ -19,9 +20,9 @@
 
 {% set s = data.summary %}
 <div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-  {% call azad_stat_card(s.total_revenue ~ ' ' ~ s.currency, _('إجمالي الإيرادات'), 'credit-card', 'var(--azad-green)') %}{% endcall %}
-  {% call azad_stat_card(s.transaction_count, _('عدد المعاملات'), 'shopping-cart', 'var(--azad-blue)') %}{% endcall %}
-  {% call azad_stat_card(data.growth_rate ~ '%', _('معدل النمو'), 'trending-up', 'var(--azad-amber)' if data.growth_rate >= 0 else 'var(--azad-red)') %}{% endcall %}
+  {{ azad_stat_card(s.total_revenue ~ ' ' ~ s.currency, _('إجمالي الإيرادات'), 'credit-card', 'var(--azad-green)') }}
+  {{ azad_stat_card(s.transaction_count, _('عدد المعاملات'), 'shopping-cart', 'var(--azad-blue)') }}
+  {{ azad_stat_card(data.growth_rate ~ '%', _('معدل النمو'), 'trending-up', 'var(--azad-amber)' if data.growth_rate >= 0 else 'var(--azad-red)') }}
 </div>
 
 <div class="azad-section" style="margin-top:2rem">

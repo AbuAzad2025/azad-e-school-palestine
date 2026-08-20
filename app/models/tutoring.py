@@ -118,3 +118,5 @@ class TutorPayout(PKMixin, db.Model):
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     reviewed_at = db.Column(db.DateTime(timezone=True))
     note: Mapped[str | None] = mapped_column(Text)
+
+    tutor: Mapped[User] = relationship("User", foreign_keys=[tutor_id])
