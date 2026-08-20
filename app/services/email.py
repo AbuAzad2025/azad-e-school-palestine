@@ -3,29 +3,29 @@
 يُستخدم Flask-Mail لإرسال رسائل HTML. يسجل فقط في وضع التطوير أو عند تعطيل البريد.
 """
 
-import logging
-
 from flask import current_app
 from flask_mail import Message
 
+from app.core.logging import get_logger
 from app.extensions import mail
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _send(to: str, subject: str, html_body: str) -> bool:
     """إرسال رسالة بريد. يعيد True عند النجاح، False عند الفشل أو التعطيل."""
+    log = logger.bind(service="email", to=to, subject=subject)
     if not current_app.config.get("EMAIL_ENABLED", False):
-        logger.info("[EMAIL-DISABLED] to=%s subject=%s", to, subject)
+        log.info("email_disabled")
         return False
 
     try:
         msg = Message(subject=subject, recipients=[to], html=html_body)
         mail.send(msg)
-        logger.info("[EMAIL-SENT] to=%s subject=%s", to, subject)
+        log.info("email_sent")
         return True
     except Exception:
-        logger.exception("[EMAIL-FAILED] to=%s subject=%s", to, subject)
+        log.exception("email_failed")
         return False
 
 

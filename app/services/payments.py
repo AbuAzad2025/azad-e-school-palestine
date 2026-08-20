@@ -6,7 +6,6 @@
 import hashlib
 import hmac
 import json
-import logging
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -15,13 +14,14 @@ from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from app.core.logging import get_logger
 from app.extensions import db
 from app.models.billing import ProcessedEvent
 
 if TYPE_CHECKING:
     from app.models.billing import Subscription
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # ---- Fraud Detection Configuration ----
@@ -465,13 +465,18 @@ class PaymentService:
         metadata: dict[str, Any] | None = None,
     ) -> PaymentIntent | None:
         """إنشاء نية دفع عبر البوابة المحددة"""
+        log = logger.bind(service="payments", user_id=user_id, gateway=gateway.value)
+        log.info("create_payment_called", amount=str(amount), currency=currency)
         gateway_obj = self.gateways.get(gateway)
         if not gateway_obj:
+            log.error("gateway_not_configured", gateway=gateway.value)
             raise ValueError(f"Gateway {gateway.value} not configured")
         return gateway_obj.create_payment_intent(amount, currency, user_id, metadata)
 
     def process_webhook(self, gateway: PaymentGateway, payload: dict, headers: dict) -> dict:
         """معالجة webhook من البوابة مع Idempotency"""
+        log = logger.bind(service="payments", gateway=gateway.value)
+        log.info("process_webhook_called")
         gateway_obj = self.gateways.get(gateway)
         if not gateway_obj:
             return {"success": False, "error": "Gateway not configured"}

@@ -40,18 +40,44 @@ def create_api_blueprint(version: str = API_VERSION) -> Blueprint:
     if version not in API_VERSIONS:
         raise ValueError(f"Unsupported API version: {version}")
     bp = Blueprint(f"api_{version}", __name__, url_prefix=f"/api/{version}")
+
+    @bp.before_request
+    def _api_auth_check():
+        from flask import request as req
+        from flask_login import current_user
+
+        exempt_endpoints = {"api_health", "api_version"}
+        if req.endpoint and any(req.endpoint.endswith(e) for e in exempt_endpoints):
+            return None
+        if not current_user.is_authenticated:
+            from .routes import api_error
+
+            return api_error("غير مصادق عليه", 401, "UNAUTHORIZED")
+        return None
+
     return bp
 
 
 # Main v1 blueprint
 bp = create_api_blueprint(API_VERSION)
 
+# Import routes to register them on bp
+from . import routes  # noqa: F401, E402
+
 
 @bp.get("/health")
 @api_version_required
 def api_health():
+    """فحص صحة الخدمة.
+    ---
+    tags: [Health]
+    responses:
+      200:
+        description: الخدمة تعمل بشكل طبيعي
+        schema:
+          $ref: '#/definitions/HealthResponse'
+    """
     response = jsonify(status="ok", api=API_VERSION, app="azad-e-school")
-    # Add version headers
     response.headers["X-API-Version"] = API_VERSION
     response.headers["X-API-Versions"] = ",".join(API_VERSIONS)
     return response
@@ -59,7 +85,15 @@ def api_health():
 
 @bp.get("/version")
 def api_version():
-    """Get current API version info."""
+    """معلومات إصدار API الحالي.
+    ---
+    tags: [Health]
+    responses:
+      200:
+        description: معلومات الإصدار
+        schema:
+          $ref: '#/definitions/VersionInfo'
+    """
     return jsonify(
         current=API_VERSION,
         supported=API_VERSIONS,

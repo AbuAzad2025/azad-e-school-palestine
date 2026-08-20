@@ -7,7 +7,6 @@
 
 import asyncio
 import json
-import logging
 import os
 import random
 import time
@@ -16,12 +15,13 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
+from app.core.logging import get_logger
 from app.extensions import db
 from app.models.ai import AiMessage, AiSession, AiUsageLog
 from app.models.user import User, UserRole
 from app.services.base import tx
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 try:
     from openai import AsyncOpenAI
@@ -232,6 +232,8 @@ class AiService:
         يقترح درجة ونقاط قوة ونقاط ضعف بناءً على إجابة الطالب.
         يستخدم OpenAI API حقيقي.
         """
+        log = logger.bind(service="ai", user_id=user_id, action="suggest_grade")
+        log.info("suggest_grade_called")
         if question_type == "mcq":
             system_prompt = "You are a precise grading assistant. Output ONLY valid JSON."
             user_prompt = f"""Grade this MCQ answer:
@@ -310,6 +312,8 @@ Return JSON: {{"score": int (0-10), "strengths": [string], "improvements": [stri
         user_id: int = 0,
     ) -> list[dict]:
         """يولد أسئلة امتحان من موضوع معين عبر OpenAI."""
+        log = logger.bind(service="ai", user_id=user_id, action="generate_questions")
+        log.info("generate_questions_called", topic=topic, count=count)
         types = question_types or ["mcq", "true_false", "essay"]
 
         system_prompt = f"""You are an expert exam writer for Palestinian curriculum.
@@ -468,6 +472,8 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
         lesson_id: int | None = None,
     ):
         """محادثة تدفقية (SSE) مع الطالب."""
+        log = logger.bind(service="ai", user_id=user_id, action="ask_question")
+        log.info("ask_question_stream_called")
         session = self._get_or_create_session(user_id, class_id, lesson_id)
 
         user_msg = AiMessage(session_id=session.id, role="user", content=question)

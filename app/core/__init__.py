@@ -6,6 +6,7 @@
 
 from .context import register as register_context
 from .db import TxError, tx
+from .logging import get_correlation_id, get_logger
 from .permissions import role_required
 from .security import hash_password, verify_password
 from .tenancy import get_school_or_404, scope_by_school, tenant_scope
@@ -15,6 +16,8 @@ from .uploads import allowed_extension, save_upload
 __all__ = [
     "TxError",
     "allowed_extension",
+    "get_correlation_id",
+    "get_logger",
     "get_school_or_404",
     "hash_password",
     "make_activation_token",

@@ -91,18 +91,34 @@ SWAGGER_TEMPLATE: dict = {
         "Error": {
             "type": "object",
             "properties": {
-                "error": {"type": "string", "example": "validation_error"},
-                "message": {"type": "string", "example": "Invalid input"},
-                "details": {"type": "object"},
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "code": {"type": "string"},
+                    },
+                },
+            },
+        },
+        "ApiResponse": {
+            "type": "object",
+            "properties": {
+                "data": {"type": "object"},
+                "meta": {
+                    "type": "object",
+                    "properties": {
+                        "version": {"type": "string"},
+                        "request_id": {"type": "string"},
+                    },
+                },
             },
         },
         "HealthResponse": {
             "type": "object",
             "properties": {
-                "status": {"type": "string", "enum": ["healthy", "degraded", "down"]},
-                "timestamp": {"type": "string", "format": "date-time"},
-                "checks": {"type": "object"},
-                "version": {"type": "string"},
+                "status": {"type": "string", "enum": ["ok", "degraded", "down"]},
+                "api": {"type": "string"},
+                "app": {"type": "string"},
             },
         },
         "VersionInfo": {
@@ -112,6 +128,49 @@ SWAGGER_TEMPLATE: dict = {
                 "supported": {"type": "array", "items": {"type": "string"}},
                 "deprecated": {"type": "array", "items": {"type": "string"}},
                 "default": {"type": "string"},
+            },
+        },
+        "User": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "email": {"type": "string", "format": "email"},
+                "name_ar": {"type": "string"},
+                "role": {"type": "string", "enum": ["super_admin", "school_admin", "teacher", "student", "parent"]},
+            },
+        },
+        "Lesson": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "title": {"type": "string"},
+                "class_id": {"type": "integer"},
+                "sort_order": {"type": "integer", "nullable": True},
+                "is_offline_available": {"type": "boolean"},
+                "created_at": {"type": "string", "format": "date-time", "nullable": True},
+            },
+        },
+        "TutoringSession": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "student_id": {"type": "integer"},
+                "tutor_id": {"type": "integer"},
+                "subject": {"type": "string"},
+                "status": {"type": "string"},
+                "price": {"type": "number", "nullable": True},
+                "currency": {"type": "string", "nullable": True},
+                "scheduled_at": {"type": "string", "format": "date-time", "nullable": True},
+                "duration_min": {"type": "integer", "nullable": True},
+            },
+        },
+        "PaginatedMeta": {
+            "type": "object",
+            "properties": {
+                "page": {"type": "integer"},
+                "per_page": {"type": "integer"},
+                "total": {"type": "integer"},
+                "pages": {"type": "integer"},
             },
         },
     },

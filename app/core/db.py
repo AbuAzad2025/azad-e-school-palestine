@@ -9,7 +9,6 @@
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
@@ -29,7 +28,9 @@ def tx(func: Callable[..., T], *args: Any, **kwargs: Any) -> T:
         return result
     except SQLAlchemyError:
         db.session.rollback()
-        current_app.logger.exception("فشل المعاملة")
+        from app.core.logging import get_logger
+
+        get_logger(__name__).exception("transaction_failed")
         raise
     except Exception:
         db.session.rollback()
