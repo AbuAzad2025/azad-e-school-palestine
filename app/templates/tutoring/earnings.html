@@ -11,7 +11,7 @@
 
 <div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
   {{ azad_stat_card(earnings.total_earnings ~ ' ' ~ session.currency, _('إجمالي الأرباح'), 'credit-card', 'var(--azad-green)') }}
-  {{ azad_stat_card(earnings.commission_amount ~ ' ' ~ session.currency, _('عمولة المنصة (20%)'), 'percent', 'var(--azad-red)') }}
+  {{ azad_stat_card(earnings.commission_amount ~ ' ' ~ session.currency, _('عمولة المنصة (20%%)'), 'percent', 'var(--azad-red)') }}
   {{ azad_stat_card(earnings.net_earnings ~ ' ' ~ session.currency, _('صافي الأرباح'), 'credit-card', 'var(--azad-blue)') }}
   {{ azad_stat_card(earnings.withdrawable ~ ' ' ~ session.currency, _('المتاح للسحب'), 'wallet', 'var(--azad-green)') }}
   {{ azad_stat_card(earnings.total_payouts ~ ' ' ~ session.currency, _('إجمالي السحوبات'), 'arrow-up-circle', 'var(--azad-blue)') }}

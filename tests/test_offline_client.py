@@ -8,6 +8,10 @@ def _unique_domain():
     return f"test-{uuid.uuid4().hex[:8]}.org"
 
 
+def _unique_join_code():
+    return f"TEST-{uuid.uuid4().hex[:8]}"
+
+
 def _unique_email():
     return f"student-{uuid.uuid4().hex[:8]}@test.com"
 
@@ -30,7 +34,7 @@ def test_lesson_model_has_offline_available(app):
         db.session.commit()
 
         class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code="TEST30", name="صف")
+                               join_code=_unique_join_code(), name="صف")
         db.session.add(class_room)
         db.session.commit()
 
@@ -64,7 +68,7 @@ def test_offline_service_mark_for_download(app):
         db.session.commit()
 
         class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code="TEST31", name="صف")
+                               join_code=_unique_join_code(), name="صف")
         db.session.add(class_room)
         db.session.commit()
 

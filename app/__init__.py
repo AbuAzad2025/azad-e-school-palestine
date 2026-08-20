@@ -3,7 +3,6 @@
 M0: هيكل قابل للتشغيل. تُضاف الوحدات (blueprints) في مراحلها.
 """
 
-import logging
 import time as _time
 from collections import deque
 
@@ -13,9 +12,11 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
+from .core.logging import configure_structlog, correlation_id_middleware, get_logger
+from .core.openapi import init_swagger
 from .extensions import babel, csrf, db, login_manager, mail, migrate
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 _response_times: deque[int] = deque(maxlen=1000)
 
@@ -42,6 +43,10 @@ def _rate_limit_key():
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # === Structured Logging + Correlation IDs ===
+    configure_structlog(app)
+    correlation_id_middleware(app)
 
     # === أمان: Talisman (روؤوس HTTP، CSP، HSTS) ===
     if app.config.get("TALISMAN_ENABLED", True):
@@ -186,6 +191,17 @@ def create_app(config_class=Config):
             limiter.limit("30 per minute")(tutoring_bp_local.view_functions["book"])
         # api blueprint (all routes)
         limiter.limit("100 per minute")(api_bp_local)
+
+    # API Version negotiation middleware
+    @app.before_request
+    def _negotiate_api_version():
+        if request.path.startswith("/api/"):
+            from .modules.api import negotiate_api_version
+
+            request.api_version = negotiate_api_version(request)  # type: ignore[attr-defined]
+
+    # Initialize Swagger/OpenAPI
+    init_swagger(app)
 
     from .core import context
 

@@ -329,7 +329,7 @@ def admin_user(app):
         from app.models.user import User, UserRole
         from app.core.security import hash_password
         u = User(
-            email="admin@test.com",
+            email=f"admin-{uuid.uuid4().hex[:8]}@test.com",
             name_ar="مدير اختبار",
             role=UserRole.super_admin,
             password_hash=hash_password("TestPass123!"),
@@ -338,7 +338,7 @@ def admin_user(app):
         )
         _db.session.add(u)
         _db.session.commit()
-        return u
+        return u.email
 
 
 def make_grade(app, school_id, grade_level=1):

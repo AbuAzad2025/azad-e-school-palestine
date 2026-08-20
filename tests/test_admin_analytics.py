@@ -2,8 +2,21 @@
 
 import pytest
 from datetime import UTC, datetime, timedelta
+import uuid
 
 from app.services.analytics import get_analytics_data
+
+
+def _unique_domain():
+    return f"test-{uuid.uuid4().hex[:8]}.org"
+
+
+def _unique_email():
+    return f"user-{uuid.uuid4().hex[:8]}@test.com"
+
+
+def _unique_join_code():
+    return f"JOIN-{uuid.uuid4().hex[:8]}"
 
 
 def test_get_analytics_data_returns_all_keys(app):
@@ -29,7 +42,7 @@ def test_analytics_dau_calculation(app):
 
     with app.app_context():
         # Create test data
-        school = School(name_ar="مدرسة", name_en="School", domain="test.org")
+        school = School(name_ar="مدرسة", name_en="School", domain=_unique_domain())
         db.session.add(school)
         db.session.commit()
 
@@ -39,7 +52,7 @@ def test_analytics_dau_calculation(app):
         db.session.commit()
 
         class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code="TEST10", name="صف العاشر")
+                               join_code=_unique_join_code(), name="صف العاشر")
         db.session.add(class_room)
         db.session.commit()
 
@@ -47,7 +60,7 @@ def test_analytics_dau_calculation(app):
         db.session.add(lesson)
         db.session.commit()
 
-        student = User(email="student@test.com", name_ar="طالب", role=UserRole.student,
+        student = User(email=_unique_email(), name_ar="طالب", role=UserRole.student,
                        password_hash="hash", approval_status="approved", is_active=True)
         db.session.add(student)
         db.session.commit()
@@ -74,7 +87,7 @@ def test_analytics_new_users_count(app):
 
     with app.app_context():
         # Create new user
-        user = User(email="newuser@test.com", name_ar="مستخدم جديد", role=UserRole.student,
+        user = User(email=_unique_email(), name_ar="مستخدم جديد", role=UserRole.student,
                     password_hash="hash", approval_status="approved", is_active=True)
         db.session.add(user)
         db.session.commit()
@@ -86,9 +99,10 @@ def test_analytics_new_users_count(app):
 
 def test_analytics_route_renders(client, admin_user):
     """مسار التحليلات يعرض بنجاح"""
+    admin_email = admin_user
     # Login as admin
     client.post("/auth/login", data={
-        "email": admin_user.email,
+        "email": admin_email,
         "password": "TestPass123!"
     }, follow_redirects=True)
 

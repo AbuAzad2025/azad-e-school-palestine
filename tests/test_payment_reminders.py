@@ -16,6 +16,10 @@ def _unique_email():
     return f"student-{uuid.uuid4().hex[:8]}@test.com"
 
 
+def _unique_join_code():
+    return f"JOIN-{uuid.uuid4().hex[:8]}"
+
+
 def test_daily_reminders_sends_for_expiring_sub(app):
     """يرسل تذكير للاشتراكات التي تنتهي خلال 7 أيام"""
     from app import create_app
@@ -45,7 +49,7 @@ def test_daily_reminders_sends_for_expiring_sub(app):
         db.session.commit()
 
         class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code="TEST10", name="صف العاشر")
+                               join_code=_unique_join_code(), name="صف العاشر")
         db.session.add(class_room)
         db.session.commit()
 
@@ -100,7 +104,7 @@ def test_daily_reminders_skips_already_sent(app):
         db.session.commit()
 
         class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code="TEST11", name="صف العاشر 2")
+                               join_code=_unique_join_code(), name="صف العاشر 2")
         db.session.add(class_room)
         db.session.commit()
 

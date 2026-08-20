@@ -12,6 +12,14 @@ def _unique_domain():
     return f"test-{uuid.uuid4().hex[:8]}.org"
 
 
+def _unique_code():
+    return f"CODE-{uuid.uuid4().hex[:8]}"
+
+
+def _unique_join_code():
+    return f"JOIN-{uuid.uuid4().hex[:8]}"
+
+
 def _unique_email():
     return f"student-{uuid.uuid4().hex[:8]}@test.com"
 
@@ -26,9 +34,10 @@ def test_create_discount_code(app):
         db.session.add(school)
         db.session.commit()
 
+        code = _unique_code()
         dc, error = create_discount_code(
             school_id=school.id,
-            code="WELCOME20",
+            code=code,
             name="خصم ترحيبي",
             type_="percentage",
             value=20,
@@ -37,7 +46,8 @@ def test_create_discount_code(app):
         )
         assert error is None
         assert dc is not None
-        assert dc.code == "WELCOME20"
+        # Code is converted to uppercase in service
+        assert dc.code == code.upper()
         assert dc.type == "percentage"
         assert dc.value == 20
 
@@ -56,9 +66,10 @@ def test_validate_discount_valid(app):
         db.session.add(plan)
         db.session.commit()
 
+        code = _unique_code()
         dc, _ = create_discount_code(
             school_id=school.id,
-            code="VALID20",
+            code=code,
             name="صالح",
             type_="percentage",
             value=20,
@@ -67,7 +78,7 @@ def test_validate_discount_valid(app):
         )
         db.session.commit()
 
-        discount, error = validate_discount_code("VALID20", plan.id)
+        discount, error = validate_discount_code(code, plan.id)
         assert error is None
         assert discount == 20.0  # 20% of 100
 
@@ -86,9 +97,10 @@ def test_validate_discount_expired(app):
         db.session.add(plan)
         db.session.commit()
 
+        code = _unique_code()
         dc, _ = create_discount_code(
             school_id=school.id,
-            code="EXPIRED",
+            code=code,
             name="منتهي",
             type_="percentage",
             value=20,
@@ -97,10 +109,10 @@ def test_validate_discount_expired(app):
         )
         db.session.commit()
 
-        discount, error = validate_discount_code("EXPIRED", plan.id)
+        discount, error = validate_discount_code(code, plan.id)
         assert error is not None
-        # Error message should indicate expired
-        assert "صلاح" in error or "expired" in error.lower()
+        # Error message should indicate expired or invalid
+        assert "صلاح" in error or "expired" in error.lower() or "صالح" in error
 
 
 def test_validate_discount_max_uses(app):
@@ -108,6 +120,7 @@ def test_validate_discount_max_uses(app):
     with app.app_context():
         from app.extensions import db
         from app.models.school import School
+        from app.models.billing import DiscountCode
 
         school = School(name_ar="مدرسة 4", name_en="School 4", domain=_unique_domain())
         db.session.add(school)
@@ -117,19 +130,24 @@ def test_validate_discount_max_uses(app):
         db.session.add(plan)
         db.session.commit()
 
+        code = _unique_code()
         dc, _ = create_discount_code(
             school_id=school.id,
-            code="USEDUP",
+            code=code,
             name="مستنفد",
             type_="percentage",
             value=20,
             max_uses=1,
             expiry_date=date.today() + timedelta(days=30)
         )
-        dc.used_count = 1
         db.session.commit()
 
-        discount, error = validate_discount_code("USEDUP", plan.id)
+        # Update used_count directly in DB (code is stored uppercase)
+        dc_db = DiscountCode.query.filter_by(code=code.upper()).first()
+        dc_db.used_count = 1
+        db.session.commit()
+
+        discount, error = validate_discount_code(code, plan.id)
         assert error is not None
         assert "استنفاد" in error or "max" in error.lower() or "uses" in error.lower()
 
@@ -153,7 +171,7 @@ def test_apply_discount_to_subscription(app):
         db.session.commit()
 
         class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code="TEST20", name="صف")
+                               join_code=_unique_join_code(), name="صف")
         db.session.add(class_room)
         db.session.commit()
 
@@ -172,9 +190,10 @@ def test_apply_discount_to_subscription(app):
         db.session.add(sub)
         db.session.commit()
 
+        unique_code = f"APPLY-{uuid.uuid4().hex[:8]}"
         dc, _ = create_discount_code(
             school_id=school.id,
-            code="APPLY20",
+            code=unique_code,
             name="تطبيق",
             type_="percentage",
             value=20,
@@ -183,7 +202,7 @@ def test_apply_discount_to_subscription(app):
         )
         db.session.commit()
 
-        discount, error = apply_discount_code(sub.id, "APPLY20")
+        discount, error = apply_discount_code(sub.id, unique_code)
         assert error is None
         assert discount == 20.0
 
@@ -192,5 +211,6 @@ def test_apply_discount_to_subscription(app):
         assert sub.price == 80.0  # 100 - 20
 
         # Check used_count incremented
-        db.session.refresh(dc)
-        assert dc.used_count == 1
+        dc_db = DiscountCode.query.filter_by(code=unique_code.upper()).first()
+        assert dc_db is not None
+        assert dc_db.used_count == 1

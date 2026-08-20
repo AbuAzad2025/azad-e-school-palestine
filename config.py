@@ -130,3 +130,11 @@ class Config:
     # === Analytics & Contact ===
     PLAUSIBLE_SCRIPT_URL = os.getenv("PLAUSIBLE_SCRIPT_URL", "")
     WHATSAPP_BUSINESS_NUMBER = os.getenv("WHATSAPP_BUSINESS_NUMBER", "")
+
+    # === Logging ===
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    LOG_JSON = os.getenv("LOG_JSON", "0") == "1"
+
+    # === OpenAPI/Swagger ===
+    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "1") == "1"
+    SWAGGER_HOST = os.getenv("SWAGGER_HOST", "")

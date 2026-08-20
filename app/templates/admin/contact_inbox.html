@@ -42,7 +42,7 @@
             <button type="submit" class="azad-btn-outline azad-btn-sm">{{ icon('check') }} {{ _('تعليم كمقروء') }}</button>
           </form>
           {% endif %}
-          <button type="button" class="azad-btn-outline azad-btn-sm" onclick="openReplyModal({{ msg.id }}, '{{ msg.email | escapejs }}', '{{ msg.subject | escapejs }}')">
+          <button type="button" class="azad-btn-outline azad-btn-sm" onclick="openReplyModal({{ msg.id }}, '{{ msg.email }}', '{{ msg.subject }}')">
             {{ icon('reply') }} {{ _('رد') }}
           </button>
         </td>

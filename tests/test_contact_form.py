@@ -52,6 +52,8 @@ def test_admin_contact_inbox(client, app, admin_user):
     from app.models.user import User, UserRole
     from app.models.communication import ContactMessage
 
+    admin_email = admin_user
+
     with app.app_context():
         # Create a contact message
         msg = ContactMessage(name="User", email="user@test.com",
@@ -61,7 +63,7 @@ def test_admin_contact_inbox(client, app, admin_user):
 
     # Login as admin
     client.post("/auth/login", data={
-        "email": admin_user.email,
+        "email": admin_email,
         "password": "TestPass123!"
     }, follow_redirects=True)
 
