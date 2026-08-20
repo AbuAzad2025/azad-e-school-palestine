@@ -33,10 +33,10 @@ env:
 
 jobs:
   # ════════════════════════════════════════════════════════════
-  # Static Quality: Python · JavaScript · CSS
+  # Static Quality: Python · JavaScript
   # ════════════════════════════════════════════════════════════
   lint-audit:
-    name: Static quality (py · js · css)
+    name: Static quality (py · js)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -60,7 +60,6 @@ jobs:
       - name: Install Node lint tools
         run: |
           npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
-          npx @biomejs/biome --version 2>/dev/null || npm install -g @biomejs/biome
 
       # ── Python ──
       - name: Ruff check (lint)
@@ -78,12 +77,6 @@ jobs:
       # ── JavaScript ──
       - name: Biome check (JS lint + format)
         run: npx biome check app/static/js
-
-      # ── CSS ──
-      - name: CSS validation
-        run: |
-          echo "Checking CSS files exist and are non-empty"
-          find app/static/css -name "*.css" -size +0c | head -5
 
   # ════════════════════════════════════════════════════════════
   # Security Scan: Secrets · Dependencies · Docker
@@ -108,30 +101,24 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pip-audit
+          pip install -r requirements.txt pip-audit bandit
 
       - name: Gitleaks (secret scanning)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
       - name: pip-audit (dependency vulnerabilities)
         run: python -m pip_audit -r requirements.txt --desc on
-        continue-on-error: true
 
       - name: Hadolint (Dockerfile lint)
-        if: always()
+        if: hashFiles('Dockerfile') != ''
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
-        continue-on-error: true
 
       - name: Bandit JSON report
-        if: always()
-        run: |
-          pip install bandit
-          bandit -r app -f json -o bandit-report.json || true
+        run: bandit -r app -f json -o bandit-report.json -ll
 
       - name: Upload bandit report
         if: always()
@@ -192,6 +179,24 @@ jobs:
           pytest tests -v --tb=short \
             --cov=app --cov-report=term \
             --cov-report=xml:coverage.xml
+
+      - name: Enforce coverage floor (${{ env.COVERAGE_FAIL_UNDER }}%)
+        run: |
+          COVERAGE=$(python -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('coverage.xml')
+          print(float(tree.getroot().get('line-rate', 0)) * 100)
+          ")
+          echo "Coverage: ${COVERAGE}%"
+          python -c "
+          import sys
+          actual = float('${COVERAGE}')
+          threshold = float('${{ env.COVERAGE_FAIL_UNDER }}')
+          if actual < threshold:
+              print(f'::error::Coverage {actual:.1f}% is below threshold {threshold}%')
+              sys.exit(1)
+          print(f'Coverage {actual:.1f}% meets threshold {threshold}%')
+          "
 
       - name: Upload coverage to Codecov
         if: always()
@@ -307,7 +312,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-report
-          path: coverage/e2e
+          path: playwright-report
           if-no-files-found: ignore
           retention-days: 7
 
@@ -354,7 +359,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Verify app creates successfully
+      - name: Verify app creates + routes load
         env:
           PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
@@ -362,39 +367,16 @@ jobs:
           FLASK_APP: run.py
           APP_ENV: testing
         run: |
-          python -c "from app import create_app; app = create_app(); print('App created OK')"
-
-  # ════════════════════════════════════════════════════════════
-  # Coverage Report (enforce floor)
-  # ════════════════════════════════════════════════════════════
-  coverage-report:
-    name: Coverage report
-    needs: [test]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: always()
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - name: Install coverage
-        run: pip install coverage
-
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-data
-
-      - name: Enforce coverage floor
-        if: always()
-        run: |
-          pip install coverage
-          coverage xml 2>/dev/null || true
-          echo "Coverage report available at coverage.xml"
+          python -c "
+          from app import create_app
+          app = create_app()
+          with app.test_client() as c:
+              for rule in app.url_map.iter_rules():
+                  if rule.endpoint == 'static':
+                      continue
+                  print(f'  registered: {rule.rule} -> {rule.endpoint}')
+          print('App boot OK — all routes registered')
+          "
 
   # ════════════════════════════════════════════════════════════
   # Docker Build Check
@@ -407,22 +389,23 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: |
-          docker build -t azad-e-school:test .
-          echo "Docker build successful"
+        run: docker build -t azad-e-school:test .
 
-      - name: Smoke test (image runs)
+      - name: Verify image starts
         run: |
-          docker run -d --name test-azad \
-            -e DATABASE_URL=sqlite:///tmp/test.db \
+          CONTAINER_ID=$(docker run -d --name test-azad \
+            -e DATABASE_URL=postgresql://x:x@localhost:5432/x \
             -e SECRET_KEY=test-key \
             -e APP_ENV=testing \
+            -e FLASK_APP=run.py \
             -p 5000:8000 \
-            azad-e-school:test || true
-          sleep 5
-          docker logs test-azad 2>&1 | head -20
-          docker stop test-azad || true
-          docker rm test-azad || true
+            azad-e-school:test)
+          sleep 8
+          docker logs "$CONTAINER_ID" 2>&1 | tail -20
+          docker inspect "$CONTAINER_ID" --format='{{.State.Status}}' | grep -q running
+          echo "Docker container is running"
+          docker stop "$CONTAINER_ID"
+          docker rm "$CONTAINER_ID"
 
   # ════════════════════════════════════════════════════════════
   # Migrations (flask db upgrade + downgrade)
@@ -479,8 +462,33 @@ jobs:
           from app.extensions import db
           app = create_app()
           with app.app_context():
-              result = db.session.execute(text(\"SELECT version_num FROM alembic_version\")).fetchone()
+              result = db.session.execute(text('SELECT version_num FROM alembic_version')).fetchone()
               print(f'Current migration: {result[0] if result else \"NONE\"}')
+          "
+
+      - name: Run migrations (downgrade)
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
+          SECRET_KEY: ci-migration-key
+          FLASK_APP: run.py
+        run: flask db downgrade -1
+
+      - name: Verify downgrade
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
+          SECRET_KEY: ci-migration-key
+          FLASK_APP: run.py
+        run: |
+          python -c "
+          from sqlalchemy import text
+          from app import create_app
+          from app.extensions import db
+          app = create_app()
+          with app.app_context():
+              result = db.session.execute(text('SELECT version_num FROM alembic_version')).fetchone()
+              print(f'After downgrade: {result[0] if result else \"NONE\"}')
           "
 
   # ════════════════════════════════════════════════════════════
@@ -504,28 +512,15 @@ jobs:
           echo "docker-build:     ${{ needs.docker-build.result }}"
           echo "migrations:       ${{ needs.migrations.result }}"
 
-          if [[ "${{ needs.lint-audit.result }}" == "failure" ]]; then
-            echo "::error::Static quality checks failed"
+          FAILED=0
+          for job in lint-audit security-scan test test-js test-e2e verify-boot docker-build migrations; do
+            result="${{ needs[job].result }}"
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::${job} failed or was cancelled"
+              FAILED=1
+            fi
+          done
+          if [[ "$FAILED" == "1" ]]; then
             exit 1
           fi
-          if [[ "${{ needs.test.result }}" == "failure" ]]; then
-            echo "::error::Tests failed"
-            exit 1
-          fi
-          if [[ "${{ needs.test-js.result }}" == "failure" ]]; then
-            echo "::error::JS unit tests failed"
-            exit 1
-          fi
-          if [[ "${{ needs.test-e2e.result }}" == "failure" ]]; then
-            echo "::error::E2E tests failed"
-            exit 1
-          fi
-          if [[ "${{ needs.verify-boot.result }}" == "failure" ]]; then
-            echo "::error::App boot verification failed"
-            exit 1
-          fi
-          if [[ "${{ needs.migrations.result }}" == "failure" ]]; then
-            echo "::error::Migration check failed"
-            exit 1
-          fi
-          echo "All required jobs passed!"
+          echo "All 8 jobs passed!"
