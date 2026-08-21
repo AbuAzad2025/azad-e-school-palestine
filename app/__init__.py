@@ -84,17 +84,9 @@ def create_app(config_class=Config):
     mail.init_app(app)
 
     if app.config.get("SENTRY_DSN"):
-        import sentry_sdk
-        from sentry_sdk.integrations.flask import FlaskIntegration
-        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        from app.core.sentry import init_sentry, set_sentry_user
 
-        sentry_sdk.init(
-            dsn=app.config["SENTRY_DSN"],
-            environment=app.config.get("SENTRY_ENVIRONMENT", "production"),
-            integrations=[FlaskIntegration(), SqlalchemyIntegration()],
-            traces_sample_rate=app.config.get("SENTRY_TRACES_SAMPLE_RATE", 0.1),
-            _experiments={"profiles_sample_rate": 0.1},
-        )
+        init_sentry(app)
 
     @app.before_request
     def _track_response_time():
@@ -102,19 +94,7 @@ def create_app(config_class=Config):
         if app.config.get("SENTRY_DSN"):
             from flask_login import current_user
 
-            if current_user.is_authenticated:
-                try:
-                    import sentry_sdk
-
-                    sentry_sdk.set_user(
-                        {
-                            "id": str(current_user.id),
-                            "email": current_user.email,
-                            "role": getattr(current_user.role, "value", str(current_user.role)),
-                        }
-                    )
-                except Exception:
-                    pass
+            set_sentry_user(current_user)
 
     @app.after_request
     def _track_response_end(response):
