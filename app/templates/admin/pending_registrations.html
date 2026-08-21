@@ -5,7 +5,7 @@
   <h1 class="page-title azad-title">{{ _('التسجيلات المعلقة موافقة') }}</h1>
   <div>
     <form method="get" style="display:inline-flex; gap:.5rem;">
-      <input type="search" name="search" value="{{ search or '' }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" style="width:240px;">
+      <input type="search" name="search" value="{{ search or '' }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" style="width:240px;">
       <button type="submit" class="azad-btn-outline">{{ icon('search') }} {{ _('بحث') }}</button>
     </form>
   </div>

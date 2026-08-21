@@ -16,7 +16,7 @@
   <form method="post" action="{{ url_for('content.unit_create', class_id=class_room.id) }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-      <input type="text" name="title" placeholder="{{ _('عنوان وحدة جديدة...') }}" style="flex:1;min-width:200px" required>
+      <input type="text" name="title" placeholder="{{ _('عنوان وحدة جديدة...') }}" aria-label="{{ _('عنوان وحدة جديدة') }}" style="flex:1;min-width:200px" required>
       <button class="azad-btn-outline" type="submit">{{ _('إضافة وحدة') }}</button>
     </div>
   </form>

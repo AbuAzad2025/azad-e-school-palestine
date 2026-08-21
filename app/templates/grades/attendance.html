@@ -9,7 +9,7 @@
 </div>
 
 <form method="get" class="card" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
-  <input type="date" name="date" value="{{ day.isoformat() }}" style="flex:1;min-width:160px">
+  <input type="date" name="date" value="{{ day.isoformat() }}" aria-label="{{ _('تاريخ الحضور') }}" style="flex:1;min-width:160px">
   <button class="azad-btn-outline" type="submit">{{ _('عرض') }}</button>
 </form>
 
@@ -32,7 +32,7 @@
         <td>{{ m.user.name_ar }}</td>
         <td>
           {% if can_teach %}
-          <select name="status_{{ m.user_id }}">
+          <select name="status_{{ m.user_id }}" aria-label="{{ _('حالة حضور') }} {{ m.user.name_ar }}">
             {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
               <option value="{{ value }}" {% if rec and rec.status == value %}selected{% endif %}>{{ _(label) }}</option>
             {% endfor %}

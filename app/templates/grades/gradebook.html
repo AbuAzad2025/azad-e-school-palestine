@@ -51,7 +51,7 @@
           <form method="post" action="{{ url_for('grades.grade_set', item_id=item.id) }}" style="display:flex;gap:.3rem;align-items:center">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="student_id" value="{{ m.user_id }}">
-            <input type="number" step="0.5" name="mark" value="{{ entry.mark if entry and entry.mark is not none else '' }}" style="max-width:80px;padding:.3rem .5rem">
+            <input type="number" step="0.5" name="mark" value="{{ entry.mark if entry and entry.mark is not none else '' }}" aria-label="{{ _('درجة') }} {{ item.title }} {{ m.user.name_ar }}" style="max-width:80px;padding:.3rem .5rem">
             <button class="azad-btn-outline" style="padding:.3rem .8rem" type="submit">✓</button>
           </form>
           {% else %}{{ entry.mark if entry and entry.mark is not none else '—' }}{% endif %}

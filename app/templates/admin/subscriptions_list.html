@@ -4,7 +4,7 @@
 <div class="section-head">
   <h1 class="page-title azad-title">{{ _('الاشتراكات') }}</h1>
   <form method="get" class="form-inline">
-    <select name="status" class="form-group" style="min-width:160px">
+    <select name="status" class="form-group" style="min-width:160px" aria-label="{{ _('تصفية حسب الحالة') }}">
       <option value="">{{ _('كل الحالات') }}</option>
       <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>{{ _('معلقة') }}</option>
       <option value="active" {% if status_filter == 'active' %}selected{% endif %}>{{ _('نشطة') }}</option>

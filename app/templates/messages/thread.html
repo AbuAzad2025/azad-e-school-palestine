@@ -31,7 +31,7 @@
       <input type="hidden" name="subject" value="{{ _('رد: ') }}{{ message.subject }}">
       <div class="form-group">
         <textarea name="body" required class="form-control" rows="4"
-                  placeholder="{{ _('اكتب ردك...') }}"></textarea>
+                  placeholder="{{ _('اكتب ردك...') }}" aria-label="{{ _('نص الرد') }}"></textarea>
       </div>
       <div class="form-actions">
         <button type="submit" class="azad-btn">{{ icon('envelope') }} {{ _('إرسال الرد') }}</button>

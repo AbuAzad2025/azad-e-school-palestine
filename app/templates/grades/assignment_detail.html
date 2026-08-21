@@ -42,8 +42,8 @@
         {% if s.file %}<p><a href="{{ url_for('grades.submission_file', submission_id=s.id) }}">📎 {{ _('تحميل الملف المرفق') }}</a></p>{% endif %}
         <form method="post" action="{{ url_for('grades.submission_grade', submission_id=s.id) }}" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="number" step="0.5" name="mark" min="0" max="{{ assignment.max_mark or 100 }}" placeholder="{{ _('الدرجة') }}" required style="max-width:110px" value="{{ s.mark or '' }}">
-          <input type="text" name="feedback" placeholder="{{ _('ملاحظات') }}" value="{{ s.feedback or '' }}" style="flex:1;min-width:160px">
+          <input type="number" step="0.5" name="mark" min="0" max="{{ assignment.max_mark or 100 }}" placeholder="{{ _('الدرجة') }}" aria-label="{{ _('درجة التسليم') }}" required style="max-width:110px" value="{{ s.mark or '' }}">
+          <input type="text" name="feedback" placeholder="{{ _('ملاحظات') }}" aria-label="{{ _('ملاحظات التصحيح') }}" value="{{ s.feedback or '' }}" style="flex:1;min-width:160px">
           <button class="azad-btn" type="submit">{{ _('تصحيح') }}</button>
         </form>
       </details>

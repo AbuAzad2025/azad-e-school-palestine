@@ -28,10 +28,10 @@
         </td>
         <td style="text-align:center">{{ criterion.max_score }}</td>
         <td>
-          <input type="number" name="score_{{ criterion.id }}" class="azad-field__input" min="0" max="{{ criterion.max_score }}" step="0.5" value="{{ existing_grades.get(criterion.id, 0) }}" style="max-width:100px" required>
+          <input type="number" name="score_{{ criterion.id }}" class="azad-field__input" min="0" max="{{ criterion.max_score }}" step="0.5" value="{{ existing_grades.get(criterion.id, 0) }}" aria-label="{{ _('درجة') }} {{ criterion.title }}" style="max-width:100px" required>
         </td>
         <td>
-          <input type="text" name="comment_{{ criterion.id }}" class="azad-field__input" placeholder="{{ _('ملاحظة اختيارية') }}" value="{{ existing_comments.get(criterion.id, '') }}">
+          <input type="text" name="comment_{{ criterion.id }}" class="azad-field__input" placeholder="{{ _('ملاحظة اختيارية') }}" aria-label="{{ _('ملاحظة') }} {{ criterion.title }}" value="{{ existing_comments.get(criterion.id, '') }}">
         </td>
       </tr>
       {% endfor %}

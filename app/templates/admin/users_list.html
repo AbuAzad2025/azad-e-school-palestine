@@ -4,8 +4,8 @@
 <div class="section-head">
   <h1 class="page-title azad-title">{{ _('إدارة المستخدمين') }}</h1>
   <form method="get" class="form-inline">
-    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" class="form-group" style="flex:1">
-    <select name="role" class="form-group" style="min-width:160px">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" class="form-group" style="flex:1">
+    <select name="role" class="form-group" style="min-width:160px" aria-label="{{ _('تصفية حسب الدور') }}">
       <option value="">{{ _('كل الأدوار') }}</option>
       {% for r in roles %}
       <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.value }}</option>

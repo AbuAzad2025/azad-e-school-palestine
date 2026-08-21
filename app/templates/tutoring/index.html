@@ -5,7 +5,7 @@
 <p class="page-subtitle">{{ _('سوق حر — احجز درساً 1-1 مع معلم خارج حدود المدرسة.') }}</p>
 
 <form method="get" class="card" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
-  <input type="search" name="q" value="{{ q }}" placeholder="{{ _('ابحث بمادة أو اسم معلم...') }}" style="flex:1;min-width:200px">
+  <input type="search" name="q" value="{{ q }}" placeholder="{{ _('ابحث بمادة أو اسم معلم...') }}" aria-label="{{ _('ابحث بمادة أو اسم معلم') }}" style="flex:1;min-width:200px">
   <button class="azad-btn" type="submit">{{ _('بحث') }}</button>
   <a class="azad-btn-outline" href="{{ url_for('tutoring.profile_new') }}">+ {{ _('انشر ملفك كمعلم') }}</a>
 </form>

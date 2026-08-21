@@ -30,7 +30,7 @@
       {% if is_teacher and q.type == 'essay' and a and a.answer and a.is_correct is none %}
         <form method="post" action="{{ url_for('assessment.answer_grade', answer_id=a.id) }}" style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="number" step="0.5" name="mark" min="0" max="{{ q.mark or 100 }}" placeholder="{{ _('الدرجة') }}" required style="max-width:120px">
+          <input type="number" step="0.5" name="mark" min="0" max="{{ q.mark or 100 }}" placeholder="{{ _('الدرجة') }}" aria-label="{{ _('درجة الإجابة') }}" required style="max-width:120px">
           <button class="azad-btn" type="submit">{{ _('تصحيح') }}</button>
         </form>
       {% endif %}

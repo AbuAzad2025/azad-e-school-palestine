@@ -4,7 +4,7 @@
 <div class="section-head">
   <h1 class="page-title azad-title">{{ _('إدارة المدارس') }}</h1>
   <form method="get" class="form-inline">
-    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" class="form-group" style="flex:1">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" aria-label="{{ _('بحث بالاسم أو النطاق') }}" class="form-group" style="flex:1">
     <button class="azad-btn" type="submit">{{ _('بحث') }}</button>
     {% if search %}
     <a href="{{ url_for('admin.schools_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a>
