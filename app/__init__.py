@@ -10,6 +10,7 @@ from config import Config
 from flask import Flask, g, jsonify, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 from flask_talisman import Talisman
 
 from .core.logging import configure_structlog, correlation_id_middleware, get_logger
@@ -72,6 +73,18 @@ def create_app(config_class=Config):
         strategy=app.config.get("RATELIMIT_STRATEGY", "fixed-window"),
     )
     limiter.init_app(app)
+
+    # === CORS for mobile/API clients ===
+    CORS(
+        app,
+        resources={
+            r"/api/v1/*": {
+                "origins": app.config.get("CORS_ORIGINS", ["*"]),
+                "supports_credentials": app.config.get("CORS_SUPPORTS_CREDENTIALS", True),
+                "allow_headers": app.config.get("CORS_ALLOW_HEADERS", ["Content-Type", "X-CSRFToken", "Authorization"]),
+            }
+        },
+    )
 
     db.init_app(app)
     migrate.init_app(app, db)

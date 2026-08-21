@@ -146,6 +146,11 @@ class Config:
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_JSON = os.getenv("LOG_JSON", "0") == "1"
 
+    # === CORS (mobile/API clients) ===
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+    CORS_SUPPORTS_CREDENTIALS = os.getenv("CORS_SUPPORTS_CREDENTIALS", "1") == "1"
+    CORS_ALLOW_HEADERS = ["Content-Type", "X-CSRFToken", "Authorization"]
+
     # === OpenAPI/Swagger ===
     SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "1") == "1"
     SWAGGER_HOST = os.getenv("SWAGGER_HOST", "")
