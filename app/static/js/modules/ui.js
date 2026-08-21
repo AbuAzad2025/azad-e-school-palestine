@@ -14,7 +14,7 @@ export function delegate(container, selector, event, handler) {
 }
 
 export function initPasswordToggle() {
-  delegate(document.body, "[data-password-toggle]", "click", (e, btn) => {
+  delegate(document.body, "[data-password-toggle]", "click", (_e, btn) => {
     const wrap = btn.closest(".azad-field__input-wrap--password");
     if (!wrap) return;
     const input = wrap.querySelector("input");
@@ -26,7 +26,7 @@ export function initPasswordToggle() {
 }
 
 export function initAccordions() {
-  delegate(document.body, ".accordion-btn", "click", (e, btn) => {
+  delegate(document.body, ".accordion-btn", "click", (_e, btn) => {
     const expanded = btn.getAttribute("aria-expanded") === "true";
     btn.setAttribute("aria-expanded", String(!expanded));
     const content = btn.nextElementSibling;
@@ -39,16 +39,23 @@ export function initTabs() {
     e.preventDefault();
     const tabBar = tab.closest(".tabs");
     if (!tabBar) return;
-    tabBar.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    tabBar.querySelectorAll(".tab").forEach((t) => {
+      t.classList.remove("active");
+    });
     tab.classList.add("active");
   });
 }
 
 export function initFlashes() {
-  delegate(document.body, ".flash [data-dismiss], .azad-flash [data-dismiss]", "click", (e, btn) => {
-    const flash = btn.closest(".flash, .azad-flash");
-    if (flash) flash.remove();
-  });
+  delegate(
+    document.body,
+    ".flash [data-dismiss], .azad-flash [data-dismiss]",
+    "click",
+    (_e, btn) => {
+      const flash = btn.closest(".flash, .azad-flash");
+      if (flash) flash.remove();
+    },
+  );
 }
 
 export function initRipple() {

@@ -1,4 +1,5 @@
 """Sentry observability wrapper."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -7,7 +8,7 @@ if TYPE_CHECKING:
     from flask import Flask
 
 
-def init_sentry(app: "Flask") -> None:
+def init_sentry(app: Flask) -> None:
     """Initialize Sentry with Flask + SQLAlchemy integrations if SENTRY_DSN is set."""
     dsn = app.config.get("SENTRY_DSN")
     if not dsn:

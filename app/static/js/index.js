@@ -3,11 +3,11 @@
  */
 import { initTheme } from "./modules/theme.js";
 import {
-  initPasswordToggle,
   initAccordions,
-  initTabs,
   initFlashes,
+  initPasswordToggle,
   initRipple,
+  initTabs,
 } from "./modules/ui.js";
 
 function initNav() {
@@ -127,9 +127,7 @@ function initPwaBanner() {
 
 function initServiceWorker() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-      .register("/static/sw.js")
-      .catch(() => {});
+    navigator.serviceWorker.register("/static/sw.js").catch(() => {});
   }
 }
 

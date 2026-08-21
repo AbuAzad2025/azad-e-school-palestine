@@ -9,8 +9,7 @@ const ICONS = {
     '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
   warning:
     '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>',
-  info:
-    '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+  info: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
 };
 
 function getContainer() {
@@ -67,9 +66,11 @@ export function show(options) {
   return toast;
 }
 
-export const success = (msg, title) => show({ type: "success", title: title || "نجح", message: msg });
+export const success = (msg, title) =>
+  show({ type: "success", title: title || "نجح", message: msg });
 export const error = (msg, title) => show({ type: "error", title: title || "خطأ", message: msg });
-export const warning = (msg, title) => show({ type: "warning", title: title || "تنبيه", message: msg });
+export const warning = (msg, title) =>
+  show({ type: "warning", title: title || "تنبيه", message: msg });
 export const info = (msg, title) => show({ type: "info", title: title || "معلومة", message: msg });
 
 export default { show, success, error, warning, info };

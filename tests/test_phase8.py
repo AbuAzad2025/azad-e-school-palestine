@@ -134,13 +134,21 @@ def test_base_html_has_manifest_link(client, app):
     assert "manifest.json" in html
 
 
-def test_base_html_has_sw_registration(client, app):
+def test_base_html_loads_js_module(client, app):
     user_id = make_user(app, role="student")
     with client.session_transaction() as sess:
         sess["_user_id"] = str(user_id)
     r = client.get("/auth/dashboard")
     html = r.get_data(as_text=True)
-    assert "serviceWorker" in html
+    assert 'type="module"' in html
+    assert "js/index.js" in html
+
+
+def test_sw_registration_moved_to_js_module(client):
+    r = client.get("/static/js/index.js")
+    assert r.status_code == 200
+    text = r.get_data(as_text=True)
+    assert "serviceWorker" in text
 
 
 def test_base_html_has_pwa_install_banner(client, app):

@@ -45,7 +45,12 @@ export async function request(method, url, options = {}) {
   };
 
   let body = options.body;
-  if (body && !(body instanceof FormData) && !(body instanceof URLSearchParams) && typeof body !== "string") {
+  if (
+    body &&
+    !(body instanceof FormData) &&
+    !(body instanceof URLSearchParams) &&
+    typeof body !== "string"
+  ) {
     body = JSON.stringify(body);
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");

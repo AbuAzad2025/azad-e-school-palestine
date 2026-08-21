@@ -8,9 +8,9 @@ from collections import deque
 
 from config import Config
 from flask import Flask, g, jsonify, render_template, request
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_cors import CORS
 from flask_talisman import Talisman
 
 from .core.logging import configure_structlog, correlation_id_middleware, get_logger
