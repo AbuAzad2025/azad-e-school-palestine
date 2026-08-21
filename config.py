@@ -13,7 +13,18 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "20")),
+        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "1800")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        "connect_args": {
+            "connect_timeout": 10,
+            "application_name": "azad-eschool",
+            "options": "-c statement_timeout=30000",
+        },
+    }
 
     DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "ar")
     LANGUAGES = ["ar", "en"]
@@ -54,7 +65,7 @@ class Config:
 
     # معدل الطلبات (Flask-Limiter)
     RATELIMIT_DEFAULT = "200 per minute"
-    RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
+    RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "redis://localhost:6379/1")
     RATELIMIT_STRATEGY = "fixed-window"
 
     # Talisman / CSP

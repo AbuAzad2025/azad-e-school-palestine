@@ -1,0 +1,157 @@
+# postgresql.conf — Production Settings for Azad E-School
+# Apply to primary and replicas. Restart PostgreSQL after changes.
+
+# -----------------------------------------------------------------------------
+# WRITE-AHEAD LOG (WAL) — Point-in-Time Recovery (PITR)
+# -----------------------------------------------------------------------------
+
+# Enable WAL archiving for PITR
+archive_mode = on
+archive_command = 'test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f'
+# For S3/GCS: archive_command = 'aws s3 cp %p s3://your-bucket/wal/%f'
+# For pgBackRest: archive_command = 'pgbackrest --stanza=main archive-push %p'
+
+# WAL level for replication and PITR
+wal_level = replica  # 'logical' if using logical replication
+
+# Keep enough WAL segments for basebackup + archive lag
+max_wal_senders = 10
+wal_keep_size = 2GB  # PG 13+ (use wal_keep_segments on older)
+
+# Checkpoint tuning for write performance
+checkpoint_timeout = 15min
+max_wal_size = 4GB
+min_wal_size = 1GB
+checkpoint_completion_target = 0.9
+
+# -----------------------------------------------------------------------------
+# CONNECTION & AUTHENTICATION
+# -----------------------------------------------------------------------------
+
+listen_addresses = '*'
+port = 5432
+max_connections = 200  # Match pool_size * workers + buffer
+
+# SSL (require for production)
+ssl = on
+ssl_cert_file = 'server.crt'
+ssl_key_file = 'server.key'
+ssl_ca_file = 'root.crt'  # For client cert auth
+
+# -----------------------------------------------------------------------------
+# MEMORY & PERFORMANCE
+# -----------------------------------------------------------------------------
+
+# Shared buffers: 25-40% of RAM (e.g., 4GB on 16GB server)
+shared_buffers = 4GB
+
+# Work memory per operation (sort, hash join)
+work_mem = 64MB
+maintenance_work_mem = 1GB
+
+# Effective cache size: 50-75% of RAM (planner hint)
+effective_cache_size = 12GB
+
+# Parallel query
+max_parallel_workers_per_gather = 4
+max_parallel_workers = 8
+parallel_leader_participation = on
+
+# -----------------------------------------------------------------------------
+# QUERY TUNING
+# -----------------------------------------------------------------------------
+
+# Force planner to use indexes more aggressively
+random_page_cost = 1.1  # SSD/NVMe
+seq_page_cost = 1.0
+effective_io_concurrency = 200  # NVMe
+
+# Statement timeout (matches app config: 30s)
+statement_timeout = 30000
+idle_in_transaction_session_timeout = 60000
+
+# -----------------------------------------------------------------------------
+# LOGGING & MONITORING
+# -----------------------------------------------------------------------------
+
+log_destination = 'stderr'
+logging_collector = on
+log_directory = 'log'
+log_filename = 'postgresql-%Y-%m-%d.log'
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_min_duration_statement = 1000  # Log slow queries > 1s
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_lock_waits = on
+log_temp_files = 0
+log_autovacuum_min_duration = 0
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_statement = 'ddl'  # Log DDL for audit
+
+# -----------------------------------------------------------------------------
+# AUTOVACUUM — critical for bloat control
+# -----------------------------------------------------------------------------
+
+autovacuum = on
+autovacuum_max_workers = 4
+autovacuum_naptime = 30s
+autovacuum_vacuum_threshold = 50
+autovacuum_vacuum_scale_factor = 0.1
+autovacuum_analyze_threshold = 50
+autovacuum_analyze_scale_factor = 0.05
+autovacuum_vacuum_cost_limit = 2000
+autovacuum_vacuum_cost_delay = 2ms
+
+# Per-table overrides (run via ALTER TABLE):
+# ALTER TABLE quiz_attempts SET (autovacuum_vacuum_scale_factor = 0.05);
+# ALTER TABLE notifications SET (autovacuum_vacuum_scale_factor = 0.02);
+# ALTER TABLE ai_usage_logs SET (autovacuum_vacuum_scale_factor = 0.05);
+
+# -----------------------------------------------------------------------------
+# REPLICATION (if using streaming replica)
+# -----------------------------------------------------------------------------
+
+# Primary:
+# synchronous_commit = on
+# synchronous_standby_names = 'standby1'
+
+# Replica:
+# hot_standby = on
+# hot_standby_feedback = on
+# max_standby_streaming_delay = 30s
+# wal_receiver_status_interval = 10s
+
+# -----------------------------------------------------------------------------
+# EXTENSIONS
+# -----------------------------------------------------------------------------
+
+shared_preload_libraries = 'pg_stat_statements, auto_explain, pg_cron'
+pg_stat_statements.max = 10000
+pg_stat_statements.track = all
+auto_explain.log_min_duration = 5000
+auto_explain.log_analyze = on
+auto_explain.log_buffers = on
+
+# -----------------------------------------------------------------------------
+# CUSTOM SETTINGS FOR AZAD
+# -----------------------------------------------------------------------------
+
+# Timezone
+timezone = 'Asia/Gaza'
+log_timezone = 'Asia/Gaza'
+
+# Date style
+datestyle = 'iso, mdy'
+
+# -----------------------------------------------------------------------------
+# APPLY: reload vs restart
+# -----------------------------------------------------------------------------
+# Most settings require restart. Use:
+#   SELECT pg_reload_conf();  -- for reloadable settings
+#   systemctl restart postgresql  -- for non-reloadable
+
+# Verify:
+#   SHOW ALL;
+#   SELECT name, setting, unit, context FROM pg_settings WHERE name IN (...);

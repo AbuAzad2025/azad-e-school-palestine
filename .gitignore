@@ -44,3 +44,6 @@ messages.pot
 # ===== Test Artifacts =====
 coverage/
 test-results/
+pytest_out.txt
+fix_class_path.sql
+*.sql.tmp

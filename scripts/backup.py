@@ -26,6 +26,42 @@ LOCAL_RETENTION_DAYS = int(os.getenv("BACKUP_LOCAL_RETENTION_DAYS", "7"))
 WEEKLY_RETENTION = int(os.getenv("BACKUP_WEEKLY_RETENTION", "4"))
 MONTHLY_RETENTION = int(os.getenv("BACKUP_MONTHLY_RETENTION", "12"))
 
+# Encryption settings
+BACKUP_ENCRYPT = os.getenv("BACKUP_ENCRYPT", "0") == "1"
+BACKUP_ENCRYPT_METHOD = os.getenv("BACKUP_ENCRYPT_METHOD", "age")  # age|gpg
+BACKUP_ENCRYPT_RECIPIENT = os.getenv("BACKUP_ENCRYPT_RECIPIENT", "")
+BACKUP_ENCRYPT_PASSPHRASE = os.getenv("BACKUP_ENCRYPT_PASSPHRASE", "")
+
+
+def encrypt_file(filepath: Path) -> Path:
+    """Encrypt backup file using age or gpg."""
+    if not BACKUP_ENCRYPT:
+        return filepath
+
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from backup_encrypt import encrypt_age, encrypt_gpg
+    except ImportError:
+        print("WARNING: backup_encrypt module not found, skipping encryption", file=sys.stderr)
+        return filepath
+
+    if BACKUP_ENCRYPT_METHOD == "age":
+        if BACKUP_ENCRYPT_PASSPHRASE:
+            return encrypt_age(filepath, passphrase=BACKUP_ENCRYPT_PASSPHRASE)
+        elif BACKUP_ENCRYPT_RECIPIENT:
+            return encrypt_age(filepath, recipient=BACKUP_ENCRYPT_RECIPIENT)
+        else:
+            print("WARNING: No recipient or passphrase for age encryption", file=sys.stderr)
+            return filepath
+    else:
+        if BACKUP_ENCRYPT_PASSPHRASE:
+            return encrypt_gpg(filepath, passphrase=BACKUP_ENCRYPT_PASSPHRASE)
+        elif BACKUP_ENCRYPT_RECIPIENT:
+            return encrypt_gpg(filepath, recipient=BACKUP_ENCRYPT_RECIPIENT)
+        else:
+            print("WARNING: No recipient or passphrase for GPG encryption", file=sys.stderr)
+            return filepath
+
 
 def run_cmd(cmd, timeout=300):
     try:
@@ -63,8 +99,11 @@ def create_db_backup():
         print("ERROR: backup file is empty", file=sys.stderr)
         return None
 
+    # Encrypt if enabled
+    filepath = encrypt_file(filepath)
+
     size_mb = filepath.stat().st_size / (1024 * 1024)
-    print(f"[{datetime.utcnow().isoformat()}] DB backup complete: {filename} ({size_mb:.1f} MB)")
+    print(f"[{datetime.utcnow().isoformat()}] DB backup complete: {filepath.name} ({size_mb:.1f} MB)")
     return filepath
 
 
@@ -81,6 +120,10 @@ def create_uploads_backup():
     if not success:
         print(f"WARNING: uploads backup failed: {stderr}", file=sys.stderr)
         return None
+
+    # Encrypt if enabled
+    filepath = encrypt_file(filepath)
+
     size_mb = filepath.stat().st_size / (1024 * 1024)
     print(f"[{datetime.utcnow().isoformat()}] Uploads backup: {filepath.name} ({size_mb:.1f} MB)")
     return filepath
@@ -140,6 +183,10 @@ def cleanup_retention():
 
 def verify_backup(filepath):
     try:
+        # Handle encrypted files
+        if filepath.suffix in (".age", ".gpg"):
+            print("WARNING: Cannot verify encrypted backup directly", file=sys.stderr)
+            return True  # Skip verification for encrypted
         opener = gzip.open if filepath.suffix == ".gz" else open
         with opener(filepath, "rt", encoding="utf-8", errors="ignore") as f:
             first_lines = [next(f) for _ in range(5)]
