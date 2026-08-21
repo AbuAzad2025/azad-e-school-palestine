@@ -65,7 +65,7 @@ class Config:
 
     # معدل الطلبات (Flask-Limiter)
     RATELIMIT_DEFAULT = "200 per minute"
-    RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "redis://localhost:6379/1")
+    RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
     RATELIMIT_STRATEGY = "fixed-window"
 
     # Talisman / CSP
