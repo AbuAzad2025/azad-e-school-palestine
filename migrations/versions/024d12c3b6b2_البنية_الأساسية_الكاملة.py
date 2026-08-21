@@ -286,6 +286,27 @@ def upgrade():
     sa.ForeignKeyConstraint(['school_id'], ['schools.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('discount_codes',
+    sa.Column('code', sa.String(length=50), nullable=False),
+    sa.Column('name', sa.Text(), nullable=False),
+    sa.Column('type', sa.String(length=15), nullable=False),
+    sa.Column('value', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('max_uses', sa.Integer(), nullable=False),
+    sa.Column('used_count', sa.Integer(), nullable=False),
+    sa.Column('expiry_date', sa.Date(), nullable=True),
+    sa.Column('applicable_plan_ids', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('school_id', sa.BigInteger(), nullable=True),
+    sa.Column('id', sa.BigInteger(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['school_id'], ['schools.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('code', name='uq_discount_codes_code')
+    )
+    with op.batch_alter_table('discount_codes', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_discount_codes_code'), ['code'], unique=True)
+
     op.create_table('units',
     sa.Column('class_id', sa.BigInteger(), nullable=False),
     sa.Column('title', sa.Text(), nullable=False),
@@ -537,6 +558,10 @@ def downgrade():
 
     op.drop_table('grade_items')
     op.drop_table('units')
+    with op.batch_alter_table('discount_codes', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_discount_codes_code'))
+
+    op.drop_table('discount_codes')
     op.drop_table('subscription_plans')
     with op.batch_alter_table('quizzes', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_quizzes_class_id'))
