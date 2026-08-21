@@ -124,9 +124,10 @@
 {% endmacro %}
 
 {# ─── Search Input ─── #}
-{% macro azad_search(name='q', value='', placeholder=_('بحث...')) %}
+{% macro azad_search(name='q', value='', placeholder=_('بحث...'), label=_('بحث')) %}
 <div class="azad-search">
   <span class="azad-search__icon">{{ icon('search') }}</span>
-  <input type="search" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="azad-search__input">
+  <label for="{{ name }}-search" class="sr-only">{{ label }}</label>
+  <input type="search" id="{{ name }}-search" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="azad-search__input">
 </div>
 {% endmacro %}

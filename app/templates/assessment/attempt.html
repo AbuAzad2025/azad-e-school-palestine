@@ -15,9 +15,10 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for q in quiz.questions %}
   <div class="card" style="margin-bottom:1rem">
-    <h2 style="font-size:1rem;font-weight:700;margin-bottom:.75rem">{{ loop.index }}. {{ q.prompt }}
-      <span class="meta-chip" style="margin-inline-start:.5rem">{{ q.mark or 0 }} {{ _('درجة') }}</span>
-    </h2>
+    <fieldset style="margin-bottom:.75rem;border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <legend style="font-size:1rem;font-weight:700;margin-bottom:.75rem;padding-inline:.5rem">{{ loop.index }}. {{ q.prompt }}
+        <span class="meta-chip" style="margin-inline-start:.5rem">{{ q.mark or 0 }} {{ _('درجة') }}</span>
+      </legend>
     {% if q.type == 'mcq' %}
       {% set saved = answers.get(q.id) %}
       {% for item in (q.options.items if q.options else []) %}
@@ -26,7 +27,8 @@
           <input type="radio" name="q_{{ q.id }}" value="{{ idx }}" {% if saved and saved.answer.index == idx %}checked{% endif %}>
           <span>{{ item.label }}. {{ item.text }}</span>
         </label>
-      {% endfor %}
+</fieldset>
+  {% endfor %}
     {% elif q.type == 'true_false' %}
       {% set saved = answers.get(q.id) %}
       <label style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;cursor:pointer">

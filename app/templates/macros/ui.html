@@ -28,7 +28,7 @@
 {% endmacro %}
 
 {# ─── Card ─── #}
-{% macro azad_card(title='', subtitle='', icon_name='', class='', body_class='') %}
+{% macro azad_card(title='', subtitle='', icon_name='', class='', body_class='', heading_level=3) %}
 <div class="azad-card {{ class }}">
   {% if title %}
   <div class="azad-card__header">
@@ -37,7 +37,7 @@
       <div class="azad-card__icon">{{ icon(icon_name) }}</div>
       {% endif %}
       <div>
-        <h3 class="azad-card__title">{{ title }}</h3>
+        <h{{ heading_level }} class="azad-card__title">{{ title }}</h{{ heading_level }}>
         {% if subtitle %}
         <p class="azad-card__subtitle">{{ subtitle }}</p>
         {% endif %}

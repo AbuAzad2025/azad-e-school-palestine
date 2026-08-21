@@ -11,6 +11,7 @@
       <p class="page-subtitle">{{ _('اسأل عن أي مادة، واجب، أو اختبار') }}</p>
     </div>
     <div class="ai-chat-controls">
+      <label for="model-select" class="sr-only">{{ _('اختيار نموذج الذكاء الاصطناعي') }}</label>
       <select id="model-select" class="form-select" style="width:auto;min-width:180px">
         <option value="gpt-4o-mini">{{ _('GPT-4o Mini (سريع، اقتصادي)') }}</option>
         <option value="gpt-4o">{{ _('GPT-4o (أقوى، أبطأ)') }}</option>
@@ -37,7 +38,7 @@
       </div>
     </aside>
 
-    <main class="ai-chat-content" id="chat-content">
+    <div class="ai-chat-content" id="chat-content" role="region" aria-label="{{ _('محتوى المحادثة') }}">
       <div class="messages-container" id="messages-container">
         {% if messages %}
         {% for msg in messages %}
@@ -67,6 +68,7 @@
 
       <form id="chat-form" class="chat-input-form" novalidate>
         <div class="input-wrapper">
+          <label for="message-input" class="sr-only">{{ _('رسالتك') }}</label>
           <textarea
             id="message-input"
             name="message"
@@ -85,7 +87,7 @@
           <span class="shortcut-hint">{{ _('Enter للإرسال، Shift+Enter لسطر جديد') }}</span>
         </div>
       </form>
-    </main>
+    </div>
   </div>
 </div>
 

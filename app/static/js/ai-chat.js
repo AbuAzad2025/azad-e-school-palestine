@@ -104,35 +104,71 @@
   function renderMessages() {
     const container = elements.messagesContainer;
     if (!messages.length) {
-      container.innerHTML = `
-        <div class="welcome-message">
-          <div class="welcome-icon">🤖</div>
-          <h2>${_("مرحباً! كيف يمكنني مساعدتك اليوم؟")}</h2>
-          <div class="suggested-prompts">
-            <button class="prompt-chip" data-prompt="اشرح لي نظرية فيثاغورس بالتفصيل">${_("شرح نظرية فيثاغورس")}</button>
-            <button class="prompt-chip" data-prompt="ساعدني في حل هذه المعادلة: 2x + 5 = 15">${_("حل معادلة")}</button>
-            <button class="prompt-chip" data-prompt="اكتب لي مقالاً عن أهمية الرياضة">${_("كتابة مقال")}</button>
-            <button class="prompt-chip" data-prompt="ما هي قوانين نيوتن الثلاثة؟">${_("قوانين نيوتن")}</button>
-          </div>
-        </div>`;
+      container.textContent = "";
+      const welcomeDiv = document.createElement("div");
+      welcomeDiv.className = "welcome-message";
+      const iconDiv = document.createElement("div");
+      iconDiv.className = "welcome-icon";
+      iconDiv.textContent = "🤖";
+      const h2 = document.createElement("h2");
+      h2.textContent = _("مرحباً! كيف يمكنني مساعدتك اليوم؟");
+      const promptsDiv = document.createElement("div");
+      promptsDiv.className = "suggested-prompts";
+      const prompts = [
+        { text: _("اشرح لي نظرية فيثاغورس بالتفصيل"), label: _("شرح نظرية فيثاغورس") },
+        { text: _("ساعدني في حل هذه المعادلة: 2x + 5 = 15"), label: _("حل معادلة") },
+        { text: _("اكتب لي مقالاً عن أهمية الرياضة"), label: _("كتابة مقال") },
+        { text: _("ما هي قوانين نيوتن الثلاثة؟"), label: _("قوانين نيوتن") },
+      ];
+      prompts.forEach((p) => {
+        const btn = document.createElement("button");
+        btn.className = "prompt-chip";
+        btn.dataset.prompt = p.text;
+        btn.textContent = p.label;
+        promptsDiv.appendChild(btn);
+      });
+      welcomeDiv.appendChild(iconDiv);
+      welcomeDiv.appendChild(h2);
+      welcomeDiv.appendChild(promptsDiv);
+      container.appendChild(welcomeDiv);
       return;
     }
 
-    const html = messages
-      .map(
-        (msg) => `
-      <div class="message ${msg.role}" data-message-id="${msg.id || ""}">
-        <div class="message-content">${typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(msg.content) : msg.content}</div>
-        <div class="message-meta">
-          <span class="message-time">${formatTime(msg.created_at)}</span>
-          ${msg.role === "assistant" ? `<button class="copy-btn" data-content="${escapeHtml(msg.content)}">${_("نسخ")}</button>` : ""}
-        </div>
-      </div>
-    `,
-      )
-      .join("");
+    container.textContent = "";
+    messages.forEach((msg) => {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = `message ${msg.role}`;
+      if (msg.id) msgDiv.dataset.messageId = msg.id;
 
-    document.getElementById("messages-container").innerHTML = html;
+      const contentDiv = document.createElement("div");
+      contentDiv.className = "message-content";
+      if (typeof DOMPurify !== "undefined") {
+        contentDiv.innerHTML = DOMPurify.sanitize(msg.content);
+      } else {
+        contentDiv.textContent = msg.content;
+      }
+
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "message-meta";
+
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "message-time";
+      timeSpan.textContent = formatTime(msg.created_at);
+      metaDiv.appendChild(timeSpan);
+
+      if (msg.role === "assistant") {
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "copy-btn";
+        copyBtn.dataset.content = msg.content;
+        copyBtn.textContent = _("نسخ");
+        metaDiv.appendChild(copyBtn);
+      }
+
+      msgDiv.appendChild(contentDiv);
+      msgDiv.appendChild(metaDiv);
+      container.appendChild(msgDiv);
+    });
+
     highlightCodeBlocks();
     scrollToBottom();
   }
@@ -252,11 +288,15 @@
     isStreaming = true;
     elements.sendBtn.disabled = true;
     elements.messageInput.disabled = true;
+    elements.sendBtn.classList.add("loading");
 
     // Add assistant placeholder
     const assistantMsg = { role: "assistant", content: "", created_at: new Date().toISOString() };
     messages.push(assistantMsg);
     renderMessages();
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
 
     try {
       const response = await fetch(`${API_BASE}/chat/stream`, {
@@ -270,10 +310,12 @@
           context: getContext(),
           model: currentModel,
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
-        throw new Error("Network error");
+        const errText = await response.text().catch(() => "");
+        throw new Error(`HTTP ${response.status}: ${errText || response.statusText}`);
       }
 
       const reader = response.body.getReader();
@@ -309,13 +351,20 @@
         }
       }
     } catch (error) {
-      console.error("Stream error:", error);
-      updateLastMessage(_("حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى."));
-      showToast(_("حدث خطأ: ") + error.message, "error");
+      if (error.name === "AbortError") {
+        updateLastMessage(_("انتهت مهلة الطلب. يرجى المحاولة مرة أخرى."));
+        showToast(_("انتهت مهلة الاتصال"), "error");
+      } else {
+        console.error("Stream error:", error);
+        updateLastMessage(_("حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى."));
+        showToast(_("حدث خطأ: ") + error.message, "error");
+      }
     } finally {
+      clearTimeout(timeoutId);
       isStreaming = false;
       elements.sendBtn.disabled = false;
       elements.messageInput.disabled = false;
+      elements.sendBtn.classList.remove("loading");
       elements.messageInput.focus();
 
       // Save session
