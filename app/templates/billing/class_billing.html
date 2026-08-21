@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import azad_input, azad_select, azad_form_row, azad_file_upload, azad_form_actions %}
 {% block title %}{{ _('الاشتراك') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
 <div class="section-head">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('الاشتراك والدفع') }}</h1>
+    <h1 class="page-title azad-title billing-title">{{ _('الاشتراك والدفع') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
   </div>
   {% if can_teach %}
@@ -12,9 +13,9 @@
 </div>
 
 {% if my_sub %}
-<div class="card" style="margin-bottom:1rem">
-  <h2 style="font-size:1rem">{{ _('اشتراكك الحالي') }}</h2>
-  <div class="item-meta" style="margin-top:.5rem">
+<div class="card u-mb-1">
+  <h2 class="billing-card-title">{{ _('اشتراكك الحالي') }}</h2>
+  <div class="item-meta billing-meta">
     <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ my_sub.status }}</span>
     <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
     <span>{{ _('المبلغ:') }} {{ my_sub.price }} {{ my_sub.currency }}</span>
@@ -51,16 +52,16 @@
 
 {% if can_teach %}
 <div class="section-head"><h2>{{ _('خطة جديدة') }}</h2></div>
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form method="post" action="{{ url_for('billing.plan_create', class_id=class_room.id) }}" novalidate>
     {{ plan_form.hidden_tag() }}
-    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-      <div style="flex:2;min-width:160px"><div class="form-group" style="margin:0">{{ plan_form.name.label }}{{ plan_form.name() }}</div></div>
-      <div style="flex:1;min-width:130px"><div class="form-group" style="margin:0">{{ plan_form.plan.label }}{{ plan_form.plan() }}</div></div>
-      <div style="flex:1;min-width:100px"><div class="form-group" style="margin:0">{{ plan_form.price.label }}{{ plan_form.price() }}</div></div>
-      <div style="flex:1;min-width:110px"><div class="form-group" style="margin:0">{{ plan_form.duration_days.label }}{{ plan_form.duration_days() }}</div></div>
-      <div style="align-self:end">{{ plan_form.submit(class="azad-btn-outline") }}</div>
-    </div>
+    {% call azad_form_row(cols=4) %}
+      <div class="azad-form-col azad-form-col--2">{{ azad_input(plan_form.name) }}</div>
+      <div class="azad-form-col">{{ azad_select(plan_form.plan) }}</div>
+      <div class="azad-form-col">{{ azad_input(plan_form.price) }}</div>
+      <div class="azad-form-col">{{ azad_input(plan_form.duration_days) }}</div>
+    {% endcall %}
+    {{ azad_form_actions(submit_text=_('إضافة الخطة')) }}
   </form>
 </div>
 {% endif %}
@@ -68,29 +69,33 @@
 {% if current_user.role == 'student' and my_sub and my_sub.status == 'pending' %}
 <div class="section-head"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
 <div class="card">
-  <p class="form-hint" style="margin-bottom:.75rem">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>
+  <p class="form-hint u-mb-0-75">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>
   <form method="post" action="{{ url_for('billing.payment_create', subscription_id=my_sub.id) }}" enctype="multipart/form-data" novalidate>
     {{ pay_form.hidden_tag() }}
-    <div class="form-group">{{ pay_form.reference.label }}{{ pay_form.reference() }}{% for e in pay_form.reference.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
-    <div class="form-group">{{ pay_form.amount.label }}{{ pay_form.amount(value=my_sub.price) }}</div>
-    <div class="form-group">{{ pay_form.receipt.label }}{{ pay_form.receipt() }}</div>
-    <div class="form-group">{{ pay_form.note.label }}{{ pay_form.note() }}</div>
-    <div class="form-actions">{{ pay_form.submit(class="azad-btn") }}</div>
+    {% call azad_form_row(cols=2) %}
+      <div class="azad-form-col">{{ azad_input(pay_form.reference, help_text=_('رقم العملية أو اسم المرسل')) }}</div>
+      <div class="azad-form-col">{{ azad_input(pay_form.amount) }}</div>
+    {% endcall %}
+    {% call azad_form_row(cols=1) %}
+      {{ azad_file_upload(pay_form.receipt, label=_('إيصال الدفع'), accept='image/*,.pdf') }}
+    {% endcall %}
+    {{ azad_input(pay_form.note) }}
+    {{ azad_form_actions() }}
   </form>
 </div>
 {% endif %}
 
 {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') and plans %}
 <div class="section-head"><h2>{{ _('كود خصم') }}</h2></div>
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form id="discount-form" method="post" action="{{ url_for('billing.validate_code') }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="azad-field" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:end">
-      <div style="flex:1;min-width:200px">
+    <div class="discount-form">
+      <div class="discount-form__col">
         <label class="azad-field__label">{{ _('أدخل كود الخصم') }}</label>
         <input type="text" name="code" id="discount-code-input" class="azad-field__input" placeholder="{{ _('مثال: WELCOME20') }}" required>
       </div>
-      <div style="flex:1;min-width:200px">
+      <div class="discount-form__col">
         <label class="azad-field__label">{{ _('اختر الخطة') }}</label>
         <select name="plan_id" id="discount-plan-select" class="azad-field__select" required>
           {% for p in plans %}
@@ -99,15 +104,16 @@
         </select>
       </div>
       <div>
-        <button type="submit" class="azad-btn" style="min-height:48px">{{ icon('tag') }} {{ _('تحقق') }}</button>
+        <button type="submit" class="azad-btn u-min-h-48">{{ icon('tag') }} {{ _('تحقق') }}</button>
       </div>
     </div>
-    <div id="discount-result" class="form-hint" style="margin-top:.5rem;display:none"></div>
+    <div id="discount-result" class="form-hint discount-result"></div>
   </form>
 </div>
 {% endif %}
 {% endblock %}
 
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('discount-form');
@@ -131,19 +137,18 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       const data = await response.json();
       if (data.error) {
-        resultDiv.innerHTML = '<span style="color:var(--azad-red)">{{ icon("alert") }} ' + data.error + '</span>';
+        resultDiv.innerHTML = '<span class="u-text-danger">{{ icon("alert") }} ' + data.error + '</span>';
         resultDiv.style.display = 'block';
       } else {
-        resultDiv.innerHTML = '<span style="color:var(--azad-green)">{{ icon("check") }} {{ _('تم التحقق بنجاح! مبلغ الخصم:') }} ' + data.discount + ' {{ session.currency if my_sub else "₪" }}</span>';
+        resultDiv.innerHTML = '<span class="u-text-success">{{ icon("check") }} {{ _('تم التحقق بنجاح! مبلغ الخصم:') }} ' + data.discount + ' {{ session.currency if my_sub else '₪' }}</span>';
         resultDiv.style.display = 'block';
-        // Store discount for use in subscription
         localStorage.setItem('azad_discount_' + formData.get('plan_id'), JSON.stringify({
           code: formData.get('code'),
           discount: data.discount
         }));
       }
     } catch (err) {
-      resultDiv.innerHTML = '<span style="color:var(--azad-red)">{{ icon("alert") }} {{ _('حدث خطأ، يرجى المحاولة مرة أخرى') }}</span>';
+      resultDiv.innerHTML = '<span class="u-text-danger">{{ icon("alert") }} {{ _('حدث خطأ، يرجى المحاولة مرة أخرى') }}</span>';
       resultDiv.style.display = 'block';
     } finally {
       submitBtn.innerHTML = originalText;
@@ -152,3 +157,4 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+{% endblock %}

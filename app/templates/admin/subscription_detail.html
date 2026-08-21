@@ -1,5 +1,6 @@
 {% extends "admin/base.html" %}
 {% from 'macros/ui.html' import azad_badge, azad_empty_state %}
+{% from "macros/forms.html" import azad_timeline %}
 {% block title %}{{ _('تفاصيل الاشتراك') }} — {{ _('إدارة المنصة') }}{% endblock %}
 {% block admin_content %}
 <div class="section-head">
@@ -7,7 +8,7 @@
   <a href="{{ url_for('admin.subscriptions_list') }}" class="azad-btn-outline">{{ icon('arrow-left') }} {{ _('العودة') }}</a>
 </div>
 
-<div class="azad-card" style="margin-bottom:var(--space-lg)">
+<div class="azad-card u-mb-1">
   <h3>{{ _('المستخدم') }}</h3>
   <p>{{ sub.user.name_ar }} — {{ sub.user.email }}</p>
   <h3>{{ _('الخطة') }}</h3>
@@ -20,6 +21,11 @@
   <p>{{ sub.start_at.strftime('%Y-%m-%d %H:%M') if sub.start_at else _('—') }} — {{ sub.end_at.strftime('%Y-%m-%d %H:%M') if sub.end_at else _('—') }}</p>
   <h3>{{ _('المصدر') }}</h3>
   <p>{{ sub.source }}</p>
+</div>
+
+<div class="azad-card u-mb-1">
+  <h3>{{ _('مسار الاشتراك') }}</h3>
+  {{ azad_timeline(timeline_steps) }}
 </div>
 
 {% if sub.payments %}

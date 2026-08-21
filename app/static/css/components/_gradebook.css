@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════
+   Gradebook mobile card view
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .gradebook-table,
+  .gradebook-table thead,
+  .gradebook-table tbody,
+  .gradebook-table th,
+  .gradebook-table td,
+  .gradebook-table tr {
+    display: block;
+  }
+
+  .gradebook-table thead {
+    position: absolute;
+    inset-inline-start: -9999px;
+  }
+
+  .gradebook-table tr {
+    margin-bottom: var(--sp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    padding: var(--sp-3);
+  }
+
+  .gradebook-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--sp-2) 0;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .gradebook-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .gradebook-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-inline-end: var(--sp-2);
+  }
+
+  .gradebook-table .grade-input-form {
+    justify-content: flex-end;
+  }
+}

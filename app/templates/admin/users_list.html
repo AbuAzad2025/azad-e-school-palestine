@@ -1,55 +1,74 @@
 {% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('المستخدمين') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
 <div class="section-head">
   <h1 class="page-title azad-title">{{ _('إدارة المستخدمين') }}</h1>
-  <form method="get" class="form-inline">
-    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" class="form-group" style="flex:1">
-    <select name="role" class="form-group" style="min-width:160px" aria-label="{{ _('تصفية حسب الدور') }}">
-      <option value="">{{ _('كل الأدوار') }}</option>
-      {% for r in roles %}
-      <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.value }}</option>
-      {% endfor %}
-    </select>
-    <button class="azad-btn" type="submit">{{ _('بحث') }}</button>
+  <form method="get" class="form-inline gradebook-form-row">
+    <div class="gradebook-form-col--2"><input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" class="form-control"></div>
+    <div class="gradebook-form-col">
+      <select name="role" class="form-control" aria-label="{{ _('تصفية حسب الدور') }}">
+        <option value="">{{ _('كل الأدوار') }}</option>
+        {% for r in roles %}
+        <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="gradebook-form-actions"><button class="azad-btn" type="submit">{{ _('بحث') }}</button></div>
     {% if search or role_filter %}
-    <a href="{{ url_for('admin.users_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a>
+    <div class="gradebook-form-actions"><a href="{{ url_for('admin.users_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a></div>
     {% endif %}
   </form>
 </div>
 
-{% if pagination.items %}
-<div class="azad-list">
-  {% for u in pagination.items %}
-  <div class="azad-item">
-    <div>
-      <div class="item-title">{{ u.name_ar }}</div>
-      <div class="item-meta">
-        <span>{{ u.email }}</span>
-        <span class="meta-chip">{{ u.role.value }}</span>
-        <span class="badge-status badge-{{ 'ok' if u.is_active else 'err' }}">{{ _('نشط') if u.is_active else _('معطل') }}</span>
-        <span>{{ u.created_at.strftime('%Y-%m-%d') }}</span>
-      </div>
-    </div>
-    <div class="item-actions">
-      <a class="azad-btn-outline" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('فتح') }}</a>
-      {% if u.role.value != 'super_admin' and u.id != current_user.id %}
-      <form method="post" action="{{ url_for('admin.user_impersonate', user_id=u.id) }}" style="display:inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="azad-btn" type="submit" style="padding:.35rem .75rem">{{ _('انتحال الصفة') }}</button>
-      </form>
-      {% endif %}
-      <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" style="display:inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="azad-btn-{{ 'outline' if u.is_active else 'btn' }}" type="submit" style="padding:.35rem .75rem">
-          {{ _('تعطيل') if u.is_active else _('تفعيل') }}
-        </button>
-      </form>
-    </div>
-  </div>
-  {% endfor %}
-</div>
+{% set headers = [
+  {'key': 'name', 'label': _('الاسم')},
+  {'key': 'email', 'label': _('البريد')},
+  {'key': 'role', 'label': _('الدور')},
+  {'key': 'status', 'label': _('الحالة')},
+  {'key': 'created', 'label': _('تاريخ الإنشاء')}
+] %}
 
+{% set rows = [] %}
+{% for u in pagination.items %}
+  {% set status_badge = '<span class=\"badge-status badge-' ~ ('ok' if u.is_active else 'err') ~ '\">' ~ (_('نشط') if u.is_active else _('معطل')) ~ '</span>' %}
+  {% set actions_html %}
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('فتح') }}</a>
+    {% if u.role.value != 'super_admin' and u.id != current_user.id %}
+    <form method="post" action="{{ url_for('admin.user_impersonate', user_id=u.id) }}" class="azad-inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn azad-btn-sm" type="submit">{{ _('انتحال الصفة') }}</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" class="azad-inline-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn-{{ 'outline' if u.is_active else 'btn' }} azad-btn-sm" type="submit">{{ _('تعطيل') if u.is_active else _('تفعيل') }}</button>
+    </form>
+  {% endset %}
+  {% set _ = rows.append({
+    'id': u.id,
+    'cells': {
+      'name': u.name_ar,
+      'email': u.email,
+      'role': '<span class=\"meta-chip\">' ~ u.role.value ~ '</span>',
+      'status': status_badge,
+      'created': u.created_at.strftime('%Y-%m-%d')
+    },
+    'actions': actions_html
+  }) %}
+{% endfor %}
+
+{{ azad_table(
+  headers=headers,
+  rows=rows,
+  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
+  bulk='users',
+  actions=True,
+  empty_title=_('لا يوجد مستخدمين يطابقون البحث'),
+  empty_icon='users'
+) }}
+
+{% if pagination.pages > 1 %}
 <div class="pagination">
   {% if pagination.has_prev %}
   <a href="{{ url_for('admin.users_list', page=pagination.page-1, search=search, role=role_filter) }}">&laquo; {{ _('السابق') }}</a>
@@ -69,7 +88,5 @@
   <a href="{{ url_for('admin.users_list', page=pagination.page+1, search=search, role=role_filter) }}">{{ _('التالي') }} &raquo;</a>
   {% endif %}
 </div>
-{% else %}
-<div class="empty-state">{{ _('لا يوجد مستخدمين يطابقون البحث') }}</div>
 {% endif %}
 {% endblock %}

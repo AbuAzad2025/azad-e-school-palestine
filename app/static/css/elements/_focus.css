@@ -1,0 +1,36 @@
+/* ═══════════════════════════════════════════
+   Visible focus indicators — WCAG 2.1 AAA
+═══════════════════════════════════════════ */
+
+.azad-btn:focus,
+.azad-btn-primary:focus,
+.azad-btn-outline:focus,
+.azad-btn-accent:focus,
+.azad-btn-ghost:focus,
+.azad-btn-danger:focus,
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[tabindex]:focus,
+.azad-upload__zone:focus,
+.azad-field__help-toggle:focus,
+[data-actions-toggle]:focus,
+[data-actions-menu] a:focus,
+[data-actions-menu] button:focus,
+.nav-user-toggle:focus,
+.nav-search-trigger:focus,
+.nav-icon-btn:focus,
+.nav-toggle:focus,
+.accordion-btn:focus {
+  outline: 2px solid var(--azad-navy, #014e7c);
+  outline-offset: 2px;
+}
+
+/* Keep native focus for checkboxes/radios visible */
+.azad-checkbox__input:focus + .azad-checkbox__mark,
+.azad-radio__input:focus + .azad-radio__mark {
+  outline: 2px solid var(--azad-navy, #014e7c);
+  outline-offset: 2px;
+}

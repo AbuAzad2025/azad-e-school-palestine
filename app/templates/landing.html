@@ -78,9 +78,10 @@
 @media(max-width:640px){.hero{min-height:auto;padding-top:120px;padding-bottom:var(--sp-12);}.steps{flex-direction:column;align-items:center;}.step__arrow{transform:rotate(90deg);padding:0;}}
 html[data-theme="dark"] .feat-card,html[data-theme="dark"] .price-card{background:var(--surface);}
 html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
+.l-body{margin:0;background:var(--bg);}
 </style>
 </head>
-<body style="margin:0;background:var(--bg);">
+<body class="l-body">
   <nav class="l-nav" id="l-nav">
     <div class="container">
       <a class="l-brand" href="/">
@@ -92,8 +93,8 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
           <span data-theme-icon-light hidden>{{ icon('sun') }}</span>
           <span data-theme-icon-dark hidden>{{ icon('moon') }}</span>
         </button>
-        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;font-size:var(--text-sm);padding:.4rem 1rem">{{ icon('login') }} {{ _('دخول') }}</a>
-        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn" style="background:#fff;color:var(--azad-navy);font-size:var(--text-sm);padding:.4rem 1rem">{{ icon('sparkles') }} {{ _('سجّل') }}</a>
+        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline l-nav__btn l-nav__btn--outline">{{ icon('login') }} {{ _('دخول') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn l-nav__btn l-nav__btn--solid">{{ icon('sparkles') }} {{ _('سجّل') }}</a>
       </div>
     </div>
   </nav>
@@ -134,7 +135,7 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
     </div>
   </section>
 
-  <section class="section l-fade" style="background:var(--surface)">
+  <section class="section section--surface l-fade">
     <div class="container">
       <h2 class="section__title">{{ _('كيف يعمل؟') }}</h2>
       <p class="section__sub">{{ _('ثلاث خطوات فقط للبدء') }}</p>
@@ -168,19 +169,19 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
           <div class="price-card__label">{{ _('للطلاب الفردي') }}</div>
           <div class="price-card__price">50 ₪+</div>
           <p class="price-card__note">{{ _('ابداً من 50 شيكل / كورس / شهرياً') }}</p>
-          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn" style="width:100%">{{ icon('user-plus') }} {{ _('سجّل الآن') }}</a>
+          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn price-card__cta">{{ icon('user-plus') }} {{ _('سجّل الآن') }}</a>
         </div>
         <div class="price-card price-card--green l-fade">
           <div class="price-card__label">{{ _('للمدارس') }}</div>
           <div class="price-card__price">{{ _('تسعير خاص') }}</div>
           <p class="price-card__note">{{ _('حساب مدرسي كامل مع إدارة وتحليلات') }}</p>
-          <a href="{{ url_for('auth.register') }}" class="azad-btn" style="width:100%">{{ icon('school') }} {{ _('تواصل معنا') }}</a>
+          <a href="{{ url_for('auth.register') }}" class="azad-btn price-card__cta">{{ icon('school') }} {{ _('تواصل معنا') }}</a>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section l-fade" style="background:var(--surface)">
+  <section class="section section--surface l-fade">
     <div class="container">
       <div class="trust">
         <div class="trust__item l-fade">
@@ -210,7 +211,7 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
 
   <footer class="ft">
     <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
-    <p style="margin-top:var(--sp-2)">
+    <p class="ft__links">
       <a href="{{ url_for('auth.login') }}">{{ _('دخول') }}</a> ·
       <a href="{{ url_for('auth.register') }}">{{ _('تسجيل مدارس') }}</a> ·
       <a href="{{ url_for('auth.register_individual') }}">{{ _('تسجيل فردي') }}</a>

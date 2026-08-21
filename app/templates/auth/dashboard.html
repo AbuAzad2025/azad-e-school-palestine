@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_stat_card, azad_section, azad_quick_actions, azad_breadcrumb, azad_empty_state %}
+{% from "macros/ui.html" import azad_stat_card, azad_section, azad_quick_actions, azad_breadcrumb, azad_empty_state, azad_actions_dropdown %}
 {% block title %}{{ _('لوحتي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block breadcrumbs %}
 {{ azad_breadcrumb([{'label': _('لوحتي')}]) }}
@@ -76,12 +76,14 @@
         </div>
       </div>
       <div class="item-actions">
-        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('content.class_lessons', class_id=c.id) }}">{{ icon('book-open') }} {{ _('الدروس') }}</a>
-        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('assessment.quiz_list', class_id=c.id) }}">{{ icon('quiz') }} {{ _('الاختبارات') }}</a>
-        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.assignments', class_id=c.id) }}">{{ icon('note') }} {{ _('الواجبات') }}</a>
-        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.attendance', class_id=c.id) }}">{{ icon('calendar') }} {{ _('الحضور') }}</a>
-        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('progress.class_overview', class_id=c.id) }}">{{ icon('chart') }} {{ _('التقدم') }}</a>
-        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.gradebook', class_id=c.id) }}">{{ icon('chart') }} {{ _('سجل الدرجات') }}</a>
+        {{ azad_actions_dropdown(_('إجراءات'), [
+          {'icon': 'book-open', 'label': _('الدروس'), 'href': url_for('content.class_lessons', class_id=c.id)},
+          {'icon': 'quiz', 'label': _('الاختبارات'), 'href': url_for('assessment.quiz_list', class_id=c.id)},
+          {'icon': 'note', 'label': _('الواجبات'), 'href': url_for('grades.assignments', class_id=c.id)},
+          {'icon': 'calendar', 'label': _('الحضور'), 'href': url_for('grades.attendance', class_id=c.id)},
+          {'icon': 'chart', 'label': _('التقدم'), 'href': url_for('progress.class_overview', class_id=c.id)},
+          {'icon': 'chart', 'label': _('سجل الدرجات'), 'href': url_for('grades.gradebook', class_id=c.id)}
+        ]) }}
       </div>
     </div>
     {% endfor %}
@@ -92,7 +94,7 @@
 
   <div class="section-head"><h2>{{ _('سوق الدروس الخصوصية') }}</h2></div>
   {{ azad_quick_actions([
-    {'icon': 'user', 'label': _('ملفي كمعلم'), 'href': url_for('tutoring.profile'), 'color': 'var(--azad-navy)'},
+    {'icon': 'user', 'label': _('ملفي كمعلم'), 'href': url_for('tutoring.profile', tutor_id=current_user.id), 'color': 'var(--azad-navy)'},
     {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'}
   ]) }}
 
@@ -170,6 +172,7 @@
 {% endif %}
 
 {# Common quick access for all authenticated users #}
+<div data-tour-target="dashboard-card">
 <div class="section-head"><h2>{{ _('وصول سريع') }}</h2></div>
 {{ azad_quick_actions([
   {'icon': 'books', 'label': _('دروس خصوصية'), 'href': url_for('tutoring.index'), 'color': 'var(--azad-green)'},
@@ -177,4 +180,5 @@
   {'icon': 'bell', 'label': _('الإشعارات'), 'href': url_for('notifications.index'), 'color': 'var(--color-warning)'},
   {'icon': 'teacher', 'label': _('دروسي الخصوصية'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'} if is_teacher() else {}
 ]) }}
+</div>
 {% endblock %}

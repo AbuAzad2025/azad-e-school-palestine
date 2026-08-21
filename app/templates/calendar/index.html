@@ -51,7 +51,7 @@
             </div>
         </div>
         <div class="item-actions">
-            <form method="post" action="{{ url_for('calendar.event_delete', event_id=event.id) }}" style="display:inline" onsubmit="return confirm('{{ _('هل أنت متأكد من حذف هذا الحدث؟') }}')">
+            <form method="post" action="{{ url_for('calendar.event_delete', event_id=event.id) }}" style="display:inline" data-confirm="{{ _('هل أنت متأكد من حذف هذا الحدث؟') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="azad-btn-outline azad-btn-sm" style="color:var(--color-danger)">{{ _('حذف') }}</button>
             </form>

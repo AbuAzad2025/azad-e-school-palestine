@@ -18,10 +18,18 @@ function getContainer() {
     container = document.createElement("div");
     container.className = "azad-toast-container";
     container.id = "azad-toasts";
-    container.setAttribute("aria-live", "polite");
     document.body.appendChild(container);
   }
   return container;
+}
+
+function announce(message) {
+  const region = document.getElementById("azad-live-region");
+  if (!region) return;
+  region.textContent = message;
+  setTimeout(() => {
+    region.textContent = "";
+  }, 1000);
 }
 
 function removeToast(toast) {
@@ -56,6 +64,7 @@ export function show(options) {
 
   toast.querySelector(".azad-toast__close").addEventListener("click", () => removeToast(toast));
   container.appendChild(toast);
+  announce(message || title);
 
   if (duration > 0) {
     setTimeout(() => {

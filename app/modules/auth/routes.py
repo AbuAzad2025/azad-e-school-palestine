@@ -2,7 +2,7 @@
 
 from app.services.auth import authenticate, mark_login, register_user, request_password_reset
 from app.services.auth import reset_password as reset_user_password
-from flask import current_app, flash, redirect, render_template, url_for
+from flask import current_app, flash, make_response, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func
@@ -44,8 +44,12 @@ def login():
             flash(_(error), "danger")
         elif user is not None:
             login_user(user)
+            is_first_login = user.last_login_at is None
             mark_login(user)
-            return redirect(url_for("auth.dashboard"))
+            resp = make_response(redirect(url_for("auth.dashboard")))
+            if is_first_login:
+                resp.set_cookie("azad_show_tour", "1", max_age=300, path="/")
+            return resp
     return render_template("auth/login.html", form=form)
 
 

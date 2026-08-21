@@ -58,6 +58,104 @@ export function initFlashes() {
   );
 }
 
+export function initUserDropdown() {
+  document.addEventListener("click", (e) => {
+    const toggle = e.target.closest("[data-user-toggle]");
+    const menu = document.querySelector("[data-user-menu]");
+    if (!menu) return;
+
+    if (toggle) {
+      e.preventDefault();
+      const isOpen = !menu.hidden;
+      menu.hidden = isOpen;
+      toggle.setAttribute("aria-expanded", String(!isOpen));
+      return;
+    }
+
+    if (!e.target.closest("[data-user-menu]")) {
+      menu.hidden = true;
+      const toggleBtn = document.querySelector("[data-user-toggle]");
+      if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+export function initConfirmDialogs() {
+  const ask = (trigger, e) => {
+    const message =
+      trigger.dataset.confirm || window.AzadConfirmDefaults?.message || "هل أنت متأكد؟";
+    if (!confirm(message)) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+    return true;
+  };
+
+  delegate(document.body, "[data-confirm]", "click", (e, trigger) => {
+    if (trigger.tagName === "FORM") return;
+    ask(trigger, e);
+  });
+
+  document.addEventListener("submit", (e) => {
+    const form = e.target.closest("form[data-confirm]");
+    if (!form) return;
+    if (!ask(form, e)) return;
+  });
+}
+
+export function initHelpTooltips() {
+  const hideAll = () => {
+    document.querySelectorAll(".azad-field__help-popover").forEach((popover) => {
+      popover.hidden = true;
+    });
+  };
+
+  delegate(document.body, "[data-help-tooltip]", "click", (e) => {
+    e.preventDefault();
+    const trigger = e.target.closest("[data-help-tooltip]");
+    const describedBy = trigger?.getAttribute("aria-describedby");
+    const popover = describedBy ? document.getElementById(describedBy) : null;
+    if (!popover) return;
+    const wasHidden = popover.hidden;
+    hideAll();
+    popover.hidden = !wasHidden;
+  });
+
+  document.addEventListener("click", (e) => {
+    if (
+      !e.target.closest("[data-help-tooltip]") &&
+      !e.target.closest(".azad-field__help-popover")
+    ) {
+      hideAll();
+    }
+  });
+}
+
+export function initActionsDropdowns() {
+  document.addEventListener("click", (e) => {
+    const toggle = e.target.closest("[data-actions-toggle]");
+    if (toggle) {
+      e.preventDefault();
+      const dropdown = toggle.closest("[data-actions-dropdown]");
+      const menu = dropdown?.querySelector("[data-actions-menu]");
+      if (!menu) return;
+      const isOpen = !menu.hidden;
+      menu.hidden = isOpen;
+      toggle.setAttribute("aria-expanded", String(!isOpen));
+      return;
+    }
+
+    if (!e.target.closest("[data-actions-dropdown]")) {
+      document.querySelectorAll("[data-actions-menu]").forEach((menu) => {
+        menu.hidden = true;
+        const btn = menu.closest("[data-actions-dropdown]")?.querySelector("[data-actions-toggle]");
+        if (btn) btn.setAttribute("aria-expanded", "false");
+      });
+    }
+  });
+}
+
 export function initRipple() {
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(
@@ -85,5 +183,9 @@ export default {
   initAccordions,
   initTabs,
   initFlashes,
+  initUserDropdown,
+  initConfirmDialogs,
+  initHelpTooltips,
+  initActionsDropdowns,
   initRipple,
 };

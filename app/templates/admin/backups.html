@@ -26,7 +26,7 @@
       <td>{{ (b.size / 1024 / 1024)|round(2) }} MB</td>
       <td>{{ b.created.strftime('%Y-%m-%d %H:%M') }}</td>
       <td>
-        <form method="post" action="{{ url_for('admin.backup_restore', filename=b.name) }}" style="display:inline" onsubmit="return confirm('{{ _('تحذير: سيؤدي هذا لمسح البيانات الحالية واستبدالها بالنسخة الاحتياطية. هل أنت متأكد؟') }}')">
+        <form method="post" action="{{ url_for('admin.backup_restore', filename=b.name) }}" style="display:inline" data-confirm="{{ _('تحذير: سيؤدي هذا لمسح البيانات الحالية واستبدالها بالنسخة الاحتياطية. هل أنت متأكد؟') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="confirm" value="yes">
           <button class="azad-btn-outline action-btn" type="submit">{{ _('استعادة') }}</button>

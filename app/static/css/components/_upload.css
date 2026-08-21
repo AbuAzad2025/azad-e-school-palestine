@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════
+   Azad File Upload — drag & drop zone + preview
+═══════════════════════════════════════════ */
+
+.azad-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1, 0.25rem);
+}
+
+.azad-upload__label {
+  font-weight: 600;
+  font-size: var(--text-sm, 0.875rem);
+  color: var(--text, #0f172a);
+}
+
+.azad-upload__zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2, 0.5rem);
+  min-height: 120px;
+  padding: var(--sp-4, 1rem);
+  border: 2px dashed var(--border, #cbd5e1);
+  border-radius: var(--radius-md, 0.5rem);
+  background: var(--surface, #fff);
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  transition: border-color var(--duration-fast, 150ms) ease, background-color var(--duration-fast, 150ms) ease;
+}
+
+.azad-upload__zone:hover,
+.azad-upload__zone:focus {
+  border-color: var(--azad-navy, #014e7c);
+  background: color-mix(in srgb, var(--azad-navy, #014e7c) 4%, transparent);
+  outline: none;
+}
+
+.azad-upload__zone--dragover {
+  border-color: var(--azad-gold, #c5a028);
+  background: color-mix(in srgb, var(--azad-gold, #c5a028) 10%, transparent);
+}
+
+.azad-upload__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.azad-upload__icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--azad-navy, #014e7c);
+  pointer-events: none;
+}
+
+.azad-upload__prompt {
+  font-size: var(--text-sm, 0.875rem);
+  text-align: center;
+  pointer-events: none;
+}
+
+.azad-upload__file-name {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--text, #0f172a);
+  text-align: center;
+  word-break: break-word;
+  pointer-events: none;
+}
+
+.azad-upload__preview {
+  max-width: 100%;
+  max-height: 160px;
+  margin-top: var(--sp-2, 0.5rem);
+  border-radius: var(--radius-sm, 0.25rem);
+  object-fit: cover;
+}

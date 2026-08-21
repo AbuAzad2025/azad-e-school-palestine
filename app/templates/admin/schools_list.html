@@ -1,36 +1,54 @@
 {% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('المدارس') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
 <div class="section-head">
   <h1 class="page-title azad-title">{{ _('إدارة المدارس') }}</h1>
-  <form method="get" class="form-inline">
-    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" aria-label="{{ _('بحث بالاسم أو النطاق') }}" class="form-group" style="flex:1">
-    <button class="azad-btn" type="submit">{{ _('بحث') }}</button>
+  <form method="get" class="form-inline gradebook-form-row">
+    <div class="gradebook-form-col--2"><input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" aria-label="{{ _('بحث بالاسم أو النطاق') }}" class="form-control"></div>
+    <div class="gradebook-form-actions"><button class="azad-btn" type="submit">{{ _('بحث') }}</button></div>
     {% if search %}
-    <a href="{{ url_for('admin.schools_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a>
+    <div class="gradebook-form-actions"><a href="{{ url_for('admin.schools_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a></div>
     {% endif %}
   </form>
 </div>
 
-{% if pagination.items %}
-<div class="azad-list">
-  {% for s in pagination.items %}
-  <div class="azad-item">
-    <div>
-      <div class="item-title">{{ s.display_name }}</div>
-      <div class="item-meta">
-        <span>{{ _('نطاق:') }} {{ s.domain or _('بلا نطاق') }}</span>
-        <span>{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
-        <span class="badge-status badge-ok">{{ _('نشطة') if s.is_active else _('معطلة') }}</span>
-      </div>
-    </div>
-    <div class="item-actions">
-      <a class="azad-btn-outline" href="{{ url_for('admin.school_detail', school_id=s.id) }}">{{ _('فتح') }}</a>
-    </div>
-  </div>
-  {% endfor %}
-</div>
+{% set headers = [
+  {'key': 'name', 'label': _('المدرسة')},
+  {'key': 'domain', 'label': _('النطاق')},
+  {'key': 'year', 'label': _('السنة الدراسية')},
+  {'key': 'status', 'label': _('الحالة')}
+] %}
 
+{% set rows = [] %}
+{% for s in pagination.items %}
+  {% set status_badge = '<span class=\"badge-status badge-' ~ ('ok' if s.is_active else 'err') ~ '\">' ~ (_('نشطة') if s.is_active else _('معطلة')) ~ '</span>' %}
+  {% set actions_html %}
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.school_detail', school_id=s.id) }}">{{ _('فتح') }}</a>
+  {% endset %}
+  {% set _ = rows.append({
+    'id': s.id,
+    'cells': {
+      'name': s.display_name,
+      'domain': s.domain or _('بلا نطاق'),
+      'year': s.academic_year or '—',
+      'status': status_badge
+    },
+    'actions': actions_html
+  }) %}
+{% endfor %}
+
+{{ azad_table(
+  headers=headers,
+  rows=rows,
+  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
+  bulk='schools',
+  actions=True,
+  empty_title=_('لا توجد مدارس'),
+  empty_icon='school'
+) }}
+
+{% if pagination.pages > 1 %}
 <div class="pagination">
   {% if pagination.has_prev %}
   <a href="{{ url_for('admin.schools_list', page=pagination.page-1, search=search) }}">&laquo; {{ _('السابق') }}</a>
@@ -50,7 +68,5 @@
   <a href="{{ url_for('admin.schools_list', page=pagination.page+1, search=search) }}">{{ _('التالي') }} &raquo;</a>
   {% endif %}
 </div>
-{% else %}
-<div class="empty-state">{{ _('لا توجد مدارس') }}</div>
 {% endif %}
 {% endblock %}

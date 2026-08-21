@@ -1,0 +1,191 @@
+/* ═══════════════════════════════════════════
+   Azad Form Components — grid rows, errors, help tooltips, timeline
+═══════════════════════════════════════════ */
+
+/* ─── Form Row Grid ─── */
+.azad-form-row {
+  display: grid;
+  grid-template-columns: repeat(var(--azad-form-cols, 2), 1fr);
+  gap: var(--sp-3, 0.75rem);
+  align-items: end;
+  margin-block-end: var(--sp-3, 0.75rem);
+}
+
+.azad-form-col {
+  min-width: 0;
+}
+
+.azad-form-col--2 {
+  grid-column: span 2;
+}
+
+@media (max-width: 767px) {
+  .azad-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .azad-form-col--2 {
+    grid-column: span 1;
+  }
+}
+
+/* ─── Unified Error / Help States ─── */
+.azad-field--error .azad-field__input,
+.azad-field--error .azad-field__select,
+.azad-field--error .azad-field__textarea {
+  border-color: var(--color-danger, #dc3545);
+  background-color: color-mix(in srgb, var(--color-danger, #dc3545) 6%, transparent);
+}
+
+.azad-field__error {
+  color: var(--color-danger, #dc3545);
+  font-size: var(--text-xs, 0.75rem);
+  margin-top: var(--sp-1, 0.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.azad-field__help {
+  color: var(--text-muted, #64748b);
+  font-size: var(--text-xs, 0.75rem);
+  margin-top: var(--sp-1, 0.25rem);
+}
+
+/* ─── Help Tooltip ─── */
+.azad-field__help-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-inline-start: 0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--azad-navy, #014e7c);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.azad-field__help-toggle:hover,
+.azad-field__help-toggle:focus {
+  background: var(--azad-gold, #c5a028);
+  outline: 2px solid transparent;
+}
+
+.azad-field__help-popover {
+  position: absolute;
+  z-index: var(--z-popover, 1200);
+  max-width: 260px;
+  padding: var(--sp-2, 0.5rem) var(--sp-3, 0.75rem);
+  background: var(--surface, #fff);
+  color: var(--text, #0f172a);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  font-size: var(--text-sm, 0.875rem);
+  line-height: var(--leading-normal, 1.5);
+}
+
+.azad-field {
+  position: relative;
+}
+
+/* ─── Status Timeline ─── */
+.azad-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2, 0.5rem);
+}
+
+.azad-timeline__item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2, 0.5rem);
+  padding: var(--sp-3, 0.75rem);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--radius-md, 0.5rem);
+  background: var(--surface, #fff);
+  flex: 1 1 180px;
+  min-width: 140px;
+}
+
+.azad-timeline__item--done {
+  border-color: var(--color-success, #28a745);
+  background: color-mix(in srgb, var(--color-success, #28a745) 8%, transparent);
+}
+
+.azad-timeline__item--active {
+  border-color: var(--azad-gold, #c5a028);
+  background: color-mix(in srgb, var(--azad-gold, #c5a028) 10%, transparent);
+}
+
+.azad-timeline__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.2rem;
+  border-radius: 50%;
+  background: var(--border, #e2e8f0);
+  flex-shrink: 0;
+}
+
+.azad-timeline__item--done .azad-timeline__dot {
+  background: var(--color-success, #28a745);
+}
+
+.azad-timeline__item--active .azad-timeline__dot {
+  background: var(--azad-gold, #c5a028);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--azad-gold, #c5a028) 25%, transparent);
+}
+
+.azad-timeline__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.azad-timeline__label {
+  font-weight: 600;
+  font-size: var(--text-sm, 0.875rem);
+}
+
+.azad-timeline__date,
+.azad-timeline__actor {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+}
+
+/* ─── Inline Form / Button helpers ─── */
+.azad-form--inline {
+  display: inline;
+}
+
+.azad-form-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2, 0.5rem);
+  margin-top: var(--sp-3, 0.75rem);
+}
+
+.azad-btn--sm {
+  font-size: var(--text-xs, 0.75rem);
+  padding: 0.25rem 0.5rem;
+}
+
+.payment-note {
+  font-size: 0.85rem;
+  color: var(--text-muted, #64748b);
+  margin-top: 0.4rem;
+}
+
+.payment-receipts {
+  margin-top: 0.5rem;
+}

@@ -31,6 +31,12 @@
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/_tables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/_forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/_upload.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/generic/_motion.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/elements/_focus.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/_tour.css') }}">
 <style>
   .impersonate-banner { background: #7c2d12; color: #fff; padding: .5rem 0; font-size: .9rem; }
   .impersonate-banner .container { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
@@ -43,7 +49,7 @@
   <script defer data-domain="{{ config.PLAUSIBLE_SCRIPT_URL }}" src="https://plausible.io/js/script.js"></script>
   {% endif %}
 </head>
-<body class="azad-app">
+<body class="azad-app" data-show-tour="{{ 'true' if request.cookies.get('azad_show_tour') else 'false' }}">
   <a class="skip-link" href="#main">{{ _('تخطَّ إلى المحتوى') }}</a>
   {% include "partials/navbar.html" %}
   {% if is_impersonating and impersonator %}
@@ -53,9 +59,9 @@
         <strong>{{ icon('alert') }}{{ _('وضع انتحال الصفة') }}</strong>
         <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, admin=impersonator.name_ar or impersonator.email) }}</span>
       </div>
-      <form method="post" action="{{ url_for('admin.impersonate_exit') }}" style="display:inline">
+      <form method="post" action="{{ url_for('admin.impersonate_exit') }}" class="azad-inline-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="azad-btn" style="padding:.35rem 1rem">{{ _('العودة إلى حسابي الأصلي') }}</button>
+        <button type="submit" class="azad-btn azad-btn-sm">{{ _('العودة إلى حسابي الأصلي') }}</button>
       </form>
     </div>
   </div>
@@ -75,15 +81,15 @@
   </main>
   {% include "partials/footer.html" %}
 
-  <div id="pwa-install-banner" style="display:none;position:fixed;bottom:0;inset-inline:0;z-index:var(--z-toast);background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--shadow-xl);padding:var(--sp-3) var(--sp-4);">
-    <div class="container" style="display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <strong style="display:block;margin-bottom:var(--sp-1)">{{ icon('download') }} {{ _('تثبيت أزاد على شاشتك') }}</strong>
-        <small style="color:var(--muted)">{{ _('استخدم التطبيق كتطبيق أصلي على جهازك') }}</small>
+  <div id="pwa-install-banner" class="azad-pwa-banner">
+    <div class="container azad-pwa-banner__inner">
+      <div class="azad-pwa-banner__text">
+        <strong>{{ icon('download') }} {{ _('تثبيت أزاد على شاشتك') }}</strong>
+        <small>{{ _('استخدم التطبيق كتطبيق أصلي على جهازك') }}</small>
       </div>
-      <div style="display:flex;gap:var(--sp-2);">
+      <div class="azad-pwa-banner__actions">
         <button id="pwa-install-btn" class="azad-btn azad-btn-sm">{{ icon('download') }} {{ _('تثبيت') }}</button>
-        <button id="pwa-install-dismiss" class="azad-btn-outline azad-btn-sm" style="color:var(--muted);border-color:var(--border)">{{ icon('x') }}</button>
+        <button id="pwa-install-dismiss" class="azad-btn-outline azad-btn-sm azad-btn-muted">{{ icon('x') }}</button>
       </div>
     </div>
   </div>
@@ -128,13 +134,74 @@
       {{ icon('envelope') }}<span>{{ _('الرسائل') }}</span>
       {% if message_unread_count %}<span class="azad-bottom-nav__badge">{{ message_unread_count }}</span>{% endif %}
     </a>
-    <a href="{{ url_for('auth.dashboard') }}" class="azad-bottom-nav__item" data-theme-toggle-bottom aria-label="{{ _('تبديل المظهر') }}">
-      <span data-theme-icon-light>{{ icon('sun') }}</span>
-      <span data-theme-icon-dark>{{ icon('moon') }}</span>
-      <span>{{ _('السمة') }}</span>
-    </a>
   </nav>
   {% endif %}
+
+  <script>
+    window.AzadSearchLabels = {
+      title: "{{ _('بحث') }}",
+      placeholder: "{{ _('ابحث عن مدارس، مستخدمين، صفوف...') }}",
+      startTyping: "{{ _('اكتب حرفين على الأقل...') }}",
+      searching: "{{ _('جاري البحث...') }}",
+      noResults: "{{ _('لا توجد نتائج') }}",
+      error: "{{ _('حدث خطأ أثناء البحث') }}",
+      schools: "{{ _('المدارس') }}",
+      users: "{{ _('المستخدمون') }}",
+      classes: "{{ _('الصفوف') }}",
+      subscriptions: "{{ _('الاشتراكات') }}",
+      searchIcon: `{{ icon('search')|tojson }}`
+    };
+    window.AzadIcons = {
+      school: `{{ icon('school')|tojson }}`,
+      user: `{{ icon('user')|tojson }}`,
+      "book-open": `{{ icon('book-open')|tojson }}`,
+      "credit-card": `{{ icon('credit-card')|tojson }}`,
+      sun: `{{ icon('sun')|tojson }}`,
+      moon: `{{ icon('moon')|tojson }}`
+    };
+    window.AzadConfirmDefaults = {
+      message: "{{ _('هل أنت متأكد؟') }}"
+    };
+    window.AzadBulkLabels = {
+      selected: "{{ _('{count} محدد') }}",
+      error: "{{ _('حدث خطأ أثناء تنفيذ الإجراء الجماعي') }}"
+    };
+    window.AzadTourLabels = {
+      skip: "{{ _('تخطي') }}",
+      next: "{{ _('التالي') }}",
+      finish: "{{ _('انتهاء') }}",
+      dontShow: "{{ _('لا تُعرض مرة أخرى') }}"
+    };
+    window.AzadFormLabels = {
+      required: "{{ _('هذا الحقل مطلوب') }}",
+      email: "{{ _('البريد الإلكتروني غير صالح') }}"
+    };
+  </script>
+  <div id="azad-live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+  <div id="azad-tour" class="azad-tour" role="dialog" aria-modal="true" aria-label="{{ _('جولة تعريفية') }}" hidden>
+    <div class="azad-tour__overlay" data-tour-overlay></div>
+    <div class="azad-tour__card">
+      <div class="azad-tour__header">
+        <h2 class="azad-tour__title" data-tour-step-title></h2>
+        <button type="button" class="azad-tour__close" data-tour-close aria-label="{{ _('إغلاق') }}">×</button>
+      </div>
+      <p class="azad-tour__text" data-tour-step-text></p>
+      <div class="azad-tour__progress" aria-hidden="true">
+        <span class="azad-tour__dot" data-tour-dot="0"></span>
+        <span class="azad-tour__dot" data-tour-dot="1"></span>
+        <span class="azad-tour__dot" data-tour-dot="2"></span>
+        <span class="azad-tour__dot" data-tour-dot="3"></span>
+      </div>
+      <div class="azad-tour__actions">
+        <button type="button" class="azad-btn-outline" data-tour-skip>{{ _('تخطي') }}</button>
+        <button type="button" class="azad-btn" data-tour-next>{{ _('التالي') }}</button>
+      </div>
+      <label class="azad-tour__dont-show">
+        <input type="checkbox" data-tour-dont-show> {{ _('لا تُعرض مرة أخرى') }}
+      </label>
+    </div>
+  </div>
 
   <script type="module" src="{{ url_for('static', filename='js/index.js') }}"></script>
   {% block scripts %}{% endblock %}

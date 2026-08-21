@@ -2,95 +2,75 @@
 {% block title %}{{ quiz.title }} — {{ _('محاولة') }}{% endblock %}
 {% block content %}
 {% if quiz.enable_proctoring %}
-<div class="azad-card" style="border-color:var(--azad-warning,#e67e22);margin-bottom:1rem;padding:1rem;display:flex;gap:.75rem;align-items:center">
-  <span style="color:var(--azad-warning,#e67e22)">{{ icon('shield') }}</span>
+<div class="azad-card quiz-alert">
+  <span class="quiz-alert__icon">{{ icon('shield') }}</span>
   <span>{{ _('تم تفعيل المراقبة. تبديل التبويبات أكثر من %(max)d مرات أو الخروج من وضع الشاشة الكاملة قد يؤدي إلى تسليم تلقائي.', max=quiz.max_tab_switches) }}</span>
 </div>
 {% endif %}
 
-<h1 class="page-title azad-title">{{ quiz.title }}</h1>
-<p class="page-subtitle">{{ _('المحاولة') }} {{ attempt.attempt_no }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
+<div class="quiz-header">
+  <div>
+    <h1 class="page-title azad-title">{{ quiz.title }}</h1>
+    <p class="page-subtitle">{{ _('المحاولة') }} {{ attempt.attempt_no }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
+  </div>
+  <div class="quiz-timer" id="quiz-timer" data-duration-min="{{ quiz.duration_min or 0 }}" aria-live="polite">
+    {{ icon('clock') }} <span>--:--</span>
+  </div>
+</div>
 
-<form method="post" action="{{ url_for('assessment.attempt_submit', attempt_id=attempt.id) }}">
+<div class="quiz-progress">
+  <div class="quiz-progress__track" aria-hidden="true">
+    <div class="quiz-progress__bar" id="quiz-progress-bar"></div>
+  </div>
+  <div class="quiz-progress__text" id="quiz-progress-text">{{ _('0 من %(total)d تمت الإجابة عليه', total=quiz.questions|length) }}</div>
+</div>
+
+<form method="post" action="{{ url_for('assessment.attempt_submit', attempt_id=attempt.id) }}" id="quiz-form" data-attempt-id="{{ attempt.id }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for q in quiz.questions %}
-  <div class="card" style="margin-bottom:1rem">
-    <fieldset style="margin-bottom:.75rem;border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
-      <legend style="font-size:1rem;font-weight:700;margin-bottom:.75rem;padding-inline:.5rem">{{ loop.index }}. {{ q.prompt }}
-        <span class="meta-chip" style="margin-inline-start:.5rem">{{ q.mark or 0 }} {{ _('درجة') }}</span>
+  <div class="card quiz-card" data-question-index="{{ loop.index0 }}">
+    <fieldset class="quiz-fieldset">
+      <legend class="quiz-legend u-flex u-items-center u-gap-md">
+        <span>{{ loop.index }}. {{ q.prompt }}</span>
+        <span class="meta-chip">{{ q.mark or 0 }} {{ _('درجة') }}</span>
+        <button type="button" class="quiz-flag" data-flag-question="{{ q.id }}" aria-pressed="false" aria-label="{{ _('علّم للمراجعة') }}">
+          {{ icon('flag') }}
+        </button>
       </legend>
     {% if q.type == 'mcq' %}
       {% set saved = answers.get(q.id) %}
       {% for item in (q.options.items if q.options else []) %}
         {% set idx = loop.index0 %}
-        <label style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;cursor:pointer">
+        <label class="quiz-option">
           <input type="radio" name="q_{{ q.id }}" value="{{ idx }}" {% if saved and saved.answer.index == idx %}checked{% endif %}>
           <span>{{ item.label }}. {{ item.text }}</span>
         </label>
-</fieldset>
-  {% endfor %}
+      {% endfor %}
     {% elif q.type == 'true_false' %}
       {% set saved = answers.get(q.id) %}
-      <label style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;cursor:pointer">
+      <label class="quiz-option">
         <input type="radio" name="q_{{ q.id }}" value="true" {% if saved and saved.answer.value == true %}checked{% endif %}> {{ _('صح') }}
       </label>
-      <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer">
+      <label class="quiz-option">
         <input type="radio" name="q_{{ q.id }}" value="false" {% if saved and saved.answer.value == false %}checked{% endif %}> {{ _('خطأ') }}
       </label>
     {% else %}
       <textarea name="q_{{ q.id }}" placeholder="{{ _('اكتب إجابتك...') }}">{{ answers.get(q.id).answer.text if answers.get(q.id) else '' }}</textarea>
     {% endif %}
+    </fieldset>
   </div>
   {% endfor %}
-  <div class="form-actions" style="flex-direction:row">
-    <button class="azad-btn" type="submit">{{ _('سليم الاختبار') }}</button>
+  <div class="form-actions quiz-actions">
+    <button class="azad-btn" type="submit" data-confirm="{{ _('هل أنت متأكد من تسليم الاختبار؟ لا يمكن التراجع.') }}">{{ _('سلّم الاختبار') }}</button>
     <a class="azad-btn-outline" href="{{ url_for('assessment.attempt_save', attempt_id=attempt.id) }}" data-save>{{ _('حفظ مؤقت') }}</a>
   </div>
 </form>
 {% endblock %}
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  var saveBtn = document.querySelector('[data-save]');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      var form = saveBtn.closest('form');
-      form.action = saveBtn.href;
-      form.submit();
-    });
-  }
-
-  {% if quiz.enable_proctoring %}
-  var attemptId = {{ attempt.id }};
-  var csrfToken = '{{ csrf_token() }}';
-  var proctorUrl = '/classes/attempt/' + attemptId + '/proctor';
-
-  function postProctor(eventType, extra) {
-    var payload = Object.assign({event_type: eventType}, extra || {});
-    return fetch(proctorUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
-      body: JSON.stringify(payload)
-    }).then(function(r) { return r.json(); }).then(function(data) {
-      if (data.auto_submit) {
-        document.querySelector('form').submit();
-      }
-    });
-  }
-
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) {
-      postProctor('tab_switch');
-    }
-  });
-
-  document.addEventListener('fullscreenchange', function () {
-    if (!document.fullscreenElement && document.fullscreenEnabled !== undefined) {
-      postProctor('fullscreen_exit');
-    }
-  });
-  {% endif %}
-});
+  window.AzadQuizLabels = {
+    progress: "{{ _('{answered} من {total} تمت الإجابة عليه') }}"
+  };
 </script>
+<script type="module" src="{{ url_for('static', filename='js/modules/quiz.js') }}"></script>
 {% endblock %}

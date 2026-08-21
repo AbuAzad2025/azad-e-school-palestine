@@ -36,7 +36,7 @@
       {% if sub.status == 'active' %}
       <form method="post" action="{{ url_for('admin.subscription_cancel', sub_id=sub.id) }}" style="display:inline">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="azad-btn-outline" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من إلغاء الاشتراك؟') }}')">{{ _('إلغاء') }}</button>
+        <button class="azad-btn-outline" type="submit" data-confirm="{{ _('هل أنت متأكد من إلغاء الاشتراك؟') }}">{{ _('إلغاء') }}</button>
       </form>
       {% endif %}
     </div>

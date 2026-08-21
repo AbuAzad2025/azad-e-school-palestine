@@ -3,91 +3,112 @@
    Usage: {% from "macros/forms.html" import azad_input, azad_select, ... %}
 ═══════════════════════════════════════════ #}
 
+{# ─── CSS Grid Form Row ─── #}
+{% macro azad_form_row(cols=2, class='') %}
+<div class="azad-form-row {{ class }}" style="grid-template-columns: repeat({{ cols }}, 1fr);">
+  {{ caller() }}
+</div>
+{% endmacro %}
+
 {# ─── Text Input with Floating Label ─── #}
 {% macro azad_input(field, label='', placeholder='', icon_name='', help_text='') %}
+{% set field_id = field.id %}
+{% set error_id = field_id ~ '-error' %}
+{% set help_id = field_id ~ '-help' %}
+{% set described_by = [] %}
+{% if field.errors %}{% set described_by = described_by + [error_id] %}{% endif %}
+{% if help_text %}{% set described_by = described_by + [help_id] %}{% endif %}
+{% set described_by_str = described_by | join(' ') %}
 <div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
   {% if label or field.label.text %}
-  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  <label class="azad-field__label" for="{{ field_id }}">
+    {{ label or field.label.text }}
+    {% if help_text %}
+    <button type="button" class="azad-field__help-toggle" data-help-tooltip aria-describedby="{{ help_id }}" aria-label="{{ _('مساعدة') }}">?</button>
+    {% endif %}
+  </label>
   {% endif %}
   <div class="azad-field__input-wrap">
     {% if icon_name %}
     <span class="azad-field__icon">{{ icon(icon_name) }}</span>
     {% endif %}
-    {{ field(class="azad-field__input" ~ (" azad-field__input--icon" if icon_name else ""), placeholder=placeholder) }}
+    {{ field(class="azad-field__input" ~ (" azad-field__input--icon" if icon_name else ""), placeholder=placeholder, **({"data-validate": "true", "aria-describedby": described_by_str} if described_by_str else {"data-validate": "true"})) }}
   </div>
-  {% if field.errors %}
-  <div class="azad-field__error">
+  <div id="{{ error_id }}" class="azad-field__error" aria-live="polite" role="alert">
     {% for error in field.errors %}
     <span>{{ error }}</span>
     {% endfor %}
   </div>
-  {% elif help_text %}
-  <div class="azad-field__help">{{ help_text }}</div>
+  {% if help_text %}
+  <div id="{{ help_id }}" class="azad-field__help-popover" role="tooltip" hidden>{{ help_text }}</div>
   {% endif %}
 </div>
 {% endmacro %}
 
 {# ─── Password Input with Toggle ─── #}
 {% macro azad_password(field, label='', placeholder='', toggle=true) %}
+{% set field_id = field.id %}
+{% set error_id = field_id ~ '-error' %}
+{% set described_by_str = error_id if field.errors else '' %}
 <div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
   {% if label or field.label.text %}
-  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  <label class="azad-field__label" for="{{ field_id }}">{{ label or field.label.text }}</label>
   {% endif %}
   <div class="azad-field__input-wrap azad-field__input-wrap--password">
     <span class="azad-field__icon">{{ icon('lock') }}</span>
-    {{ field(class="azad-field__input azad-field__input--icon", placeholder=placeholder, type="password") }}
+    {{ field(class="azad-field__input azad-field__input--icon", placeholder=placeholder, type="password", **({"data-validate": "true", "aria-describedby": described_by_str} if described_by_str else {"data-validate": "true"})) }}
     {% if toggle %}
     <button type="button" class="azad-field__toggle" data-password-toggle aria-label="{{ _('إظهار كلمة المرور') }}">
       {{ icon('eye') }}
     </button>
     {% endif %}
   </div>
-  {% if field.errors %}
-  <div class="azad-field__error">
+  <div id="{{ error_id }}" class="azad-field__error" aria-live="polite" role="alert">
     {% for error in field.errors %}
     <span>{{ error }}</span>
     {% endfor %}
   </div>
-  {% endif %}
 </div>
 {% endmacro %}
 
 {# ─── Select ─── #}
 {% macro azad_select(field, label='', icon_name='', options=[]) %}
+{% set field_id = field.id %}
+{% set error_id = field_id ~ '-error' %}
+{% set described_by_str = error_id if field.errors else '' %}
 <div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
   {% if label or field.label.text %}
-  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  <label class="azad-field__label" for="{{ field_id }}">{{ label or field.label.text }}</label>
   {% endif %}
   <div class="azad-field__input-wrap">
     {% if icon_name %}
     <span class="azad-field__icon">{{ icon(icon_name) }}</span>
     {% endif %}
-    {{ field(class="azad-field__select" ~ (" azad-field__input--icon" if icon_name else "")) }}
+    {{ field(class="azad-field__select" ~ (" azad-field__input--icon" if icon_name else ""), **({"data-validate": "true", "aria-describedby": described_by_str} if described_by_str else {"data-validate": "true"})) }}
   </div>
-  {% if field.errors %}
-  <div class="azad-field__error">
+  <div id="{{ error_id }}" class="azad-field__error" aria-live="polite" role="alert">
     {% for error in field.errors %}
     <span>{{ error }}</span>
     {% endfor %}
   </div>
-  {% endif %}
 </div>
 {% endmacro %}
 
 {# ─── Textarea ─── #}
 {% macro azad_textarea(field, label='', placeholder='', rows=4) %}
+{% set field_id = field.id %}
+{% set error_id = field_id ~ '-error' %}
+{% set described_by_str = error_id if field.errors else '' %}
 <div class="azad-field {% if field.errors %}azad-field--error{% endif %}">
   {% if label or field.label.text %}
-  <label class="azad-field__label" for="{{ field.id }}">{{ label or field.label.text }}</label>
+  <label class="azad-field__label" for="{{ field_id }}">{{ label or field.label.text }}</label>
   {% endif %}
-  {{ field(class="azad-field__textarea", placeholder=placeholder, rows=rows) }}
-  {% if field.errors %}
-  <div class="azad-field__error">
+  {{ field(class="azad-field__textarea", placeholder=placeholder, rows=rows, **({"data-validate": "true", "aria-describedby": described_by_str} if described_by_str else {"data-validate": "true"})) }}
+  <div id="{{ error_id }}" class="azad-field__error" aria-live="polite" role="alert">
     {% for error in field.errors %}
     <span>{{ error }}</span>
     {% endfor %}
   </div>
-  {% endif %}
 </div>
 {% endmacro %}
 
@@ -111,6 +132,42 @@
   </label>
   {% endfor %}
 </div>
+{% endmacro %}
+
+{# ─── File Upload Zone ─── #}
+{% macro azad_file_upload(field, label='', help_text='', preview=true, accept='') %}
+{% set field_id = field.id %}
+<div class="azad-upload">
+  {% if label %}
+  <label class="azad-upload__label" for="{{ field_id }}">{{ label }}</label>
+  {% endif %}
+  <div class="azad-upload__zone" tabindex="0" role="button" aria-describedby="{{ field_id }}-instructions">
+    <input type="file" id="{{ field_id }}" name="{{ field.name }}" class="azad-upload__input" {% if accept %}accept="{{ accept }}"{% endif %} {% if preview %}data-upload-preview{% endif %}>
+    <span class="azad-upload__icon">{{ icon('upload') }}</span>
+    <span class="azad-upload__prompt">{{ _('اسحب الملف هنا أو انقر للاختيار') }}</span>
+    <span class="azad-upload__file-name" aria-live="polite"></span>
+    {% if preview %}
+    <img class="azad-upload__preview" alt="{{ _('معاينة الملف') }}" hidden>
+    {% endif %}
+  </div>
+  <p id="{{ field_id }}-instructions" class="azad-field__help">{{ help_text or _('الصيغ المدعومة: PNG، JPG، PDF') }}</p>
+</div>
+{% endmacro %}
+
+{# ─── Status Timeline ─── #}
+{% macro azad_timeline(steps) %}
+<ol class="azad-timeline" aria-label="{{ _('خطوات الحالة') }}">
+  {% for step in steps %}
+  <li class="azad-timeline__item {% if step.done %}azad-timeline__item--done{% elif step.active %}azad-timeline__item--active{% endif %}">
+    <span class="azad-timeline__dot" aria-hidden="true"></span>
+    <div class="azad-timeline__content">
+      <div class="azad-timeline__label">{{ step.label }}</div>
+      {% if step.date %}<time class="azad-timeline__date">{{ step.date }}</time>{% endif %}
+      {% if step.actor %}<span class="azad-timeline__actor">{{ step.actor }}</span>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
 {% endmacro %}
 
 {# ─── Form Actions ─── #}

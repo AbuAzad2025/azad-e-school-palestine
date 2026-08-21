@@ -34,13 +34,13 @@
         <td>
           <form method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}" style="display:inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="azad-btn azad-btn-success" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}')">
+            <button class="azad-btn azad-btn-success" type="submit" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
               {{ _('قبول') }}
             </button>
           </form>
           <form method="post" action="{{ url_for('school_approvals.reject', link_id=link.id) }}" style="display:inline; margin-right:.5rem">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="azad-btn azad-btn-danger" type="submit" onclick="return confirm('{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}')">
+            <button class="azad-btn azad-btn-danger" type="submit" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
               {{ _('رفض') }}
             </button>
           </form>

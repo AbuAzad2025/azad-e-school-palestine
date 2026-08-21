@@ -1,58 +1,62 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import azad_input, azad_select, azad_form_row, azad_form_actions %}
 {% block title %}{{ _('دفتر الدرجات') }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components/_gradebook.css') }}">
+{% endblock %}
 {% block content %}
 <div class="section-head">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('دفتر الدرجات') }}</h1>
+    <h1 class="page-title azad-title gradebook-title">{{ _('دفتر الدرجات') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
   </div>
 </div>
 
 {% if can_teach %}
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form method="post" action="{{ url_for('grades.category_create', class_id=class_room.id) }}" novalidate>
     {{ category_form.hidden_tag() }}
-    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-      <div style="flex:2;min-width:180px"><div class="form-group" style="margin:0">{{ category_form.name.label }}{{ category_form.name() }}</div></div>
-      <div style="flex:1;min-width:120px"><div class="form-group" style="margin:0">{{ category_form.weight.label }}{{ category_form.weight() }}</div></div>
-      <div style="align-self:end">{{ category_form.submit(class="azad-btn-outline") }}</div>
-    </div>
+    {% call azad_form_row(cols=3) %}
+      <div class="azad-form-col azad-form-col--2">{{ azad_input(category_form.name) }}</div>
+      <div class="azad-form-col">{{ azad_input(category_form.weight) }}</div>
+      <div class="azad-form-col">{{ azad_form_actions(submit_text=_('إضافة'), submit_class='azad-btn-outline') }}</div>
+    {% endcall %}
   </form>
 </div>
 {% endif %}
 
 {% for cat in categories %}
-<div class="section-head"><h2>{{ icon('folder') }} {{ cat.name }}{% if cat.weight %} <small style="color:var(--muted)">({{ cat.weight }})</small>{% endif %}</h2></div>
+<div class="section-head"><h2>{{ icon('folder') }} {{ cat.name }}{% if cat.weight %} <small class="gradebook-meta">({{ cat.weight }})</small>{% endif %}</h2></div>
 {% if can_teach %}
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form method="post" action="{{ url_for('grades.grade_item_create', category_id=cat.id) }}" novalidate>
     {{ item_form.hidden_tag() }}
-    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-      <div style="flex:2;min-width:180px"><div class="form-group" style="margin:0">{{ item_form.title.label }}{{ item_form.title() }}</div></div>
-      <div style="flex:1;min-width:110px"><div class="form-group" style="margin:0">{{ item_form.max_mark.label }}{{ item_form.max_mark() }}</div></div>
-      <div style="flex:1;min-width:130px"><div class="form-group" style="margin:0">{{ item_form.kind.label }}{{ item_form.kind() }}</div></div>
-      <div style="align-self:end">{{ item_form.submit(class="azad-btn-outline") }}</div>
-    </div>
+    {% call azad_form_row(cols=4) %}
+      <div class="azad-form-col azad-form-col--2">{{ azad_input(item_form.title) }}</div>
+      <div class="azad-form-col">{{ azad_input(item_form.max_mark) }}</div>
+      <div class="azad-form-col">{{ azad_select(item_form.kind) }}</div>
+      <div class="azad-form-col">{{ azad_form_actions(submit_text=_('إضافة'), submit_class='azad-btn-outline') }}</div>
+    {% endcall %}
   </form>
 </div>
 {% endif %}
-<table class="azad-table">
+<table class="azad-table gradebook-table">
   <thead><tr><th>{{ _('الطالب') }}</th>
     {% for item in items if item.category_id == cat.id %}<th>{{ item.title }}{% if item.max_mark %}<br><small>({{ item.max_mark }})</small>{% endif %}</th>{% endfor %}
   </tr></thead>
   <tbody>
   {% for m in members %}
     <tr>
-      <td>{{ m.user.name_ar }}</td>
+      <td data-label="{{ _('الطالب') }}">{{ m.user.name_ar }}</td>
       {% for item in items if item.category_id == cat.id %}
         {% set entry = entries.get((m.user_id, item.id)) %}
-        <td>
+        <td data-label="{{ item.title }}">
           {% if can_teach %}
-          <form method="post" action="{{ url_for('grades.grade_set', item_id=item.id) }}" style="display:flex;gap:.3rem;align-items:center">
+          <form method="post" action="{{ url_for('grades.grade_set', item_id=item.id) }}" class="grade-input-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="student_id" value="{{ m.user_id }}">
-            <input type="number" step="0.5" name="mark" value="{{ entry.mark if entry and entry.mark is not none else '' }}" aria-label="{{ _('درجة') }} {{ item.title }} {{ m.user.name_ar }}" style="max-width:80px;padding:.3rem .5rem">
-            <button class="azad-btn-outline" style="padding:.3rem .8rem" type="submit">✓</button>
+            <input type="number" step="0.5" name="mark" value="{{ entry.mark if entry and entry.mark is not none else '' }}" aria-label="{{ _('درجة') }} {{ item.title }} {{ m.user.name_ar }}" class="grade-input">
+            <button class="azad-btn-outline grade-submit-btn" type="submit">✓</button>
           </form>
           {% else %}{{ entry.mark if entry and entry.mark is not none else '—' }}{% endif %}
         </td>

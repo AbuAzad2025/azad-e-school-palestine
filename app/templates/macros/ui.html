@@ -209,3 +209,74 @@
   {% endwith %}
 </div>
 {% endmacro %}
+
+{# ─── Unified Table ─── #}
+{% macro azad_table(headers, rows, modifiers='', bulk=False, actions=False, empty_title='', empty_description='', empty_icon='folder') %}
+{% set card_class = 'azad-table--card-view-mobile ' if '--card-view-mobile' not in modifiers else '' %}
+{% set table_class = 'azad-table ' + card_class + modifiers %}
+{% if bulk %}
+<div class="azad-table__bulk-bar" data-bulk-bar>
+  <span class="azad-table__bulk-count" data-bulk-count>{{ _('0 محدد') }}</span>
+  <select class="azad-field__select" data-bulk-action-select aria-label="{{ _('إجراء جماعي') }}">
+    <option value="">{{ _('اختر إجراءً...') }}</option>
+    <option value="activate">{{ _('تفعيل') }}</option>
+    <option value="deactivate">{{ _('تعطيل') }}</option>
+    <option value="delete" data-confirm="{{ _('هل أنت متأكد من الحذف؟') }}">{{ _('حذف') }}</option>
+  </select>
+  <button type="button" class="azad-btn" data-bulk-apply>{{ _('تطبيق') }}</button>
+</div>
+{% endif %}
+{% if rows %}
+<table class="{{ table_class }}" {% if bulk %}data-bulk-entity="{{ bulk }}"{% endif %}>
+  <thead>
+    <tr>
+      {% if bulk %}<th class="azad-table__checkbox"><input type="checkbox" data-bulk-select-all aria-label="{{ _('اختيار الكل') }}"></th>{% endif %}
+      {% for h in headers %}
+      <th class="{{ h.class|default('') }}">{{ h.label }}</th>
+      {% endfor %}
+      {% if actions %}<th class="azad-table__actions">{{ _('إجراءات') }}</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr {% if row.id is defined %}data-row-id="{{ row.id }}"{% endif %}>
+      {% if bulk %}
+      <td class="azad-table__checkbox"><input type="checkbox" data-bulk-id="{{ row.id }}" aria-label="{{ _('اختيار') }}"></td>
+      {% endif %}
+      {% for h in headers %}
+      <td data-label="{{ h.label }}" class="{{ h.class|default('') }}">{{ row.cells[h.key]|safe if h.key in row.cells else '' }}</td>
+      {% endfor %}
+      {% if actions %}
+      <td class="azad-table__actions">
+        <div class="azad-table__actions-cell">{{ row.actions|safe }}</div>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+{{ azad_empty_state(empty_title, empty_description, empty_icon) }}
+{% endif %}
+{% endmacro %}
+
+{# ─── Actions Dropdown ─── #}
+{% macro azad_actions_dropdown(label, items) %}
+<div class="azad-actions-dropdown" data-actions-dropdown>
+  <button type="button" class="azad-actions-dropdown__toggle" data-actions-toggle aria-expanded="false" aria-label="{{ label }}">
+    {{ label }} {{ icon('chevron-down') }}
+  </button>
+  <div class="azad-actions-dropdown__menu" hidden data-actions-menu>
+    {% for item in items %}
+    {% if item.form %}
+    <form method="post" action="{{ item.href }}" {% if item.confirm %}data-confirm="{{ item.confirm }}"{% endif %}>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit">{{ icon(item.icon) }} {{ item.label }}</button>
+    </form>
+    {% else %}
+    <a href="{{ item.href }}" {% if item.confirm %}data-confirm="{{ item.confirm }}"{% endif %}>{{ icon(item.icon) }} {{ item.label }}</a>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}

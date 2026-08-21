@@ -38,7 +38,7 @@
       </div>
     </div>
     <div class="card-footer" style="border-top:1px solid var(--azad-border);padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
-      <a href="{{ url_for('content.lesson_import', lesson_id=lesson.id, target_class_id=request.args.get('target_class_id')) }}" class="azad-btn" onclick="return confirmImport(this)">{{ icon('download') }} {{ _('استيراد') }}</a>
+      <a href="{{ url_for('content.lesson_import', lesson_id=lesson.id, target_class_id=request.args.get('target_class_id')) }}" class="azad-btn" data-confirm="{{ _('هل تريد استيراد هذا الدرس إلى صفك؟ سيتم نسخه كمسودة.') }}">{{ icon('download') }} {{ _('استيراد') }}</a>
     </div>
   </div>
   {% endfor %}
@@ -48,12 +48,4 @@
   {{ _('لا توجد دروس مشتركة حالياً.') }}
 </div>
 {% endif %}
-{% endblock %}
-
-{% block scripts %}
-<script>
-function confirmImport(link) {
-  return confirm('{{ _('هل تريد استيراد هذا الدرس إلى صفك؟ سيتم نسخه كمسودة.') }}');
-}
-</script>
 {% endblock %}

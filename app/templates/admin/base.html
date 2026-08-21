@@ -92,6 +92,13 @@
       <a href="{{ url_for('admin.backups_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.backups_list' %}active{% endif %}">{{ icon('refresh') }} {{ _('النسخ الاحتياطي') }}</a>
       <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {% if request.endpoint == 'admin.settings' %}active{% endif %}">{{ icon('settings') }} {{ _('الإعدادات') }}</a>
     </nav>
+    <div class="admin-sidebar__footer">
+      <button type="button" class="admin-theme-toggle" data-theme-toggle aria-label="{{ _('تبديل المظهر') }}">
+        <span data-theme-icon-light>{{ icon('sun') }}</span>
+        <span data-theme-icon-dark>{{ icon('moon') }}</span>
+        <span>{{ _('تبديل المظهر') }}</span>
+      </button>
+    </div>
   </aside>
   <div class="admin-nav-overlay" data-admin-nav-overlay></div>
 

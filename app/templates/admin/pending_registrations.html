@@ -39,11 +39,11 @@
         </td>
         <td>
           <div class="item-actions">
-            <form method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" style="display:inline" onsubmit="return confirm('{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}');">
+            <form method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" style="display:inline" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="azad-btn-outline azad-btn-success">{{ icon('check') }} {{ _('قبول') }}</button>
             </form>
-            <form method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" style="display:inline" onsubmit="return confirm('{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}');">
+            <form method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" style="display:inline" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="azad-btn-outline azad-btn-danger">{{ icon('x') }} {{ _('رفض') }}</button>
             </form>

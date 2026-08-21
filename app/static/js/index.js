@@ -1,14 +1,24 @@
 /**
  * Azad application entry point — ES module
  */
+
+import { initFileUploads, initInlineValidation } from "./modules/forms.js";
 import { initTheme } from "./modules/theme.js";
+import { initTour } from "./modules/tour.js";
 import {
   initAccordions,
+  initActionsDropdowns,
+  initConfirmDialogs,
   initFlashes,
+  initHelpTooltips,
   initPasswordToggle,
   initRipple,
   initTabs,
+  initUserDropdown,
 } from "./modules/ui.js";
+import "./modules/search.js";
+import "./modules/bulk.js";
+import "./modules/charts.js";
 
 function initNav() {
   const toggle = document.querySelector("[data-nav-toggle]");
@@ -136,6 +146,13 @@ function init() {
   initNav();
   initAdminDrawer();
   initPasswordToggle();
+  initUserDropdown();
+  initActionsDropdowns();
+  initConfirmDialogs();
+  initHelpTooltips();
+  initInlineValidation();
+  initFileUploads();
+  initTour();
   initAccordions();
   initTabs();
   initFlashes();

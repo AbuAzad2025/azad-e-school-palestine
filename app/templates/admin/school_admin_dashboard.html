@@ -16,6 +16,36 @@
     {{ azad_stat_card(revenue.active_count or 0, _('اشتراك نشط'), 'credit-card', 'var(--color-success)') }}
 </div>
 
+<div class="chart-grid">
+  <div class="card chart-card">
+    <h2 class="chart-card__title">{{ _('الطلاب حسب الصف') }}</h2>
+    <canvas data-chart="bar"
+            data-chart-title="{{ _('طلاب') }}"
+            data-chart-labels='{{ chart_students_by_class | map(attribute='name') | list | tojson }}'
+            data-chart-values='{{ chart_students_by_class | map(attribute='count') | list | tojson }}'
+            data-chart-colors='["var(--azad-navy)","var(--azad-blue)","var(--azad-green)","var(--azad-gold)"]'
+            aria-label="{{ _('رسم بياني للطلاب حسب الصف') }}"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h2 class="chart-card__title">{{ _('الاشتراكات حسب الحالة') }}</h2>
+    <canvas data-chart="doughnut"
+            data-chart-title="{{ _('الاشتراكات') }}"
+            data-chart-labels='{{ chart_subscriptions | map(attribute='status') | list | tojson }}'
+            data-chart-values='{{ chart_subscriptions | map(attribute='count') | list | tojson }}'
+            data-chart-colors='["var(--azad-green)","var(--color-warning)","var(--color-danger)","var(--azad-blue)"]'
+            aria-label="{{ _('رسم بياني للاشتراكات حسب الحالة') }}"></canvas>
+  </div>
+  <div class="card chart-card chart-card--wide">
+    <h2 class="chart-card__title">{{ _('الإيرادات الشهرية') }}</h2>
+    <canvas data-chart="bar"
+            data-chart-title="{{ _('إيرادات') }}"
+            data-chart-labels='{{ chart_revenue | map(attribute='month') | list | tojson }}'
+            data-chart-values='{{ chart_revenue | map(attribute='amount') | list | tojson }}'
+            data-chart-colors='["var(--azad-green)"]'
+            aria-label="{{ _('رسم بياني للإيرادات الشهرية') }}"></canvas>
+  </div>
+</div>
+
 <div class="section-head"><h2>{{ _('الإيرادات') }}</h2></div>
 <div class="stats-grid">
     {{ azad_stat_card(revenue.total_revenue or 0, _('إجمالي المحصّل'), 'cash', 'var(--azad-green)') }}

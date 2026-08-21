@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_stat_card %}
 {% block title %}{{ _('لوحة المشرف') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block admin_content %}
 <div class="section-head">
@@ -6,57 +7,51 @@
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card">
-    <span class="stat-num">{{ schools_total }}</span>
-    <span class="stat-label">{{ _('المدارس النشطة') }}</span>
+  {{ azad_stat_card(schools_total, _('المدارس النشطة'), 'school', 'var(--azad-navy)', url_for('admin.schools_list')) }}
+  {{ azad_stat_card(users_total, _('المستخدمين النشطين'), 'users', 'var(--azad-blue)', url_for('admin.users_list')) }}
+  {{ azad_stat_card(teachers_total, _('المعلمين'), 'teacher', 'var(--azad-green)') }}
+  {{ azad_stat_card(students_total, _('الطلاب'), 'users', 'var(--azad-gold)') }}
+  {{ azad_stat_card(classes_total, _('الصفوف'), 'book-open', 'var(--color-info)') }}
+  {{ azad_stat_card(lessons_total, _('الدروس'), 'book', 'var(--azad-navy)') }}
+  {{ azad_stat_card(assignments_total, _('الواجبات'), 'note', 'var(--azad-blue)') }}
+  {{ azad_stat_card(subs_active, _('اشتراكات نشطة'), 'credit-card', 'var(--azad-green)', url_for('admin.subscriptions_list')) }}
+  {{ azad_stat_card(revenue_total, _('إجمالي الإيرادات'), 'cash', 'var(--azad-gold)') }}
+  {{ azad_stat_card(ai_requests_30d, _('طلبات AI (30 يوم)'), 'sparkles', 'var(--color-info)') }}
+  {{ azad_stat_card(ai_cost_30d, _('تكلفة AI (30 يوم)'), 'cash', 'var(--color-warning)') }}
+  {{ azad_stat_card(pending_payments, _('مدفوعات معلقة'), 'clock', 'var(--color-danger)', url_for('admin.pending_payments')) }}
+</div>
+
+<div class="chart-grid">
+  <div class="card chart-card">
+    <h2 class="chart-card__title">{{ _('التسجيلات الشهرية') }}</h2>
+    <canvas data-chart="bar"
+            data-chart-title="{{ _('مستخدمين جدد') }}"
+            data-chart-labels='{{ chart_signups | map(attribute='month') | list | tojson }}'
+            data-chart-values='{{ chart_signups | map(attribute='count') | list | tojson }}'
+            data-chart-colors='["var(--azad-navy)","var(--azad-blue)","var(--azad-green)","var(--azad-gold)","var(--color-info)","var(--azad-red)"]'
+            aria-label="{{ _('رسم بياني للتسجيلات الشهرية') }}"></canvas>
   </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ users_total }}</span>
-    <span class="stat-label">{{ _('المستخدمين النشطين') }}</span>
+  <div class="card chart-card">
+    <h2 class="chart-card__title">{{ _('الاشتراكات حسب الحالة') }}</h2>
+    <canvas data-chart="doughnut"
+            data-chart-title="{{ _('الاشتراكات') }}"
+            data-chart-labels='{{ chart_subscriptions | map(attribute='status') | list | tojson }}'
+            data-chart-values='{{ chart_subscriptions | map(attribute='count') | list | tojson }}'
+            data-chart-colors='["var(--azad-green)","var(--color-warning)","var(--color-danger)","var(--azad-blue)"]'
+            aria-label="{{ _('رسم بياني للاشتراكات حسب الحالة') }}"></canvas>
   </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ teachers_total }}</span>
-    <span class="stat-label">{{ _('المعلمين') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ students_total }}</span>
-    <span class="stat-label">{{ _('الطلاب') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ classes_total }}</span>
-    <span class="stat-label">{{ _('الصفوف') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ lessons_total }}</span>
-    <span class="stat-label">{{ _('الدروس') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ assignments_total }}</span>
-    <span class="stat-label">{{ _('الواجبات') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ subs_active }}</span>
-    <span class="stat-label">{{ _('اشتراكات نشطة') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ revenue_total }}</span>
-    <span class="stat-label">{{ _('إجمالي الإيرادات') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ ai_requests_30d }}</span>
-    <span class="stat-label">{{ _('طلبات AI (30 يوم)') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">${{ ai_cost_30d }}</span>
-    <span class="stat-label">{{ _('تكلفة AI (30 يوم)') }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">{{ pending_payments }}</span>
-    <span class="stat-label">{{ _('مدفوعات معلقة') }}</span>
+  <div class="card chart-card chart-card--wide">
+    <h2 class="chart-card__title">{{ _('الإيرادات الشهرية') }}</h2>
+    <canvas data-chart="bar"
+            data-chart-title="{{ _('إيرادات') }}"
+            data-chart-labels='{{ chart_revenue | map(attribute='month') | list | tojson }}'
+            data-chart-values='{{ chart_revenue | map(attribute='amount') | list | tojson }}'
+            data-chart-colors='["var(--azad-green)"]'
+            aria-label="{{ _('رسم بياني للإيرادات الشهرية') }}"></canvas>
   </div>
 </div>
 
-<div class="card" style="margin-bottom: 1.5rem;">
+<div class="card u-mb-1">
   <div class="section-head">
     <h2>{{ _('المدارس الحديثة') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.schools_list') }}">{{ _('عرض الكل') }}</a>
@@ -83,7 +78,7 @@
   {% endif %}
 </div>
 
-<div class="card">
+<div class="card u-mb-1">
   <div class="section-head">
     <h2>{{ _('المستخدمين الجدد') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('عرض الكل') }}</a>
@@ -110,7 +105,7 @@
   {% endif %}
 </div>
 
-<div class="card">
+<div class="card u-mb-1">
   <div class="section-head">
     <h2>{{ _('الاشتراكات') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.subscriptions_list') }}">{{ _('عرض الكل') }}</a>
@@ -119,21 +114,21 @@
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('نشطة') }}</div>
-        <div class="item-meta"><span class="stat-num" style="font-size:1.5rem;display:inline">{{ subs_active }}</span></div>
+        <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_active }}</span></div>
       </div>
       <span class="badge-status badge-ok">{{ _('نشطة') }}</span>
     </div>
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('معلقة') }}</div>
-        <div class="item-meta"><span class="stat-num" style="font-size:1.5rem;display:inline">{{ subs_pending }}</span></div>
+        <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_pending }}</span></div>
       </div>
       <span class="badge-status badge-warn">{{ _('معلقة') }}</span>
     </div>
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('منتهية') }}</div>
-        <div class="item-meta"><span class="stat-num" style="font-size:1.5rem;display:inline">{{ subs_expired }}</span></div>
+        <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_expired }}</span></div>
       </div>
       <span class="badge-status badge-err">{{ _('منتهية') }}</span>
     </div>

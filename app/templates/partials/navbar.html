@@ -1,83 +1,109 @@
-<nav class="navbar">
+<nav class="navbar" data-tour-target="navbar">
   <div class="container">
     <a class="brand" href="{{ url_for('main.index') }}">
       <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}">
       <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
     </a>
+
     <div class="nav-actions">
-      <button class="nav-icon-btn" type="button" data-theme-toggle aria-label="{{ _('تبديل المظهر') }}" title="{{ _('تبديل المظهر') }}">
-        <span data-theme-icon-light hidden>{{ icon('sun') }}</span>
-        <span data-theme-icon-dark hidden>{{ icon('moon') }}</span>
-      </button>
-      <button class="nav-toggle" type="button" aria-label="{{ _('القائمة') }}" aria-expanded="false" data-nav-toggle>
-        <span data-nav-icon-open>{{ icon('menu') }}</span>
-        <span data-nav-icon-close hidden>{{ icon('x') }}</span>
-      </button>
-    </div>
-    <div class="nav-links" data-nav-links>
-      <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
-
       {% if current_user.is_authenticated %}
-        {# Navigation for all authenticated users #}
-        <a href="{{ url_for('auth.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
+        <button type="button" class="azad-search-trigger nav-search-trigger" data-search-open data-tour-target="search" aria-label="{{ _('فتح البحث') }}">
+          {{ icon('search') }}
+          <span class="nav-search-text">{{ _('بحث') }}</span>
+          <kbd>Ctrl+K</kbd>
+        </button>
 
-        {% if is_student() %}
-          {% if is_individual() %}
-            <a href="{{ url_for('individual.my_courses') }}">{{ icon('book-open') }} {{ _('كورساتي') }}</a>
-            <a href="{{ url_for('individual.catalog') }}">{{ icon('search') }} {{ _('استكشف') }}</a>
-            <a href="{{ url_for('tutoring.index') }}">{{ icon('teacher') }} {{ _('دروس خصوصية') }}</a>
-            <a href="{{ url_for('ai.chat') }}">{{ icon('sparkles') }} {{ _('محادثة AI') }}</a>
-          {% else %}
-            <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
-            <a href="{{ url_for('tutoring.index') }}">{{ icon('books') }} {{ _('دروس خصوصية') }}</a>
-          {% endif %}
-        {% elif is_teacher() %}
-          <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
-          <a href="{{ url_for('tutoring.my') }}">{{ icon('teacher') }} {{ _('دروسي الخصوصية') }}</a>
-        {% elif is_parent() %}
-          <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوف أبنائي') }}</a>
-        {% elif is_school_admin() %}
-          <a href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('إدارة المدرسة') }}</a>
-          <a href="{{ url_for('admin.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحة الإدارة') }}</a>
-        {% elif is_super_admin() %}
-          <a href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('إدارة المدارس') }}</a>
-          <a href="{{ url_for('admin.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
-          <a href="{{ url_for('admin.users_list') }}">{{ icon('users') }} {{ _('إدارة المستخدمين') }}</a>
-          <a href="{{ url_for('admin.subscriptions_list') }}">{{ icon('credit-card') }} {{ _('الاشتراكات') }}</a>
-          <a href="{{ url_for('admin.schools_list') }}">{{ icon('school') }} {{ _('المدارس') }}</a>
-          <a href="{{ url_for('admin.pending_payments') }}">{{ icon('payment') }} {{ _('الدفعات المعلقة') }}</a>
-          <a href="{{ url_for('admin.backups_list') }}">{{ icon('archive') }} {{ _('النسخ الاحتياطي') }}</a>
-          <a href="{{ url_for('admin.settings') }}">{{ icon('settings') }} {{ _('الإعدادات') }}</a>
-        {% endif %}
-
-        {# Common authenticated links #}
-        <a href="{{ url_for('notifications.index') }}" class="nav-bell">
+        <a href="{{ url_for('notifications.index') }}" class="nav-icon-btn nav-bell" aria-label="{{ _('الإشعارات') }}">
           {{ icon('bell') }}
-          {% if unread_count %}
-            <span class="badge-status badge-err">{{ unread_count }}</span>
-          {% endif %}
-        </a>
-        <a href="{{ url_for('messages.inbox_view') }}" class="nav-envelope">
-          {{ icon('envelope') }}
-          {% if message_unread_count %}
-            <span class="badge-status badge-err">{{ message_unread_count }}</span>
-          {% endif %}
+          {% if unread_count %}<span class="nav-badge">{{ unread_count }}</span>{% endif %}
         </a>
 
-        <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="azad-btn-outline nav-cta">{{ icon('logout') }} {{ _('خروج') }}</button>
-        </form>
+        <a href="{{ url_for('messages.inbox_view') }}" class="nav-icon-btn nav-envelope" aria-label="{{ _('الرسائل') }}">
+          {{ icon('envelope') }}
+          {% if message_unread_count %}<span class="nav-badge">{{ message_unread_count }}</span>{% endif %}
+        </a>
+
+        <div class="nav-user-dropdown">
+          <button type="button" class="nav-user-toggle" data-user-toggle data-tour-target="profile" aria-expanded="false" aria-label="{{ _('قائمة المستخدم') }}">
+            <span class="nav-user-name">{{ current_user.name_ar or current_user.email }}</span>
+            {{ icon('chevron-down') }}
+          </button>
+          <div class="nav-user-menu" data-user-menu hidden>
+            <div class="nav-user-header">
+              <strong>{{ current_user.name_ar or current_user.email }}</strong>
+              <small>{{ current_user.email }}</small>
+            </div>
+            <a href="{{ url_for('auth.dashboard') }}">{{ icon('user') }} {{ _('الملف الشخصي') }}</a>
+            <button type="button" data-theme-toggle class="nav-user-theme">
+              <span data-theme-icon-light>{{ icon('sun') }}</span>
+              <span data-theme-icon-dark>{{ icon('moon') }}</span>
+              <span>{{ _('تبديل المظهر') }}</span>
+            </button>
+            <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'en' else 'ar') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else _('العربية') }}</button>
+            </form>
+            <div class="nav-user-divider"></div>
+            <form method="post" action="{{ url_for('auth.logout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="nav-user-logout">{{ icon('logout') }} {{ _('خروج') }}</button>
+            </form>
+          </div>
+        </div>
+
+        <button class="nav-toggle" type="button" aria-label="{{ _('القائمة') }}" aria-expanded="false" data-nav-toggle>
+          <span data-nav-icon-open>{{ icon('menu') }}</span>
+          <span data-nav-icon-close hidden>{{ icon('x') }}</span>
+        </button>
       {% else %}
+        <button type="button" class="azad-search-trigger nav-search-trigger" data-search-open data-tour-target="search" aria-label="{{ _('فتح البحث') }}">
+          {{ icon('search') }}
+        </button>
         <a href="{{ url_for('auth.login') }}" class="azad-btn-outline nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
         <a href="{{ url_for('auth.register') }}" class="azad-btn nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
-        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn-outline nav-cta">{{ icon('user-plus') }} {{ _('طالب فردي') }}</a>
       {% endif %}
-
-      <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'en' else 'ar') }}" style="display:inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="azad-btn-outline nav-cta">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else _('العربية') }}</button>
-      </form>
     </div>
   </div>
 </nav>
+
+{# Mobile user menu (mirrors desktop dropdown inside hamburger) #}
+{% if current_user.is_authenticated %}
+<div class="nav-links" data-nav-links>
+  <div class="nav-links__section">{{ _('القائمة الرئيسية') }}</div>
+  <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
+  <a href="{{ url_for('auth.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
+
+  {% if is_student() %}
+    {% if is_individual() %}
+      <a href="{{ url_for('individual.my_courses') }}">{{ icon('book-open') }} {{ _('كورساتي') }}</a>
+      <a href="{{ url_for('individual.catalog') }}">{{ icon('search') }} {{ _('استكشف') }}</a>
+    {% else %}
+      <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
+    {% endif %}
+    <a href="{{ url_for('tutoring.index') }}">{{ icon('books') }} {{ _('دروس خصوصية') }}</a>
+  {% elif is_teacher() %}
+    <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
+    <a href="{{ url_for('tutoring.my') }}">{{ icon('teacher') }} {{ _('دروسي الخصوصية') }}</a>
+  {% elif is_parent() %}
+    <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوف أبنائي') }}</a>
+  {% endif %}
+
+  <div class="nav-links__section">{{ _('الحساب') }}</div>
+  <a href="{{ url_for('auth.dashboard') }}">{{ icon('user') }} {{ _('الملف الشخصي') }}</a>
+  <form method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="nav-cta nav-cta--logout">{{ icon('logout') }} {{ _('خروج') }}</button>
+  </form>
+</div>
+{% else %}
+<div class="nav-links" data-nav-links>
+  <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
+  <a href="{{ url_for('auth.login') }}" class="nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
+  <a href="{{ url_for('auth.register') }}" class="nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+  <a href="{{ url_for('auth.register_individual') }}" class="nav-cta">{{ icon('user-plus') }} {{ _('طالب فردي') }}</a>
+  <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'ar' else 'ar') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="nav-cta">{{ icon('globe') }} {{ _('English') if current_locale == 'ar' else _('العربية') }}</button>
+  </form>
+</div>
+{% endif %}

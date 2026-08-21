@@ -30,7 +30,7 @@
         <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
         <td>
           {% if p.status == 'pending' %}
-          <form method="post" action="{{ url_for('admin.review_payout', payout_id=p.id, result='approve') }}" style="display:inline" onsubmit="return confirm('{{ _('تأكيد اعتماد طلب السحب؟') }}')">
+          <form method="post" action="{{ url_for('admin.review_payout', payout_id=p.id, result='approve') }}" style="display:inline" data-confirm="{{ _('تأكيد اعتماد طلب السحب؟') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="azad-btn-outline azad-btn-sm" style="margin:2px">{{ icon('check') }} {{ _('اعتماد') }}</button>
           </form>

@@ -90,8 +90,7 @@
               {% if q.is_shared %}<span class="azad-badge-variant azad-badge-variant--success" style="font-size:.75rem">{{ _('مشارك') }}</span>{% endif %}
               <p style="margin-top:.5rem">{{ q.question_text }}</p>
             </div>
-            <form method="post" action="{{ url_for('assessment.question_bank_delete', question_id=q.id) }}" style="flex-shrink:0"
-                  onsubmit="return confirm('{{ _('هل أنت متأكد من الحذف؟') }}')">
+            <form method="post" action="{{ url_for('assessment.question_bank_delete', question_id=q.id) }}" style="flex-shrink:0" data-confirm="{{ _('هل أنت متأكد من الحذف؟') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="azad-btn-outline" style="color:var(--azad-danger,#dc3545)">{{ icon('trash') }}</button>
             </form>

@@ -26,9 +26,8 @@ export function initTheme() {
   applyTheme(saved);
 
   document.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-theme-toggle], [data-theme-toggle-bottom]");
+    const btn = e.target.closest("[data-theme-toggle]");
     if (!btn) return;
-    if (btn.matches("[data-theme-toggle-bottom]")) e.preventDefault();
     const current = localStorage.getItem(THEME_KEY) || "system";
     const next = getNextTheme(current);
     localStorage.setItem(THEME_KEY, next);

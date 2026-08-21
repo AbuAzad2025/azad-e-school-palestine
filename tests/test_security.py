@@ -337,7 +337,18 @@ class TestErrorHandling:
         """SQL errors must never be shown to users."""
         resp = client.get("/nonexistent-xyz")
         body = resp.data.decode(errors="ignore").lower()
-        assert "table" not in body or "table" not in body
+        sql_leak_terms = [
+            "sqlalchemy",
+            "sqlite",
+            "postgresql",
+            "syntax error",
+            "operator does not exist",
+            "relation",
+            "column",
+            "psycopg2",
+        ]
+        for term in sql_leak_terms:
+            assert term not in body, f"Possible SQL leak: {term!r} found in error page"
 
 
 # ---------------------------------------------------------------------------

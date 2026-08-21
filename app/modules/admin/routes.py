@@ -2,9 +2,11 @@
 
 import os
 import shutil
-from datetime import datetime, timedelta
+from collections import Counter
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+from app.core.db import tx
 from app.core.permissions import _has_any, role_required
 from app.extensions import db
 from app.models.ai import AiUsageLog
@@ -110,6 +112,37 @@ def dashboard():
     recent_users = User.query.filter_by(is_active=True).order_by(User.created_at.desc()).limit(10).all()
     recent_schools = School.query.filter_by(is_active=True).order_by(School.created_at.desc()).limit(5).all()
 
+    # بيانات الرسوم البيانية
+    months = []
+    now = datetime.utcnow()
+    for i in range(5, -1, -1):
+        d = now - timedelta(days=i * 30)
+        months.append(d.strftime("%Y-%m"))
+    signup_counts = Counter(
+        u.created_at.strftime("%Y-%m")
+        for u in User.query.filter(User.created_at >= now - timedelta(days=180)).all()
+        if u.created_at
+    )
+    chart_signups = [{"month": m, "count": signup_counts.get(m, 0)} for m in months]
+
+    subs_by_status: dict[str, int] = {
+        status: count
+        for status, count in db.session.query(Subscription.status, func.count(Subscription.id))
+        .group_by(Subscription.status)
+        .all()
+    }
+    chart_subscriptions = [
+        {"status": status, "count": subs_by_status.get(status, 0)}
+        for status in ("active", "pending", "expired", "pending_review")
+    ]
+
+    revenue_by_month: dict[str, float] = {}
+    for sub in Subscription.query.filter(Subscription.created_at >= now - timedelta(days=180)).all():
+        if sub.created_at:
+            key = sub.created_at.strftime("%Y-%m")
+            revenue_by_month[key] = revenue_by_month.get(key, 0.0) + float(sub.price or 0)
+    chart_revenue = [{"month": m, "amount": round(revenue_by_month.get(m, 0.0), 2)} for m in months]
+
     return render_template(
         "admin/dashboard.html",
         stats=stats,
@@ -122,6 +155,9 @@ def dashboard():
         pending_payments=pending_payments,
         recent_users=recent_users,
         recent_schools=recent_schools,
+        chart_signups=chart_signups,
+        chart_subscriptions=chart_subscriptions,
+        chart_revenue=chart_revenue,
     )
 
 
@@ -172,6 +208,51 @@ def user_toggle(user_id):
         db.session.commit()
         flash(_("تم تحديث حالة المستخدم"), "success")
     return redirect(url_for("admin.user_detail", user_id=user_id))
+
+
+@bp.post("/bulk-action")
+@login_required
+def bulk_action():
+    """تنفيذ إجراء جماعي على الكيانات المختارة."""
+    data = request.get_json(silent=True) or {}
+    entity = data.get("entity")
+    action = data.get("action")
+    ids = [int(i) for i in data.get("ids", []) if str(i).isdigit()]
+
+    if not entity or not action or not ids:
+        return {"success": False, "message": _("بيانات غير كافية")}, 400
+
+    allowed = {
+        "users": {"activate", "deactivate", "delete"},
+        "schools": {"delete"},
+    }
+    if entity not in allowed or action not in allowed[entity]:
+        return {"success": False, "message": _("إجراء غير مسموح")}, 400
+
+    def _apply():
+        if entity == "users":
+            for user_id in ids:
+                user = User.query.get(user_id)
+                if not user or user.id == current_user.id:
+                    continue
+                if action == "activate":
+                    user.is_active = True
+                elif action == "deactivate":
+                    user.is_active = False
+                elif action == "delete":
+                    user.is_active = False
+                    user.deleted_at = datetime.utcnow()
+
+        elif entity == "schools":
+            for school_id in ids:
+                school = School.query.get(school_id)
+                if not school:
+                    continue
+                if action == "delete":
+                    school.is_active = False
+
+    tx(_apply)
+    return {"success": True, "message": _("تم تنفيذ الإجراء")}
 
 
 # ======================================================================
@@ -286,7 +367,99 @@ def subscription_detail(sub_id):
         joinedload(Subscription.plan),
         joinedload(Subscription.payments).joinedload(ManualPayment.receipts),
     ).get_or_404(sub_id)
-    return render_template("admin/subscription_detail.html", sub=sub)
+    now = datetime.now(UTC)
+    steps = [
+        {
+            "label": _("مُرسل"),
+            "date": sub.created_at,
+            "actor": sub.user.name_ar if sub.user else "",
+            "done": True,
+            "active": False,
+        }
+    ]
+    if sub.status in ("pending", "pending_review"):
+        steps.append(
+            {
+                "label": _("بانتظار المراجعة"),
+                "date": sub.updated_at,
+                "actor": "",
+                "done": False,
+                "active": True,
+            }
+        )
+    elif sub.status in ("active", "expired", "cancelled"):
+        steps.append(
+            {
+                "label": _("بانتظار المراجعة"),
+                "date": sub.updated_at,
+                "actor": "",
+                "done": True,
+                "active": False,
+            }
+        )
+    else:
+        steps.append(
+            {
+                "label": _("بانتظار المراجعة"),
+                "date": None,
+                "actor": "",
+                "done": False,
+                "active": False,
+            }
+        )
+
+    if sub.status == "active":
+        steps.append(
+            {
+                "label": _("مُعتمد / نشط"),
+                "date": sub.start_at,
+                "actor": _("المشرف"),
+                "done": True,
+                "active": True,
+            }
+        )
+    elif sub.status in ("expired", "cancelled"):
+        steps.append(
+            {
+                "label": _("مُعتمد / نشط"),
+                "date": sub.start_at,
+                "actor": _("المشرف"),
+                "done": True,
+                "active": False,
+            }
+        )
+    else:
+        steps.append(
+            {
+                "label": _("مُعتمد / نشط"),
+                "date": None,
+                "actor": "",
+                "done": False,
+                "active": False,
+            }
+        )
+
+    if sub.status == "expired" or (sub.end_at and sub.end_at < now):
+        steps.append(
+            {
+                "label": _("منتهي الصلاحية"),
+                "date": sub.end_at,
+                "actor": "",
+                "done": True,
+                "active": False,
+            }
+        )
+    else:
+        steps.append(
+            {
+                "label": _("منتهي الصلاحية"),
+                "date": None,
+                "actor": "",
+                "done": False,
+                "active": False,
+            }
+        )
+    return render_template("admin/subscription_detail.html", sub=sub, timeline_steps=steps)
 
 
 @bp.get("/payments/pending")
@@ -492,6 +665,46 @@ def school_admin_dashboard():
     )
     revenue = school_revenue_summary(school_id)
 
+    # بيانات الرسوم البيانية لمشرف المدرسة
+    now = datetime.utcnow()
+    months = []
+    for i in range(5, -1, -1):
+        d = now - timedelta(days=i * 30)
+        months.append(d.strftime("%Y-%m"))
+
+    class_ids = [c.id for c in ClassRoom.query.filter_by(school_id=school_id).all()]
+    students_by_class = (
+        db.session.query(ClassRoom.name, func.count(User.id))
+        .join(ClassMember, ClassRoom.id == ClassMember.class_id)
+        .join(User, ClassMember.user_id == User.id)
+        .filter(ClassRoom.school_id == school_id, ClassMember.status == "active", User.role == UserRole.student)
+        .group_by(ClassRoom.name)
+        .all()
+    )
+    chart_students_by_class = [{"name": name or _("غير مسماً"), "count": count} for name, count in students_by_class]
+
+    recent_subscriptions = Subscription.query.filter(
+        Subscription.class_id.in_(class_ids), Subscription.created_at >= now - timedelta(days=180)
+    ).all()
+    revenue_by_month: dict[str, float] = {}
+    for sub in recent_subscriptions:
+        if sub.created_at:
+            key = sub.created_at.strftime("%Y-%m")
+            revenue_by_month[key] = revenue_by_month.get(key, 0.0) + float(sub.price or 0)
+    chart_revenue = [{"month": m, "amount": round(revenue_by_month.get(m, 0.0), 2)} for m in months]
+
+    subs_by_status: dict[str, int] = {
+        status: count
+        for status, count in db.session.query(Subscription.status, func.count(Subscription.id))
+        .filter(Subscription.class_id.in_(class_ids))
+        .group_by(Subscription.status)
+        .all()
+    }
+    chart_subscriptions = [
+        {"status": status, "count": subs_by_status.get(status, 0)}
+        for status in ("active", "pending", "expired", "pending_review")
+    ]
+
     return render_template(
         "admin/school_admin_dashboard.html",
         school_id=school_id,
@@ -501,6 +714,9 @@ def school_admin_dashboard():
         lesson_count=lesson_count,
         assignment_count=assignment_count,
         revenue=revenue,
+        chart_students_by_class=chart_students_by_class,
+        chart_revenue=chart_revenue,
+        chart_subscriptions=chart_subscriptions,
     )
 
 
