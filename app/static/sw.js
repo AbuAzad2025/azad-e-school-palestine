@@ -1,8 +1,12 @@
-var CACHE_NAME = "azad-v2";
+var CACHE_NAME = "azad-v3";
 var STATIC_ASSETS = [
   "/static/css/brand.css",
   "/static/css/app.css",
-  "/static/js/app.js",
+  "/static/js/index.js",
+  "/static/js/modules/api.js",
+  "/static/js/modules/theme.js",
+  "/static/js/modules/ui.js",
+  "/static/js/modules/toast.js",
   "/static/img/azad-mark.svg",
   "/static/manifest.json",
   "/offline"

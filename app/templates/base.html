@@ -136,23 +136,7 @@
   </nav>
   {% endif %}
 
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-  <script>
-  if('serviceWorker' in navigator){navigator.serviceWorker.register('{{ url_for("static", filename="sw.js") }}').catch(function(){});}
-  </script>
-  <script>
-  (function(){
-    var deferredPrompt=null;
-    var banner=document.getElementById('pwa-install-banner');
-    var installBtn=document.getElementById('pwa-install-btn');
-    var dismissBtn=document.getElementById('pwa-install-dismiss');
-    if(!banner||!installBtn)return;
-    window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredPrompt=e;banner.style.display='flex';});
-    installBtn.addEventListener('click',function(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(function(){deferredPrompt=null;banner.style.display='none';});});
-    if(dismissBtn){dismissBtn.addEventListener('click',function(){banner.style.display='none';localStorage.setItem('azad-pwa-dismissed','1');});}
-    if(localStorage.getItem('azad-pwa-dismissed')){banner.style.display='none';}
-  })();
-  </script>
+  <script type="module" src="{{ url_for('static', filename='js/index.js') }}"></script>
   {% block scripts %}{% endblock %}
   {% if config.WHATSAPP_BUSINESS_NUMBER %}
   <a href="https://wa.me/{{ config.WHATSAPP_BUSINESS_NUMBER }}?text={{ _('مرحباً، أحتاج مساعدة') | urlencode }}"
