@@ -122,9 +122,7 @@ def create_app(config_class=Config):
         def _security_headers_fallback(response):
             response.headers.setdefault("X-Content-Type-Options", "nosniff")
             response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-            response.headers.setdefault(
-                "Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"
-            )
+            response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
             response.headers.setdefault(
                 "Content-Security-Policy",
                 "default-src 'self'; frame-ancestors 'none'",

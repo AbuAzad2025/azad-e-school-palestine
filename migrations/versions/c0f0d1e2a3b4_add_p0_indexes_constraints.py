@@ -162,7 +162,7 @@ def upgrade():
     op.execute("CREATE INDEX IF NOT EXISTS idx_subscription_benefits ON subscription_plans USING GIN (benefits)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_processed_events_payload ON processed_events USING GIN (payload)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_ai_usage_meta ON ai_usage_logs USING GIN (meta)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_question_bank_tags ON question_bank USING GIN (tags jsonb_ops)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_question_bank_tags ON question_bank USING GIN ((tags::jsonb))")
 
     # Text/varchar columns need pg_trgm extension + gin_trgm_ops
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
