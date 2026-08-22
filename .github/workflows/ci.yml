@@ -337,6 +337,9 @@ jobs:
           TALISMAN_ENABLED: "0"
           TALISMAN_FORCE_HTTPS: "0"
           SESSION_COOKIE_SECURE: "0"
+          TESTING: "1"
+          WTF_CSRF_ENABLED: "0"
+          EMAIL_ENABLED: "0"
         run: npx playwright test --reporter=list
 
       - name: Upload E2E report
