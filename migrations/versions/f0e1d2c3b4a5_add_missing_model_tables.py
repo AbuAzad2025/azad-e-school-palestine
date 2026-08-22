@@ -16,9 +16,14 @@ depends_on = None
 
 def upgrade():
     op.execute("""
-CREATE TYPE IF NOT EXISTS badge_criteria_type AS ENUM (
-    'first_quiz', 'perfect_score', 'streak_7_days', 'course_complete', 'early_bird'
-)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'badge_criteria_type') THEN
+        CREATE TYPE badge_criteria_type AS ENUM (
+            'first_quiz', 'perfect_score', 'streak_7_days', 'course_complete', 'early_bird'
+        );
+    END IF;
+END $$
 """)
 
     op.execute("""
