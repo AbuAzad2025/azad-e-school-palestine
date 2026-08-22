@@ -340,6 +340,7 @@ jobs:
           TESTING: "1"
           WTF_CSRF_ENABLED: "0"
           EMAIL_ENABLED: "0"
+          FLASK_DEBUG: "1"
         run: npx playwright test --reporter=list
 
       - name: Upload E2E report
