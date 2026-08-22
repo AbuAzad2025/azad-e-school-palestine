@@ -116,6 +116,21 @@ def create_app(config_class=Config):
             _response_times.append(elapsed_ms)
         return response
 
+    if not app.config.get("TALISMAN_ENABLED", True):
+
+        @app.after_request
+        def _security_headers_fallback(response):
+            response.headers.setdefault("X-Content-Type-Options", "nosniff")
+            response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+            response.headers.setdefault(
+                "Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"
+            )
+            response.headers.setdefault(
+                "Content-Security-Policy",
+                "default-src 'self'; frame-ancestors 'none'",
+            )
+            return response
+
     from . import models  # noqa: F401
     from .models.user import User
 
