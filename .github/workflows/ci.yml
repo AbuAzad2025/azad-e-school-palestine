@@ -498,7 +498,7 @@ jobs:
           DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
           SECRET_KEY: ci-migration-key
           FLASK_APP: run.py
-        run: flask db downgrade -1
+        run: flask db downgrade -- -1
 
       - name: Verify downgrade
         env:
