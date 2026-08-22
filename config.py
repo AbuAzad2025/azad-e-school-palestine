@@ -50,7 +50,7 @@ class Config:
     # === أمان ===
     # DEBUG من متغير بيئة (إيقاف في الإنتاج)
     DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
-    TESTING = False
+    TESTING = os.getenv("TESTING", "0") == "1"
 
     # جلسة آمنة
     SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "1") == "1"  # HTTPS فقط
