@@ -35,6 +35,7 @@ from .forms import BookingForm, PayoutRequestForm, PaySessionForm, SessionForm, 
 
 
 @bp.get("/")
+@login_required
 def index():
     q = request.args.get("q", "")
     tutors = search_tutors(q=q)

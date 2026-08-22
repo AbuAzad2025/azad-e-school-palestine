@@ -62,7 +62,8 @@ test.describe("Auth Pages", () => {
 
   test("login page has form", async ({ page }) => {
     await page.goto("/auth/login");
-    const form = page.locator("form");
+    // النموذج الرئيسي (وليس نموذج تبديل اللغة في الـ navbar)
+    const form = page.locator('form:has(input[name="password"])');
     await expect(form).toBeVisible();
   });
 
@@ -111,22 +112,22 @@ test.describe("Error Pages", () => {
 
 test.describe("RBAC - Unauthenticated Access", () => {
   const protectedRoutes = [
-    "/admin/dashboard",
+    "/admin/",
     "/admin/users",
     "/admin/schools",
-    "/schools",
-    "/classes/content",
-    "/classes/assessment",
-    "/classes/grades",
-    "/billing",
-    "/tutoring",
+    "/admin/moe-export",
+    "/schools/",
+    "/schools/classes",
+    "/billing/admin",
+    "/billing/discounts",
+    "/tutoring/",
     "/ai/chat",
-    "/family",
-    "/progress",
-    "/messages",
-    "/notifications",
-    "/calendar",
-    "/export",
+    "/family/",
+    "/progress/my",
+    "/messages/inbox",
+    "/notifications/",
+    "/auth/dashboard",
+    "/schools/new",
   ];
 
   for (const route of protectedRoutes) {
@@ -162,7 +163,10 @@ test.describe("Mobile Nav", () => {
 test.describe("CSRF Protection", () => {
   test("login form has CSRF token", async ({ page }) => {
     await page.goto("/auth/login");
-    const csrfInput = page.locator('input[name="csrf_token"]');
+    // التوكن داخل نموذج الدخول تحديداً (نموذج اللغة في الـ navbar له توكنه الخاص)
+    const csrfInput = page.locator(
+      'form:has(input[name="password"]) input[name="csrf_token"]',
+    );
     const count = await csrfInput.count();
     expect(count).toBe(1);
   });

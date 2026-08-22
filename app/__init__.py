@@ -12,6 +12,7 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
+from werkzeug.exceptions import HTTPException
 
 from .core.logging import configure_structlog, correlation_id_middleware, get_logger
 from .core.openapi import init_swagger
@@ -336,6 +337,13 @@ def create_app(config_class=Config):
     def grades_alias():
         return redirect(url_for("auth.login"), code=302)
 
+    @app.errorhandler(401)
+    def unauthorized(e):
+        # طلبات API/health ترجع 401 JSON؛ متصفحات HTML تُوجَّه لصفحة الدخول
+        if request.path.startswith(("/api/", "/health")) or not request.accept_mimetypes.accept_html:
+            return jsonify({"error": "unauthorized"}), 401
+        return redirect(url_for("auth.login"))
+
     @app.errorhandler(404)
     def not_found(e):
         return render_template("errors/404.html"), 404
@@ -355,6 +363,9 @@ def create_app(config_class=Config):
 
     @app.errorhandler(Exception)
     def handle_exception(e):
+        # أخطاء HTTP المقصودة (401/403/404...) تمر لمعالجاتها — لا تُحوَّل إلى 500
+        if isinstance(e, HTTPException):
+            return e
         logger.exception("Unhandled exception: %s", e)
         db.session.rollback()
         return render_template("errors/500.html"), 500
