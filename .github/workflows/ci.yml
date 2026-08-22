@@ -322,6 +322,8 @@ jobs:
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
+          TALISMAN_FORCE_HTTPS: "0"
+          SESSION_COOKIE_SECURE: "0"
         run: flask db upgrade
 
       - name: Run Playwright E2E tests
@@ -331,6 +333,8 @@ jobs:
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           APP_ENV: testing
+          TALISMAN_FORCE_HTTPS: "0"
+          SESSION_COOKIE_SECURE: "0"
         run: npx playwright test --reporter=list
 
       - name: Upload E2E report
