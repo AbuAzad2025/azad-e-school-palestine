@@ -64,6 +64,12 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
+@bp.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password_alias():
+    """Alias for /forgot — E2E compatibility."""
+    return redirect(url_for("auth.forgot_password"), code=307)
+
+
 @bp.route("/forgot", methods=["GET", "POST"])
 def forgot_password():
     form = ForgotPasswordForm()

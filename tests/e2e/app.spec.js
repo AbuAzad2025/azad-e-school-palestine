@@ -39,7 +39,7 @@ test.describe("Health Endpoints", () => {
   });
 
   test("API health returns 200", async ({ request }) => {
-    const resp = await request.get("/api/health");
+    const resp = await request.get("/api/v1/health");
     expect(resp.status()).toBe(200);
   });
 });
@@ -56,7 +56,7 @@ test.describe("Auth Pages", () => {
   });
 
   test("forgot password page renders", async ({ page }) => {
-    const resp = await page.goto("/auth/forgot-password");
+    const resp = await page.goto("/auth/forgot");
     expect(resp.status()).toBe(200);
   });
 
@@ -115,9 +115,9 @@ test.describe("RBAC - Unauthenticated Access", () => {
     "/admin/users",
     "/admin/schools",
     "/schools",
-    "/content",
-    "/assessment",
-    "/grades",
+    "/classes/content",
+    "/classes/assessment",
+    "/classes/grades",
     "/billing",
     "/tutoring",
     "/ai/chat",

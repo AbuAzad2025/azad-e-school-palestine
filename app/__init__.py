@@ -7,7 +7,7 @@ import time as _time
 from collections import deque
 
 from config import Config
-from flask import Flask, g, jsonify, render_template, request
+from flask import Flask, g, jsonify, redirect, render_template, request, url_for
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -316,6 +316,25 @@ def create_app(config_class=Config):
         }
 
         return jsonify(checks)
+
+    # ════════════════════════════════════════════════════════════
+    # Legacy / user-facing URL aliases (E2E compatibility)
+    # ════════════════════════════════════════════════════════════
+    @app.get("/api/health")
+    def api_health_legacy():
+        return redirect(url_for("health"), code=307)
+
+    @app.get("/content")
+    def content_alias():
+        return redirect(url_for("auth.login"), code=302)
+
+    @app.get("/assessment")
+    def assessment_alias():
+        return redirect(url_for("auth.login"), code=302)
+
+    @app.get("/grades")
+    def grades_alias():
+        return redirect(url_for("auth.login"), code=302)
 
     @app.errorhandler(404)
     def not_found(e):
