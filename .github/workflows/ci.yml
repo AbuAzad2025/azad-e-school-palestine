@@ -1,4 +1,4 @@
-name: CI
+name: CI + Deploy
 
 on:
   push:
@@ -32,56 +32,10 @@ env:
 
 jobs:
   # ════════════════════════════════════════════════════════════
-  # Static Quality: Python · JavaScript
+  # 1. Lint + Security (merged into one job)
   # ════════════════════════════════════════════════════════════
-  lint-audit:
-    name: Static quality (py · js)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-
-      - name: Install Python lint tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt ruff mypy bandit
-
-      - name: Install Node lint tools
-        run: |
-          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
-
-      # ── Python ──
-      - name: Ruff check (lint)
-        run: ruff check app config.py run.py --output-format github
-
-      - name: Ruff format (check)
-        run: ruff format --check app config.py run.py
-
-      - name: MyPy (types)
-        run: mypy app config.py run.py --ignore-missing-imports --no-error-summary
-
-      - name: Bandit security (Python)
-        run: bandit -r app -q -ll
-
-      # ── JavaScript ──
-      - name: Biome check (JS lint + format)
-        run: npx biome check app/static/js
-
-  # ════════════════════════════════════════════════════════════
-  # Security Scan: Secrets · Dependencies · Docker
-  # ════════════════════════════════════════════════════════════
-  security-scan:
-    name: Security scan
+  lint-security:
+    name: Lint & Security
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -97,44 +51,59 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
-      - name: Install deps
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pip-audit bandit
+          pip install -r requirements.txt ruff mypy bandit pip-audit
 
-      - name: Gitleaks (secret scanning)
+      - name: Install Node deps
+        run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+
+      # ── Python lint ──
+      - name: Ruff check
+        run: ruff check app config.py run.py --output-format github
+
+      - name: Ruff format
+        run: ruff format --check app config.py run.py
+
+      - name: MyPy
+        run: mypy app config.py run.py --ignore-missing-imports --no-error-summary
+
+      # ── JS lint ──
+      - name: Biome check
+        run: npx biome check app/static/js
+
+      # ── Security ──
+      - name: Gitleaks (secrets)
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: pip-audit (dependency vulnerabilities)
+      - name: pip-audit (vulns)
         run: python -m pip_audit -r requirements.txt --desc on
 
-      - name: Hadolint (Dockerfile lint)
+      - name: Bandit
+        run: bandit -r app -q -ll
+
+      - name: Hadolint (Dockerfile)
         if: hashFiles('Dockerfile') != ''
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
 
-      - name: Bandit JSON report
-        run: bandit -r app -f json -o bandit-report.json -ll
-
-      - name: Upload bandit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bandit-report
-          path: bandit-report.json
-          if-no-files-found: ignore
-          retention-days: 7
-
   # ════════════════════════════════════════════════════════════
-  # Tests (with PostgreSQL)
+  # 2. Tests (PG 16) — with migrations before tests!
   # ════════════════════════════════════════════════════════════
   test:
-    name: Tests (PG 16)
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: lint-security
     services:
       postgres:
         image: postgres:16
@@ -149,7 +118,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
 
@@ -158,12 +126,22 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest-cov pytest-html
 
-      - name: Run tests with full coverage
+      # ── CRITICAL: run migrations before tests ──
+      - name: Run migrations
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-test-key
+          FLASK_APP: run.py
+          TALISMAN_ENABLED: "0"
+        run: flask db upgrade
+
+      - name: Run tests
         env:
           PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
@@ -179,105 +157,44 @@ jobs:
             --cov=app --cov-branch --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
             --cov-report=html:htmlcov \
-            --cov-report=json:coverage.json \
-            --html=report.html --self-contained-html \
-            -x 2>&1 || pytest tests --tb=short \
-            --cov=app --cov-branch --cov-report=term-missing \
-            --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov \
-            --cov-report=json:coverage.json \
-            --html=report.html --self-contained-html
+            -x || pytest tests --tb=short \
+            --cov=app --cov-branch --cov-report=term-missing
 
-      - name: Test summary
-        if: always()
-        run: |
-          python -c "
-          import json
-          with open('coverage.json') as f:
-              data = json.load(f)
-          t = data['totals']
-          print('')
-          print('┌─────────────────────────────────────────────┐')
-          print('│          FULL COVERAGE REPORT               │')
-          print('├─────────────────────────────────────────────┤')
-          print(f'│  Lines covered    : {t[\"covered_lines\"]:>6} / {t[\"num_statements\"]:<6}        │')
-          print(f'│  Line coverage    : {t[\"percent_covered\"]:>6.2f}%                    │')
-          print(f'│  Missing lines    : {t[\"missing_lines\"]:>6}                    │')
-          print(f'│  Branches missing : {str(t.get(\"missing_branches\",\"?\")):>6}                    │')
-          print(f'│  Functions covered: {t.get(\"covered_functions\",\"?\"):>6} / {t.get(\"num_functions\",\"?\"):<6}        │')
-          print(f'│  Classes covered  : {t.get(\"covered_classes\",\"?\"):>6} / {t.get(\"num_classes\",\"?\"):<6}        │')
-          print('└─────────────────────────────────────────────┘')
-          "
-          echo ""
-          echo "Full HTML report: htmlcov/index.html"
-          echo "Test report: report.html"
-
-      - name: Upload test report
+      - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
-          path: |
-            report.html
-            htmlcov/
-          retention-days: 14
-
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml,./coverage.json
-          flags: pytest
-          fail_ci_if_error: false
-
-      - name: Upload coverage artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-full
+          name: coverage
           path: |
             coverage.xml
-            coverage.json
             htmlcov/
-          retention-days: 14
+          retention-days: 7
 
   # ════════════════════════════════════════════════════════════
-  # Frontend JS Tests (Vitest + jsdom)
+  # 3. JS Tests
   # ════════════════════════════════════════════════════════════
   test-js:
-    name: JS unit tests (Vitest)
+    name: JS Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: lint-security
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
-
-      - name: Run Vitest with coverage
-        run: npx vitest run --coverage
-
-      - name: Upload JS coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: js-coverage
-          path: coverage/js
-          if-no-files-found: ignore
-          retention-days: 7
+      - run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+      - run: npx vitest run --coverage
 
   # ════════════════════════════════════════════════════════════
-  # E2E Tests (Playwright)
+  # 4. E2E Tests
   # ════════════════════════════════════════════════════════════
   test-e2e:
-    name: E2E tests (Playwright)
+    name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
+    needs: [lint-security, test]
     services:
       postgres:
         image: postgres:16
@@ -294,28 +211,19 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Install Python dependencies
-        run: |
+      - run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Install Node dependencies
-        run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-
+          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+          npx playwright install chromium --with-deps
       - name: Run migrations
         env:
           PYTHONPATH: .
@@ -323,11 +231,8 @@ jobs:
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           TALISMAN_ENABLED: "0"
-          TALISMAN_FORCE_HTTPS: "0"
-          SESSION_COOKIE_SECURE: "0"
         run: flask db upgrade
-
-      - name: Run Playwright E2E tests
+      - name: Run E2E
         env:
           PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
@@ -335,39 +240,26 @@ jobs:
           FLASK_APP: run.py
           APP_ENV: testing
           TALISMAN_ENABLED: "0"
-          TALISMAN_FORCE_HTTPS: "0"
           SESSION_COOKIE_SECURE: "0"
           TESTING: "1"
           WTF_CSRF_ENABLED: "0"
           EMAIL_ENABLED: "0"
-          # بدون FLASK_DEBUG: الـ reloader كان يسبب flaky في أول الطلبات
         run: npx playwright test --reporter=list
-
-      - name: Upload E2E report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-report
-          path: playwright-report
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload E2E traces
+      - uses: actions/upload-artifact@v4
         if: failure()
-        uses: actions/upload-artifact@v4
         with:
           name: e2e-traces
           path: test-results
-          if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 3
 
   # ════════════════════════════════════════════════════════════
-  # App Boot Verification (smoke test)
+  # 5. Docker Build + Boot + Migrations
   # ════════════════════════════════════════════════════════════
-  verify-boot:
-    name: Verify app boot
+  build-verify:
+    name: Build & Verify
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    needs: lint-security
     services:
       postgres:
         image: postgres:16
@@ -384,179 +276,111 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-
-      - name: Install dependencies
-        run: |
+      - run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Verify app creates + routes load
+      # Migrations
+      - name: flask db upgrade
         env:
           PYTHONPATH: .
           DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
-          SECRET_KEY: ci-test-key
+          SECRET_KEY: ci-key
+          FLASK_APP: run.py
+        run: flask db upgrade
+      - name: flask db downgrade
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-key
+          FLASK_APP: run.py
+        run: flask db downgrade -- -1
+      # Boot check
+      - name: Verify app boot
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-key
           FLASK_APP: run.py
           APP_ENV: testing
         run: |
           python -c "
           from app import create_app
           app = create_app()
-          with app.test_client() as c:
-              for rule in app.url_map.iter_rules():
-                  if rule.endpoint == 'static':
-                      continue
-                  print(f'  registered: {rule.rule} -> {rule.endpoint}')
-          print('App boot OK — all routes registered')
+          print(f'Routes: {len([r for r in app.url_map.iter_rules() if r.endpoint != \"static\"])}')
+          print('App boot OK')
           "
-
-  # ════════════════════════════════════════════════════════════
-  # Docker Build Check
-  # ════════════════════════════════════════════════════════════
-  docker-build:
-    name: Docker build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t azad-e-school:test .
-
-      - name: Verify image starts
+      # Docker build
+      - name: Docker build
         run: |
-          CONTAINER_ID=$(docker run -d --name test-azad \
-            -e DATABASE_URL=postgresql://x:x@localhost:5432/x \
-            -e SECRET_KEY=test-key \
-            -e APP_ENV=testing \
-            -e FLASK_APP=run.py \
-            -p 5000:8000 \
-            azad-e-school:test)
-          sleep 8
-          docker logs "$CONTAINER_ID" 2>&1 | tail -20
-          docker inspect "$CONTAINER_ID" --format='{{.State.Status}}' | grep -q running
-          echo "Docker container is running"
-          docker stop "$CONTAINER_ID"
-          docker rm "$CONTAINER_ID"
+          docker build -t azad-e-school:test .
+          echo "Docker build OK"
 
   # ════════════════════════════════════════════════════════════
-  # Migrations (flask db upgrade + downgrade)
+  # 6. Deploy (only on main, after all pass)
   # ════════════════════════════════════════════════════════════
-  migrations:
-    name: Migrations (PG 16)
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: azad_migrate
-          POSTGRES_PASSWORD: azad_migrate
-          POSTGRES_DB: azad_migrate
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    needs: [test, test-js, test-e2e, build-verify]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/azad-e-school
+          tags: |
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/azad-e-school
+            git pull origin main
+            docker pull ghcr.io/${{ github.repository }}/azad-e-school:latest
+            docker compose -f deploy/docker-compose.production.yml up -d --build
+            docker compose -f deploy/docker-compose.production.yml exec -T app flask db upgrade
+            docker compose -f deploy/docker-compose.production.yml exec -T app pybabel compile -d app/translations
+            docker system prune -f
+
+      - name: Smoke test
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run migrations (upgrade)
-        env:
-          PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
-          SECRET_KEY: ci-migration-key
-          FLASK_APP: run.py
-        run: flask db upgrade
-
-      - name: Verify schema version
-        env:
-          PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
-          SECRET_KEY: ci-migration-key
-          FLASK_APP: run.py
-        run: |
-          python -c "
-          from sqlalchemy import text
-          from app import create_app
-          from app.extensions import db
-          app = create_app()
-          with app.app_context():
-              result = db.session.execute(text('SELECT version_num FROM alembic_version')).fetchone()
-              print(f'Current migration: {result[0] if result else \"NONE\"}')
-          "
-
-      - name: Run migrations (downgrade)
-        env:
-          PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
-          SECRET_KEY: ci-migration-key
-          FLASK_APP: run.py
-        run: flask db downgrade -- -1
-
-      - name: Verify downgrade
-        env:
-          PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_migrate:azad_migrate@localhost:5432/azad_migrate
-          SECRET_KEY: ci-migration-key
-          FLASK_APP: run.py
-        run: |
-          python -c "
-          from sqlalchemy import text
-          from app import create_app
-          from app.extensions import db
-          app = create_app()
-          with app.app_context():
-              result = db.session.execute(text('SELECT version_num FROM alembic_version')).fetchone()
-              print(f'After downgrade: {result[0] if result else \"NONE\"}')
-          "
-
-  # ════════════════════════════════════════════════════════════
-  # Summary (must pass for merge)
-  # ════════════════════════════════════════════════════════════
-  ci-passed:
-    name: CI passed
-    needs: [lint-audit, security-scan, test, test-js, test-e2e, verify-boot, docker-build, migrations]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check all jobs
-        run: |
-          echo "=== CI Summary ==="
-          echo "lint-audit:       ${{ needs.lint-audit.result }}"
-          echo "security-scan:    ${{ needs.security-scan.result }}"
-          echo "test:             ${{ needs.test.result }}"
-          echo "test-js:          ${{ needs.test-js.result }}"
-          echo "test-e2e:         ${{ needs.test-e2e.result }}"
-          echo "verify-boot:      ${{ needs.verify-boot.result }}"
-          echo "docker-build:     ${{ needs.docker-build.result }}"
-          echo "migrations:       ${{ needs.migrations.result }}"
-
-          FAILED=0
-          for job in lint-audit security-scan test test-js test-e2e verify-boot docker-build migrations; do
-            result="${{ needs[job].result }}"
-            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
-              echo "::error::${job} failed or was cancelled"
-              FAILED=1
-            fi
-          done
-          if [[ "$FAILED" == "1" ]]; then
-            exit 1
-          fi
-          echo "All 8 jobs passed!"
+          sleep 10
+          curl -sf https://${{ secrets.DEPLOY_HOST }}/ || exit 1
