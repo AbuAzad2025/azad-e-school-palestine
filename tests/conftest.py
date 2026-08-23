@@ -276,7 +276,7 @@ def app():
     yield a
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def client(app):
     return app.test_client()
 

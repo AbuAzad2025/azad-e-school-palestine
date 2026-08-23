@@ -14,9 +14,10 @@ class TestCICDWorkflows:
         path = WORKFLOWS_DIR / "ci.yml"
         assert path.exists() and path.stat().st_size > 0
 
-    def test_deploy_workflow_exists(self):
-        path = WORKFLOWS_DIR / "deploy.yml"
-        assert path.exists() and path.stat().st_size > 0
+    def test_deploy_job_exists_in_ci(self):
+        content = (WORKFLOWS_DIR / "ci.yml").read_text(encoding="utf-8")
+        assert "docker/build-push-action" in content
+        assert "deploy:" in content or "name: Deploy" in content
 
     def test_ci_runs_on_main_push_and_pr(self):
         content = (WORKFLOWS_DIR / "ci.yml").read_text(encoding="utf-8")
@@ -32,12 +33,12 @@ class TestCICDWorkflows:
         assert "pytest" in content
 
     def test_deploy_builds_docker_image(self):
-        content = (WORKFLOWS_DIR / "deploy.yml").read_text(encoding="utf-8")
+        content = (WORKFLOWS_DIR / "ci.yml").read_text(encoding="utf-8")
         assert "docker/build-push-action" in content
         assert "deploy/Dockerfile" in content
 
     def test_deploy_runs_ssh_and_smoke_tests(self):
-        content = (WORKFLOWS_DIR / "deploy.yml").read_text(encoding="utf-8")
+        content = (WORKFLOWS_DIR / "ci.yml").read_text(encoding="utf-8")
         assert "appleboy/ssh-action" in content
         assert "flask db upgrade" in content
         assert "curl" in content
