@@ -2,7 +2,7 @@
   "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
   "files": {
     "includes": [
-      "app/static/js/app.js",
+      "app/static/js/**/*.js",
       "package.json"
     ]
   },
@@ -21,7 +21,8 @@
         "useConst": "info"
       },
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noDocumentCookie": "off"
       }
     }
   },
