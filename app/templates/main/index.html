@@ -13,11 +13,11 @@
   </div>
 </section>
 <section class="container">
-  <div class="dash-grid">
-    <div class="dash-card"><div class="icon">{{ icon('books') }}</div><div class="meta"><strong>{{ _('دروس منظمة') }}</strong><small>{{ _('منهاج فلسطيني كامل لكل الصفوف والمواد') }}</small></div></div>
-    <div class="dash-card"><div class="icon">{{ icon('pen') }}</div><div class="meta"><strong>{{ _('اختبارات فورية') }}</strong><small>{{ _('تصحيح آلي ونتائج لحظية') }}</small></div></div>
-    <div class="dash-card"><div class="icon">{{ icon('video') }}</div><div class="meta"><strong>{{ _('فيديو وشرح') }}</strong><small>{{ _('معلم افتراضي ومحتوى تفاعلي قريباً') }}</small></div></div>
-    <div class="dash-card"><div class="icon">{{ icon('chart') }}</div><div class="meta"><strong>{{ _('متابعة دقيقة') }}</strong><small>{{ _('درجات، حضور، وتقارير لأولياء الأمور') }}</small></div></div>
+  <div class="stats-grid">
+    <div class="azad-stat-card" style="--stat-accent: var(--azad-blue)"><div class="azad-stat-card__icon">{{ icon('books') }}</div><div><div class="azad-stat-card__value">{{ _('دروس منظمة') }}</div><div class="azad-stat-card__label">{{ _('منهاج فلسطيني كامل لكل الصفوف والمواد') }}</div></div></div>
+    <div class="azad-stat-card" style="--stat-accent: var(--azad-teal)"><div class="azad-stat-card__icon">{{ icon('pen') }}</div><div><div class="azad-stat-card__value">{{ _('اختبارات فورية') }}</div><div class="azad-stat-card__label">{{ _('تصحيح آلي ونتائج لحظية') }}</div></div></div>
+    <div class="azad-stat-card" style="--stat-accent: var(--azad-green)"><div class="azad-stat-card__icon">{{ icon('video') }}</div><div><div class="azad-stat-card__value">{{ _('فيديو وشرح') }}</div><div class="azad-stat-card__label">{{ _('معلم افتراضي ومحتوى تفاعلي قريباً') }}</div></div></div>
+    <div class="azad-stat-card" style="--stat-accent: var(--azad-red)"><div class="azad-stat-card__icon">{{ icon('chart') }}</div><div><div class="azad-stat-card__value">{{ _('متابعة دقيقة') }}</div><div class="azad-stat-card__label">{{ _('درجات، حضور، وتقارير لأولياء الأمور') }}</div></div></div>
   </div>
 </section>
 {% endblock %}

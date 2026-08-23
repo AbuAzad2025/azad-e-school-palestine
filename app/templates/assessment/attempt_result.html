@@ -3,9 +3,9 @@
 {% block content %}
 <h1 class="page-title azad-title">{{ quiz.title }}</h1>
 <div class="stat-grid">
-  <div class="stat-card"><strong>{{ attempt.score or 0 }}</strong><small>{{ _('درجتك') }}</small></div>
-  <div class="stat-card"><strong>{{ attempt.attempt_no }}</strong><small>{{ _('المحاولة') }}</small></div>
-  <div class="stat-card"><strong>{{ _('سُلّم') }}</strong><small>{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M') if attempt.submitted_at else '—' }}</small></div>
+  <div class="azad-stat-card" style="--stat-accent: var(--azad-blue)"><div class="azad-stat-card__icon">{{ icon('award') }}</div><div><div class="azad-stat-card__value">{{ attempt.score or 0 }}</div><div class="azad-stat-card__label">{{ _('درجتك') }}</div></div></div>
+  <div class="azad-stat-card" style="--stat-accent: var(--azad-teal)"><div class="azad-stat-card__icon">{{ icon('hash') }}</div><div><div class="azad-stat-card__value">{{ attempt.attempt_no }}</div><div class="azad-stat-card__label">{{ _('المحاولة') }}</div></div></div>
+  <div class="azad-stat-card" style="--stat-accent: var(--azad-green)"><div class="azad-stat-card__icon">{{ icon('check') }}</div><div><div class="azad-stat-card__value">{{ _('سُلّم') }}</div><div class="azad-stat-card__label">{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M') if attempt.submitted_at else '—' }}</div></div></div>
 </div>
 
 {% if quiz.show_answers_after or is_teacher %}

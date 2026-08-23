@@ -4,6 +4,7 @@
   "private": true,
   "description": "منصة مدرسة أزاد الإلكترونية — جافاسكريبت الواجهة",
   "scripts": {
+    "dev": ".venv\\Scripts\\python.exe run.py",
     "check:biome": "biome check app/static/js",
     "lint": "npm run check:biome",
     "format": "biome format --write app/static/js",

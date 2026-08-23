@@ -1,6 +1,7 @@
 """خدمات روابط الأسرة — ربط ولي الأمر بالطالب."""
 
 import secrets
+from datetime import UTC, datetime, timedelta
 
 from app.core.db import tx
 from app.extensions import db
@@ -9,15 +10,18 @@ from app.models.user import User, UserRole
 
 
 def generate_link_code(student_id: int) -> tuple[str | None, str | None]:
-    """ينشئ رمز ربط جديد للطالب (8 أحرف)."""
+    """ينشئ رمز ربط جديد للطالب (8 أحرف) — صلاحية 24 ساعة."""
     student = db.session.get(User, student_id)
     if not student or student.role != UserRole.student:
         return None, "المستخدم ليس طالباً."
 
     code = secrets.token_urlsafe(6)[:8].upper()
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
 
     def _create():
-        return FamilyLinkCode(student_id=student_id, code=code)
+        # إلغاء الرموز القديمة
+        FamilyLinkCode.query.filter_by(student_id=student_id, used=False).update({"used": True})
+        return FamilyLinkCode(student_id=student_id, code=code, expires_at=expires_at)
 
     result = tx(_create)
     return result.code if result else None, None
@@ -37,6 +41,14 @@ def link_parent(parent_id: int, code: str) -> tuple[FamilyLink | None, str | Non
     if not link_code:
         return None, "الرمز غير صالح أو مستخدم مسبقاً."
 
+    # تحقق من انتهاء الصلاحية
+    if link_code.expires_at and link_code.expires_at < datetime.now(UTC):
+        return None, "انتهت صلاحية الرمز."
+
+    # منع ربط الطالب بنفسه
+    if link_code.student_id == parent_id:
+        return None, "لا يمكن ربط الحساب بنفسه."
+
     existing = FamilyLink.query.filter_by(parent_id=parent_id, student_id=link_code.student_id, status="active").first()
     if existing:
         return None, "أنت مرتبط بهذا الطالب مسبقاً."
@@ -54,8 +66,13 @@ def link_parent(parent_id: int, code: str) -> tuple[FamilyLink | None, str | Non
 
 
 def list_children(parent_id: int) -> list[FamilyLink]:
-    """يُعيد قائمة الأبناء المرتبطين بولي الأمر."""
-    return FamilyLink.query.filter_by(parent_id=parent_id, status="active").all()
+    """يُعيد قائمة الأبناء المرتبطين بولي الأمر مع بيانات الطلاب."""
+    from sqlalchemy.orm import joinedload
+    return (
+        FamilyLink.query.options(joinedload(FamilyLink.student))
+        .filter_by(parent_id=parent_id, status="active")
+        .all()
+    )
 
 
 def remove_link(link_id: int, parent_id: int) -> tuple[bool, str | None]:

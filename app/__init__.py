@@ -370,4 +370,45 @@ def create_app(config_class=Config):
         db.session.rollback()
         return render_template("errors/500.html"), 500
 
+    @app.template_filter("format_datetime")
+    def _format_datetime(value, fmt="%Y-%m-%d %H:%M"):
+        """تنسيق timestamp بشكل موحد في القوالب."""
+        if not value:
+            return "—"
+        return value.strftime(fmt)
+
+    @app.template_filter("format_date")
+    def _format_date(value):
+        """تنسيق تاريخ فقط."""
+        if not value:
+            return "—"
+        return value.strftime("%Y-%m-%d")
+
+    @app.template_filter("format_time")
+    def _format_time(value):
+        """تنسيق وقت فقط."""
+        if not value:
+            return "—"
+        return value.strftime("%H:%M")
+
+    @app.template_filter("relative_time")
+    def _relative_time(value):
+        """وقت نسبي (منذ X دقائق/ساعات)."""
+        if not value:
+            return "—"
+        from datetime import UTC, datetime
+        now = datetime.now(UTC) if value.tzinfo else datetime.utcnow()
+        delta = now - value
+        if delta.days > 365:
+            return f"{delta.days // 365}y"
+        if delta.days > 30:
+            return f"{delta.days // 30}mo"
+        if delta.days > 0:
+            return f"{delta.days}d"
+        if delta.seconds > 3600:
+            return f"{delta.seconds // 3600}h"
+        if delta.seconds > 60:
+            return f"{delta.seconds // 60}m"
+        return "now"
+
     return app

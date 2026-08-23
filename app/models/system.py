@@ -19,6 +19,8 @@ class AuditLog(PKMixin, db.Model):
     detail: Mapped[dict | None] = mapped_column(JSONB)
     ip: Mapped[str | None] = mapped_column(INET)
 
+    user = db.relationship("User", foreign_keys=[user_id])
+
 
 class Setting(PKMixin, db.Model):
     __tablename__ = "settings"

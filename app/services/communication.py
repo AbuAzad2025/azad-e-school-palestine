@@ -41,6 +41,7 @@ def audit(
     entity: str | None = None,
     entity_id: int | None = None,
     detail: dict | None = None,
+    changes: dict[str, dict[str, Any]] | None = None,
     amount: float | None = None,
     currency: str | None = None,
     gateway: str | None = None,
@@ -50,6 +51,8 @@ def audit(
     """
     سجل تدقيق — أي إجراء مهم يوثَّق (لا يُغيّر منطق العمل).
     يدعم تفاصيل مالية: المبلغ، العملة، بوابة الدفع، معرف الاشتراك/الجلسة.
+    يدعم تتبع التغييرات على مستوى الحقل (field-level audit) عبر `changes`:
+        changes = {"field_name": {"old": old_value, "new": new_value}}
     """
     uid = current_user.id if current_user.is_authenticated else None
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "") if request else None
@@ -68,6 +71,8 @@ def audit(
         financial_detail["session_id"] = session_id
 
     merged_detail = {**(detail or {}), **financial_detail}
+    if changes:
+        merged_detail["changes"] = changes
 
     def _audit():
         db.session.add(

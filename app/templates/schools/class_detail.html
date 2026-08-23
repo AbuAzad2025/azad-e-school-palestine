@@ -27,8 +27,8 @@
 </p>
 
 <div class="stat-grid">
-  <div class="stat-card"><strong>{{ members|length }}</strong><small>{{ _('طالباً') }}</small></div>
-  <div class="stat-card"><strong>{{ class_room.join_code }}</strong><small>{{ _('رمز الانضمام') }}</small></div>
+  <div class="azad-stat-card" style="--stat-accent: var(--azad-blue)"><div class="azad-stat-card__icon">{{ icon('users') }}</div><div><div class="azad-stat-card__value">{{ members|length }}</div><div class="azad-stat-card__label">{{ _('طالباً') }}</div></div></div>
+  <div class="azad-stat-card" style="--stat-accent: var(--azad-teal)"><div class="azad-stat-card__icon">{{ icon('key') }}</div><div><div class="azad-stat-card__value" data_copy="{{ class_room.join_code }}">{{ class_room.join_code }}</div><div class="azad-stat-card__label">{{ _('رمز الانضمام') }}</div></div></div>
 </div>
 
 {% if is_admin or (class_room.teacher and class_room.teacher_id == current_user.id) %}

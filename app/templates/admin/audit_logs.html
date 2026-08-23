@@ -1,0 +1,125 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ _('سجل التدقيق') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="section-head">
+  <h1 class="page-title azad-title">{{ icon('clipboard-list') }} {{ _('سجل التدقيق') }}</h1>
+</div>
+
+<form method="get" class="form-inline gradebook-form-row">
+  <div class="gradebook-form-col--2">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث في الإجراء') }}" aria-label="{{ _('بحث في الإجراء') }}" class="form-control">
+  </div>
+  <div class="gradebook-form-col">
+    <select name="action" class="form-control" aria-label="{{ _('تصفية حسب الإجراء') }}">
+      <option value="">{{ _('كل الإجراءات') }}</option>
+      {% for a in actions %}
+      <option value="{{ a }}" {% if action_filter == a %}selected{% endif %}>{{ a }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="gradebook-form-col">
+    <select name="entity" class="form-control" aria-label="{{ _('تصفية حسب الكيان') }}">
+      <option value="">{{ _('كل الكيانات') }}</option>
+      {% for e in entities %}
+      <option value="{{ e }}" {% if entity_filter == e %}selected{% endif %}>{{ e }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="gradebook-form-actions"><button class="azad-btn" type="submit">{{ _('بحث') }}</button></div>
+  {% if search or action_filter or entity_filter or user_filter %}
+  <div class="gradebook-form-actions"><a href="{{ url_for('admin.audit_logs') }}" class="azad-btn-outline">{{ _('مسح') }}</a></div>
+  {% endif %}
+</form>
+
+{% if pagination.items %}
+<div class="azad-table-container">
+  <table class="azad-table azad-table--striped azad-table--hover">
+    <thead>
+      <tr>
+        <th>{{ _('الوقت') }}</th>
+        <th>{{ _('المستخدم') }}</th>
+        <th>{{ _('الإجراء') }}</th>
+        <th>{{ _('الكيان') }}</th>
+        <th>{{ _('المعرف') }}</th>
+        <th>{{ _('IP') }}</th>
+        <th>{{ _('التفاصيل') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in pagination.items %}
+      <tr>
+        <td dir="ltr">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
+        <td>
+          {% if log.user %}
+            <a href="{{ url_for('admin.user_detail', user_id=log.user.id) }}">{{ log.user.name_ar or log.user.email }}</a>
+          {% else %}
+            <span class="text-muted">{{ _('نظام / زائر') }}</span>
+          {% endif %}
+        </td>
+        <td><span class="meta-chip">{{ log.action }}</span></td>
+        <td>{{ log.entity or '-' }}</td>
+        <td dir="ltr">{{ log.entity_id or '-' }}</td>
+        <td dir="ltr">{{ log.ip or '-' }}</td>
+        <td>
+          {% if log.detail %}
+            <details class="audit-detail">
+              <summary class="azad-btn-outline azad-btn-sm">{{ _('عرض') }}</summary>
+              <pre class="audit-json">{{ log.detail | tojson(indent=2) }}</pre>
+            </details>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}
+  <a href="{{ url_for('admin.audit_logs', page=pagination.page-1, search=search, action=action_filter, entity=entity_filter, user_id=user_filter) }}">&laquo; {{ _('السابق') }}</a>
+  {% endif %}
+  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+    {% if p %}
+      {% if p == pagination.page %}
+      <span class="current">{{ p }}</span>
+      {% else %}
+      <a href="{{ url_for('admin.audit_logs', page=p, search=search, action=action_filter, entity=entity_filter, user_id=user_filter) }}">{{ p }}</a>
+      {% endif %}
+    {% else %}
+    <span>…</span>
+    {% endif %}
+  {% endfor %}
+  {% if pagination.has_next %}
+  <a href="{{ url_for('admin.audit_logs', page=pagination.page+1, search=search, action=action_filter, entity=entity_filter, user_id=user_filter) }}">{{ _('التالي') }} &raquo;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="azad-empty">
+  <div class="azad-empty__icon">{{ icon('clipboard-list') }}</div>
+  <div class="azad-empty__title">{{ _('لا توجد سجلات تدقيق.') }}</div>
+</div>
+{% endif %}
+
+<style>
+  .audit-detail { display: inline-block; }
+  .audit-json {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: .75rem;
+    font-size: .78rem;
+    max-width: 320px;
+    max-height: 200px;
+    overflow: auto;
+    text-align: left;
+    direction: ltr;
+    margin-top: .25rem;
+  }
+  .audit-json pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+</style>
+{% endblock %}

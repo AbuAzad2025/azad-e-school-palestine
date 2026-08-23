@@ -9,7 +9,7 @@
   </p>
 
   <div class="stat-grid">
-    <div class="stat-card"><strong>{{ session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—' }}</strong><small>{{ _('الموعد') }}</small></div>
+    <div class="azad-stat-card" style="--stat-accent: var(--azad-blue)"><div class="azad-stat-card__icon">{{ icon('calendar') }}</div><div><div class="azad-stat-card__value">{{ session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—' }}</div><div class="azad-stat-card__label">{{ _('الموعد') }}</div></div></div>
     <div class="stat-card"><strong>{{ session_.mode }}</strong><small>{{ _('الطريقة') }}</small></div>
     <div class="stat-card"><strong>{{ session_.price or '—' }}</strong><small>{{ _('السعر') }}</small></div>
     <div class="stat-card"><strong><span class="badge-status badge-{{ 'ok' if session_.status == 'completed' else 'warn' }}">{{ session_.status }}</span></strong><small>{{ _('الحالة') }}</small></div>

@@ -576,6 +576,119 @@
   }
 
   /* ─────────── Init All ─────────── */
+
+  /* ─────────── Inline Form Validation ─────────── */
+  // biome-ignore lint/correctness/noUnusedVariables: called in DOMContentLoaded
+  function initInlineValidation() {
+    const validators = {
+      required: (v) => v.trim().length > 0,
+      email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+      password: (v) => v.length >= 8,
+    };
+
+    document.querySelectorAll("[data-validate]").forEach((field) => {
+      const rules = field.dataset.validate.split("|");
+      const feedback = field.closest(".azad-field")?.querySelector(".azad-field__feedback");
+
+      function validate() {
+        const value = field.value;
+        let valid = true;
+        let message = "";
+        for (const rule of rules) {
+          if (!validators[rule](value)) {
+            valid = false;
+            message =
+              {
+                required: "هذا الحقل مطلوب",
+                email: "بريد إلكتروني غير صالح",
+                password: "يجب أن تكون 8 أحرف على الأقل",
+              }[rule] || "";
+            break;
+          }
+        }
+        field.classList.toggle("is-valid", valid && value.length > 0);
+        field.classList.toggle("is-invalid", !valid);
+        if (feedback) feedback.textContent = message;
+      }
+
+      field.addEventListener("blur", validate);
+      field.addEventListener("input", () => {
+        if (field.classList.contains("is-invalid")) validate();
+      });
+    });
+  }
+
+  /* ─────────── Password Strength Meter ─────────── */
+  // biome-ignore lint/correctness/noUnusedVariables: called in DOMContentLoaded
+  function initPasswordStrength() {
+    document.querySelectorAll("[data-password-strength]").forEach((input) => {
+      const wrap = input.closest(".azad-field") || input.parentElement;
+      let meter = wrap.querySelector(".azad-password-strength");
+      if (!meter) {
+        meter = document.createElement("div");
+        meter.className = "azad-password-strength";
+        meter.innerHTML = '<div class="azad-password-strength__bar"></div>';
+        input.parentNode.insertBefore(meter, input.nextSibling);
+      }
+      const bar = meter.querySelector(".azad-password-strength__bar");
+
+      input.addEventListener("input", () => {
+        const val = input.value;
+        let score = 0;
+        if (val.length >= 8) score++;
+        if (/[A-Z]/.test(val)) score++;
+        if (/[0-9]/.test(val)) score++;
+        if (/[^A-Za-z0-9]/.test(val)) score++;
+
+        bar.className = "azad-password-strength__bar";
+        if (val.length === 0) {
+          bar.style.width = "0%";
+        } else if (score <= 1) {
+          bar.classList.add("azad-password-strength__bar--weak");
+          bar.style.width = "33%";
+        } else if (score <= 3) {
+          bar.classList.add("azad-password-strength__bar--fair");
+          bar.style.width = "66%";
+        } else {
+          bar.classList.add("azad-password-strength__bar--strong");
+          bar.style.width = "100%";
+        }
+      });
+    });
+  }
+
+  /* ─────────── Copy to Clipboard ─────────── */
+  // biome-ignore lint/correctness/noUnusedVariables: called in DOMContentLoaded
+  function initCopyToClipboard() {
+    document.querySelectorAll("[data-copy]").forEach((el) => {
+      el.style.cursor = "pointer";
+      el.addEventListener("click", async () => {
+        const text = el.dataset.copy;
+        try {
+          await navigator.clipboard.writeText(text);
+          el.classList.add("azad-copy-btn--copied");
+          if (window.AzadToast) {
+            window.AzadToast.success("تم النسخ إلى الحافظة");
+          }
+          setTimeout(() => el.classList.remove("azad-copy-btn--copied"), 2000);
+        } catch {
+          if (window.AzadToast) {
+            window.AzadToast.error("فشل النسخ — حاول يدوياً");
+          }
+        }
+      });
+    });
+  }
+
+  /* ─────────── Reduced Motion Respect ─────────── */
+  // biome-ignore lint/correctness/noUnusedVariables: called in DOMContentLoaded
+  function initReducedMotion() {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => document.documentElement.classList.toggle("reduced-motion", mq.matches);
+    apply();
+    mq.addEventListener?.("change", apply);
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     initTheme();
     initNav();

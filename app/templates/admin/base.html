@@ -89,6 +89,7 @@
       <a href="{{ url_for('admin.ai_usage') }}" class="admin-nav-item {% if request.endpoint == 'admin.ai_usage' %}active{% endif %}">{{ icon('sparkles') }} {{ _('إحصائيات AI') }}</a>
 
       <div class="admin-nav-section">{{ _('النظام') }}</div>
+      <a href="{{ url_for('admin.audit_logs') }}" class="admin-nav-item {% if request.endpoint == 'admin.audit_logs' %}active{% endif %}">{{ icon('clipboard-list') }} {{ _('سجل التدقيق') }}</a>
       <a href="{{ url_for('admin.backups_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.backups_list' %}active{% endif %}">{{ icon('refresh') }} {{ _('النسخ الاحتياطي') }}</a>
       <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {% if request.endpoint == 'admin.settings' %}active{% endif %}">{{ icon('settings') }} {{ _('الإعدادات') }}</a>
     </nav>

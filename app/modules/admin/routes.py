@@ -883,6 +883,57 @@ def certificates_list():
 
 
 # ======================================================================
+# سجل التدقيق (السوبر أدمن)
+# ======================================================================
+@bp.get("/audit-logs")
+@login_required
+@role_required(UserRole.super_admin)
+def audit_logs():
+    """سجل التدقيق — نشاط النظام"""
+    from app.models.system import AuditLog
+
+    page = request.args.get("page", 1, type=int)
+    user_filter = request.args.get("user_id", "", type=str)
+    action_filter = request.args.get("action", "")
+    entity_filter = request.args.get("entity", "")
+    search = request.args.get("search", "")
+
+    query = AuditLog.query.options(joinedload("user"))  # type: ignore[arg-type]
+
+    if user_filter:
+        query = query.filter_by(user_id=int(user_filter))
+    if action_filter:
+        query = query.filter(AuditLog.action.ilike(f"%{action_filter}%"))
+    if entity_filter:
+        query = query.filter(AuditLog.entity.ilike(f"%{entity_filter}%"))
+    if search:
+        query = query.filter(AuditLog.action.ilike(f"%{search}%"))
+
+    pagination = query.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=50, error_out=False)
+
+    # خيارات التصفية
+    actions = db.session.query(AuditLog.action).distinct().order_by(AuditLog.action).all()
+    entities = (
+        db.session.query(AuditLog.entity)
+        .filter(AuditLog.entity.isnot(None))
+        .distinct()
+        .order_by(AuditLog.entity)
+        .all()
+    )
+
+    return render_template(
+        "admin/audit_logs.html",
+        pagination=pagination,
+        user_filter=user_filter,
+        action_filter=action_filter,
+        entity_filter=entity_filter,
+        search=search,
+        actions=[a[0] for a in actions],
+        entities=[e[0] for e in entities],
+    )
+
+
+# ======================================================================
 # إدارة رسائل التواصل (السوبر أدمن)
 # ======================================================================
 @bp.get("/contact")

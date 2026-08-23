@@ -42,7 +42,7 @@ class Subscription(PKMixin, db.Model):
     start_at = db.Column(db.DateTime(timezone=True))
     end_at = db.Column(db.DateTime(timezone=True))
     status: Mapped[str] = mapped_column(
-        String(10), default="pending", nullable=False
+        String(20), default="pending", nullable=False
     )  # pending/active/expired/cancelled/pending_review
     source: Mapped[str] = mapped_column(String(10), default="manual", nullable=False)  # manual/gateway
     auto_activated_at = db.Column(db.DateTime(timezone=True))

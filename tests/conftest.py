@@ -258,7 +258,7 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.rollback()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def app():
     a = create_app()
     a.config["TESTING"] = True
@@ -276,10 +276,26 @@ def app():
     yield a
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def client(app):
     return app.test_client()
 
+
+
+
+@pytest.fixture(autouse=True)
+def _clean_db(app):
+    """Truncate all tables between tests to keep tests isolated."""
+    yield
+    with app.app_context():
+        from sqlalchemy import text, inspect
+        inspector = inspect(_db.engine)
+        tables = inspector.get_table_names(schema="public")
+        # Exclude alembic_version
+        tables = [t for t in tables if t != "alembic_version"]
+        if tables:
+            _db.session.execute(text(f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE"))
+            _db.session.commit()
 
 def _uid() -> str:
     return uuid.uuid4().hex[:10]

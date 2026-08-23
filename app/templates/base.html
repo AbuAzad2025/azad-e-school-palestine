@@ -70,9 +70,9 @@
     {% block breadcrumbs %}{% endblock %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flash-stack" role="status">
+        <div class="azad-flash-stack" role="status">
           {% for category, message in messages %}
-            <div class="flash flash-{{ category }}">{{ message }}</div>
+            <div class="azad-flash azad-flash--{{ category }}">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}
