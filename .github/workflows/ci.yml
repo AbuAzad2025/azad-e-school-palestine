@@ -372,7 +372,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Check deploy secrets
+        id: check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -n "$DEPLOY_HOST" ]; then
+            echo "has_secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_secrets=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping deploy — secrets not configured."
+          fi
+
       - name: Deploy via SSH
+        if: steps.check.outputs.has_secrets == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -389,6 +402,7 @@ jobs:
             docker system prune -f
 
       - name: Smoke test
+        if: steps.check.outputs.has_secrets == 'true'
         run: |
           sleep 10
           curl -sf https://${{ secrets.DEPLOY_HOST }}/ || exit 1
