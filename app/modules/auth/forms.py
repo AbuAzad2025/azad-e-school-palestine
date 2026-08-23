@@ -19,7 +19,7 @@ class RegisterForm(FlaskForm):
     name_ar = StringField(
         _("الاسم (عربي)"),
         validators=[DataRequired(), Length(min=2, max=120)],
-        render_kw={"maxlength": "120", "pattern": "^[\u0600-\u06FF\\s]{2,120}$", "title": _("الاسم بالعربية فقط")},
+        render_kw={"maxlength": "120", "pattern": "^[\u0600-\u06ff\\s]{2,120}$", "title": _("الاسم بالعربية فقط")},
     )
     email = EmailField(
         _("البريد الإلكتروني"),

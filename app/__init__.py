@@ -397,6 +397,7 @@ def create_app(config_class=Config):
         if not value:
             return "—"
         from datetime import UTC, datetime
+
         now = datetime.now(UTC) if value.tzinfo else datetime.utcnow()
         delta = now - value
         if delta.days > 365:

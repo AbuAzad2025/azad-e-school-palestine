@@ -68,10 +68,9 @@ def link_parent(parent_id: int, code: str) -> tuple[FamilyLink | None, str | Non
 def list_children(parent_id: int) -> list[FamilyLink]:
     """يُعيد قائمة الأبناء المرتبطين بولي الأمر مع بيانات الطلاب."""
     from sqlalchemy.orm import joinedload
+
     return (
-        FamilyLink.query.options(joinedload(FamilyLink.student))
-        .filter_by(parent_id=parent_id, status="active")
-        .all()
+        FamilyLink.query.options(joinedload(FamilyLink.student)).filter_by(parent_id=parent_id, status="active").all()
     )
 
 

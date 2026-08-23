@@ -914,11 +914,7 @@ def audit_logs():
     # خيارات التصفية
     actions = db.session.query(AuditLog.action).distinct().order_by(AuditLog.action).all()
     entities = (
-        db.session.query(AuditLog.entity)
-        .filter(AuditLog.entity.isnot(None))
-        .distinct()
-        .order_by(AuditLog.entity)
-        .all()
+        db.session.query(AuditLog.entity).filter(AuditLog.entity.isnot(None)).distinct().order_by(AuditLog.entity).all()
     )
 
     return render_template(
