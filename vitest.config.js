@@ -16,7 +16,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov", "html"],
       reportsDirectory: "coverage/js",
-      include: ["app/static/js/app.js"],
+      include: ["app/static/js/index.js"],
       exclude: ["app/static/js/ai-chat.js"],
       thresholds: {
         statements: 20,
