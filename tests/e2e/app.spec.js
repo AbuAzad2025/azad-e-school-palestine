@@ -92,8 +92,8 @@ test.describe("Static Assets", () => {
     expect(resp.status()).toBe(200);
   });
 
-  test("app.js loads", async ({ request }) => {
-    const resp = await request.get("/static/js/app.js");
+  test("index.js loads", async ({ request }) => {
+    const resp = await request.get("/static/js/index.js");
     expect(resp.status()).toBe(200);
   });
 
