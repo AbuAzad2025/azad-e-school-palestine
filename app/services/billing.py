@@ -189,7 +189,7 @@ def expire_subscriptions() -> int:
             .values(status="expired")
         )
         result = db.session.execute(stmt)
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined]
 
     return tx(_expire)
 
