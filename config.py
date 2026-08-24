@@ -172,15 +172,6 @@ class ProductionConfig(_BaseConfig):
     LOG_JSON = os.getenv("LOG_JSON", "1") == "1"
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "0") == "1"
-    """بيئة الإنتاج — أقصى حماية وأداء."""
-
-    DEBUG = False
-    TESTING = False
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
-    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "1") == "1"
-    LOG_JSON = os.getenv("LOG_JSON", "1") == "1"
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "0") == "1"
 
 
 class TestingConfig(_BaseConfig):
@@ -206,6 +197,5 @@ config_by_name: dict[str, type] = {
 }
 
 # backwards compatibility — التطبيقات القديمة تستورد Config مباشرة
-_env = os.getenv("FLASK_ENV") or os.getenv("APP_ENV", "production")
+_env: str = os.getenv("FLASK_ENV", "") or os.getenv("APP_ENV", "production")
 Config = config_by_name.get(_env, ProductionConfig)
-Config = config_by_name.get(os.getenv("FLASK_ENV", "production"), ProductionConfig)
