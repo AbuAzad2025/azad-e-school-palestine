@@ -42,13 +42,13 @@
     {% for cat in grade_data.categories %}
     <table>
         <tr>
-            <th colspan="4">{{ cat.name }} (وزن: {{ (cat.weight * 100)|int }}%)</th>
+            <th scope="col" colspan="4">{{ cat.name }} (وزن: {{ (cat.weight * 100)|int }}%)</th>
         </tr>
         <tr>
-            <th>البند</th>
-            <th>الدرجة القصوى</th>
-            <th>الدرجة المحصّلة</th>
-            <th>النسبة %</th>
+            <th scope="col">البند</th>
+            <th scope="col">الدرجة القصوى</th>
+            <th scope="col">الدرجة المحصّلة</th>
+            <th scope="col">النسبة %</th>
         </tr>
         {% for item in cat.items %}
         <tr>

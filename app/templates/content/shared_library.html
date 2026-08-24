@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _('مكتبة الدروس المشتركة') }}{% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title" style="margin:0">{{ _('مكتبة الدروس المشتركة') }}</h1>
     <p class="page-subtitle">{{ _('استعرض واستورد الدروس المشتركة من زملائك') }}</p>
@@ -10,7 +10,7 @@
 
 <div class="card" style="margin-bottom:1.5rem;">
   <form method="get" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end">
-    <div class="form-group" style="flex:1;min-width:200px">
+    <div class="azad-field" style="flex:1;min-width:200px">
       <label class="form-label">{{ _('تصفية حسب المادة') }}</label>
       <select name="subject_id" class="form-select">
         <option value="">{{ _('كل المواد') }}</option>

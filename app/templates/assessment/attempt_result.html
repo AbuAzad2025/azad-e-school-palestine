@@ -16,7 +16,7 @@
     <div style="width:100%">
       <div class="item-title">{{ loop.index }}. {{ q.prompt }}
         {% if a and a.is_correct is not none %}<span class="badge-status badge-{{ 'ok' if a.is_correct else 'err' }}">{{ _('صحيح') if a.is_correct else _('خطأ') }}</span>{% endif %}
-        {% if a and a.is_correct is none and a.answer %}<span class="badge-status badge-warn">{{ _('بانتظار التصحيح') }}</span>{% endif %}
+        {% if a and a.is_correct is none and a.answer %}<span class="azad-badge-variant azad-badge-variant--warning">{{ _('بانتظار التصحيح') }}</span>{% endif %}
       </div>
       <div class="item-meta" style="margin-top:.5rem">
         <span>{{ _('درجتك:') }} {{ a.awarded_mark if a and a.awarded_mark is not none else '—' }}/{{ q.mark or 0 }}</span>

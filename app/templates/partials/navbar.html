@@ -1,7 +1,7 @@
 <nav class="navbar" data-tour-target="navbar">
   <div class="container">
     <a class="brand" href="{{ url_for('main.index') }}">
-      <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}">
+      <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" loading="lazy" decoding="async">
       <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
     </a>
 
@@ -51,7 +51,7 @@
           </div>
         </div>
 
-        <button class="nav-toggle" type="button" aria-label="{{ _('القائمة') }}" aria-expanded="false" data-nav-toggle>
+        <button class="nav-toggle" type="button" aria-label="{{ _('القائمة') }}" aria-expanded="false" aria-controls="nav-menu" data-nav-toggle>
           <span data-nav-icon-open>{{ icon('menu') }}</span>
           <span data-nav-icon-close hidden>{{ icon('x') }}</span>
         </button>
@@ -68,7 +68,7 @@
 
 {# Mobile user menu (mirrors desktop dropdown inside hamburger) #}
 {% if current_user.is_authenticated %}
-<div class="nav-links" data-nav-links>
+<div class="nav-links" id="nav-menu" data-nav-links>
   <div class="nav-links__section">{{ _('القائمة الرئيسية') }}</div>
   <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
   <a href="{{ url_for('auth.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
@@ -96,7 +96,7 @@
   </form>
 </div>
 {% else %}
-<div class="nav-links" data-nav-links>
+<div class="nav-links" id="nav-menu" data-nav-links>
   <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
   <a href="{{ url_for('auth.login') }}" class="nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
   <a href="{{ url_for('auth.register') }}" class="nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>

@@ -1,6 +1,6 @@
 """المستخدمون والأدوار — حساب واحد، أدوار متعددة عبر المدارس"""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
 from flask_login import UserMixin
@@ -84,7 +84,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
 
     def is_locked(self) -> bool:
         """تحقق مما إذا كان الحساب مقفلاً."""
-        if self.locked_until and self.locked_until > datetime.utcnow():
+        if self.locked_until and self.locked_until > datetime.now(UTC):
             return True
         return False
 
@@ -92,7 +92,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
         """يزيد المحاولات الفاشلة ويقفل الحساب إذا تجاوز الحد."""
         self.failed_login_attempts += 1
         if self.failed_login_attempts >= max_attempts:
-            self.locked_until = datetime.utcnow() + timedelta(minutes=lockout_minutes)
+            self.locked_until = datetime.now(UTC) + timedelta(minutes=lockout_minutes)
 
     def reset_failed_login(self) -> None:
         """يعيد تعيين المحاولات الفاشلة عند نجاح الدخول."""

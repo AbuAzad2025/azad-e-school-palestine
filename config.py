@@ -1,4 +1,14 @@
-"""إعدادات التطبيق — مقروءة من .env فقط (D4)"""
+"""إعدادات التطبيق — بيئات منفصلة (D4).
+
+الاستخدام:
+    from config import config_by_name
+    app.config.from_object(config_by_name[env])
+
+المتغيرات البيئية المطلوبة:
+    FLASK_ENV = development | production | testing
+    SECRET_KEY (في كل البيئات)
+    DATABASE_URL (في كل البيئات غير testing)
+"""
 
 import os
 from pathlib import Path
@@ -9,9 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 
-class Config:
+class _BaseConfig:
+    """الإعدادات المشتركة بين كل البيئات."""
+
     SECRET_KEY = os.getenv("SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
@@ -29,7 +40,6 @@ class Config:
     DEFAULT_LOCALE = os.getenv("DEFAULT_LOCALE", "ar")
     LANGUAGES = ["ar", "en"]
 
-    # المرفوعات (D7): خارج المجلد العام
     UPLOAD_FOLDER = BASE_DIR / "instance" / "uploads"
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024
     ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "webp", "gif", "mp4", "webm", "mp3", "docx", "pptx", "xlsx"}
@@ -48,27 +58,18 @@ class Config:
     BACKUP_DIR = BASE_DIR / "backups"
 
     # === أمان ===
-    # DEBUG من متغير بيئة (إيقاف في الإنتاج)
-    DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
-    TESTING = os.getenv("TESTING", "0") == "1"
-
-    # جلسة آمنة
-    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "1") == "1"  # HTTPS فقط
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    PERMANENT_SESSION_LIFETIME = 3600  # ساعة واحدة
+    PERMANENT_SESSION_LIFETIME = 3600
 
-    # CSRF
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600
     WTF_CSRF_SSL_STRICT = True
 
-    # معدل الطلبات (Flask-Limiter)
     RATELIMIT_DEFAULT = "200 per minute"
     RATELIMIT_STORAGE_URL = os.getenv("RATELIMIT_STORAGE_URL", "memory://")
     RATELIMIT_STRATEGY = "fixed-window"
 
-    # Talisman / CSP
     TALISMAN_ENABLED = os.getenv("TALISMAN_ENABLED", "1") == "1"
     TALISMAN_FORCE_HTTPS = os.getenv("TALISMAN_FORCE_HTTPS", "1") == "1"
     TALISMAN_STRICT_TRANSPORT_SECURITY = True
@@ -99,7 +100,6 @@ class Config:
         "payment": "()",
     }
 
-    # سياسة كلمات المرور
     PASSWORD_MIN_LENGTH = 10
     PASSWORD_REQUIRE_UPPER = True
     PASSWORD_REQUIRE_LOWER = True
@@ -107,14 +107,11 @@ class Config:
     PASSWORD_REQUIRE_SPECIAL = True
     PASSWORD_HISTORY_COUNT = 5
 
-    # قفل الحساب
     LOGIN_MAX_ATTEMPTS = 5
-    LOGIN_LOCKOUT_DURATION = 900  # 15 دقيقة
+    LOGIN_LOCKOUT_DURATION = 900
 
-    # 2FA
     TOTP_ISSUER = "Azad E-School"
 
-    # === Zoom Integration (optional) ===
     VIDEO_PROVIDER_DEFAULT = os.getenv("VIDEO_PROVIDER_DEFAULT", "jitsi")
     ZOOM_ACCOUNT_ID = os.getenv("ZOOM_ACCOUNT_ID", "")
     ZOOM_CLIENT_ID = os.getenv("ZOOM_CLIENT_ID", "")
@@ -122,12 +119,10 @@ class Config:
     ZOOM_SDK_KEY = os.getenv("ZOOM_SDK_KEY", "")
     ZOOM_SDK_SECRET = os.getenv("ZOOM_SDK_SECRET", "")
 
-    # === Sentry ===
     SENTRY_DSN = os.getenv("SENTRY_DSN", "")
     SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", "production")
     SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
 
-    # === Backups ===
     BACKUP_ENABLED = os.getenv("BACKUP_ENABLED", "0") == "1"
     BACKUP_S3_ENDPOINT = os.getenv("BACKUP_S3_ENDPOINT", "")
     BACKUP_S3_BUCKET = os.getenv("BACKUP_S3_BUCKET", "")
@@ -135,22 +130,71 @@ class Config:
     BACKUP_S3_SECRET_KEY = os.getenv("BACKUP_S3_SECRET_KEY", "")
     BACKUP_LOCAL_RETENTION_DAYS = int(os.getenv("BACKUP_LOCAL_RETENTION_DAYS", "7"))
 
-    # === Alerting ===
     ALERT_EMAIL = os.getenv("ALERT_EMAIL", "")
 
-    # === Analytics & Contact ===
     PLAUSIBLE_SCRIPT_URL = os.getenv("PLAUSIBLE_SCRIPT_URL", "")
     WHATSAPP_BUSINESS_NUMBER = os.getenv("WHATSAPP_BUSINESS_NUMBER", "")
 
-    # === Logging ===
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_JSON = os.getenv("LOG_JSON", "0") == "1"
 
-    # === CORS (mobile/API clients) ===
-    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else []
     CORS_SUPPORTS_CREDENTIALS = os.getenv("CORS_SUPPORTS_CREDENTIALS", "1") == "1"
     CORS_ALLOW_HEADERS = ["Content-Type", "X-CSRFToken", "Authorization"]
 
-    # === OpenAPI/Swagger ===
-    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "1") == "1"
+    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "0") == "1"
     SWAGGER_HOST = os.getenv("SWAGGER_HOST", "")
+
+
+class DevelopmentConfig(_BaseConfig):
+    """بيئة التطوير — مريحة للمطوّر، أقل حماية."""
+
+    DEBUG = True
+    TESTING = False
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://localhost:5432/azad_eschool_dev")
+    SESSION_COOKIE_SECURE = False
+    TALISMAN_FORCE_HTTPS = False
+    TALISMAN_STRICT_TRANSPORT_SECURITY = False
+    WTF_CSRF_SSL_STRICT = False
+    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "1") == "1"
+    LOG_JSON = False
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
+    CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5000,http://127.0.0.1:5000").split(",")
+
+
+class ProductionConfig(_BaseConfig):
+    """بيئة الإنتاج — أقصى حماية وأداء."""
+
+    DEBUG = False
+    TESTING = False
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "1") == "1"
+    LOG_JSON = os.getenv("LOG_JSON", "1") == "1"
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "0") == "1"
+
+
+class TestingConfig(_BaseConfig):
+    """بيئة الاختبار — SQLite in-memory، أمان مخفّض."""
+
+    DEBUG = True
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    SQLALCHEMY_ENGINE_OPTIONS = {}
+    SESSION_COOKIE_SECURE = False
+    TALISMAN_ENABLED = False
+    WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False
+    EMAIL_ENABLED = False
+    SWAGGER_ENABLED = False
+    LOG_LEVEL = "WARNING"
+
+
+config_by_name: dict[str, type] = {
+    "development": DevelopmentConfig,
+    "production": ProductionConfig,
+    "testing": TestingConfig,
+}
+
+# backwards compatibility — التطبيقات القديمة تستورد Config مباشرة
+Config = config_by_name.get(os.getenv("FLASK_ENV", "production"), ProductionConfig)

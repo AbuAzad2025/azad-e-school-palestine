@@ -80,6 +80,11 @@ export async function request(method, url, options = {}) {
       err.name = "TimeoutError";
       throw err;
     }
+    if (!navigator.onLine) {
+      const err = new Error("No internet connection");
+      err.name = "NetworkError";
+      throw err;
+    }
     throw error;
   }
 }

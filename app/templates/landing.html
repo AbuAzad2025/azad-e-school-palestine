@@ -85,7 +85,7 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
   <nav class="l-nav" id="l-nav">
     <div class="container">
       <a class="l-brand" href="/">
-        <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}">
+        <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" loading="lazy" decoding="async">
         <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
       </a>
       <div class="l-nav-actions">
@@ -219,7 +219,7 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
   </footer>
 
   <div class="azad-toast-container" id="azad-toasts" aria-live="polite"></div>
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/index.js') }}"></script>
   <script>
   (function(){
     var nav=document.getElementById('l-nav');

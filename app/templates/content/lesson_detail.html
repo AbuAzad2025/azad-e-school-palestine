@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ lesson.title }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title" style="margin:0">{{ lesson.title }}</h1>
     <p class="page-subtitle">
@@ -21,7 +21,7 @@
   <div class="card" style="margin-bottom:1rem">{{ lesson.body_html | e }}</div>
 {% endif %}
 
-<div class="section-head"><h2>{{ _('المرفقات') }}</h2></div>
+<div class="azad-section"><h2>{{ _('المرفقات') }}</h2></div>
 {% if lesson.attachments %}
 <div class="azad-list">
   {% for att in lesson.attachments %}
@@ -63,32 +63,32 @@
 {% endif %}
 
 {% if can_teach %}
-<div class="section-head"><h2>{{ _('رفع مرفق') }}</h2></div>
+<div class="azad-section"><h2>{{ _('رفع مرفق') }}</h2></div>
 <div class="card" style="margin-bottom:1rem">
   <form method="post" action="{{ url_for('content.attachment_upload', class_id=class_room.id, lesson_id=lesson.id) }}" enctype="multipart/form-data" novalidate>
     {{ att_form.hidden_tag() }}
-    <div class="form-group">{{ att_form.file.label }}{{ att_form.file() }}{% for e in att_form.file.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
-    <div class="form-group">{{ att_form.title.label }}{{ att_form.title() }}</div>
+    <div class="azad-field">{{ att_form.file.label }}{{ att_form.file() }}{% for e in att_form.file.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
+    <div class="azad-field">{{ att_form.title.label }}{{ att_form.title() }}</div>
     <div class="form-actions">{{ att_form.submit(class="azad-btn") }}</div>
   </form>
 </div>
-<div class="section-head"><h2>{{ _('إضافة فيديو خارجي') }}</h2></div>
+<div class="azad-section"><h2>{{ _('إضافة فيديو خارجي') }}</h2></div>
 <div class="card">
   <form method="post" action="{{ url_for('content.attachment_youtube', class_id=class_room.id, lesson_id=lesson.id) }}" novalidate>
     {{ yt_form.hidden_tag() }}
-    <div class="form-group">{{ yt_form.url.label }}{{ yt_form.url() }}</div>
-    <div class="form-group">{{ yt_form.title.label }}{{ yt_form.title() }}</div>
+    <div class="azad-field">{{ yt_form.url.label }}{{ yt_form.url() }}</div>
+    <div class="azad-field">{{ yt_form.title.label }}{{ yt_form.title() }}</div>
     <div class="form-actions">{{ yt_form.submit(class="azad-btn") }}</div>
   </form>
 </div>
 
-<div class="section-head"><h2>{{ _('تعديل الدرس') }}</h2></div>
+<div class="azad-section"><h2>{{ _('تعديل الدرس') }}</h2></div>
 <div class="card">
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     {% for f in form %}
       {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
-        <div class="form-group">
+        <div class="azad-field">
           {{ f.label }}
           {{ f() }}
           {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}

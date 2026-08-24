@@ -3,16 +3,31 @@
 M0: هيكل قابل للتشغيل. تُضاف الوحدات (blueprints) في مراحلها.
 """
 
+import shutil
 import time as _time
 from collections import deque
+from datetime import UTC, datetime
+from pathlib import Path as _Path
 
 from config import Config
-from flask import Flask, g, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    current_app,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_login import current_user
+from flask_mail import Message
 from flask_talisman import Talisman
-from werkzeug.exceptions import HTTPException
+from sqlalchemy import text as sql_text
+from werkzeug.exceptions import HTTPException, Unauthorized
 
 from .core.logging import configure_structlog, correlation_id_middleware, get_logger
 from .core.openapi import init_swagger
@@ -25,8 +40,6 @@ _response_times: deque[int] = deque(maxlen=1000)
 
 def _select_locale():
     """يختار اللغة من الكوكي ثم التفضيلات، مع الوقوع على الإعداد الافتراضي."""
-    from flask import current_app
-
     lang = request.cookies.get("locale", "")
     if lang in current_app.config.get("LANGUAGES", ["ar"]):
         return lang
@@ -35,8 +48,6 @@ def _select_locale():
 
 def _rate_limit_key():
     """مفتاح تحديد المعدل: IP + مستخدم مصادق إن وجد."""
-    from flask_login import current_user
-
     if current_user.is_authenticated:
         return f"user:{current_user.id}"
     return get_remote_address()
@@ -80,7 +91,7 @@ def create_app(config_class=Config):
         app,
         resources={
             r"/api/v1/*": {
-                "origins": app.config.get("CORS_ORIGINS", ["*"]),
+                "origins": app.config.get("CORS_ORIGINS", []),
                 "supports_credentials": app.config.get("CORS_SUPPORTS_CREDENTIALS", True),
                 "allow_headers": app.config.get("CORS_ALLOW_HEADERS", ["Content-Type", "X-CSRFToken", "Authorization"]),
             }
@@ -106,8 +117,6 @@ def create_app(config_class=Config):
     def _track_response_time():
         g._request_start = _time.monotonic()
         if app.config.get("SENTRY_DSN"):
-            from flask_login import current_user
-
             set_sentry_user(current_user)
 
     @app.after_request
@@ -216,12 +225,6 @@ def create_app(config_class=Config):
 
     @app.get("/health")
     def health():
-        import shutil
-        from datetime import UTC, datetime
-        from pathlib import Path as _Path
-
-        from sqlalchemy import text as sql_text
-
         checks = {}
         overall = "healthy"
 
@@ -264,8 +267,6 @@ def create_app(config_class=Config):
         alert_email = app.config.get("ALERT_EMAIL")
         if overall == "down" and alert_email:
             try:
-                from flask_mail import Message
-
                 msg = Message(
                     subject=f"[Azad] Health Alert: {overall}",
                     recipients=[alert_email],
@@ -284,15 +285,12 @@ def create_app(config_class=Config):
 
     @app.get("/health/deep")
     def health_deep():
-        from flask_login import current_user
-        from werkzeug.exceptions import Forbidden, Unauthorized
-
         if not current_user.is_authenticated:
             raise Unauthorized()
         if not hasattr(current_user, "role") or current_user.role.value != "super_admin":
-            raise Forbidden()
+            from werkzeug.exceptions import Forbidden
 
-        import shutil
+            raise Forbidden()
 
         test_app = app.test_client()
         with app.app_context():
@@ -396,9 +394,7 @@ def create_app(config_class=Config):
         """وقت نسبي (منذ X دقائق/ساعات)."""
         if not value:
             return "—"
-        from datetime import UTC, datetime
-
-        now = datetime.now(UTC) if value.tzinfo else datetime.utcnow()
+        now = datetime.now(UTC) if value.tzinfo else datetime.now(UTC)
         delta = now - value
         if delta.days > 365:
             return f"{delta.days // 365}y"

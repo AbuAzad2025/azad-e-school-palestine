@@ -29,7 +29,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="recipient_id" value="{{ message.sender_id if message.sender_id != current_user.id else message.recipient_id }}">
       <input type="hidden" name="subject" value="{{ _('رد: ') }}{{ message.subject }}">
-      <div class="form-group">
+      <div class="azad-field">
         <textarea name="body" required class="form-control" rows="4"
                   placeholder="{{ _('اكتب ردك...') }}" aria-label="{{ _('نص الرد') }}"></textarea>
       </div>

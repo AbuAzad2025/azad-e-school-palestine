@@ -46,14 +46,14 @@
   </div>
 </div>
 
-<div class="section-head"><h2>{{ _('الإيرادات') }}</h2></div>
+<div class="azad-section"><h2>{{ _('الإيرادات') }}</h2></div>
 <div class="stats-grid">
     {{ azad_stat_card(revenue.total_revenue or 0, _('إجمالي المحصّل'), 'cash', 'var(--azad-green)') }}
     {{ azad_stat_card(revenue.pending_amount or 0, _('معلّق'), 'clock', 'var(--color-warning)') }}
     {{ azad_stat_card(revenue.overdue_count or 0, _('اشتراكات منتهية'), 'alert', 'var(--color-danger)') }}
 </div>
 
-<div class="section-head"><h2>{{ _('إجراءات سريعة') }}</h2></div>
+<div class="azad-section"><h2>{{ _('إجراءات سريعة') }}</h2></div>
 {{ azad_quick_actions([
     {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'color': 'var(--azad-navy)'},
     {'icon': 'book-open', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-blue)'},

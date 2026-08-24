@@ -3,7 +3,7 @@
 {% block content %}
 <h1 class="page-title azad-title">{{ _('الدروس الخصوصية — ملفي') }}</h1>
 
-<div class="section-head"><h2>{{ _('طلبات تلقيتها') }}</h2></div>
+<div class="azad-section"><h2>{{ _('طلبات تلقيتها') }}</h2></div>
 {% if requests %}
 <div class="azad-list">
   {% for r in requests %}
@@ -34,21 +34,21 @@
 </div>
 {% else %}<div class="empty-state">{{ _('لا طلبات واردة.') }}</div>{% endif %}
 
-<div class="section-head"><h2>{{ _('طلبات أرسلتها') }}</h2></div>
+<div class="azad-section"><h2>{{ _('طلبات أرسلتها') }}</h2></div>
 {% if student_requests %}
 <div class="azad-list">
   {% for r in student_requests %}
   <div class="azad-item">
     <div>
       <div class="item-title">{{ r.tutor.name_ar }} — {{ r.subject }}</div>
-      <div class="item-meta"><span>{{ r.mode }}</span><span class="badge-status badge-warn">{{ r.status }}</span></div>
+      <div class="item-meta"><span>{{ r.mode }}</span><span class="azad-badge-variant azad-badge-variant--warning">{{ r.status }}</span></div>
     </div>
   </div>
   {% endfor %}
 </div>
 {% else %}<div class="empty-state">{{ _('لا طلبات أرسلتها بعد.') }}</div>{% endif %}
 
-<div class="section-head"><h2>{{ _('جلسات بصفتي معلم') }}</h2></div>
+<div class="azad-section"><h2>{{ _('جلسات بصفتي معلم') }}</h2></div>
 {% if as_tutor %}
 <div class="azad-list">
   {% for s in as_tutor %}
@@ -67,7 +67,7 @@
 </div>
 {% else %}<div class="empty-state">{{ _('لا جلسات بعد.') }}</div>{% endif %}
 
-<div class="section-head"><h2>{{ _('جلسات بصفتي طالب') }}</h2></div>
+<div class="azad-section"><h2>{{ _('جلسات بصفتي طالب') }}</h2></div>
 {% if as_student %}
 <div class="azad-list">
   {% for s in as_student %}

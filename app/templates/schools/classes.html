@@ -4,7 +4,7 @@
 <h1 class="page-title azad-title">{{ school.display_name }}</h1>
 <p class="page-subtitle">{{ _('الصفوف') }} {% if school.domain %}<span class="meta-chip">{{ school.domain }}</span>{% endif %}</p>
 
-<div class="section-head">
+<div class="azad-section">
   <h2>{{ _('الصفوف') }}</h2>
   <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">+ {{ _('صف جديد') }}</a>
 </div>

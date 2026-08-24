@@ -1,8 +1,10 @@
 /**
  * Lightweight canvas-based charts for dashboards.
  *
- * Usage: <canvas data-chart="bar" data-chart-data='[...]' data-chart-labels='[...]' data-chart-colors='[...]'></canvas>
+ * Usage: <canvas data-chart="bar" data-chart-labels='[...]' data-chart-values='[...]' data-chart-colors='[...]'></canvas>
  */
+
+const isRTL = () => document.dir === "rtl";
 
 function getCanvasPixelRatio() {
   return window.devicePixelRatio || 1;
@@ -37,6 +39,7 @@ function drawBarChart(ctx, config, width, height) {
   const { labels, values, colors } = config;
   if (!values.length) return;
 
+  const rtl = isRTL();
   const padding = { top: 30, right: 16, bottom: 40, left: 40 };
   const chartWidth = Math.max(1, width - padding.left - padding.right);
   const chartHeight = Math.max(1, height - padding.top - padding.bottom);
@@ -59,13 +62,20 @@ function drawBarChart(ctx, config, width, height) {
   ctx.strokeStyle =
     getComputedStyle(document.documentElement).getPropertyValue("--border") || "#ccc";
   ctx.beginPath();
-  ctx.moveTo(padding.left, padding.top);
-  ctx.lineTo(padding.left, height - padding.bottom);
-  ctx.lineTo(width - padding.right, height - padding.bottom);
+  if (rtl) {
+    ctx.moveTo(width - padding.right, padding.top);
+    ctx.lineTo(width - padding.right, height - padding.bottom);
+    ctx.lineTo(padding.left, height - padding.bottom);
+  } else {
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, height - padding.bottom);
+    ctx.lineTo(width - padding.right, height - padding.bottom);
+  }
   ctx.stroke();
 
   values.forEach((value, i) => {
-    const x = padding.left + gap + i * (barWidth + gap);
+    const idx = rtl ? barCount - 1 - i : i;
+    const x = padding.left + gap + idx * (barWidth + gap);
     const barHeight = (value / max) * chartHeight;
     const y = height - padding.bottom - barHeight;
 
@@ -117,15 +127,18 @@ function drawDoughnutChart(ctx, config, width, height) {
   });
 
   // Legend
-  const legendX = 16;
+  const rtl = isRTL();
+  const legendX = rtl ? width - 16 : 16;
   let legendY = height - values.length * 18 - 8;
-  ctx.textAlign = "left";
+  ctx.textAlign = rtl ? "right" : "left";
   ctx.font = "12px Cairo, sans-serif";
   values.forEach((value, i) => {
     ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#014e7c");
-    ctx.fillRect(legendX, legendY, 10, 10);
+    const boxX = rtl ? legendX - 10 : legendX;
+    ctx.fillRect(boxX, legendY, 10, 10);
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text") || "#000";
-    ctx.fillText(`${labels[i] || ""}: ${value}`, legendX + 16, legendY + 9);
+    const textX = rtl ? legendX - 16 : legendX + 16;
+    ctx.fillText(`${labels[i] || ""}: ${value}`, textX, legendY + 9);
     legendY += 18;
   });
 }

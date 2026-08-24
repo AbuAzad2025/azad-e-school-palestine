@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ _('النسخ الاحتياطي') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('النسخ الاحتياطي') }}</h1>
   <form method="post" action="{{ url_for('admin.backup_create') }}" style="display:inline">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -13,10 +13,10 @@
 <table class="admin-table">
   <thead>
     <tr>
-      <th>{{ _('اسم الملف') }}</th>
-      <th>{{ _('الحجم') }}</th>
-      <th>{{ _('تاريخ الإنشاء') }}</th>
-      <th>{{ _('الإجراءات') }}</th>
+      <th scope="col">{{ _('اسم الملف') }}</th>
+      <th scope="col">{{ _('الحجم') }}</th>
+      <th scope="col">{{ _('تاريخ الإنشاء') }}</th>
+      <th scope="col">{{ _('الإجراءات') }}</th>
     </tr>
   </thead>
   <tbody>

@@ -10,7 +10,7 @@
 
 {% if is_super_admin() %}
   {# ═══ Super Admin Dashboard ═══ #}
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('نظرة عامة على النظام') }}</h2>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap">
       <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('schools.index') }}">{{ _('إدارة المدارس') }}</a>
@@ -24,7 +24,7 @@
     {{ azad_stat_card(subscription_count or 0, _('اشتراك نشط'), 'credit-card', 'var(--azad-gold)') }}
   </div>
 
-  <div class="section-head"><h2>{{ _('إجراءات سريعة') }}</h2></div>
+  <div class="azad-section"><h2>{{ _('إجراءات سريعة') }}</h2></div>
   {{ azad_quick_actions([
     {'icon': 'users', 'label': _('المستخدمين'), 'href': url_for('admin.users_list'), 'color': 'var(--azad-navy)'},
     {'icon': 'school', 'label': _('المدارس'), 'href': url_for('admin.schools_list'), 'color': 'var(--azad-blue)'},
@@ -36,7 +36,7 @@
 
 {% elif is_school_admin() %}
   {# ═══ School Admin Dashboard ═══ #}
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('إدارة مدرستي') }}</h2>
     <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.index') }}">{{ icon('school') }} {{ _('عرض مدارسي') }}</a>
   </div>
@@ -48,7 +48,7 @@
     {{ azad_stat_card(my_school_subscription_count or 0, _('اشتراكات'), 'credit-card', 'var(--azad-gold)') }}
   </div>
 
-  <div class="section-head"><h2>{{ _('إجراءات سريعة') }}</h2></div>
+  <div class="azad-section"><h2>{{ _('إجراءات سريعة') }}</h2></div>
   {{ azad_quick_actions([
     {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'color': 'var(--azad-navy)'},
     {'icon': 'book-open', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-blue)'},
@@ -58,7 +58,7 @@
 
 {% elif is_teacher() %}
   {# ═══ Teacher Dashboard ═══ #}
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('صفوفي') }}</h2>
     <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('عرض جميع الصفوف') }}</a>
   </div>
@@ -92,7 +92,7 @@
   {{ azad_empty_state(_('ليس لديك أي صف مخصص للتدريس.'), icon_name='book-open') }}
   {% endif %}
 
-  <div class="section-head"><h2>{{ _('سوق الدروس الخصوصية') }}</h2></div>
+  <div class="azad-section"><h2>{{ _('سوق الدروس الخصوصية') }}</h2></div>
   {{ azad_quick_actions([
     {'icon': 'user', 'label': _('ملفي كمعلم'), 'href': url_for('tutoring.profile', tutor_id=current_user.id), 'color': 'var(--azad-navy)'},
     {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'}
@@ -100,7 +100,7 @@
 
 {% elif is_student() %}
   {# ═══ Student Dashboard ═══ #}
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('صفوفي') }}</h2>
     <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.class_join') }}">+ {{ _('انضمام برمز') }}</a>
   </div>
@@ -126,7 +126,7 @@
   {{ azad_empty_state(_('لم تنضم لأي صف بعد.'), _('انضم برمز'), icon_name='school', action_url=url_for('schools.class_join'), action_label=_('انضم برمز')) }}
   {% endif %}
 
-  <div class="section-head"><h2>{{ _('دروس خصوصية') }}</h2></div>
+  <div class="azad-section"><h2>{{ _('دروس خصوصية') }}</h2></div>
   {{ azad_quick_actions([
     {'icon': 'books', 'label': _('البحث عن معلم'), 'href': url_for('tutoring.index'), 'color': 'var(--azad-green)'},
     {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'color': 'var(--azad-blue)'},
@@ -135,7 +135,7 @@
 
 {% elif is_parent() %}
   {# ═══ Parent Dashboard ═══ #}
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('صفوف أبنائي') }}</h2>
     <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.index') }}">{{ icon('user') }} {{ _('إدارة الأبناء') }}</a>
   </div>
@@ -173,7 +173,7 @@
 
 {# Common quick access for all authenticated users #}
 <div data-tour-target="dashboard-card">
-<div class="section-head"><h2>{{ _('وصول سريع') }}</h2></div>
+<div class="azad-section"><h2>{{ _('وصول سريع') }}</h2></div>
 {{ azad_quick_actions([
   {'icon': 'books', 'label': _('دروس خصوصية'), 'href': url_for('tutoring.index'), 'color': 'var(--azad-green)'},
   {'icon': 'school', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-navy)'},

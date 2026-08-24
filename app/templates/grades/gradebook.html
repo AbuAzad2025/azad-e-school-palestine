@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/_gradebook.css') }}">
 {% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title gradebook-title">{{ _('دفتر الدرجات') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
@@ -26,7 +26,7 @@
 {% endif %}
 
 {% for cat in categories %}
-<div class="section-head"><h2>{{ icon('folder') }} {{ cat.name }}{% if cat.weight %} <small class="gradebook-meta">({{ cat.weight }})</small>{% endif %}</h2></div>
+<div class="azad-section"><h2>{{ icon('folder') }} {{ cat.name }}{% if cat.weight %} <small class="gradebook-meta">({{ cat.weight }})</small>{% endif %}</h2></div>
 {% if can_teach %}
 <div class="card u-mb-1">
   <form method="post" action="{{ url_for('grades.grade_item_create', category_id=cat.id) }}" novalidate>
@@ -41,8 +41,8 @@
 </div>
 {% endif %}
 <table class="azad-table gradebook-table">
-  <thead><tr><th>{{ _('الطالب') }}</th>
-    {% for item in items if item.category_id == cat.id %}<th>{{ item.title }}{% if item.max_mark %}<br><small>({{ item.max_mark }})</small>{% endif %}</th>{% endfor %}
+  <thead><tr><th scope="col">{{ _('الطالب') }}</th>
+    {% for item in items if item.category_id == cat.id %}<th scope="col">{{ item.title }}{% if item.max_mark %}<br><small>({{ item.max_mark }})</small>{% endif %}</th>{% endfor %}
   </tr></thead>
   <tbody>
   {% for m in members %}

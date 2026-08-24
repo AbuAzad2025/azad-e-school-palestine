@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ _('طلبات كثيرة جداً') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-404" style="max-width:460px;margin:4rem auto;text-align:center">
-  <h1 class="azad-title" style="font-size:48px;margin:0">429</h1>
-  <p style="font-size:1.25rem;margin:1rem 0">{{ _('لقد تجاوزت الحد المسموح من الطلبات.') }}</p>
-  <p>{{ _('يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.') }}</p>
+<div class="card azad-error">
+  <h1 class="azad-error__code">429</h1>
+  <p class="azad-error__message">{{ _('لقد تجاوزت الحد المسموح من الطلبات.') }}</p>
+  <p class="azad-error__hint">{{ _('يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.') }}</p>
   <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
 </div>
 {% endblock %}

@@ -11,24 +11,24 @@
 <form method="post" action="{{ url_for('calendar.event_create', school_id=school_id) }}" class="azad-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-row">
-        <div class="form-group">
+        <div class="azad-field">
             <label for="title">{{ _('العنوان') }}</label>
             {{ form.title(class="form-control") }}
             {% for error in form.title.errors %}
             <div class="form-error">{{ error }}</div>
             {% endfor %}
         </div>
-        <div class="form-group">
+        <div class="azad-field">
             <label for="event_type">{{ _('النوع') }}</label>
             {{ form.event_type(class="form-control") }}
         </div>
     </div>
     <div class="form-row">
-        <div class="form-group">
+        <div class="azad-field">
             <label for="start_date">{{ _('تاريخ البداية') }}</label>
             {{ form.start_date(class="form-control", type="date") }}
         </div>
-        <div class="form-group">
+        <div class="azad-field">
             <label for="end_date">{{ _('تاريخ النهاية (اختياري)') }}</label>
             {{ form.end_date(class="form-control", type="date") }}
         </div>
@@ -37,7 +37,7 @@
 </form>
 {% endcall %}
 
-<div class="section-head"><h2>{{ _('الأحداث') }}</h2></div>
+<div class="azad-section"><h2>{{ _('الأحداث') }}</h2></div>
 {% if events %}
 <div class="azad-list">
     {% for event in events %}

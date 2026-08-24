@@ -1,13 +1,13 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ school.display_name }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ school.display_name }}</h1>
   <a class="azad-btn-outline" href="{{ url_for('admin.schools_list') }}">{{ _('رجوع') }}</a>
 </div>
 
 <div class="card" style="margin-bottom: 1.5rem;">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('معلومات المدرسة') }}</h2>
   </div>
   <div class="azad-list">
@@ -29,13 +29,13 @@
     </div>
     <div class="azad-item">
       <div class="item-title">{{ _('الحالة') }}</div>
-      <div><span class="badge-status badge-ok">{{ _('نشطة') if school.is_active else _('معطلة') }}</span></div>
+      <div><span class="azad-badge-variant azad-badge-variant--success">{{ _('نشطة') if school.is_active else _('معطلة') }}</span></div>
     </div>
   </div>
 </div>
 
 <div class="card" style="margin-top: 1.5rem;">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('الصفوف') }}</h2>
     <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">+ {{ _('صف جديد') }}</a>
   </div>
@@ -64,7 +64,7 @@
 </div>
 
 <div class="card" style="margin-top: 1.5rem;">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('المعلمين') }}</h2>
   </div>
   {% if teachers %}

@@ -6,27 +6,27 @@
   <p class="form-hint">{{ _('سجّل كطالب مستقل واستكشف الكورسات المتاحة مباشرة.') }}</p>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.name_ar.label }}
       {{ form.name_ar(autocomplete="name", placeholder=_("الاسم الكامل")) }}
       {% for e in form.name_ar.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.email.label }}
       {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
       {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.grade_level.label }}
       {{ form.grade_level() }}
       {% for e in form.grade_level.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.password.label }}
       {{ form.password(autocomplete="new-password", placeholder=_("8 أحرف على الأقل"), data_password_strength="") }}
       {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.confirm.label }}
       {{ form.confirm(autocomplete="new-password") }}
       {% for e in form.confirm.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}

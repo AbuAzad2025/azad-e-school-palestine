@@ -1,10 +1,20 @@
-"""API v1 Routes — نقاط نهاية حقيقية تحت /api/v1/.
+"""API v1 Routes — نقاط نهاية موجهة حسب الموارد (Resource-oriented).
 
-تُعرِّض بيانات المدرسة: الدروس، الملف الشخصي، الجلسات التعليمية.
-كل الاستعلامات تستخدم scope_by_school للـ tenancy.
+كل مورد يتبع النمط:
+    GET    /api/v1/<resource>       → list (paginated)
+    GET    /api/v1/<resource>/<id>  → get one
+    POST   /api/v1/<resource>       → create
+    PATCH  /api/v1/<resource>/<id>  → update
+    DELETE /api/v1/<resource>/<id>  → delete (soft)
 """
 
-from app.core.logging import get_correlation_id, get_logger
+from __future__ import annotations
+
+from typing import Any
+
+from app.core.api import api_error, api_paginated, api_response
+from app.core.api_auth import api_auth_required
+from app.core.logging import get_logger
 from app.core.permissions import role_required
 from app.models.billing import Subscription, SubscriptionPlan
 from app.models.class_room import ClassMember, ClassRoom
@@ -12,8 +22,8 @@ from app.models.content import Lesson
 from app.models.school import School
 from app.models.tutoring import TutoringSession
 from app.models.user import User, UserRole, UserRoleLink
-from flask import jsonify, request
-from flask_login import current_user, login_required
+from flask import request
+from flask_login import current_user
 from sqlalchemy import or_
 
 from . import bp
@@ -21,65 +31,22 @@ from . import bp
 logger = get_logger(__name__)
 
 
-def api_response(data, status: int = 200, meta: dict | None = None):
-    """oluştur一份 ApiResponse بتنسيق موحّد.
-
-    {"data": ..., "meta": {"version": "v1", "request_id": "..."}}
-    """
-    body = {
-        "data": data,
-        "meta": {
-            "version": "v1",
-            "request_id": get_correlation_id(),
-            **(meta or {}),
-        },
-    }
-    return jsonify(body), status
+def _parse_pagination() -> tuple[int, int]:
+    """استخراج page و per_page من query parameters مع validation."""
+    page = request.args.get("page", 1, type=int)
+    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    return max(page, 1), max(per_page, 1)
 
 
-def api_error(message: str, status: int = 400, code: str | None = None):
-    """خطأ بتنسيق موحّد لـ API."""
-    body = {
-        "error": {
-            "message": message,
-            "code": code or f"ERR_{status}",
-        },
-        "meta": {
-            "version": "v1",
-            "request_id": get_correlation_id(),
-        },
-    }
-    return jsonify(body), status
-
-
-# ---------------------------------------------------------------------------
-# Auth endpoints
-# ---------------------------------------------------------------------------
+# ═══════════════════════════════════════════════════════════════════════════
+# Auth / User
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 @bp.get("/me")
-@login_required
+@api_auth_required
 def api_me():
-    """الملف الشخصي للمستخدم الحالي.
-    ---
-    tags: [Auth]
-    security:
-      - Bearer: []
-    responses:
-      200:
-        description: بيانات المستخدم
-        schema:
-          type: object
-          properties:
-            data:
-              $ref: '#/definitions/User'
-            meta:
-              type: object
-        401:
-          description: غير مصادق عليه
-          schema:
-            $ref: '#/definitions/Error'
-    """
+    """الملف الشخصي للمستخدم الحالي."""
     log = logger.bind(user_id=current_user.id)
     log.info("api_me_called")
     user = current_user
@@ -93,48 +60,77 @@ def api_me():
     )
 
 
-# ---------------------------------------------------------------------------
-# Content endpoints
-# ---------------------------------------------------------------------------
+# ═══════════════════════════════════════════════════════════════════════════
+# Schools
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@bp.get("/schools")
+@api_auth_required
+def api_schools_list():
+    """قائمة المدارس المتاحة للمستخدم."""
+    page, per_page = _parse_pagination()
+    role = current_user.role
+    school_id = getattr(current_user, "school_id", None)
+
+    query = School.query.filter(School.is_active.is_(True))
+    if role != UserRole.super_admin and school_id:
+        query = query.filter(School.id == school_id)
+
+    total = query.count()
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+
+    data = [
+        {
+            "id": s.id,
+            "name_ar": s.name_ar,
+            "domain": s.domain,
+            "display_name": s.display_name,
+            "is_active": s.is_active,
+        }
+        for s in items
+    ]
+    return api_paginated(data, page=page, per_page=per_page, total=total)
+
+
+@bp.get("/schools/<int:school_id>")
+@api_auth_required
+def api_schools_get(school_id: int):
+    """جلب مدرسة محددة."""
+    school = School.query.filter_by(id=school_id, is_active=True).first()
+    if not school:
+        return api_error("المدرسة غير موجودة", 404, "NOT_FOUND")
+
+    # tenancy check
+    user_school_id = getattr(current_user, "school_id", None)
+    if current_user.role != UserRole.super_admin and user_school_id != school_id:
+        return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+
+    return api_response(
+        {
+            "id": school.id,
+            "name_ar": school.name_ar,
+            "domain": school.domain,
+            "display_name": school.display_name,
+            "is_active": school.is_active,
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Lessons (Content)
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 @bp.get("/lessons")
-@login_required
+@api_auth_required
 @role_required(UserRole.super_admin, UserRole.school_admin, UserRole.teacher, UserRole.student, UserRole.parent)
-def api_lessons():
-    """قائمة الدروس المتاحة للمستخدم.
-    ---
-    tags: [Content]
-    security:
-      - Bearer: []
-    parameters:
-      - name: page
-        in: query
-        type: integer
-        default: 1
-      - name: per_page
-        in: query
-        type: integer
-        default: 20
-        maximum: 100
-    responses:
-      200:
-        description: قائمة الدروس مع تفاصيل الصفحة
-        schema:
-          type: object
-          properties:
-            data:
-              type: array
-              items:
-                $ref: '#/definitions/Lesson'
-            meta:
-              $ref: '#/definitions/PaginatedMeta'
-    """
+def api_lessons_list():
+    """قائمة الدروس المتاحة للمستخدم."""
     log = logger.bind(user_id=current_user.id)
     log.info("api_lessons_called")
 
-    page = request.args.get("page", 1, type=int)
-    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    page, per_page = _parse_pagination()
 
     query = Lesson.query
     if hasattr(current_user, "school_id") and current_user.school_id:
@@ -149,9 +145,10 @@ def api_lessons():
             query = query.filter(Lesson.class_id.in_(class_ids)) if class_ids else query.filter(Lesson.id == -1)
 
     query = query.order_by(Lesson.created_at.desc())
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    total = query.count()
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
 
-    lessons = [
+    data = [
         {
             "id": lesson.id,
             "title": lesson.title,
@@ -160,49 +157,54 @@ def api_lessons():
             "is_offline_available": getattr(lesson, "is_offline_available", False),
             "created_at": lesson.created_at.isoformat() if lesson.created_at else None,
         }
-        for lesson in pagination.items
+        for lesson in items
     ]
+    return api_paginated(data, page=page, per_page=per_page, total=total)
+
+
+@bp.get("/lessons/<int:lesson_id>")
+@api_auth_required
+def api_lessons_get(lesson_id: int):
+    """جلب درس محدد."""
+    lesson = Lesson.query.get(lesson_id)
+    if not lesson:
+        return api_error("الدرس غير موجود", 404, "NOT_FOUND")
+
+    # authorization: must be a member of the class or admin
+    if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+        is_member = (
+            ClassMember.query.filter_by(class_id=lesson.class_id, user_id=current_user.id, status="active").first()
+            is not None
+        )
+        if not is_member:
+            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
 
     return api_response(
-        lessons,
-        meta={
-            "page": page,
-            "per_page": per_page,
-            "total": pagination.total,
-            "pages": pagination.pages,
-        },
+        {
+            "id": lesson.id,
+            "title": lesson.title,
+            "class_id": lesson.class_id,
+            "sort_order": lesson.sort_order,
+            "is_offline_available": getattr(lesson, "is_offline_available", False),
+            "created_at": lesson.created_at.isoformat() if lesson.created_at else None,
+        }
     )
 
 
-# ---------------------------------------------------------------------------
-# Tutoring endpoints
-# ---------------------------------------------------------------------------
+# ═══════════════════════════════════════════════════════════════════════════
+# Tutoring Sessions
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 @bp.get("/tutoring/sessions")
-@login_required
+@api_auth_required
 @role_required(UserRole.super_admin, UserRole.school_admin, UserRole.teacher, UserRole.student)
-def api_tutoring_sessions():
-    """الجلسات التعليمية للمستخدم.
-    ---
-    tags: [Tutoring]
-    security:
-      - Bearer: []
-    responses:
-      200:
-        description: آخر 50 جلسة تعليمية
-        schema:
-          type: object
-          properties:
-            data:
-              type: array
-              items:
-                $ref: '#/definitions/TutoringSession'
-            meta:
-              type: object
-    """
+def api_tutoring_sessions_list():
+    """الجلسات التعليمية للمستخدم."""
     log = logger.bind(user_id=current_user.id)
     log.info("api_tutoring_sessions_called")
+
+    page, per_page = _parse_pagination()
 
     query = TutoringSession.query
     if current_user.role == UserRole.student:
@@ -210,49 +212,195 @@ def api_tutoring_sessions():
     elif current_user.role == UserRole.teacher:
         query = query.filter_by(tutor_id=current_user.id)
 
-    sessions = query.order_by(TutoringSession.created_at.desc()).limit(50).all()
+    total = query.count()
+    items = query.order_by(TutoringSession.created_at.desc()).limit(per_page).offset((page - 1) * per_page).all()
+
+    data = [
+        {
+            "id": s.id,
+            "student_id": s.student_id,
+            "tutor_id": s.tutor_id,
+            "subject": s.subject,
+            "status": s.status,
+            "price": float(s.price) if s.price else None,
+            "currency": s.currency,
+            "scheduled_at": s.scheduled_at.isoformat() if s.scheduled_at else None,
+            "duration_min": s.duration_min,
+        }
+        for s in items
+    ]
+    return api_paginated(data, page=page, per_page=per_page, total=total)
+
+
+@bp.get("/tutoring/sessions/<int:session_id>")
+@api_auth_required
+def api_tutoring_sessions_get(session_id: int):
+    """جلب جلسة تعليمية محددة."""
+    session = TutoringSession.query.get(session_id)
+    if not session:
+        return api_error("الجلسة غير موجودة", 404, "NOT_FOUND")
+
+    # authorization: must be the student, tutor, or admin
+    if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+        if session.student_id != current_user.id and session.tutor_id != current_user.id:
+            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
 
     return api_response(
-        [
-            {
-                "id": s.id,
-                "student_id": s.student_id,
-                "tutor_id": s.tutor_id,
-                "subject": s.subject,
-                "status": s.status,
-                "price": float(s.price) if s.price else None,
-                "currency": s.currency,
-                "scheduled_at": s.scheduled_at.isoformat() if s.scheduled_at else None,
-                "duration_min": s.duration_min,
-            }
-            for s in sessions
-        ]
+        {
+            "id": session.id,
+            "student_id": session.student_id,
+            "tutor_id": session.tutor_id,
+            "subject": session.subject,
+            "status": session.status,
+            "price": float(session.price) if session.price else None,
+            "currency": session.currency,
+            "scheduled_at": session.scheduled_at.isoformat() if session.scheduled_at else None,
+            "duration_min": session.duration_min,
+        }
     )
 
 
-# ---------------------------------------------------------------------------
-# Error handlers for API blueprint
-# ---------------------------------------------------------------------------
+# ═══════════════════════════════════════════════════════════════════════════
+# Users
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@bp.get("/users")
+@api_auth_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
+def api_users_list():
+    """قائمة المستخدمين (للمشرفين فقط)."""
+    page, per_page = _parse_pagination()
+    role = current_user.role
+    school_id = getattr(current_user, "school_id", None)
+
+    query = User.query.filter(User.is_active.is_(True))
+    if role != UserRole.super_admin and school_id:
+        user_ids_in_school = (
+            UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active.is_(True))
+            .with_entities(UserRoleLink.user_id)
+            .subquery()
+        )
+        query = query.filter(User.id.in_(user_ids_in_school))
+
+    total = query.count()
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+
+    data = [
+        {
+            "id": u.id,
+            "name_ar": u.name_ar,
+            "email": u.email,
+            "role": u.role.value if hasattr(u.role, "value") else str(u.role),
+        }
+        for u in items
+    ]
+    return api_paginated(data, page=page, per_page=per_page, total=total)
+
+
+@bp.get("/users/<int:user_id>")
+@api_auth_required
+def api_users_get(user_id: int):
+    """جلب مستخدم محدد."""
+    user = User.query.filter_by(id=user_id, is_active=True).first()
+    if not user:
+        return api_error("المستخدم غير موجود", 404, "NOT_FOUND")
+
+    # tenancy check: same school or admin
+    if current_user.role != UserRole.super_admin:
+        current_school_ids = {link.school_id for link in current_user.role_links if link.is_active}
+        user_school_ids = {link.school_id for link in user.role_links if link.is_active}
+        if not (current_school_ids & user_school_ids):
+            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+
+    return api_response(
+        {
+            "id": user.id,
+            "name_ar": user.name_ar,
+            "email": user.email,
+            "role": user.role.value if hasattr(user.role, "value") else str(user.role),
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Classes
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@bp.get("/classes")
+@api_auth_required
+def api_classes_list():
+    """قائمة الصفوف المتاحة للمستخدم."""
+    page, per_page = _parse_pagination()
+    role = current_user.role
+    school_id = getattr(current_user, "school_id", None)
+
+    query = ClassRoom.query.filter(ClassRoom.is_active.is_(True))
+    if role == UserRole.super_admin:
+        pass
+    elif school_id:
+        query = query.filter(ClassRoom.school_id == school_id)
+    else:
+        member_class_ids = (
+            ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
+            .with_entities(ClassMember.class_id)
+            .subquery()
+        )
+        query = query.filter(ClassRoom.id.in_(member_class_ids))
+
+    total = query.count()
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+
+    data = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "school_id": c.school_id,
+            "subject_id": getattr(c, "subject_id", None),
+            "grade_id": getattr(c, "grade_id", None),
+        }
+        for c in items
+    ]
+    return api_paginated(data, page=page, per_page=per_page, total=total)
+
+
+@bp.get("/classes/<int:class_id>")
+@api_auth_required
+def api_classes_get(class_id: int):
+    """جلب صف محدد."""
+    class_room = ClassRoom.query.filter_by(id=class_id, is_active=True).first()
+    if not class_room:
+        return api_error("الصف غير موجود", 404, "NOT_FOUND")
+
+    # authorization: school admin, member, or super admin
+    if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+        is_member = (
+            ClassMember.query.filter_by(class_id=class_id, user_id=current_user.id, status="active").first() is not None
+        )
+        if not is_member:
+            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+
+    return api_response(
+        {
+            "id": class_room.id,
+            "name": class_room.name,
+            "school_id": class_room.school_id,
+            "subject_id": getattr(class_room, "subject_id", None),
+            "grade_id": getattr(class_room, "grade_id", None),
+        }
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Global Search
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 @bp.get("/search")
-@login_required
+@api_auth_required
 def api_search():
-    """بحث عالمي عبر الكيانات الرئيسية للـ ERP.
-
-    parameters:
-      - name: q
-        in: query
-        type: string
-        required: true
-      - name: limit
-        in: query
-        type: integer
-        default: 5
-    responses:
-      200:
-        description: نتائج مجمعة حسب نوع الكيان
-    """
+    """بحث عالمي عبر الكيانات الرئيسية."""
     query = (request.args.get("q") or "").strip()
     if not query or len(query) < 2:
         return api_error("يجب إدخال حرفين على الأقل", 400, "QUERY_TOO_SHORT")
@@ -261,16 +409,17 @@ def api_search():
     like = f"%{query}%"
     role = current_user.role
     school_id = getattr(current_user, "school_id", None)
+    is_admin = role in (UserRole.super_admin, UserRole.school_admin)
 
-    results = {}
+    results: dict[str, list[dict[str, Any]]] = {}
 
     # Schools
-    school_q = School.query.filter(School.is_active == True)  # noqa: E712
+    school_q = School.query.filter(School.is_active.is_(True))
     if role != UserRole.super_admin:
         if school_id:
             school_q = school_q.filter(School.id == school_id)
         else:
-            school_q = school_q.filter(False)  # empty
+            school_q = school_q.filter(False)
     schools = school_q.filter(or_(School.name_ar.ilike(like), School.domain.ilike(like))).limit(limit).all()
     results["schools"] = [
         {
@@ -284,18 +433,17 @@ def api_search():
     ]
 
     # Users
-    user_q = User.query.filter(User.is_active == True)  # noqa: E712
+    user_q = User.query.filter(User.is_active.is_(True))
     if role == UserRole.super_admin:
         pass
     elif school_id:
         user_ids_in_school = (
-            UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active == True)  # noqa: E712
+            UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active.is_(True))
             .with_entities(UserRoleLink.user_id)
             .subquery()
         )
         user_q = user_q.filter(User.id.in_(user_ids_in_school))
     elif role in (UserRole.student, UserRole.parent, UserRole.teacher):
-        # Classmates / teachers in shared classes
         class_ids = (
             ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
             .with_entities(ClassMember.class_id)
@@ -310,7 +458,6 @@ def api_search():
     else:
         user_q = user_q.filter(False)
 
-    is_admin = role in (UserRole.super_admin, UserRole.school_admin)
     users = user_q.filter(or_(User.name_ar.ilike(like), User.email.ilike(like))).limit(limit).all()
     results["users"] = [
         {
@@ -324,13 +471,12 @@ def api_search():
     ]
 
     # Classes
-    class_q = ClassRoom.query.filter(ClassRoom.is_active == True)  # noqa: E712
+    class_q = ClassRoom.query.filter(ClassRoom.is_active.is_(True))
     if role == UserRole.super_admin:
         pass
     elif school_id:
         class_q = class_q.filter(ClassRoom.school_id == school_id)
     else:
-        # students / teachers / parents: only classes they belong to
         member_class_ids = (
             ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
             .with_entities(ClassMember.class_id)
@@ -342,15 +488,15 @@ def api_search():
     results["classes"] = [
         {
             "id": c.id,
-            "title": c.name or c.subject.name_ar,
-            "subtitle": f"{c.grade.name_ar or c.grade.grade_level} — {c.subject.name_ar}",
+            "title": c.name or (c.subject.name_ar if hasattr(c, "subject") else ""),
+            "subtitle": "",
             "url": f"/schools/classes/{c.id}",
             "icon": "book-open",
         }
         for c in classes
     ]
 
-    # Subscriptions (invoices)
+    # Subscriptions
     sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(ClassRoom)
     if role == UserRole.super_admin:
         pass
@@ -358,9 +504,6 @@ def api_search():
         sub_q = sub_q.filter(ClassRoom.school_id == school_id)
     elif role == UserRole.student:
         sub_q = sub_q.filter(Subscription.user_id == current_user.id)
-    elif role == UserRole.parent:
-        # parent's children subscriptions would need family links; keep empty for now
-        sub_q = sub_q.filter(False)
     else:
         sub_q = sub_q.filter(False)
 
@@ -388,6 +531,11 @@ def api_search():
     ]
 
     return api_response(results)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Error handlers
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 @bp.errorhandler(404)

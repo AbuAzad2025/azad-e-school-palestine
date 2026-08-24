@@ -2,7 +2,7 @@
 {% block title %}{{ _('أرباح المعلم') }}{% endblock %}
 {% from "macros/ui.html" import azad_stat_card, azad_table %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title" style="margin:0">{{ _('أرباح المعلم') }}</h1>
     <p class="page-subtitle">{{ _('ملخص مالي وتقييمات') }}</p>
@@ -48,13 +48,13 @@
     <table class="azad-table">
       <thead>
         <tr>
-          <th>{{ _('التاريخ') }}</th>
-          <th>{{ _('الطالب') }}</th>
-          <th>{{ _('المادة') }}</th>
-          <th>{{ _('المدة') }}</th>
-          <th>{{ _('السعر') }}</th>
-          <th>{{ _('الحالة') }}</th>
-          <th>{{ _('التقييم') }}</th>
+          <th scope="col">{{ _('التاريخ') }}</th>
+          <th scope="col">{{ _('الطالب') }}</th>
+          <th scope="col">{{ _('المادة') }}</th>
+          <th scope="col">{{ _('المدة') }}</th>
+          <th scope="col">{{ _('السعر') }}</th>
+          <th scope="col">{{ _('الحالة') }}</th>
+          <th scope="col">{{ _('التقييم') }}</th>
         </tr>
       </thead>
       <tbody>

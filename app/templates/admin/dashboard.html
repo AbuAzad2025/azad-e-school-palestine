@@ -2,7 +2,7 @@
 {% from "macros/ui.html" import azad_stat_card %}
 {% block title %}{{ _('لوحة المشرف') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('لوحة المشرف') }}</h1>
 </div>
 
@@ -52,7 +52,7 @@
 </div>
 
 <div class="card u-mb-1">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('المدارس الحديثة') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.schools_list') }}">{{ _('عرض الكل') }}</a>
   </div>
@@ -79,7 +79,7 @@
 </div>
 
 <div class="card u-mb-1">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('المستخدمين الجدد') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('عرض الكل') }}</a>
   </div>
@@ -106,7 +106,7 @@
 </div>
 
 <div class="card u-mb-1">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('الاشتراكات') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.subscriptions_list') }}">{{ _('عرض الكل') }}</a>
   </div>
@@ -116,14 +116,14 @@
         <div class="item-title">{{ _('نشطة') }}</div>
         <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_active }}</span></div>
       </div>
-      <span class="badge-status badge-ok">{{ _('نشطة') }}</span>
+      <span class="azad-badge-variant azad-badge-variant--success">{{ _('نشطة') }}</span>
     </div>
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('معلقة') }}</div>
         <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_pending }}</span></div>
       </div>
-      <span class="badge-status badge-warn">{{ _('معلقة') }}</span>
+      <span class="azad-badge-variant azad-badge-variant--warning">{{ _('معلقة') }}</span>
     </div>
     <div class="azad-item">
       <div>

@@ -2,9 +2,9 @@
  * Azad application entry point — ES module
  */
 
-import { initFileUploads, initInlineValidation } from "./modules/forms.js";
-import { initTheme } from "./modules/theme.js";
-import { initTour } from "./modules/tour.js";
+import "./components/charts.js";
+import { initFileUploads, initInlineValidation } from "./components/forms.js";
+import { initTour } from "./components/tour.js";
 import {
   initAccordions,
   initActionsDropdowns,
@@ -15,10 +15,10 @@ import {
   initRipple,
   initTabs,
   initUserDropdown,
-} from "./modules/ui.js";
-import "./modules/search.js";
-import "./modules/bulk.js";
-import "./modules/charts.js";
+} from "./components/ui.js";
+import { initTheme } from "./core/theme.js";
+import "./pages/bulk.js";
+import "./pages/search.js";
 
 function initNav() {
   const toggle = document.querySelector("[data-nav-toggle]");
@@ -45,6 +45,10 @@ function initNav() {
   });
 }
 
+/**
+ * Initialize admin sidebar drawer open/close behaviour.
+ * @returns {void}
+ */
 function initAdminDrawer() {
   const close = () => document.body.classList.remove("sidebar-open");
   const openBtn = document.querySelector("[data-admin-nav-toggle]");
@@ -55,6 +59,11 @@ function initAdminDrawer() {
   if (overlay) overlay.addEventListener("click", close);
 }
 
+/**
+ * Fade-in cards and stat cards as they enter the viewport using IntersectionObserver.
+ * Gracefully degrades when IntersectionObserver is unavailable.
+ * @returns {void}
+ */
 function initScrollAnimations() {
   if (!("IntersectionObserver" in window)) return;
   const observer = new IntersectionObserver(
@@ -89,6 +98,10 @@ function initScrollAnimations() {
   }
 }
 
+/**
+ * Auto-dismiss flash messages after a configurable delay (default 5s).
+ * @returns {void}
+ */
 function initAutoDismissFlashes() {
   document
     .querySelectorAll(".flash[data-auto-dismiss], .azad-flash[data-auto-dismiss]")
@@ -103,6 +116,11 @@ function initAutoDismissFlashes() {
     });
 }
 
+/**
+ * Handle the PWA install banner: capture the beforeinstallprompt event,
+ * show the banner, and manage install / dismiss actions.
+ * @returns {void}
+ */
 function initPwaBanner() {
   const banner = document.getElementById("pwa-install-banner");
   const installBtn = document.getElementById("pwa-install-btn");
@@ -113,7 +131,7 @@ function initPwaBanner() {
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    banner.style.display = "flex";
+    banner.classList.remove("u-none");
   });
 
   installBtn.addEventListener("click", async () => {
@@ -121,26 +139,36 @@ function initPwaBanner() {
     deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     deferredPrompt = null;
-    banner.style.display = "none";
+    banner.classList.add("u-none");
   });
 
   if (dismissBtn) {
     dismissBtn.addEventListener("click", () => {
-      banner.style.display = "none";
+      banner.classList.add("u-none");
       localStorage.setItem("azad-pwa-dismissed", "1");
     });
   }
   if (localStorage.getItem("azad-pwa-dismissed")) {
-    banner.style.display = "none";
+    banner.classList.add("u-none");
   }
 }
 
+/**
+ * Register the Service Worker for offline support and caching.
+ * Silently fails when SW is not supported.
+ * @returns {void}
+ */
 function initServiceWorker() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+    navigator.serviceWorker.register("/static/sw.js?v=4").catch(() => {});
   }
 }
 
+/**
+ * Bootstrap all Azad UI modules in dependency order.
+ * Called on DOMContentLoaded or immediately if DOM is already ready.
+ * @returns {void}
+ */
 function init() {
   initTheme();
   initNav();
@@ -170,6 +198,6 @@ if (document.readyState === "loading") {
 }
 
 // Keep global toast API for inline scripts
-import("./modules/toast.js").then((m) => {
+import("./components/toast.js").then((m) => {
   window.AzadToast = m.default;
 });

@@ -257,9 +257,6 @@ html[data-theme="dark"] .azad-btn-outline:hover { background: #34d399; color: #0
 }
 
 .azad-btn-sm { padding: 0.4rem 1rem; font-size: var(--text-sm); }
-.azad-btn-danger:hover { background: var(--color-danger-dark); box-shadow: var(--shadow-md); }
-
-.azad-btn-sm { padding: 0.4rem 1rem; font-size: var(--text-sm); }
 .azad-btn-lg { padding: 0.85rem 2rem; font-size: var(--text-lg); }
 .azad-btn-icon { padding: 0.6rem; border-radius: var(--radius-md); }
 

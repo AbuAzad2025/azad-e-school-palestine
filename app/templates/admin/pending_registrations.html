@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ _('التسجيلات المعلقة') }} — {{ _('لوحة التحكم') }}{% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('التسجيلات المعلقة موافقة') }}</h1>
   <div>
     <form method="get" style="display:inline-flex; gap:.5rem;">
@@ -16,12 +16,12 @@
   <table class="azad-table">
     <thead>
       <tr>
-        <th>{{ _('المستخدم') }}</th>
-        <th>{{ _('البريد الإلكتروني') }}</th>
-        <th>{{ _('الدور') }}</th>
-        <th>{{ _('تاريخ التسجيل') }}</th>
-        <th>{{ _('الحالة') }}</th>
-        <th>{{ _('الإجراءات') }}</th>
+        <th scope="col">{{ _('المستخدم') }}</th>
+        <th scope="col">{{ _('البريد الإلكتروني') }}</th>
+        <th scope="col">{{ _('الدور') }}</th>
+        <th scope="col">{{ _('تاريخ التسجيل') }}</th>
+        <th scope="col">{{ _('الحالة') }}</th>
+        <th scope="col">{{ _('الإجراءات') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -35,7 +35,7 @@
         <td><span class="meta-chip">{{ user.role.value }}</span></td>
         <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '—' }}</td>
         <td>
-          <span class="badge-status badge-warn">{{ _('بانتظار الموافقة') }}</span>
+          <span class="azad-badge-variant azad-badge-variant--warning">{{ _('بانتظار الموافقة') }}</span>
         </td>
         <td>
           <div class="item-actions">
@@ -55,29 +55,29 @@
   </table>
 </div>
 
-<div class="pagination-wrapper" style="margin-top:1.5rem;">
+<div class="azad-pagination-wrapper" style="margin-top:1.5rem;">
   {% if pagination.pages > 1 %}
-  <nav class="pagination" aria-label="{{ _('تنقل الصفحات') }}">
+  <nav class="azad-pagination" aria-label="{{ _('تنقل الصفحات') }}">
     {% if pagination.has_prev %}
-      <a href="{{ url_for('admin.pending_registrations', page=pagination.prev_num, search=search) }}">{{ icon('chevron-right') }} {{ _('السابق') }}</a>
+      <a href="{{ url_for('admin.pending_registrations', page=pagination.prev_num, search=search) }}" class="azad-pagination__link">{{ icon('chevron-right') }} {{ _('السابق') }}</a>
     {% else %}
-      <span class="ellipsis">{{ icon('chevron-right') }} {{ _('السابق') }}</span>
+      <span class="azad-pagination__ellipsis">{{ icon('chevron-right') }} {{ _('السابق') }}</span>
     {% endif %}
     {% for p in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
       {% if p %}
         {% if p == pagination.page %}
-          <span class="current">{{ p }}</span>
+          <span class="azad-pagination__link azad-pagination__link--active">{{ p }}</span>
         {% else %}
-          <a href="{{ url_for('admin.pending_registrations', page=p, search=search) }}">{{ p }}</a>
+          <a href="{{ url_for('admin.pending_registrations', page=p, search=search) }}" class="azad-pagination__link">{{ p }}</a>
         {% endif %}
       {% else %}
-        <span class="ellipsis">…</span>
+        <span class="azad-pagination__ellipsis">…</span>
       {% endif %}
       {% endfor %}
     {% if pagination.has_next %}
-      <a href="{{ url_for('admin.pending_registrations', page=pagination.next_num, search=search) }}">{{ _('التالي') }} {{ icon('chevron-left') }}</a>
+      <a href="{{ url_for('admin.pending_registrations', page=pagination.next_num, search=search) }}" class="azad-pagination__link">{{ _('التالي') }} {{ icon('chevron-left') }}</a>
     {% else %}
-      <span class="ellipsis">{{ _('التالي') }} {{ icon('chevron-left') }}</span>
+      <span class="azad-pagination__ellipsis">{{ _('التالي') }} {{ icon('chevron-left') }}</span>
     {% endif %}
   </nav>
   {% endif %}

@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ _('إحصائيات AI') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('إحصائيات الذكاء الاصطناعي') }}</h1>
   <form method="get" class="form-inline">
     <select name="days" class="azad-field__select" style="min-width:140px" aria-label="{{ _('اختر الفترة الزمنية') }}">
@@ -49,7 +49,7 @@
   <div class="azad-card__body">
     {% if stats.by_action %}
     <table class="azad-table">
-      <thead><tr><th>{{ _('النوع') }}</th><th>{{ _('عدد الطلبات') }}</th></tr></thead>
+      <thead><tr><th scope="col">{{ _('النوع') }}</th><th scope="col">{{ _('عدد الطلبات') }}</th></tr></thead>
       <tbody>
         {% for action, count in stats.by_action.items() %}
         <tr><td>{{ action }}</td><td>{{ count }}</td></tr>
@@ -77,7 +77,7 @@
   <div class="azad-card__body">
     {% if stats.by_model %}
     <table class="azad-table">
-      <thead><tr><th>{{ _('النموذج') }}</th><th>{{ _('عدد الطلبات') }}</th></tr></thead>
+      <thead><tr><th scope="col">{{ _('النموذج') }}</th><th scope="col">{{ _('عدد الطلبات') }}</th></tr></thead>
       <tbody>
         {% for model, count in stats.by_model.items() %}
         <tr><td>{{ model }}</td><td>{{ count }}</td></tr>

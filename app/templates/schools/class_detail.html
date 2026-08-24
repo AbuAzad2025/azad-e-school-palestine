@@ -32,7 +32,7 @@
 </div>
 
 {% if is_admin or (class_room.teacher and class_room.teacher_id == current_user.id) %}
-<div class="section-head">
+<div class="azad-section">
   <h2>{{ _('أدوات المعلم') }}</h2>
   <div class="item-actions">
     <a class="azad-btn-outline" href="{{ url_for('content.class_lessons', class_id=class_room.id) }}">{{ _('الدروس') }}</a>
@@ -47,9 +47,9 @@
 </form>
 {% endif %}
 
-<div class="section-head"><h2>{{ _('الأعضاء') }}</h2></div>
+<div class="azad-section"><h2>{{ _('الأعضاء') }}</h2></div>
 <table class="azad-table">
-  <thead><tr><th>{{ _('الاسم') }}</th><th>{{ _('الدور') }}</th></tr></thead>
+  <thead><tr><th scope="col">{{ _('الاسم') }}</th><th scope="col">{{ _('الدور') }}</th></tr></thead>
   <tbody>
   {% for m in members %}
     <tr><td>{{ m.user.name_ar }}</td><td>{{ m.user.role }}</td></tr>

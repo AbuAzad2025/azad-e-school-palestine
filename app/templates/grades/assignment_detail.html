@@ -6,24 +6,24 @@
 <p class="page-subtitle">{{ _('الدرجة القصوى:') }} {{ assignment.max_mark or '—' }}</p>
 
 {% if current_user.role == 'student' %}
-<div class="section-head"><h2>{{ _('تسليم الواجب') }}</h2></div>
+<div class="azad-section"><h2>{{ _('تسليم الواجب') }}</h2></div>
 <div class="card" style="margin-bottom:1rem">
   {% if my_sub %}
-    <p><span class="badge-status badge-ok">{{ _('سُلّم') }} — {{ my_sub.submitted_at.strftime('%Y-%m-%d %H:%M') if my_sub.submitted_at else '' }}</span>
+    <p><span class="azad-badge-variant azad-badge-variant--success">{{ _('سُلّم') }} — {{ my_sub.submitted_at.strftime('%Y-%m-%d %H:%M') if my_sub.submitted_at else '' }}</span>
     {% if my_sub.mark is not none %} — {{ _('الدرجة:') }} {{ my_sub.mark }}/{{ assignment.max_mark or '—' }}{% endif %}</p>
     {% if my_sub.feedback %}<p>{{ _('ملاحظات المعلم:') }} {{ my_sub.feedback }}</p>{% endif %}
   {% endif %}
   <form method="post" action="{{ url_for('grades.assignment_submit', class_id=class_room.id, assignment_id=assignment.id) }}" enctype="multipart/form-data" novalidate>
     {{ sub_form.hidden_tag() }}
-    <div class="form-group">{{ sub_form.body.label }}{{ sub_form.body() }}</div>
-    <div class="form-group">{{ sub_form.file.label }}{{ sub_form.file() }}</div>
+    <div class="azad-field">{{ sub_form.body.label }}{{ sub_form.body() }}</div>
+    <div class="azad-field">{{ sub_form.file.label }}{{ sub_form.file() }}</div>
     <div class="form-actions">{{ sub_form.submit(class="azad-btn") }}</div>
   </form>
 </div>
 {% endif %}
 
 {% if can_teach %}
-<div class="section-head"><h2>{{ _('التسليمات') }}</h2></div>
+<div class="azad-section"><h2>{{ _('التسليمات') }}</h2></div>
 {% if submissions %}
 <div class="azad-list">
   {% for s in submissions %}
@@ -32,7 +32,7 @@
       <div class="item-title">{{ s.student.name_ar }}</div>
       <div class="item-meta">
         <span>{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') if s.submitted_at else '—' }}</span>
-        {% if s.mark is not none %}<span class="badge-status badge-ok">{{ _('درجة:') }} {{ s.mark }}</span>{% else %}<span class="badge-status badge-warn">{{ _('غير مُصحَّح') }}</span>{% endif %}
+        {% if s.mark is not none %}<span class="azad-badge-variant azad-badge-variant--success">{{ _('درجة:') }} {{ s.mark }}</span>{% else %}<span class="azad-badge-variant azad-badge-variant--warning">{{ _('غير مُصحَّح') }}</span>{% endif %}
       </div>
     </div>
     <div class="item-actions">

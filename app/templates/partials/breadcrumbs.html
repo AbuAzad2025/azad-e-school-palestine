@@ -1,20 +1,7 @@
-{# Breadcrumbs component #}
-<nav class="breadcrumb" aria-label="{{ _('مسار التنقل') }}" style="margin-block: 1rem;">
-  <ol style="display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; font-size: .875rem; color: var(--text-muted);">
-    <li>
-      <a href="{{ url_for('main.index') }}" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: .3rem;">
-        {{ icon('home') }}
-      </a>
-    </li>
-    {% for crumb in breadcrumbs %}
-    <li style="display: flex; align-items: center; gap: .3rem;">
-      <span aria-hidden="true" style="color: var(--text-muted);">{{ icon('chevron-right') }}</span>
-      {% if crumb.url %}
-        <a href="{{ crumb.url }}" style="color: var(--text-muted); text-decoration: none;">{{ crumb.label }}</a>
-      {% else %}
-        <span aria-current="page" style="color: var(--text); font-weight: 600;">{{ crumb.label }}</span>
-      {% endif %}
-    </li>
-    {% endfor %}
-  </ol>
-</nav>
+{# Breadcrumbs component — uses azad_breadcrumb macro #}
+{% from "macros/ui.html" import azad_breadcrumb %}
+{% set breadcrumb_items = [] %}
+{% for crumb in breadcrumbs %}
+  {% set _ = breadcrumb_items.append({"label": crumb.label, "href": crumb.url}) %}
+{% endfor %}
+{{ azad_breadcrumb([{"label": _('الرئيسية'), "href": url_for('main.index')}] + breadcrumb_items) }}

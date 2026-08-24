@@ -88,11 +88,14 @@ def authenticate(email: str, password: str) -> tuple[User | None, str | None]:
         return None, "الحساب مقفل مؤقتاً بسبب محاولات فاشلة متكررة. حاول لاحقاً."
 
     if not verify_password(user.password_hash, password):
-        user.increment_failed_login(
-            max_attempts=current_app.config.get("LOGIN_MAX_ATTEMPTS", 5),
-            lockout_minutes=current_app.config.get("LOGIN_LOCKOUT_DURATION", 900) // 60,
-        )
-        db.session.commit()
+
+        def _update():
+            user.increment_failed_login(
+                max_attempts=current_app.config.get("LOGIN_MAX_ATTEMPTS", 5),
+                lockout_minutes=current_app.config.get("LOGIN_LOCKOUT_DURATION", 900) // 60,
+            )
+
+        tx(_update)
         return None, "بريد أو كلمة مرور غير صحيحة."
 
     if not user.is_active:

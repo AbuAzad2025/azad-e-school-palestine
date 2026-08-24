@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ _('الصفحة غير موجودة') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-404" style="max-width:420px;margin:4rem auto;text-align:center">
-  <h1 class="azad-title" style="font-size:48px;margin:0">404</h1>
-  <p style="font-size:1.25rem;margin:1rem 0">{{ _('الصفحة غير موجودة.') }}</p>
-  <p>{{ _('قد تكون الصفحة حُذفت أو انتقل رابطها.') }}</p>
+<div class="card azad-error">
+  <h1 class="azad-error__code">404</h1>
+  <p class="azad-error__message">{{ _('الصفحة غير موجودة.') }}</p>
+  <p class="azad-error__hint">{{ _('قد تكون الصفحة حُذفت أو انتقل رابطها.') }}</p>
   <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
 </div>
 {% endblock %}

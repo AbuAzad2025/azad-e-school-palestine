@@ -4,6 +4,14 @@
  * Event delegation for common interactive patterns.
  */
 
+/**
+ * Attach a delegated event listener to a container.
+ * @param {HTMLElement} container
+ * @param {string} selector
+ * @param {string} event
+ * @param {Function} handler
+ * @returns {void}
+ */
 export function delegate(container, selector, event, handler) {
   container.addEventListener(event, (e) => {
     const target = e.target.closest(selector);
@@ -13,6 +21,10 @@ export function delegate(container, selector, event, handler) {
   });
 }
 
+/**
+ * Wire up password visibility toggle buttons inside password fields.
+ * @returns {void}
+ */
 export function initPasswordToggle() {
   delegate(document.body, "[data-password-toggle]", "click", (_e, btn) => {
     const wrap = btn.closest(".azad-field__input-wrap--password");
@@ -80,6 +92,10 @@ export function initUserDropdown() {
   });
 }
 
+/**
+ * Intercept clicks / submits on elements with [data-confirm] and show a native confirm dialog.
+ * @returns {void}
+ */
 export function initConfirmDialogs() {
   const ask = (trigger, e) => {
     const message =
@@ -156,6 +172,10 @@ export function initActionsDropdowns() {
   });
 }
 
+/**
+ * Add a material-design ripple effect to primary buttons on click.
+ * @returns {void}
+ */
 export function initRipple() {
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(

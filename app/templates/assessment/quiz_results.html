@@ -5,7 +5,7 @@
 <p class="page-subtitle">{{ class_room.subject.name_ar }}</p>
 
 {% if pending %}
-<div class="section-head"><h2>{{ _('بانتظار التصحيح اليدوي') }}</h2></div>
+<div class="azad-section"><h2>{{ _('بانتظار التصحيح اليدوي') }}</h2></div>
 <div class="azad-list">
   {% for a in pending %}
   <div class="azad-item">
@@ -19,10 +19,10 @@
 </div>
 {% endif %}
 
-<div class="section-head"><h2>{{ _('كل المحاولات') }}</h2></div>
+<div class="azad-section"><h2>{{ _('كل المحاولات') }}</h2></div>
 {% if attempts %}
 <table class="azad-table">
-  <thead><tr><th>{{ _('الطالب') }}</th><th>{{ _('محاولة') }}</th><th>{{ _('الدرجة') }}</th><th>{{ _('الحالة') }}</th><th></th></tr></thead>
+  <thead><tr><th scope="col">{{ _('الطالب') }}</th><th scope="col">{{ _('محاولة') }}</th><th scope="col">{{ _('الدرجة') }}</th><th scope="col">{{ _('الحالة') }}</th><th scope="col"></th></tr></thead>
   <tbody>
   {% for a in attempts %}
     <tr>

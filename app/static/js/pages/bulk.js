@@ -3,6 +3,7 @@
  *
  * - Select all / per-row checkboxes update the bulk action bar.
  * - Apply sends a POST to /admin/bulk-action with {entity, action, ids}.
+ * - Loading state prevents double-submits.
  */
 
 const BULK_ENDPOINT = "/admin/bulk-action";
@@ -33,6 +34,14 @@ function updateBulkBar(table) {
   }
 }
 
+function showError(message) {
+  if (window.AzadToast) {
+    window.AzadToast.show(message, "error");
+  } else {
+    alert(message);
+  }
+}
+
 async function applyBulk(table) {
   const bar = table.previousElementSibling;
   if (!bar?.matches("[data-bulk-bar]")) return;
@@ -50,6 +59,12 @@ async function applyBulk(table) {
   const confirmMessage = selectedOption?.dataset.confirm;
   if (confirmMessage && !confirm(confirmMessage)) return;
 
+  const btn = bar.querySelector("[data-bulk-apply]");
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add("btn-loading");
+  }
+
   const entity = table.dataset.bulkEntity;
   try {
     const response = await fetch(BULK_ENDPOINT, {
@@ -65,11 +80,17 @@ async function applyBulk(table) {
     const result = await response.json();
     if (result.success) {
       window.location.reload();
+      return; // reload will abort further execution
     } else {
-      alert(result.message || "فشل تنفيذ الإجراء");
+      showError(result.message || "فشل تنفيذ الإجراء");
     }
   } catch {
-    alert(window.AzadBulkLabels?.error || "حدث خطأ أثناء تنفيذ الإجراء الجماعي");
+    showError(window.AzadBulkLabels?.error || "حدث خطأ أثناء تنفيذ الإجراء الجماعي");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove("btn-loading");
+    }
   }
 }
 

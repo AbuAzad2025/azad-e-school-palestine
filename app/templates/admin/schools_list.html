@@ -2,7 +2,7 @@
 {% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('المدارس') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('إدارة المدارس') }}</h1>
   <form method="get" class="form-inline gradebook-form-row">
     <div class="gradebook-form-col--2"><input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" aria-label="{{ _('بحث بالاسم أو النطاق') }}" class="form-control"></div>
@@ -49,14 +49,14 @@
 ) }}
 
 {% if pagination.pages > 1 %}
-<div class="pagination">
+<div class="azad-pagination">
   {% if pagination.has_prev %}
   <a href="{{ url_for('admin.schools_list', page=pagination.page-1, search=search) }}">&laquo; {{ _('السابق') }}</a>
   {% endif %}
   {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
     {% if p %}
       {% if p == pagination.page %}
-      <span class="current">{{ p }}</span>
+      <span class="azad-pagination__link azad-pagination__link--active">{{ p }}</span>
       {% else %}
       <a href="{{ url_for('admin.schools_list', page=p, search=search) }}">{{ p }}</a>
       {% endif %}

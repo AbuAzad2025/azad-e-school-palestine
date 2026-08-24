@@ -2,7 +2,7 @@
 {% from "macros/forms.html" import azad_input, azad_select, azad_form_row, azad_file_upload, azad_form_actions %}
 {% block title %}{{ _('الاشتراك') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title billing-title">{{ _('الاشتراك والدفع') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
@@ -25,7 +25,7 @@
 </div>
 {% endif %}
 
-<div class="section-head"><h2>{{ _('الخطط المتاحة') }}</h2></div>
+<div class="azad-section"><h2>{{ _('الخطط المتاحة') }}</h2></div>
 {% if plans %}
 <div class="azad-list">
   {% for p in plans %}
@@ -51,7 +51,7 @@
 {% endif %}
 
 {% if can_teach %}
-<div class="section-head"><h2>{{ _('خطة جديدة') }}</h2></div>
+<div class="azad-section"><h2>{{ _('خطة جديدة') }}</h2></div>
 <div class="card u-mb-1">
   <form method="post" action="{{ url_for('billing.plan_create', class_id=class_room.id) }}" novalidate>
     {{ plan_form.hidden_tag() }}
@@ -67,7 +67,7 @@
 {% endif %}
 
 {% if current_user.role == 'student' and my_sub and my_sub.status == 'pending' %}
-<div class="section-head"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
+<div class="azad-section"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
 <div class="card">
   <p class="form-hint u-mb-0-75">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>
   <form method="post" action="{{ url_for('billing.payment_create', subscription_id=my_sub.id) }}" enctype="multipart/form-data" novalidate>
@@ -86,7 +86,7 @@
 {% endif %}
 
 {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') and plans %}
-<div class="section-head"><h2>{{ _('كود خصم') }}</h2></div>
+<div class="azad-section"><h2>{{ _('كود خصم') }}</h2></div>
 <div class="card u-mb-1">
   <form id="discount-form" method="post" action="{{ url_for('billing.validate_code') }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

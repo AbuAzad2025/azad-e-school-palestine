@@ -7,7 +7,7 @@
 <div class="empty-state">{{ _('لا بنود تقييم بعد.') }}</div>
 {% else %}
 {% for cat in categories %}
-<div class="section-head"><h2>{{ icon('folder') }} {{ cat.name }}</h2></div>
+<div class="azad-section"><h2>{{ icon('folder') }} {{ cat.name }}</h2></div>
 <div class="azad-list">
   {% for item in items if item.category_id == cat.id %}
   {% set e = entries.get(item.id) %}

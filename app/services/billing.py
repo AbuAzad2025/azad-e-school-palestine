@@ -178,19 +178,20 @@ def pending_payments():
 
 def expire_subscriptions() -> int:
     """يُنهي الاشتراكات المنتهية (يُستدعى عند عرض الاشتراكات — بدون مؤقت خارجي)."""
-    count = 0
+    from sqlalchemy import update
 
     def _expire():
-        nonlocal count
-        rows = Subscription.query.filter_by(status="active").all()
         now = datetime.now(UTC)
-        for sub in rows:
-            if sub.end_at and sub.end_at <= now:
-                sub.status = "expired"
-                count += 1
+        stmt = (
+            update(Subscription)
+            .where(Subscription.status == "active")
+            .where(Subscription.end_at <= now)
+            .values(status="expired")
+        )
+        result = db.session.execute(stmt)
+        return result.rowcount
 
-    tx(_expire)
-    return count
+    return tx(_expire)
 
 
 def has_active_subscription(user_id: int, class_id: int) -> bool:
@@ -344,7 +345,8 @@ def apply_discount_code(subscription_id: int, code: str) -> tuple[float | None, 
     def _apply():
         # Store discount info in subscription (could add fields to Subscription model)
         # For now, we'll adjust the subscription price
-        assert discount is not None
+        if discount is None:
+            raise ValueError("Discount cannot be None")
         sub.price = float(sub.price) - discount
         dc = DiscountCode.query.filter_by(code=code.upper()).first()
         if dc:

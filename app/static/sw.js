@@ -1,4 +1,5 @@
-var CACHE_NAME = "azad-v3";
+var CACHE_NAME = "azad-v4";
+// ↑↑↑  BUMP THIS VERSION on every deployment  ↑↑↑
 var STATIC_ASSETS = [
   "/static/css/brand.css",
   "/static/css/app.css",

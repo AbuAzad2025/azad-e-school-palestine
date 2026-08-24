@@ -6,7 +6,7 @@
   <p class="form-hint">{{ _('أدخل بريدك وسنرسل إليك رابط إعادة التعيين.') }}</p>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.email.label }}
       {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
       {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}

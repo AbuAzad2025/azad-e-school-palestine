@@ -20,7 +20,7 @@
   {% if session_.location %}<p>{{ _('المكان:') }} {{ session_.location }}</p>{% endif %}
 
   {% if is_tutor %}
-    <div class="section-head"><h2>{{ _('البث المباشر') }}</h2></div>
+    <div class="azad-section"><h2>{{ _('البث المباشر') }}</h2></div>
     {% if session_.status == 'active' %}
     <p>{{ _('الجلسة direttaة حالياً') }}</p>
     <a class="azad-btn" href="{{ url_for('tutoring.live_session_status', session_id=session_.id) }}" target="_blank">{{ _('عرض حالة الجلسة') }}</a>
@@ -32,12 +32,12 @@
   {% endif %}
 
   {% if is_tutor %}
-    <div class="section-head"><h2>{{ _('تعديل الجلسة') }}</h2></div>
+    <div class="azad-section"><h2>{{ _('تعديل الجلسة') }}</h2></div>
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
       {% for f in form %}
         {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
-          <div class="form-group">
+          <div class="azad-field">
             {{ f.label }}
             {{ f() }}
             {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
@@ -47,7 +47,7 @@
       <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
     </form>
 
-    <div class="section-head"><h2>{{ _('الإجراءات') }}</h2></div>
+    <div class="azad-section"><h2>{{ _('الإجراءات') }}</h2></div>
     <div class="item-actions">
       {% if session_.payment_status != 'approved' %}
       <form method="post" action="{{ url_for('tutoring.session_pay', session_id=session_.id) }}" style="display:inline">

@@ -230,11 +230,11 @@
 <table class="{{ table_class }}" {% if bulk %}data-bulk-entity="{{ bulk }}"{% endif %}>
   <thead>
     <tr>
-      {% if bulk %}<th class="azad-table__checkbox"><input type="checkbox" data-bulk-select-all aria-label="{{ _('اختيار الكل') }}"></th>{% endif %}
+      {% if bulk %}<th scope="col" class="azad-table__checkbox"><input type="checkbox" data-bulk-select-all aria-label="{{ _('اختيار الكل') }}"></th>{% endif %}
       {% for h in headers %}
-      <th class="{{ h.class|default('') }}">{{ h.label }}</th>
+      <th scope="col" class="{{ h.class|default('') }}">{{ h.label }}</th>
       {% endfor %}
-      {% if actions %}<th class="azad-table__actions">{{ _('إجراءات') }}</th>{% endif %}
+      {% if actions %}<th scope="col" class="azad-table__actions">{{ _('إجراءات') }}</th>{% endif %}
     </tr>
   </thead>
   <tbody>

@@ -100,9 +100,9 @@ def dashboard():
     ).scalar() or Decimal("0")
 
     # إحصائيات AI
-    ai_requests_30d = AiUsageLog.query.filter(AiUsageLog.created_at >= datetime.utcnow() - timedelta(days=30)).count()
+    ai_requests_30d = AiUsageLog.query.filter(AiUsageLog.created_at >= datetime.now(UTC) - timedelta(days=30)).count()
     ai_cost_30d = db.session.query(func.sum(AiUsageLog.estimated_cost_usd)).filter(
-        AiUsageLog.created_at >= datetime.utcnow() - timedelta(days=30)
+        AiUsageLog.created_at >= datetime.now(UTC) - timedelta(days=30)
     ).scalar() or Decimal("0")
 
     # مدفوعات معلقة
@@ -114,7 +114,7 @@ def dashboard():
 
     # بيانات الرسوم البيانية
     months = []
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     for i in range(5, -1, -1):
         d = now - timedelta(days=i * 30)
         months.append(d.strftime("%Y-%m"))
@@ -204,8 +204,11 @@ def user_toggle(user_id):
     if user.id == current_user.id:
         flash(_("لا يمكنك تعطيل حسابك الخاص"), "warning")
     else:
-        user.is_active = not user.is_active
-        db.session.commit()
+
+        def _toggle():
+            user.is_active = not user.is_active
+
+        tx(_toggle)
         flash(_("تم تحديث حالة المستخدم"), "success")
     return redirect(url_for("admin.user_detail", user_id=user_id))
 
@@ -241,7 +244,7 @@ def bulk_action():
                     user.is_active = False
                 elif action == "delete":
                     user.is_active = False
-                    user.deleted_at = datetime.utcnow()
+                    user.deleted_at = datetime.now(UTC)
 
         elif entity == "schools":
             for school_id in ids:
@@ -353,8 +356,11 @@ def subscriptions_list():
 @login_required
 def subscription_cancel(sub_id):
     sub = Subscription.query.get_or_404(sub_id)
-    sub.status = "cancelled"
-    db.session.commit()
+
+    def _cancel():
+        sub.status = "cancelled"
+
+    tx(_cancel)
     flash(_("تم إلغاء الاشتراك"), "success")
     return redirect(url_for("admin.subscriptions_list"))
 
@@ -551,7 +557,7 @@ def backup_create():
 
     backup_dir = os.getenv("BACKUP_DIR", "backups")
     os.makedirs(backup_dir, exist_ok=True)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"backup_{timestamp}.sql"
     filepath = os.path.join(backup_dir, filename)
 
@@ -666,7 +672,7 @@ def school_admin_dashboard():
     revenue = school_revenue_summary(school_id)
 
     # بيانات الرسوم البيانية لمشرف المدرسة
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     months = []
     for i in range(5, -1, -1):
         d = now - timedelta(days=i * 30)
@@ -725,16 +731,18 @@ def school_admin_dashboard():
 def settings_save():
     from app.models.system import Setting
 
-    for key, value in request.form.items():
-        if key == "csrf_token":
-            continue
-        setting = Setting.query.filter_by(key=key).first()
-        if setting:
-            setting.value = value
-        else:
-            setting = Setting(key=key, value=value)
-            db.session.add(setting)
-    db.session.commit()
+    def _save_settings():
+        for key, value in request.form.items():
+            if key == "csrf_token":
+                continue
+            setting = Setting.query.filter_by(key=key).first()
+            if setting:
+                setting.value = value
+            else:
+                setting = Setting(key=key, value=value)
+                db.session.add(setting)
+
+    tx(_save_settings)
     flash(_("تم حفظ الإعدادات"), "success")
     return redirect(url_for("admin.settings"))
 
@@ -771,8 +779,10 @@ def registration_approve(user_id):
         flash(_("هذا المستخدم ليس في حالة انتظار"), "warning")
         return redirect(url_for("admin.pending_registrations"))
 
-    user.approval_status = UserApprovalStatus.approved
-    db.session.commit()
+    def _approve():
+        user.approval_status = UserApprovalStatus.approved
+
+    tx(_approve)
     from app.services.email import send_welcome_email
 
     send_welcome_email(user)
@@ -789,8 +799,10 @@ def registration_reject(user_id):
         flash(_("هذا المستخدم ليس في حالة انتظار"), "warning")
         return redirect(url_for("admin.pending_registrations"))
 
-    user.approval_status = UserApprovalStatus.rejected
-    db.session.commit()
+    def _reject():
+        user.approval_status = UserApprovalStatus.rejected
+
+    tx(_reject)
     flash(_("تم رفض تسجيل المستخدم."), "warning")
     return redirect(url_for("admin.pending_registrations"))
 
@@ -952,8 +964,11 @@ def contact_mark_read(message_id):
 
     msg = ContactMessage.query.get_or_404(message_id)
     if msg.status == "new":
-        msg.status = "read"
-        db.session.commit()
+
+        def _mark_read():
+            msg.status = "read"
+
+        tx(_mark_read)
     return redirect(url_for("admin.contact_inbox"))
 
 
@@ -972,9 +987,12 @@ def contact_reply(message_id):
         return redirect(url_for("admin.contact_inbox"))
 
     if send_contact_reply_email(msg, reply_text):
-        msg.status = "replied"
-        msg.replied_at = db.func.now()
-        db.session.commit()
+
+        def _mark_replied():
+            msg.status = "replied"
+            msg.replied_at = db.func.now()
+
+        tx(_mark_replied)
         flash(_("تم إرسال الرد بنجاح"), "success")
     else:
         flash(_("فشل إرسال الرد"), "danger")

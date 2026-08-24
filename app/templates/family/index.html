@@ -11,7 +11,7 @@
 {% call azad_section(_('ربط حساب طالب جديد')) %}
 <form method="post" action="{{ url_for('family.do_link') }}" class="azad-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="form-group">
+    <div class="azad-field">
         <label for="code">{{ _('أدخل رمز الربط') }}</label>
         {{ link_form.code(class="form-control", placeholder=_("مثال: ABCD1234")) }}
         {% for error in link_form.code.errors %}
@@ -22,7 +22,7 @@
 </form>
 {% endcall %}
 
-<div class="section-head"><h2>{{ _('الحسابات المرتبطة') }}</h2></div>
+<div class="azad-section"><h2>{{ _('الحسابات المرتبطة') }}</h2></div>
 {% if children %}
 <div class="azad-list">
     {% for link in children %}

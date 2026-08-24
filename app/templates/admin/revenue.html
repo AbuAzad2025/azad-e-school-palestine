@@ -2,7 +2,7 @@
 {% from 'macros/ui.html' import azad_stat_card %}
 {% block title %}{{ _('لوحة الإيرادات') }} — {{ _('إدارة المنصة') }}{% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title" style="margin:0">{{ _('لوحة الإيرادات') }}</h1>
     <p class="page-subtitle">{{ _('تتبع إيرادات المنصة وتحليل الأداء') }}</p>
@@ -47,9 +47,9 @@
     <table class="azad-table">
       <thead>
         <tr>
-          <th>{{ _('المدرسة') }}</th>
-          <th>{{ _('عدد المعاملات') }}</th>
-          <th>{{ _('إجمالي الإيرادات') }}</th>
+          <th scope="col">{{ _('المدرسة') }}</th>
+          <th scope="col">{{ _('عدد المعاملات') }}</th>
+          <th scope="col">{{ _('إجمالي الإيرادات') }}</th>
         </tr>
       </thead>
       <tbody>

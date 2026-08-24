@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ _('خطأ داخلي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-404" style="max-width:420px;margin:4rem auto;text-align:center">
-  <h1 class="azad-title" style="font-size:32px;margin:0">{{ _('خطأ داخلي') }}</h1>
-  <p style="font-size:1.1rem;margin:1rem 0">{{ _('حدث خطأ غير متوقع. جرّب لاحقاً.') }}</p>
-  <p>{{ _('إذا استمرت المشكلة، يرجى التواصل مع الدعم الفني.') }}</p>
+<div class="card azad-error">
+  <h1 class="azad-error__title">{{ _('خطأ داخلي') }}</h1>
+  <p class="azad-error__message">{{ _('حدث خطأ غير متوقع. جرّب لاحقاً.') }}</p>
+  <p class="azad-error__hint">{{ _('إذا استمرت المشكلة، يرجى التواصل مع الدعم الفني.') }}</p>
   <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
 </div>
 {% endblock %}

@@ -6,17 +6,17 @@
   <p class="form-hint">{{ _('اختر نوعك، أنشئ حساباً، ثم فعّل بريدك الإلكتروني.') }}</p>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.name_ar.label }}
       {{ form.name_ar(autocomplete="name", placeholder=_('الاسم الكامل')) }}
       {% for e in form.name_ar.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.email.label }}
       {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
       {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.role.label }}
       <div class="radio-row">
         {% for subfield in form.role %}
@@ -25,18 +25,18 @@
       </div>
       {% for e in form.role.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.school_join_code.label }}
       {{ form.school_join_code(placeholder=_('كود المدرسة (اختياري)')) }}
       {% for e in form.school_join_code.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
       <small class="form-hint">{{ _('إذا كنت معلماً/طالباً/ولي أمر، أدخل كود المدرسة للانضمام مباشرة.') }}</small>
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.password.label }}
       {{ form.password(autocomplete="new-password", placeholder=_('8 أحرف على الأقل')) }}
       {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
     </div>
-    <div class="form-group">
+    <div class="azad-field">
       {{ form.confirm.label }}
       {{ form.confirm(autocomplete="new-password") }}
       {% for e in form.confirm.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}

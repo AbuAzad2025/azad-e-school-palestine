@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _('إحصائيات الاختبار') }} — {{ quiz.title }}{% endblock %}
 {% block content %}
-<div class="section-head">
+<div class="azad-section">
   <div>
     <h1 class="page-title azad-title" style="margin:0">{{ _('إحصائيات الاختبار') }}</h1>
     <p class="page-subtitle">{{ quiz.title }} — {{ class_room.subject.name_ar }}</p>
@@ -37,14 +37,14 @@
     <table class="azad-table">
       <thead>
         <tr>
-          <th>{{ _('السؤال') }}</th>
-          <th>{{ _('نوع') }}</th>
-          <th>{{ _('الدرجة') }}</th>
-          <th>{{ _('إجابات') }}</th>
-          <th>{{ _('صحيحة') }}</th>
-          <th>{{ _('خاطئة') }}</th>
-          <th>{{ _('مؤشر الصعوبة') }}</th>
-          <th>{{ _('مؤشر التمييز') }}</th>
+          <th scope="col">{{ _('السؤال') }}</th>
+          <th scope="col">{{ _('نوع') }}</th>
+          <th scope="col">{{ _('الدرجة') }}</th>
+          <th scope="col">{{ _('إجابات') }}</th>
+          <th scope="col">{{ _('صحيحة') }}</th>
+          <th scope="col">{{ _('خاطئة') }}</th>
+          <th scope="col">{{ _('مؤشر الصعوبة') }}</th>
+          <th scope="col">{{ _('مؤشر التمييز') }}</th>
         </tr>
       </thead>
       <tbody>

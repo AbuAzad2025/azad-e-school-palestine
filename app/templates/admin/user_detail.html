@@ -1,13 +1,13 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ _('تفاصيل المستخدم') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('تفاصيل المستخدم') }}</h1>
   <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('رجوع') }}</a>
 </div>
 
 <div class="card" style="margin-bottom: 1.5rem;">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('معلومات الحساب') }}</h2>
   </div>
   <div class="azad-list">
@@ -39,7 +39,7 @@
 </div>
 
 <div class="card" style="margin-top: 1.5rem;">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('عضويات المدارس') }}</h2>
   </div>
   {% if memberships %}
@@ -65,7 +65,7 @@
 </div>
 
 <div class="card" style="margin-top: 1.5rem;">
-  <div class="section-head">
+  <div class="azad-section">
     <h2>{{ _('الإجراءات') }}</h2>
   </div>
   <div class="item-actions" style="gap: 0.75rem; flex-wrap: wrap;">

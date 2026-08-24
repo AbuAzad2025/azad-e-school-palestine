@@ -1,10 +1,10 @@
 {% extends "admin/base.html" %}
 {% block title %}{{ _('الاشتراكات') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
-<div class="section-head">
+<div class="azad-section">
   <h1 class="page-title azad-title">{{ _('الاشتراكات') }}</h1>
   <form method="get" class="form-inline">
-    <select name="status" class="form-group" style="min-width:160px" aria-label="{{ _('تصفية حسب الحالة') }}">
+    <select name="status" class="azad-field" style="min-width:160px" aria-label="{{ _('تصفية حسب الحالة') }}">
       <option value="">{{ _('كل الحالات') }}</option>
       <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>{{ _('معلقة') }}</option>
       <option value="active" {% if status_filter == 'active' %}selected{% endif %}>{{ _('نشطة') }}</option>
@@ -44,14 +44,14 @@
   {% endfor %}
 </div>
 
-<div class="pagination">
+<div class="azad-pagination">
   {% if pagination.has_prev %}
   <a href="{{ url_for('admin.subscriptions_list', page=pagination.page-1, status=status_filter) }}">&laquo; {{ _('السابق') }}</a>
   {% endif %}
   {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
     {% if p %}
       {% if p == pagination.page %}
-      <span class="current">{{ p }}</span>
+      <span class="azad-pagination__link azad-pagination__link--active">{{ p }}</span>
       {% else %}
       <a href="{{ url_for('admin.subscriptions_list', page=p, status=status_filter) }}">{{ p }}</a>
       {% endif %}

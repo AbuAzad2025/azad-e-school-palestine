@@ -21,7 +21,7 @@
 
   {% if prof.bio %}<p>{{ prof.bio }}</p>{% endif %}
 
-  <div class="form-group">
+  <div class="azad-field">
     <label>{{ _('رمز الدعوة المباشر') }}</label>
     <code style="display:block;background:var(--azad-slate);padding:.6rem .8rem;border-radius:8px" dir="ltr">
       {{ url_for('tutoring.invite', code=prof.invite_code, _external=True) }}

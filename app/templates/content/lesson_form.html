@@ -7,7 +7,7 @@
     {{ form.hidden_tag() }}
     {% for f in form %}
       {% if f.type != 'CSRFTokenField' and f.type != 'SubmitField' %}
-        <div class="form-group">
+        <div class="azad-field">
           {{ f.label }}
           {{ f() }}
           {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}

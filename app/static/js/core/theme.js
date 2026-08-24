@@ -4,6 +4,11 @@
 
 const THEME_KEY = "azad-theme";
 
+/**
+ * Apply a light / dark / system theme to the document root.
+ * @param {string} theme - One of 'light', 'dark', or 'system'.
+ * @returns {void}
+ */
 export function applyTheme(theme) {
   const dark =
     theme === "dark" ||
@@ -17,10 +22,19 @@ export function applyTheme(theme) {
   });
 }
 
+/**
+ * Return the next theme in the toggle cycle (dark → light → dark).
+ * @param {string} current
+ * @returns {string}
+ */
 export function getNextTheme(current) {
   return current === "dark" ? "light" : "dark";
 }
 
+/**
+ * Initialise theme from localStorage and wire up toggle buttons.
+ * @returns {void}
+ */
 export function initTheme() {
   const saved = localStorage.getItem(THEME_KEY) || "system";
   applyTheme(saved);
