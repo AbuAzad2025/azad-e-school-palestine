@@ -307,7 +307,7 @@ def end_live_session(session_id):
         abort(403)
     update_session_live_status(session_, live_status="completed", online_link=None)
     audit("tutoring.live_end", "tutoring_sessions", session_.id, {"user_id": current_user.id})
-    flash(_("تم ending الجلسة المباشرة."), "success")
+    flash(_("تم إنهاء الجلسة المباشرة."), "success")
     return redirect(url_for("tutoring.session_detail", session_id=session_.id))
 
 

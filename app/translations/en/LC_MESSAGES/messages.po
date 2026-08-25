@@ -6,10 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version:  azad-e-school\n"
+"Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-25 16:48+0300\n"
-"PO-Revision-Date: 2026-08-15 11:40+0300\n"
+"POT-Creation-Date: 2026-08-25 19:12+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
 "Language-Team: en <LL@li.org>\n"
@@ -1316,7 +1316,7 @@ msgid "تم بدء الجلسة المباشرة."
 msgstr "Live session started."
 
 #: app/modules/tutoring/routes.py:310
-msgid "تم ending الجلسة المباشرة."
+msgid "تم إنهاء الجلسة المباشرة."
 msgstr "Live session ended."
 
 #: app/modules/tutoring/routes.py:325
@@ -4987,7 +4987,7 @@ msgid "البث المباشر"
 msgstr "Live stream"
 
 #: app/templates/tutoring/session.html:25
-msgid "الجلسة direttaة حالياً"
+msgid "الجلسة نشطة حالياً"
 msgstr "Session is live now"
 
 #: app/templates/tutoring/session.html:26
@@ -5013,28 +5013,4 @@ msgstr "Edit session"
 #: app/templates/tutoring/session.html:55
 msgid "تأكيد استلام الدفع (يدوي)"
 msgstr "Confirm payment receipt (manual)"
-
-#~ msgid "في وضع التطوير، تُدار إعادة التعيين عبر رابط مؤمن. أرسلنا تفاصيل لاحقاً."
-#~ msgstr "In dev mode, reset is handled via a secure link. We'll send details later."
-
-#~ msgid "أهلاً"
-#~ msgstr "Welcome"
-
-#~ msgid "الاختبارات المتاحة ونتائجك"
-#~ msgstr "Available exams and your results"
-
-#~ msgid "تم إنشاء الحساب. فعّل بريدك الإلكتروني عبر الرابط (يُطبع في الطرفية بوضع التطوير)."
-#~ msgstr "Account created. Verify your email via the link (printed in the console in dev mode)."
-
-#~ msgid "تم تفعيل بريدك الإلكتروني. سجّل الدخول الآن."
-#~ msgstr "Your email has been verified. Log in now."
-
-#~ msgid "رابط التفعيل غير صالح أو منتهي."
-#~ msgstr "Activation link is invalid or expired."
-
-#~ msgid "سليم الاختبار"
-#~ msgstr ""
-
-#~ msgid "نظرة عامة"
-#~ msgstr ""
 

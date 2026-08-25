@@ -22,7 +22,7 @@
   {% if is_tutor %}
     <div class="azad-section"><h2>{{ _('البث المباشر') }}</h2></div>
     {% if session_.status == 'active' %}
-    <p>{{ _('الجلسة direttaة حالياً') }}</p>
+    <p>{{ _('الجلسة نشطة حالياً') }}</p>
     <a class="azad-btn" href="{{ url_for('tutoring.live_session_status', session_id=session_.id) }}" target="_blank">{{ _('عرض حالة الجلسة') }}</a>
     <a class="azad-btn-outline" href="{{ url_for('tutoring.end_live_session', session_id=session_.id) }}">{{ _('إنهاء الجلسة') }}</a>
     {% else %}
