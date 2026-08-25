@@ -1,11 +1,13 @@
+{%- set current_locale = request.cookies.get('locale', config.DEFAULT_LOCALE) -%}
+{%- set is_rtl = current_locale == 'ar' -%}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ current_locale }}" dir="{{ 'rtl' if is_rtl else 'ltr' }}">
 <head>
     <meta charset="utf-8">
-    <title>تقرير الدرجات — {{ student.name_ar or student.email }}</title>
+    <title>{{ _('تقرير الدرجات') }} — {{ student.name_ar or student.email }}</title>
     <style>
         @page { size: A4; margin: 1.5cm; }
-        body { font-family: Arial, sans-serif; direction: rtl; font-size: 12px; color: #333; }
+        body { font-family: Arial, sans-serif; direction: {{ 'rtl' if is_rtl else 'ltr' }}; font-size: 12px; color: #333; }
         .header { text-align: center; border-bottom: 3px solid #014e7c; padding-bottom: 1rem; margin-bottom: 1rem; }
         .header h1 { color: #014e7c; margin: 0; font-size: 1.5rem; }
         .header h2 { color: #333; margin: 0.5rem 0 0; font-size: 1.1rem; font-weight: normal; }
@@ -27,28 +29,28 @@
 </head>
 <body>
     <div class="header">
-        <h1>تقرير الدرجات</h1>
-        <h2>{{ class_room.name or class_room.subject.name_ar }} — الصف {{ class_room.grade.grade_level }}</h2>
+        <h1>{{ _('تقرير الدرجات') }}</h1>
+        <h2>{{ class_room.name or class_room.subject.name_ar }} — {{ _('الصف %(level)s', level=class_room.grade.grade_level) }}</h2>
     </div>
 
     <div class="info">
-        <div><strong>الاسم:</strong> {{ student.name_ar or student.email }}</div>
-        <div><strong>البريد:</strong> {{ student.email }}</div>
-        <div><strong>المادة:</strong> {{ class_room.subject.name_ar }}</div>
-        <div><strong>المعلم:</strong> {{ class_room.teacher.name_ar if class_room.teacher else '—' }}</div>
+        <div><strong>{{ _('الاسم:') }}</strong> {{ student.name_ar or student.email }}</div>
+        <div><strong>{{ _('البريد:') }}</strong> {{ student.email }}</div>
+        <div><strong>{{ _('المادة:') }}</strong> {{ class_room.subject.name_ar }}</div>
+        <div><strong>{{ _('المعلم:') }}</strong> {{ class_room.teacher.name_ar if class_room.teacher else '—' }}</div>
     </div>
 
-    <h3 class="section-title">الدرجات حسب الأقسام</h3>
+    <h3 class="section-title">{{ _('الدرجات حسب الأقسام') }}</h3>
     {% for cat in grade_data.categories %}
     <table>
         <tr>
-            <th scope="col" colspan="4">{{ cat.name }} (وزن: {{ (cat.weight * 100)|int }}%)</th>
+            <th scope="col" colspan="4">{{ cat.name }} ({{ _('وزن: %(weight)d%%', weight=(cat.weight * 100)|int) }})</th>
         </tr>
         <tr>
-            <th scope="col">البند</th>
-            <th scope="col">الدرجة القصوى</th>
-            <th scope="col">الدرجة المحصّلة</th>
-            <th scope="col">النسبة %</th>
+            <th scope="col">{{ _('البند') }}</th>
+            <th scope="col">{{ _('الدرجة القصوى') }}</th>
+            <th scope="col">{{ _('الدرجة المحصّلة') }}</th>
+            <th scope="col">{{ _('النسبة %') }}</th>
         </tr>
         {% for item in cat.items %}
         <tr>
@@ -59,7 +61,7 @@
         </tr>
         {% endfor %}
         <tr class="total-row">
-            <td colspan="3">متوسط القسم</td>
+            <td colspan="3">{{ _('متوسط القسم') }}</td>
             <td>{{ cat.category_pct }}%</td>
         </tr>
     </table>
@@ -68,20 +70,20 @@
     <div class="stats">
         <div class="stat">
             <div class="stat-value">{{ grade_data.final_grade }}</div>
-            <div class="stat-label">الدرجة النهائية</div>
+            <div class="stat-label">{{ _('الدرجة النهائية') }}</div>
         </div>
         <div class="stat">
             <div class="stat-value">{{ grade_data.letter_grade }}</div>
-            <div class="stat-label">التقدير</div>
+            <div class="stat-label">{{ _('التقدير') }}</div>
         </div>
         <div class="stat">
             <div class="stat-value">{{ avg_progress }}%</div>
-            <div class="stat-label">متوسط التقدم</div>
+            <div class="stat-label">{{ _('متوسط التقدم') }}</div>
         </div>
     </div>
 
     <div class="footer">
-        <p>منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً</p>
+        <p>{{ _('منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً') }}</p>
     </div>
 </body>
 </html>

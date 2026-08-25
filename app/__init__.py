@@ -20,6 +20,7 @@ from flask import (
     request,
     url_for,
 )
+from flask_babel import get_locale
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -407,5 +408,18 @@ def create_app(config_class=Config):
         if delta.seconds > 60:
             return f"{delta.seconds // 60}m"
         return "now"
+
+    @app.template_filter("currencyformat")
+    def _format_currency(value, currency: str = "ILS") -> str:
+        """تنسيق مبلغ نقدي حسب لغة المستخدم (Babel) ورمز العملة ISO-4217."""
+        from babel.numbers import format_currency as babel_format_currency
+
+        if value is None:
+            return "—"
+        try:
+            return babel_format_currency(float(value), currency, locale=str(get_locale()))
+        except (ValueError, TypeError):
+            # عملة غير معروفة لـCLDR — نعيد الشكل الخام بدل انهيار الفاتورة.
+            return f"{value} {currency}"
 
     return app

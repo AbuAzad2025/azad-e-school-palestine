@@ -1,11 +1,13 @@
+{%- set current_locale = request.cookies.get('locale', config.DEFAULT_LOCALE) -%}
+{%- set is_rtl = current_locale == 'ar' -%}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ current_locale }}" dir="{{ 'rtl' if is_rtl else 'ltr' }}">
 <head>
     <meta charset="utf-8">
-    <title>فاتورة {{ invoice_number }}</title>
+    <title>{{ _('فاتورة %(number)s', number=invoice_number) }}</title>
     <style>
         @page { size: A4; margin: 1.5cm; }
-        body { font-family: Arial, sans-serif; direction: rtl; font-size: 12px; color: #333; }
+        body { font-family: Arial, sans-serif; direction: {{ 'rtl' if is_rtl else 'ltr' }}; font-size: 12px; color: #333; }
         .header { text-align: center; border-bottom: 3px solid #014e7c; padding-bottom: 1rem; margin-bottom: 1.5rem; }
         .header h1 { color: #014e7c; margin: 0; font-size: 1.8rem; }
         .header .invoice-no { color: #444; font-size: 0.9rem; margin-top: 0.5rem; }
@@ -26,48 +28,48 @@
 </head>
 <body>
     <div class="header">
-        <h1>منصة مدرسة أزاد الإلكترونية</h1>
-        <div class="invoice-no">فاتورة رقم: {{ invoice_number }}</div>
+        <h1>{{ _('منصة مدرسة أزاد الإلكترونية') }}</h1>
+        <div class="invoice-no">{{ _('فاتورة رقم:') }} {{ invoice_number }}</div>
     </div>
 
-    <h2>بيانات الاشتراك</h2>
+    <h2>{{ _('بيانات الاشتراك') }}</h2>
 
     <div class="info-grid">
         <div class="info-box">
-            <h3>بيانات الاشتراك</h3>
-            <p><strong>الطالب:</strong> {{ subscription.user.name_ar or subscription.user.email }}</p>
-            <p><strong>الخطة:</strong> {{ subscription.plan.name }}</p>
-            <p><strong>المدة:</strong> {{ subscription.start_at.strftime('%Y-%m-%d') if subscription.start_at else '—' }} إلى {{ subscription.end_at.strftime('%Y-%m-%d') if subscription.end_at else '—' }}</p>
+            <h3>{{ _('بيانات الاشتراك') }}</h3>
+            <p><strong>{{ _('الطالب:') }}</strong> {{ subscription.user.name_ar or subscription.user.email }}</p>
+            <p><strong>{{ _('الخطة:') }}</strong> {{ subscription.plan.name }}</p>
+            <p><strong>{{ _('المدة:') }}</strong> {{ subscription.start_at|dateformat('medium') if subscription.start_at else '—' }} {{ _('إلى') }} {{ subscription.end_at|dateformat('medium') if subscription.end_at else '—' }}</p>
         </div>
         <div class="info-box">
-            <h3>تفاصيل الفاتورة</h3>
-            <p><strong>رقم الاشتراك:</strong> #{{ subscription.id }}</p>
-            <p><strong>الحالة:</strong> {{ {'pending': 'معلق', 'active': 'نشط', 'expired': 'منتهي', 'cancelled': 'ملغي'}[subscription.status] }}</p>
-            <p><strong>التاريخ:</strong> {{ subscription.created_at.strftime('%Y-%m-%d') }}</p>
+            <h3>{{ _('تفاصيل الفاتورة') }}</h3>
+            <p><strong>{{ _('رقم الاشتراك:') }}</strong> #{{ subscription.id }}</p>
+            <p><strong>{{ _('الحالة:') }}</strong> {{ {'pending': _('معلق'), 'active': _('نشط'), 'expired': _('منتهي'), 'cancelled': _('ملغي')}[subscription.status] }}</p>
+            <p><strong>{{ _('التاريخ:') }}</strong> {{ subscription.created_at|dateformat('medium') }}</p>
         </div>
     </div>
 
     <table>
         <tr>
-            <th scope="col">البيان</th>
-            <th scope="col">المبلغ</th>
+            <th scope="col">{{ _('البيان') }}</th>
+            <th scope="col">{{ _('المبلغ') }}</th>
         </tr>
         <tr>
-            <td>اشتراك {{ subscription.plan.name }}</td>
-            <td>{{ subscription.price }} {{ subscription.currency }}</td>
+            <td>{{ _('اشتراك %(plan)s', plan=subscription.plan.name) }}</td>
+            <td>{{ subscription.price|currencyformat(subscription.currency) }}</td>
         </tr>
         <tr>
-            <td>المدفوع</td>
-            <td>{{ summary.total_paid }} {{ subscription.currency }}</td>
+            <td>{{ _('المدفوع') }}</td>
+            <td>{{ summary.total_paid|currencyformat(subscription.currency) }}</td>
         </tr>
         <tr class="total-row">
-            <td>المتبقي</td>
-            <td>{{ summary.balance }} {{ subscription.currency }}</td>
+            <td>{{ _('المتبقي') }}</td>
+            <td>{{ summary.balance|currencyformat(subscription.currency) }}</td>
         </tr>
     </table>
 
     <div class="footer">
-        <p>منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية</p>
+        <p>{{ _('منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية') }}</p>
     </div>
 </body>
 </html>
