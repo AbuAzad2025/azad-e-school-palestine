@@ -78,6 +78,10 @@ jobs:
       - name: Biome check
         run: npx biome check app/static/js
 
+      # ── i18n: تفشل عند سلاسل غير مترجمة أو fuzzy في الكتالوجات ──
+      - name: Translation catalogs check
+        run: python scripts/dump_untranslated.py
+
       # ── Security ──
       - name: Gitleaks (secrets)
         uses: gitleaks/gitleaks-action@v2
