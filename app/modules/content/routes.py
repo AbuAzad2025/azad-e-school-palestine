@@ -235,7 +235,7 @@ def shared_library():
         flash(_("لا توجد مدرسة مرتبطة بحسابك."), "warning")
         return redirect(url_for("auth.dashboard"))
     subject_id = request.args.get("subject_id", type=int)
-    lessons = shared_lessons(school_id, subject_id)  # type: ignore[arg-type]
+    lessons = shared_lessons(school_id, subject_id)
     subjects = Subject.query.all()
     return render_template(
         "content/shared_library.html",
