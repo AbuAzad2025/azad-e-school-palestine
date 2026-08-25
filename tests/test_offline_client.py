@@ -102,6 +102,12 @@ def test_sw_js_has_lesson_cache_strategy():
 
 
 def test_offline_sync_js_exists():
+    """ملف index.js يحتوي على دالة initOfflineSync"""
+    with open("app/static/js/index.js", "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "initOfflineSync" in content
+    assert "azad-offline-progress" in content
+    assert "localStorage.getItem" in content
     """ملف app.js يحتوي على دالة initOfflineSync"""
     with open("app/static/js/app.js", "r", encoding="utf-8") as f:
         content = f.read()
