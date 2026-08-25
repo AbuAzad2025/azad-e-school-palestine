@@ -30,7 +30,7 @@
 
   {% elif current_step == 2 %}
   <p style="color:var(--muted);margin-bottom:var(--sp-4)">{{ _('حدد المراحل الدراسية المتاحة في مدرستك') }}</p>
-  {% for stage_key, stage_label in [('primary', 'المرحلة الابتدائية'), ('prep', 'المرحلة المتوسطة'), ('secondary', 'المرحلة الثانوية')] %}
+  {% for stage_key, stage_label in [('primary', _('المرحلة الابتدائية')), ('prep', _('المرحلة المتوسطة')), ('secondary', _('المرحلة الثانوية'))] %}
   <label class="azad-checkbox" style="margin-bottom:var(--sp-3);display:flex;gap:var(--sp-2)">
     <input type="checkbox" name="stages" value="{{ stage_key }}" class="azad-checkbox__input" {{ 'checked' if stage_key in data.get('stages', []) }}>
     <span class="azad-checkbox__mark"></span>

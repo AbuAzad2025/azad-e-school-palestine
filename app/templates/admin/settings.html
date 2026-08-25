@@ -10,7 +10,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="azad-field">
       <label>{{ _('اسم المنصة (عربي)') }}</label>
-      <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar') else 'مدرسة أزاد الإلكترونية' }}">
+      <input type="text" name="platform_name_ar" class="form-control" value="{{ settings.get('platform_name_ar', '').value if settings.get('platform_name_ar') else _('مدرسة أزاد الإلكترونية') }}">
     </div>
     <div class="azad-field">
       <label>{{ _('اسم المنصة (إنجليزي)') }}</label>

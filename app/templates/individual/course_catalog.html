@@ -20,7 +20,7 @@
     <select name="grade_level" id="grade_level">
       <option value="">{{ _('الكل') }}</option>
       {% for i in range(1, 13) %}
-      <option value="{{ i }}" {{ 'selected' if selected_grade == i }}>صف {{ i }}</option>
+      <option value="{{ i }}" {{ 'selected' if selected_grade == i }}>{{ _('صف %(num)s', num=i) }}</option>
       {% endfor %}
     </select>
   </div>

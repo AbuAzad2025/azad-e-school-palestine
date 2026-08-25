@@ -121,11 +121,11 @@ document.addEventListener('DOMContentLoaded', function () {
           item.className = "azad-item";
           item.innerHTML = `<div><div class="item-title">${q.prompt}</div>`;
           if (q.type === "mcq") {
-            item.innerHTML += `<div class="item-meta">MCQ - ${q.mark} علامات</div>`;
+            item.innerHTML += `<div class="item-meta">{{ _('اختيار من متعدد') }} - ${q.mark} {{ _('علامات') }}</div>`;
           } else if (q.type === "true_false") {
-            item.innerHTML += `<div class="item-meta">True/False - ${q.mark} علامات</div>`;
+            item.innerHTML += `<div class="item-meta">{{ _('صح/خطأ') }} - ${q.mark} {{ _('علامات') }}</div>`;
           } else {
-            item.innerHTML += `<div class="item-meta">Essay - ${q.mark} علامات</div>`;
+            item.innerHTML += `<div class="item-meta">{{ _('مقالي') }} - ${q.mark} {{ _('علامات') }}</div>`;
           }
           container.appendChild(item);
         });
@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('حدث خطأ في توليد الأسئلة');
+        alert('{{ _('حدث خطأ في توليد الأسئلة') }}');
       });
     });
   }

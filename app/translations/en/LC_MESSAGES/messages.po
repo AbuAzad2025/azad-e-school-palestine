@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-25 19:12+0300\n"
+"POT-Creation-Date: 2026-08-25 20:08+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -196,14 +196,17 @@ msgid "النوع"
 msgstr "Type"
 
 #: app/modules/assessment/forms.py:24 app/templates/assessment/question_bank.html:21
+#: app/templates/assessment/quiz_manage.html:124
 msgid "اختيار من متعدد"
 msgstr "Multiple choice"
 
 #: app/modules/assessment/forms.py:25 app/templates/assessment/question_bank.html:22
+#: app/templates/assessment/quiz_manage.html:126
 msgid "صح/خطأ"
 msgstr "True/False"
 
 #: app/modules/assessment/forms.py:26 app/templates/assessment/question_bank.html:23
+#: app/templates/assessment/quiz_manage.html:128
 msgid "مقالي"
 msgstr "Essay"
 
@@ -446,7 +449,7 @@ msgstr "Subscribe"
 msgid "رقم مرجع التحويل"
 msgstr "Transfer reference number"
 
-#: app/modules/billing/forms.py:39 app/templates/admin/payouts.html:14
+#: app/modules/billing/forms.py:39 app/templates/admin/payouts.html:14 app/templates/billing/invoice.html:53
 msgid "المبلغ"
 msgstr "Amount"
 
@@ -752,7 +755,8 @@ msgstr "Assignment title"
 msgid "شرح الواجب"
 msgstr "Assignment description"
 
-#: app/modules/grades/forms.py:12 app/modules/grades/forms.py:36 app/templates/grades/rubric_builder.html:40
+#: app/modules/grades/forms.py:12 app/modules/grades/forms.py:36 app/templates/grades/report_card.html:49
+#: app/templates/grades/rubric_builder.html:40
 msgid "الدرجة القصوى"
 msgstr "Maximum mark"
 
@@ -1359,13 +1363,13 @@ msgstr "Azad Electronic School Platform — integrated e-learning for the Palest
 #: app/templates/admin/base.html:2 app/templates/admin/dashboard.html:3 app/templates/admin/school_admin_dashboard.html:3
 #: app/templates/ai/chat.html:2 app/templates/auth/dashboard.html:3 app/templates/auth/forgot.html:2
 #: app/templates/auth/login.html:2 app/templates/auth/register.html:2 app/templates/auth/register_individual.html:2
-#: app/templates/auth/reset.html:2 app/templates/base.html:11 app/templates/calendar/index.html:3
-#: app/templates/contact/contact.html:2 app/templates/errors/403.html:2 app/templates/errors/404.html:2
-#: app/templates/errors/429.html:2 app/templates/errors/500.html:2 app/templates/partials/footer.html:2
-#: app/templates/pricing.html:2 app/templates/progress/my_progress.html:3 app/templates/schools/class_detail.html:2
-#: app/templates/schools/class_form.html:2 app/templates/schools/classes.html:2 app/templates/schools/form.html:2
-#: app/templates/schools/index.html:2 app/templates/schools/join.html:2 app/templates/schools/manage.html:2
-#: app/templates/schools/my_classes.html:2 app/templates/tutoring/index.html:2
+#: app/templates/auth/reset.html:2 app/templates/base.html:11 app/templates/billing/invoice.html:29
+#: app/templates/calendar/index.html:3 app/templates/contact/contact.html:2 app/templates/errors/403.html:2
+#: app/templates/errors/404.html:2 app/templates/errors/429.html:2 app/templates/errors/500.html:2
+#: app/templates/partials/footer.html:2 app/templates/pricing.html:2 app/templates/progress/my_progress.html:3
+#: app/templates/schools/class_detail.html:2 app/templates/schools/class_form.html:2 app/templates/schools/classes.html:2
+#: app/templates/schools/form.html:2 app/templates/schools/index.html:2 app/templates/schools/join.html:2
+#: app/templates/schools/manage.html:2 app/templates/schools/my_classes.html:2 app/templates/tutoring/index.html:2
 msgid "منصة مدرسة أزاد الإلكترونية"
 msgstr "Azad Electronic School Platform"
 
@@ -1543,8 +1547,8 @@ msgstr "Hello, I need help"
 msgid "تواصل معنا عبر واتساب"
 msgstr "Contact us via WhatsApp"
 
-#: app/templates/landing.html:10 app/templates/landing.html:89 app/templates/main/index.html:4
-#: app/templates/partials/navbar.html:5
+#: app/templates/admin/settings.html:13 app/templates/landing.html:10 app/templates/landing.html:89
+#: app/templates/main/index.html:4 app/templates/partials/navbar.html:5
 msgid "مدرسة أزاد الإلكترونية"
 msgstr "Azad Electronic School"
 
@@ -1862,7 +1866,7 @@ msgstr "Budget"
 msgid "المصروف"
 msgstr "Spent"
 
-#: app/templates/admin/ai_usage.html:113
+#: app/templates/admin/ai_usage.html:113 app/templates/billing/invoice.html:64
 msgid "المتبقي"
 msgstr "Remaining"
 
@@ -2135,7 +2139,8 @@ msgstr "Public"
 
 #: app/templates/admin/certificates.html:31 app/templates/admin/user_detail.html:28
 #: app/templates/admin/user_detail.html:53 app/templates/admin/users_list.html:34
-#: app/templates/billing/discount_list.html:47 app/templates/family/child_progress.html:23
+#: app/templates/billing/discount_list.html:47 app/templates/billing/invoice.html:45
+#: app/templates/family/child_progress.html:23
 msgid "نشط"
 msgstr "Active"
 
@@ -2195,7 +2200,7 @@ msgstr "No contact messages yet."
 msgid "الرد على الرسالة"
 msgstr "Reply to message"
 
-#: app/templates/admin/contact_inbox.html:68
+#: app/templates/admin/contact_inbox.html:68 app/templates/billing/invoice.html:40
 msgid "إلى"
 msgstr "To"
 
@@ -2417,7 +2422,7 @@ msgstr "Tutor"
 msgid "تاريخ الطلب"
 msgstr "Request date"
 
-#: app/templates/admin/payouts.html:27
+#: app/templates/admin/payouts.html:27 app/templates/billing/invoice.html:45
 msgid "معلق"
 msgstr "Pending"
 
@@ -2491,7 +2496,7 @@ msgstr "Amount:"
 msgid "المرجع:"
 msgstr "Reference:"
 
-#: app/templates/admin/pending_payments.html:18
+#: app/templates/admin/pending_payments.html:18 app/templates/billing/invoice.html:46
 msgid "التاريخ:"
 msgstr "Date:"
 
@@ -2714,7 +2719,7 @@ msgstr "New class"
 msgid "الصف"
 msgstr "Class"
 
-#: app/templates/admin/school_detail.html:51
+#: app/templates/admin/school_detail.html:51 app/templates/grades/report_card.html:38
 msgid "المعلم:"
 msgstr "Teacher:"
 
@@ -2842,7 +2847,7 @@ msgstr "Cancelled"
 msgid "تصفية"
 msgstr "Filter"
 
-#: app/templates/admin/subscriptions_list.html:28
+#: app/templates/admin/subscriptions_list.html:28 app/templates/billing/invoice.html:45
 msgid "الحالة:"
 msgstr "Status:"
 
@@ -3326,6 +3331,15 @@ msgstr "Generate"
 msgid "سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد"
 msgstr "The AI will generate questions based on the chosen topic"
 
+#: app/templates/assessment/quiz_manage.html:124 app/templates/assessment/quiz_manage.html:126
+#: app/templates/assessment/quiz_manage.html:128
+msgid "علامات"
+msgstr "marks"
+
+#: app/templates/assessment/quiz_manage.html:144
+msgid "حدث خطأ في توليد الأسئلة"
+msgstr "An error occurred while generating questions"
+
 #: app/templates/assessment/quiz_results.html:8
 msgid "بانتظار التصحيح اليدوي"
 msgstr "Awaiting manual grading"
@@ -3614,7 +3628,7 @@ msgstr "New password"
 msgid "الاعتمادات المعلّقة"
 msgstr "Pending approvals"
 
-#: app/templates/billing/admin.html:13 app/templates/billing/class_billing.html:20
+#: app/templates/billing/admin.html:13 app/templates/billing/class_billing.html:20 app/templates/billing/invoice.html:39
 msgid "الخطة:"
 msgstr "Plan:"
 
@@ -3762,6 +3776,60 @@ msgstr "No discount codes yet."
 #: app/templates/billing/discount_list.html:57
 msgid "أضف كود خصم جديد"
 msgstr "Add new discount code"
+
+#: app/templates/billing/invoice.html:5
+#, python-format
+msgid "فاتورة %(number)s"
+msgstr "Invoice %(number)s"
+
+#: app/templates/billing/invoice.html:30
+msgid "فاتورة رقم:"
+msgstr "Invoice no.:"
+
+#: app/templates/billing/invoice.html:33 app/templates/billing/invoice.html:37
+msgid "بيانات الاشتراك"
+msgstr "Subscription details"
+
+#: app/templates/billing/invoice.html:38
+msgid "الطالب:"
+msgstr "Student:"
+
+#: app/templates/billing/invoice.html:40
+msgid "المدة:"
+msgstr "Duration:"
+
+#: app/templates/billing/invoice.html:43
+msgid "تفاصيل الفاتورة"
+msgstr "Invoice details"
+
+#: app/templates/billing/invoice.html:44
+msgid "رقم الاشتراك:"
+msgstr "Subscription no.:"
+
+#: app/templates/billing/invoice.html:45
+msgid "منتهي"
+msgstr "Expired"
+
+#: app/templates/billing/invoice.html:45
+msgid "ملغي"
+msgstr "Cancelled"
+
+#: app/templates/billing/invoice.html:52
+msgid "البيان"
+msgstr "Description"
+
+#: app/templates/billing/invoice.html:56
+#, python-format
+msgid "اشتراك %(plan)s"
+msgstr "%(plan)s subscription"
+
+#: app/templates/billing/invoice.html:60
+msgid "المدفوع"
+msgstr "Paid"
+
+#: app/templates/billing/invoice.html:70
+msgid "منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية"
+msgstr "Azad E-School — this invoice was generated automatically"
 
 #: app/templates/calendar/index.html:3 app/templates/calendar/index.html:5 app/templates/calendar/index.html:8
 msgid "التقويم الأكاديمي"
@@ -4193,6 +4261,68 @@ msgstr "My grades"
 msgid "لا بنود تقييم بعد."
 msgstr "No assessment items yet."
 
+#: app/templates/grades/report_card.html:5 app/templates/grades/report_card.html:30
+msgid "تقرير الدرجات"
+msgstr "Grade report"
+
+#: app/templates/grades/report_card.html:31
+#, python-format
+msgid "الصف %(level)s"
+msgstr "Grade %(level)s"
+
+#: app/templates/grades/report_card.html:35
+msgid "الاسم:"
+msgstr "Name:"
+
+#: app/templates/grades/report_card.html:36
+msgid "البريد:"
+msgstr "Email:"
+
+#: app/templates/grades/report_card.html:37
+msgid "المادة:"
+msgstr "Subject:"
+
+#: app/templates/grades/report_card.html:41
+msgid "الدرجات حسب الأقسام"
+msgstr "Grades by category"
+
+#: app/templates/grades/report_card.html:45
+#, python-format
+msgid "وزن: %(weight)d%%"
+msgstr "Weight: %(weight)d%%"
+
+#: app/templates/grades/report_card.html:48
+msgid "البند"
+msgstr "Item"
+
+#: app/templates/grades/report_card.html:50
+msgid "الدرجة المحصّلة"
+msgstr "Marks earned"
+
+#: app/templates/grades/report_card.html:51
+msgid "النسبة %"
+msgstr "Percentage %"
+
+#: app/templates/grades/report_card.html:62
+msgid "متوسط القسم"
+msgstr "Category average"
+
+#: app/templates/grades/report_card.html:71
+msgid "الدرجة النهائية"
+msgstr "Final grade"
+
+#: app/templates/grades/report_card.html:75
+msgid "التقدير"
+msgstr "Letter grade"
+
+#: app/templates/grades/report_card.html:79 app/templates/progress/class_overview.html:19
+msgid "متوسط التقدم"
+msgstr "Average progress"
+
+#: app/templates/grades/report_card.html:84
+msgid "منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً"
+msgstr "Azad E-School — this report was generated automatically"
+
 #: app/templates/grades/rubric_builder.html:4 app/templates/grades/rubric_builder.html:6
 msgid "منشئ المعايير"
 msgstr "Rubric builder"
@@ -4269,6 +4399,11 @@ msgstr "All"
 #: app/templates/individual/course_catalog.html:19
 msgid "المستوى"
 msgstr "Level"
+
+#: app/templates/individual/course_catalog.html:23
+#, python-format
+msgid "صف %(num)s"
+msgstr "Grade %(num)s"
 
 #: app/templates/individual/course_catalog.html:45
 msgid "يوم"
@@ -4554,6 +4689,10 @@ msgstr "Supported currencies:"
 msgid "مفعل"
 msgstr "Enabled"
 
+#: app/templates/payments_ui/index.html:36
+msgid "تم اختيار:"
+msgstr "Selected:"
+
 #: app/templates/progress/class_overview.html:3 app/templates/progress/class_overview.html:5
 #: app/templates/progress/class_overview.html:8 app/templates/progress/student_detail.html:5
 msgid "تقدم الطلاب"
@@ -4562,10 +4701,6 @@ msgstr "Student progress"
 #: app/templates/progress/class_overview.html:18
 msgid "درس مكتمل"
 msgstr "Lessons completed"
-
-#: app/templates/progress/class_overview.html:19
-msgid "متوسط التقدم"
-msgstr "Average progress"
 
 #: app/templates/progress/class_overview.html:31
 msgid "لا يوجد طلب مسجلين في هذا الصف أو لا توجد دروس منشورة."
@@ -4700,6 +4835,18 @@ msgstr "alnoor.edu.ps"
 #: app/templates/schools/onboarding.html:32
 msgid "حدد المراحل الدراسية المتاحة في مدرستك"
 msgstr "Select the stages available at your school"
+
+#: app/templates/schools/onboarding.html:33
+msgid "المرحلة الابتدائية"
+msgstr "Primary stage"
+
+#: app/templates/schools/onboarding.html:33
+msgid "المرحلة المتوسطة"
+msgstr "Middle stage"
+
+#: app/templates/schools/onboarding.html:33
+msgid "المرحلة الثانوية"
+msgstr "Secondary stage"
 
 #: app/templates/schools/onboarding.html:42
 msgid "أضف المواد الدراسية (فصل بفاصلة)"
@@ -4933,6 +5080,10 @@ msgstr "Publish your tutor profile"
 #: app/templates/tutoring/rate_form.html:2 app/templates/tutoring/rate_form.html:6
 msgid "تقييم الجلسة"
 msgstr "Rate session"
+
+#: app/templates/tutoring/rate_form.html:7
+msgid "مع"
+msgstr "with"
 
 #: app/templates/tutoring/rate_form.html:13
 msgid "تقييمك مهم"
