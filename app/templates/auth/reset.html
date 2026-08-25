@@ -1,21 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{{ _('كلمة مرور جديدة') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card card-centered">
-  <h1 class="page-title azad-title">{{ _('كلمة مرور جديدة') }}</h1>
+<div class="azad-card azad-card--centered">
+  <div class="azad-auth-header">
+    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
+    <h1 class="azad-auth-title azad-title">{{ _('كلمة مرور جديدة') }}</h1>
+  </div>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">
       {{ form.password.label }}
       {{ form.password(autocomplete="new-password") }}
-      {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      {% if form.password.errors %}
+        <div class="azad-field__error">
+          {% for e in form.password.errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
     </div>
     <div class="azad-field">
       {{ form.confirm.label }}
       {{ form.confirm(autocomplete="new-password") }}
-      {% for e in form.confirm.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      {% if form.confirm.errors %}
+        <div class="azad-field__error">
+          {% for e in form.confirm.errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <div class="form-actions">
+    <div class="azad-form-actions">
       {{ form.submit(class="azad-btn") }}
     </div>
   </form>

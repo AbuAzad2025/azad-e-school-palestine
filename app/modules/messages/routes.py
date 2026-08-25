@@ -42,7 +42,32 @@ def compose(reply_to: int | None = None):
         parent = get_thread(reply_to)
         if not parent:
             abort(404)
-    users = User.query.filter(User.id != current_user.id, User.is_active == True).order_by(User.name_ar).all()  # noqa: E712
+
+    # عرض فقط المستخدمين الذين ينتمون لنفس مدرسة المستخدم الحالي
+    from app.core.tenancy import current_school_id
+    from app.models.class_room import ClassMember, ClassRoom
+
+    school_id = current_school_id()
+    if school_id:
+        member_user_ids = (
+            ClassMember.query.join(ClassRoom, ClassMember.class_id == ClassRoom.id)
+            .filter(ClassRoom.school_id == school_id, ClassMember.status == "active")
+            .with_entities(ClassMember.user_id)
+            .distinct()
+            .subquery()
+        )
+        users = (
+            User.query.filter(
+                User.id != current_user.id,
+                User.is_active.is_(True),
+                User.id.in_(member_user_ids),
+            )
+            .order_by(User.name_ar)
+            .all()
+        )
+    else:
+        users = []
+
     if request.method == "POST":
         recipient_id = request.form.get("recipient_id", type=int)
         subject = request.form.get("subject", "").strip()

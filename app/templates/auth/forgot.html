@@ -1,20 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ _('نسيت كلمة المرور') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card card-centered">
-  <h1 class="page-title azad-title">{{ _('استعادة كلمة المرور') }}</h1>
-  <p class="form-hint">{{ _('أدخل بريدك وسنرسل إليك رابط إعادة التعيين.') }}</p>
+<div class="azad-card azad-card--centered">
+  <div class="azad-auth-header">
+    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
+    <h1 class="azad-auth-title azad-title">{{ _('استعادة كلمة المرور') }}</h1>
+    <p class="azad-auth-hint">{{ _('أدخل بريدك وسنرسل إليك رابط إعادة التعيين.') }}</p>
+  </div>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">
       {{ form.email.label }}
       {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
-      {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      {% if form.email.errors %}
+        <div class="azad-field__error">
+          {% for e in form.email.errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <div class="form-actions">
+    <div class="azad-form-actions">
       {{ form.submit(class="azad-btn") }}
     </div>
   </form>
-  <p class="auth-alt"><a href="{{ url_for('auth.login') }}">{{ _('العودة لتسجيل الدخول') }}</a></p>
+  <p class="azad-auth-alt"><a href="{{ url_for('auth.login') }}">{{ _('العودة لتسجيل الدخول') }}</a></p>
 </div>
 {% endblock %}

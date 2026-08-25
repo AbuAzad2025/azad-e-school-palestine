@@ -1,25 +1,36 @@
 {% extends "base.html" %}
 {% block title %}{{ _('تسجيل الدخول') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card card-centered">
-  <h1 class="page-title azad-title">{{ _('تسجيل الدخول') }}</h1>
+<div class="azad-card azad-card--centered">
+  <div class="azad-auth-header">
+    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
+    <h1 class="azad-auth-title azad-title">{{ _('تسجيل الدخول') }}</h1>
+  </div>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">
       {{ form.email.label }}
       {{ form.email(autocomplete="email", placeholder="example@mail.com", data_validate="required|email") }}
-      {% for e in form.email.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      {% if form.email.errors %}
+        <div class="azad-field__error">
+          {% for e in form.email.errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
     </div>
     <div class="azad-field">
       {{ form.password.label }}
       {{ form.password(autocomplete="current-password") }}
-      {% for e in form.password.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      {% if form.password.errors %}
+        <div class="azad-field__error">
+          {% for e in form.password.errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <div class="form-actions">
+    <div class="azad-form-actions">
       {{ form.submit(class="azad-btn") }}
     </div>
   </form>
-  <p class="auth-alt">{{ _('ليس لديك حساب؟') }} <a href="{{ url_for('auth.register') }}">{{ _('أنشئ حساباً مجاناً') }}</a></p>
-  <p class="auth-alt"><a href="{{ url_for('auth.forgot_password') }}">{{ _('نسيت كلمة المرور؟') }}</a></p>
+  <p class="azad-auth-alt">{{ _('ليس لديك حساب؟') }} <a href="{{ url_for('auth.register') }}">{{ _('أنشئ حساباً مجاناً') }}</a></p>
+  <p class="azad-auth-alt"><a href="{{ url_for('auth.forgot_password') }}">{{ _('نسيت كلمة المرور؟') }}</a></p>
 </div>
 {% endblock %}

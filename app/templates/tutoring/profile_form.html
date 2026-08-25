@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ _('ملفك الخصوصي') }} — {{ _('دروس خصوصية') }}{% endblock %}
 {% block content %}
-<div class="card card-centered">
-  <h1 class="page-title azad-title">{{ _('ملفك الخصوصي') if editing else _('نشر ملفك كمعلم') }}</h1>
+<div class="azad-card azad-card--centered">
+  <div class="azad-auth-header">
+    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
+    <h1 class="azad-auth-title azad-title">{{ _('ملفك الخصوصي') if editing else _('نشر ملفك كمعلم') }}</h1>
+  </div>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     {% for f in form %}
@@ -10,11 +13,15 @@
         <div class="azad-field">
           {{ f.label }}
           {{ f() }}
-          {% for e in f.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+          {% if f.errors %}
+            <div class="azad-field__error">
+              {% for e in f.errors %}<span>{{ e }}</span>{% endfor %}
+            </div>
+          {% endif %}
         </div>
       {% endif %}
     {% endfor %}
-    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+    <div class="azad-form-actions">{{ form.submit(class="azad-btn") }}</div>
   </form>
 </div>
 {% endblock %}

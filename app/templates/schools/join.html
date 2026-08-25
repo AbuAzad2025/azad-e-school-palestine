@@ -1,17 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ _('الانضمام إلى صف') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card card-centered">
-  <h1 class="page-title azad-title">{{ _('الانضمام إلى صف') }}</h1>
-  <p class="form-hint">{{ _('أدخل رمز الانضمام الذي وصلك من معلمك أو مدرستك.') }}</p>
+<div class="azad-card azad-card--centered">
+  <div class="azad-auth-header">
+    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
+    <h1 class="azad-auth-title azad-title">{{ _('الانضمام إلى صف') }}</h1>
+    <p class="azad-auth-hint">{{ _('أدخل رمز الانضمام الذي وصلك من معلمك أو مدرستك.') }}</p>
+  </div>
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">
       {{ form.code.label }}
       {{ form.code(autocomplete="off", dir="ltr", style="text-align:center;font-weight:700;letter-spacing:.2em") }}
-      {% for e in form.code.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
+      {% if form.code.errors %}
+        <div class="azad-field__error">
+          {% for e in form.code.errors %}<span>{{ e }}</span>{% endfor %}
+        </div>
+      {% endif %}
     </div>
-    <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
+    <div class="azad-form-actions">{{ form.submit(class="azad-btn") }}</div>
   </form>
 </div>
 {% endblock %}

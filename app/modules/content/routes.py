@@ -231,6 +231,9 @@ def shared_library():
     from app.models.school import Subject
 
     school_id = current_school_id()
+    if not school_id:
+        flash(_("لا توجد مدرسة مرتبطة بحسابك."), "warning")
+        return redirect(url_for("auth.dashboard"))
     subject_id = request.args.get("subject_id", type=int)
     lessons = shared_lessons(school_id, subject_id)  # type: ignore[arg-type]
     subjects = Subject.query.all()
@@ -301,7 +304,12 @@ def mark_offline():
 @bp.post("/offline/<int:download_id>/remove")
 @login_required
 def remove_offline(download_id):
+    from app.models.offline import OfflineDownload
     from app.services.offline import remove_offline as _remove_offline
+
+    download = OfflineDownload.query.get_or_404(download_id)
+    if download.student_id != current_user.id:
+        abort(403)
 
     _remove_offline(download_id)
     flash(_("تم الإزالة"), "success")
