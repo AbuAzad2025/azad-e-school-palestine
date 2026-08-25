@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════
    منصة مدرسة أزاد الإلكترونية — Design System v2.0
    ═══════════════════════════════════════════════════════ */
+@import url("components/_tables.css");
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -292,6 +293,68 @@ a .icon, button .icon { pointer-events: none; }
 .azad-card__body {
   padding: var(--sp-6);
 }
+
+/* ═══════════════════════════════════
+   AUTH CARDS
+   ═══════════════════════════════════ */
+.azad-card--centered {
+  max-width: 460px;
+  margin: var(--sp-12) auto;
+  padding: var(--sp-8);
+}
+.azad-card--centered .azad-auth-header {
+  text-align: center;
+  margin-bottom: var(--sp-6);
+}
+.azad-card--centered .azad-auth-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--sp-4);
+  display: block;
+}
+.azad-card--centered .azad-auth-title {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: var(--sp-2);
+}
+.azad-card--centered .azad-auth-hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--sp-6);
+}
+.azad-card--centered .azad-auth-alt {
+  text-align: center;
+  margin-top: var(--sp-6);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.azad-card--centered .azad-auth-alt a {
+  color: var(--azad-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+.azad-card--centered .azad-auth-alt a:hover { text-decoration: underline; }
+
+.azad-card--centered .azad-form-actions {
+  flex-direction: column;
+  margin-top: var(--sp-6);
+}
+.azad-card--centered .azad-form-actions .azad-btn {
+  width: 100%;
+  min-height: 52px;
+  font-size: var(--text-md);
+}
+
+@media (max-width: 767px) {
+  .azad-card--centered {
+    margin: var(--sp-4) var(--sp-3);
+    padding: var(--sp-6) var(--sp-4);
+    border-radius: var(--radius-xl);
+  }
+}
+
 
 /* ═══════════════════════════════════
    STAT CARDS
@@ -1090,6 +1153,10 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   animation: azadToastProgress linear forwards;
 }
 @keyframes azadToastProgress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 
 /* ═══════════════════════════════════
    SKELETON LOADING
@@ -1846,21 +1913,8 @@ html {
     min-height: 52px;
     font-size: var(--text-md);
   }
-
-  .card-centered {
-    max-width: 100%;
-    margin: var(--sp-4) var(--sp-3);
-    border-radius: var(--radius-xl);
-  }
-
-
-@media (min-width: 768px) and (max-width: 1023px) {
-  .card-centered {
-    max-width: 480px;
-    margin: var(--sp-6) auto;
-    box-shadow: var(--shadow-md);
-  }
 }
+
 
 /* ═══════════════════════════════════
    MODALS — MOBILE FULL-SCREEN
@@ -1938,6 +1992,8 @@ html {
   .azad-pagination__link--active {
     display: inline-flex;
   }
+
+}
 
 /* ═══════════════════════════════════
    SEARCH — MOBILE EXPANDABLE

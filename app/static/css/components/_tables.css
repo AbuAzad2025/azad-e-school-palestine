@@ -1,0 +1,80 @@
+/* ═══════════════════════════════════
+   TABLE COMPONENT MODIFIERS
+   مكوّن الجدول — معدّلات اختيارية فوق الأساس في app.css
+
+   يُحمَّل عبر @import من أعلى app.css لأن ماكرو azad_table
+   (macros/ui.html) يحقن هذه الأصناف في صفحات متعددة.
+   ═══════════════════════════════════ */
+
+/* كثيف — حشوة أصغر وخط أصغر للجداول الغنية بالأعمدة */
+.azad-table--compact th,
+.azad-table--compact td {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--text-xs);
+}
+
+/* مخطط — تظليل الصفوف الزوجية */
+.azad-table--striped tr:nth-child(even) td {
+  background: var(--surface-2);
+}
+
+/* تفاعلي — إبراز الصف عند المرور */
+.azad-table--hover tbody tr:hover td {
+  background: var(--surface-hover);
+}
+
+/* تحويل الجدول إلى بطاقات على الشاشات الصغيرة */
+@media (max-width: 767px) {
+  .azad-table--card-view-mobile {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+  .azad-table--card-view-mobile thead {
+    display: none;
+  }
+  .azad-table--card-view-mobile tbody {
+    display: grid;
+    gap: var(--sp-3);
+  }
+  .azad-table--card-view-mobile tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4);
+    box-shadow: var(--shadow-sm);
+    gap: var(--sp-2) var(--sp-4);
+  }
+  .azad-table--card-view-mobile tr > *:first-child {
+    grid-column: 1 / -1;
+    font-weight: 700;
+    font-size: var(--text-base);
+    padding-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .azad-table--card-view-mobile td {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--sp-2) 0;
+    border-bottom: none;
+    white-space: normal;
+    font-size: var(--text-sm);
+    gap: 2px;
+  }
+  .azad-table--card-view-mobile td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+  }
+  .azad-table--card-view-mobile td:not([data-label]):empty {
+    display: none;
+  }
+}
