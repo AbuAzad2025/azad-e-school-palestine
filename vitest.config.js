@@ -14,7 +14,7 @@ export default defineConfig({
     include: ["tests/js/**/*.test.js"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov", "html"],
+      reporter: ["text", "lcov", "html", "cobertura"],
       reportsDirectory: "coverage/js",
       include: ["app/static/js/**/*.js"],
       exclude: ["app/static/js/ai-chat.js"],

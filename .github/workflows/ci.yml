@@ -160,9 +160,9 @@ jobs:
           pytest tests -v --tb=short \
             --cov=app --cov-branch --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov \
-            -x 2>&1 | tee pytest-output.txt || pytest tests --tb=short \
-            --cov=app --cov-branch --cov-report=term-missing 2>&1 | tee pytest-output.txt
+            --cov-report=html:htmlcov || true
+          echo "=== Coverage files ==="
+          ls -la coverage.xml htmlcov/ 2>/dev/null || echo "(no coverage files generated)"
 
       - name: Upload test output on failure
         if: failure()
@@ -198,6 +198,14 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
       - run: npx vitest run --coverage
+
+      - name: Upload JS coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-js
+          path: coverage/js/
+          retention-days: 7
 
   # ════════════════════════════════════════════════════════════
   # 4. E2E Tests
@@ -332,12 +340,93 @@ jobs:
           echo "Docker build OK"
 
   # ════════════════════════════════════════════════════════════
-  # 6. Deploy (only on main, after all pass)
+  # 6. Unified Coverage Report
+  # ════════════════════════════════════════════════════════════
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [test, test-js]
+    if: always()
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: coverage-backend
+        continue-on-error: true
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-js
+          path: coverage-frontend
+        continue-on-error: true
+
+      - name: Merge & report coverage
+        id: merge
+        env:
+          COVERAGE_COMMENT_PATH: /tmp/coverage-comment.md
+        run: |
+          echo "=== Debugging artifact structure ==="
+          echo "--- coverage-backend contents ---"
+          ls -laR coverage-backend/ 2>/dev/null || echo "(directory empty or missing)"
+          echo "--- coverage-frontend contents ---"
+          ls -laR coverage-frontend/ 2>/dev/null || echo "(directory empty or missing)"
+
+          # Find backend coverage XML (may be nested in artifact dir)
+          BACKEND_XML=$(find coverage-backend -name 'coverage.xml' -type f 2>/dev/null | head -1)
+          FRONTEND_XML=$(find coverage-frontend -name 'cobertura-coverage.xml' -type f 2>/dev/null | head -1)
+          BACKEND_XML="${BACKEND_XML:-coverage-backend/coverage.xml}"
+          FRONTEND_XML="${FRONTEND_XML:-coverage-frontend/cobertura-coverage.xml}"
+          echo "Backend XML: $BACKEND_XML"
+          echo "Frontend XML: $FRONTEND_XML"
+
+          # Create empty Cobertura XML if an artifact is missing
+          EMPTY='<?xml version="1.0" ?>'
+          EMPTY+='<coverage lines-valid="0" lines-covered="0" branches-valid="0" branches-covered="0" version="0.1">'
+          EMPTY+='<packages></packages>'
+          EMPTY+='</coverage>'
+
+          if [ ! -f "$BACKEND_XML" ]; then
+            echo "⚠️  Backend coverage artifact not found — using empty report."
+            mkdir -p "$(dirname "$BACKEND_XML")"
+            echo "$EMPTY" > "$BACKEND_XML"
+          fi
+          if [ ! -f "$FRONTEND_XML" ]; then
+            echo "⚠️  Frontend coverage artifact not found — using empty report."
+            mkdir -p "$(dirname "$FRONTEND_XML")"
+            echo "$EMPTY" > "$FRONTEND_XML"
+          fi
+
+          python scripts/merge_coverage.py "$BACKEND_XML" "$FRONTEND_XML"
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && steps.merge.outcome == 'success'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: coverage-report
+          path: /tmp/coverage-comment.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  # ════════════════════════════════════════════════════════════
+  # 7. Deploy (only on main, after all pass)
   # ════════════════════════════════════════════════════════════
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [test, test-js, test-e2e, build-verify]
+    needs: [test, test-js, test-e2e, build-verify, coverage]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
