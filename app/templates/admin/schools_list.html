@@ -22,7 +22,8 @@
 
 {% set rows = [] %}
 {% for s in pagination.items %}
-  {% set status_badge = '<span class=\"badge-status badge-' ~ ('ok' if s.is_active else 'err') ~ '\">' ~ (_('نشطة') if s.is_active else _('معطلة')) ~ '</span>' %}
+  {# P2-17: كتلة set تُنتج Markup آمناً مع تهريب القيم الداخلية تلقائياً #}
+  {% set status_badge %}<span class="badge-status badge-{{ 'ok' if s.is_active else 'err' }}">{{ _('نشطة') if s.is_active else _('معطلة') }}</span>{% endset %}
   {% set actions_html %}
     <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.school_detail', school_id=s.id) }}">{{ _('فتح') }}</a>
   {% endset %}

@@ -4,6 +4,7 @@ import io
 
 from openpyxl import Workbook
 
+from app.core.i18n import _
 from app.models.class_room import ClassMember
 from app.models.gradebook import GradeEntry, GradeItem
 from app.models.progress import StudentProgress
@@ -13,8 +14,8 @@ def export_students_excel(class_id: int) -> bytes:
     """تصدير قائمة الطلاب إلى Excel."""
     wb = Workbook()
     ws = wb.active
-    ws.title = "الطلاب"
-    ws.append(["الاسم", "البريد الإلكتروني", "تاريخ الانضمام", "الحالة"])
+    ws.title = _("الطلاب")
+    ws.append([_("الاسم"), _("البريد الإلكتروني"), _("تاريخ الانضمام"), _("الحالة")])
 
     members = ClassMember.query.filter_by(class_id=class_id).all()
     for m in members:
@@ -23,7 +24,7 @@ def export_students_excel(class_id: int) -> bytes:
                 m.user.name_ar or "",
                 m.user.email,
                 m.joined_at.strftime("%Y-%m-%d") if m.joined_at else "",
-                "نشط" if m.status == "active" else m.status,
+                _("نشط") if m.status == "active" else m.status,
             ]
         )
 

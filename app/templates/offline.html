@@ -21,8 +21,13 @@ p{color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
 <div class="icon-big">📡</div>
 <h1>{{ _('أنت غير متصل بالإنترنت') }}</h1>
 <p>{{ _('يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.') }}</p>
-<button class="btn" onclick="location.reload()">{{ _('إعادة المحاولة') }}</button>
+<button class="btn" data-reload>{{ _('إعادة المحاولة') }}</button>
 <p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">{{ _('يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.') }}</p>
 </div>
+<script nonce="{{ g.csp_nonce }}">
+  document.addEventListener("click", function (e) {
+    if (e.target.closest("[data-reload]")) location.reload();
+  });
+</script>
 </body>
 </html>

@@ -22,12 +22,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 {# Theme init (before body to prevent flash) #}
-<script>
+<script nonce="{{ g.csp_nonce }}">
   (function () {
     var t = localStorage.getItem("azad-theme") || "system";
     var dark = t === "dark" || (t === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     document.documentElement.dataset.theme = dark ? "dark" : "light";
   })();
+  {# P2-03: تفويض عام للنقر بدل onclick المضمّنة (تحت CSP بلا unsafe-inline) #}
+  document.addEventListener("click", function (e) {
+    var dismiss = e.target.closest("[data-dismiss-flash]");
+    if (dismiss) { dismiss.closest(".azad-flash").remove(); return; }
+    if (e.target.closest("[data-reload]")) { location.reload(); return; }
+  });
+  document.addEventListener("change", function (e) {
+    var auto = e.target.closest("[data-auto-submit]");
+    if (auto && auto.form) auto.form.submit();
+  });
 </script>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
@@ -132,7 +142,7 @@
   </nav>
   {% endif %}
 
-  <script>
+  <script nonce="{{ g.csp_nonce }}">
     window.AzadSearchLabels = {
       title: "{{ _('بحث') }}",
       placeholder: "{{ _('ابحث عن مدارس، مستخدمين، صفوف...') }}",
@@ -159,17 +169,61 @@
     };
     window.AzadBulkLabels = {
       selected: "{{ _('{count} محدد') }}",
-      error: "{{ _('حدث خطأ أثناء تنفيذ الإجراء الجماعي') }}"
+      error: "{{ _('حدث خطأ أثناء تنفيذ الإجراء الجماعي') }}",
+      actionFailed: "{{ _('فشل تنفيذ الإجراء') }}"
     };
     window.AzadTourLabels = {
       skip: "{{ _('تخطي') }}",
       next: "{{ _('التالي') }}",
       finish: "{{ _('انتهاء') }}",
-      dontShow: "{{ _('لا تُعرض مرة أخرى') }}"
+      dontShow: "{{ _('لا تُعرض مرة أخرى') }}",
+      close: "{{ _('إغلاق') }}",
+      modalLabel: "{{ _('جولة تعريفية') }}",
+      steps: [
+        { title: "{{ _('التنقل') }}", text: "{{ _('من هنا تصل لكل أقسام المنصة بسرعة.') }}" },
+        { title: "{{ _('البحث') }}", text: "{{ _('استخدم Ctrl+K للبحث في أي صفحة.') }}" },
+        { title: "{{ _('لوحتك') }}", text: "{{ _('هنا ملخص نشاطك اليومي والإحصائيات.') }}" },
+        { title: "{{ _('حسابك') }}", text: "{{ _('إعدادات الملف الشخصي، المظهر، والخروج.') }}" }
+      ]
     };
     window.AzadFormLabels = {
       required: "{{ _('هذا الحقل مطلوب') }}",
-      email: "{{ _('البريد الإلكتروني غير صالح') }}"
+      email: "{{ _('البريد الإلكتروني غير صالح') }}",
+      minLength: "{{ _('يجب ألا يقل عن {min} حرف') }}",
+      maxLength: "{{ _('يجب ألا يزيد عن {max} حرف') }}",
+      number: "{{ _('قيمة رقمية غير صالحة') }}",
+      min: "{{ _('يجب ألا تقل عن {min}') }}",
+      max: "{{ _('يجب ألا يزيد عن {max}') }}"
+    };
+    window.AzadToastLabels = {
+      close: "{{ _('إغلاق') }}",
+      success: "{{ _('نجح') }}",
+      error: "{{ _('خطأ') }}",
+      warning: "{{ _('تنبيه') }}",
+      info: "{{ _('معلومة') }}"
+    };
+    window.AzadQuizLabels = {
+      progress: "{{ _('{answered} من {total} تمت الإجابة عليه') }}"
+    };
+    window.AzadAiChatLabels = {
+      welcome: "{{ _('مرحباً! كيف يمكنني مساعدتك اليوم؟') }}",
+      suggest1: "{{ _('اشرح لي نظرية فيثاغورس بالتفصيل') }}",
+      suggest1Label: "{{ _('شرح نظرية فيثاغورس') }}",
+      suggest2: "{{ _('ساعدني في حل هذه المعادلة: 2x + 5 = 15') }}",
+      suggest2Label: "{{ _('حل معادلة') }}",
+      suggest3: "{{ _('اكتب لي مقالاً عن أهمية الرياضة') }}",
+      suggest3Label: "{{ _('كتابة مقال') }}",
+      suggest4: "{{ _('ما هي قوانين نيوتن الثلاثة؟') }}",
+      suggest4Label: "{{ _('قوانين نيوتن') }}",
+      copy: "{{ _('نسخ') }}",
+      copied: "{{ _('تم النسخ') }}",
+      timeout: "{{ _('انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.') }}",
+      timeoutToast: "{{ _('انتهت مهلة الاتصال') }}",
+      connError: "{{ _('حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.') }}",
+      errorPrefix: "{{ _('حدث خطأ: ') }}",
+      noHistory: "{{ _('لا توجد محادثات سابقة') }}",
+      newChat: "{{ _('محادثة جديدة') }}",
+      delete: "{{ _('حذف') }}"
     };
   </script>
   <div id="azad-live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>

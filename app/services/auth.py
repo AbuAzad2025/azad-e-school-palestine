@@ -1,10 +1,12 @@
 """خدمات المصادقة — منطق موحّد مُعاد الاستخدام من الويب والـ API"""
 
+from datetime import UTC, datetime
+
 from flask import current_app
-from flask_babel import _
 from flask_login import current_user
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.core.security import check_password_reuse, hash_password, validate_password_policy, verify_password
 from app.core.tokens import make_reset_token, read_reset_token
 from app.extensions import db
@@ -25,9 +27,9 @@ def register_user(
     """ينشئ حساباً بذرّية كاملة بحالة pending. يعيد (user, error)."""
     email = email.strip().lower()
     if User.query.filter_by(email=email).first():
-        return None, "هذا البريد مسجّل مسبقاً."
+        return None, _("هذا البريد مسجّل مسبقاً.")
     if role not in {r.value for r in UserRole}:
-        return None, "دور غير صالح."
+        return None, _("دور غير صالح.")
 
     # التحقق من سياسة كلمة المرور
     ok, msg = validate_password_policy(password)
@@ -39,7 +41,7 @@ def register_user(
     if school_join_code and role in {"teacher", "student", "parent"}:
         school = School.query.filter_by(join_code=school_join_code.strip().upper()).first()
         if not school:
-            return None, "كود الانضمام للمدرسة غير صحيح."
+            return None, _("كود الانضمام للمدرسة غير صحيح.")
         school_id = school.id
 
     def _create():
@@ -81,11 +83,11 @@ def authenticate(email: str, password: str) -> tuple[User | None, str | None]:
     """يعيد (user, error). النجاح: error None."""
     user = User.query.filter_by(email=email.strip().lower()).first()
     if not user:
-        return None, "بريد أو كلمة مرور غير صحيحة."
+        return None, _("بريد أو كلمة مرور غير صحيحة.")
 
     # التحقق من القفل
     if user.is_locked():
-        return None, "الحساب مقفل مؤقتاً بسبب محاولات فاشلة متكررة. حاول لاحقاً."
+        return None, _("الحساب مقفل مؤقتاً بسبب محاولات فاشلة متكررة. حاول لاحقاً.")
 
     if not verify_password(user.password_hash, password):
 
@@ -96,14 +98,14 @@ def authenticate(email: str, password: str) -> tuple[User | None, str | None]:
             )
 
         tx(_update)
-        return None, "بريد أو كلمة مرور غير صحيحة."
+        return None, _("بريد أو كلمة مرور غير صحيحة.")
 
     if not user.is_active:
-        return None, "حسابك معطّل. تواصل مع الإدارة."
+        return None, _("حسابك معطّل. تواصل مع الإدارة.")
 
     # التحقق من موافقة السوبر أدمن (بدلاً من تفعيل البريد)
     if not user.is_approved:
-        return None, "حسابك في انتظار موافقة الإدارة. سيتم إشعارك عند القبول."
+        return None, _("حسابك في انتظار موافقة الإدارة. سيتم إشعارك عند القبول.")
 
     # نجاح: إعادة تعيين المحاولات الفاشلة
     user.reset_failed_login()
@@ -118,10 +120,15 @@ def mark_login(user: User) -> None:
     tx(_mark)
 
 
-def confirm_email(uid: int, email: str) -> bool:
-    """يُفعّل البريد عند تطابق الرمز. يعيد نجاح/فشل (للـ API والويب معاً)."""
+def confirm_email(uid: int, token: str) -> bool:
+    """
+    P1-01: تفعيل البريد عبر رمز موقّع فقط — لا اعتماد على (uid + email) المعروفين.
+    """
+    from app.core.tokens import read_token
+
+    t_uid, email = read_token(token, salt="azad-email-confirm", max_age_seconds=86400)
     user = db.session.get(User, uid)
-    if not user or user.email != email:
+    if not user or not t_uid or t_uid != uid or not email or user.email != email:
         return False
 
     def _confirm():
@@ -140,17 +147,26 @@ def request_password_reset(email: str) -> str | None:
     user = User.query.filter_by(email=email.strip().lower()).first()
     if not user:
         return None
-    return make_reset_token(user.id, user.email)
+    return make_reset_token(user.id, user.email, user.password_changed_at)
 
 
 def reset_password(token: str, new_password: str) -> str | None:
-    """يغيّر كلمة المرور عبر رمز صالح. يعيد رسالة خطأ أو None عند النجاح."""
-    uid, email = read_reset_token(token)
+    """
+    يغيّر كلمة المرور عبر رمز صالح. P1-02: الرمز أحادي الاستخدام — يُربط بطابع
+    password_changed_at وقت الإنشاء، وأول استخدام يغيّر الطابع فيُبطل الرمز
+    ويُسقط كل الجلسات النشطة (عبر get_id).
+    """
+    uid, email, token_pc = read_reset_token(token)
     if not uid or not email:
-        return "رابط إعادة التعيين غير صالح أو منتهي."
+        return _("رابط إعادة التعيين غير صالح أو منتهي.")
     user = db.session.get(User, uid)
     if not user or user.email != email or not user.is_active:
-        return "رابط إعادة التعيين غير صالح أو منتهي."
+        return _("رابط إعادة التعيين غير صالح أو منتهي.")
+
+    # إبطال فوري: طابع الرمز يجب أن يطابق الطابع الحالي (استُخدم سابقاً؟ → مرفوض)
+    current_pc = user.password_changed_at.isoformat() if user.password_changed_at else None
+    if (token_pc or None) != current_pc:
+        return _("رابط إعادة التعيين مستخدم بالفعل أو منتهي.")
 
     # التحقق من سياسة كلمة المرور
     ok, msg = validate_password_policy(new_password)
@@ -166,6 +182,7 @@ def reset_password(token: str, new_password: str) -> str | None:
     def _reset():
         user.password_hash = new_hash
         user.add_password_to_history(new_hash)
+        user.password_changed_at = datetime.now(UTC)
         user.reset_failed_login()
 
     tx(_reset)
@@ -181,7 +198,7 @@ def register_individual(
 ) -> tuple[User | None, str | None]:
     email = email.strip().lower()
     if User.query.filter_by(email=email).first():
-        return None, "هذا البريد مسجّل مسبقاً."
+        return None, _("هذا البريد مسجّل مسبقاً.")
 
     ok, msg = validate_password_policy(password)
     if not ok:

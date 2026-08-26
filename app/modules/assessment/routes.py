@@ -1,6 +1,6 @@
 """مسارات التقييم: قائمة اختبارات، إنشاء، محاولة، نتائج، تصحيح مقالي."""
 
-from app.core.db import tx
+from app.core.db import TxError, tx
 from app.core.permissions import role_required
 from app.extensions import db
 from app.models.assessment import Answer, ProctoringLog, Question, Quiz, QuizAttempt
@@ -199,40 +199,64 @@ def attempt_save(attempt_id):
     attempt = get_attempt(attempt_id)
     if not attempt or attempt.student_id != current_user.id:
         abort(403)
+    timed_out = False
     for question in attempt.quiz.questions:
         value = request.form.get(f"q_{question.id}")
         if value is None:
             continue
-        answer = _parse_answer(question, value)
-        save_answer(attempt, question.id, answer)
-    flash(_("حُفظت إجاباتك."), "info")
+        try:
+            save_answer(attempt, question.id, _parse_answer(question, value))
+        except TxError as exc:
+            # P1-11: رفض الحفظ بعد انتهاء وقت الاختبار من الخادم
+            flash(_(str(exc)), "warning")
+            timed_out = True
+            break
+    if not timed_out:
+        flash(_("حُفظت إجاباتك."), "info")
     return redirect(url_for("assessment.attempt_do", attempt_id=attempt.id))
 
 
 @bp.post("/attempt/<int:attempt_id>/submit")
 @login_required
 def attempt_submit(attempt_id):
+    from app.services.email import send_quiz_result_email
+
     attempt = get_attempt(attempt_id)
     if not attempt or attempt.student_id != current_user.id:
         abort(403)
+
+    def _notify_and_email(score: float) -> None:
+        if attempt.quiz.created_by is not None:
+            notify(
+                attempt.quiz.created_by,
+                "result",
+                _("محاولة جديدة في اختبار"),
+                f"{current_user.name_ar}: {score}",
+            )
+        send_quiz_result_email(current_user, attempt.quiz, score)
     if attempt.status != "in_progress":
         return redirect(url_for("assessment.attempt_result", attempt_id=attempt.id))
+    # P1-11: حفظ الإجابات الواردة قبل انتهاء الوقت فقط، ثم تصحيح ما حُفظ
     for question in attempt.quiz.questions:
         value = request.form.get(f"q_{question.id}")
         if value is not None:
-            save_answer(attempt, question.id, _parse_answer(question, value))
-    score = submit_attempt(attempt)
+            try:
+                save_answer(attempt, question.id, _parse_answer(question, value))
+            except TxError:
+                break  # الوقت انتهى — نسلّم الإجابات المحفوظة فقط
+    try:
+        score = submit_attempt(attempt)
+    except TxError as exc:
+        if "مسبقاً" in str(exc):
+            return redirect(url_for("assessment.attempt_result", attempt_id=attempt.id))
+        # انتهى الوقت: تصحيح تلقائي للإجابات المحفوظة دون إجابات جديدة
+        score = submit_attempt(attempt, allow_after_deadline=True)
+        flash(_("انتهى وقت الاختبار — صُحّحت الإجابات المحفوظة."), "warning")
+        audit("quiz.submit", "quiz_attempts", attempt.id, {"score": score})
+        _notify_and_email(score)
+        return redirect(url_for("assessment.attempt_result", attempt_id=attempt.id))
     audit("quiz.submit", "quiz_attempts", attempt.id, {"score": score})
-    if attempt.quiz.created_by is not None:
-        notify(
-            attempt.quiz.created_by,
-            "result",
-            _("محاولة جديدة في اختبار"),
-            f"{current_user.name_ar}: {score}",
-        )
-    from app.services.email import send_quiz_result_email
-
-    send_quiz_result_email(current_user, attempt.quiz, score)
+    _notify_and_email(score)
     flash(_("سُلّم اختبارك."), "success")
     return redirect(url_for("assessment.attempt_result", attempt_id=attempt.id))
 
@@ -241,7 +265,12 @@ def _parse_answer(question, raw: str):
     if question.type == "true_false":
         return {"value": raw == "true"}
     if question.type == "mcq":
-        return {"index": int(raw)}
+        # P2-12: مدخل معدوم → 400 بدل انفجار ValueError كـ500
+        try:
+            index = int(raw)
+        except (TypeError, ValueError):
+            abort(400)
+        return {"index": index}
     return {"text": raw}  # مقالي
 
 
@@ -440,6 +469,19 @@ def proctor_log(attempt_id):
     tx(_log)
 
     quiz = attempt.quiz
+
+    def _force_submit(reason: str):
+        """تصحيح تلقائي (مراقبة): يُسمح بعد المهلة، والإجابات المتأخرة تُهمل بأمان."""
+        for q in quiz.questions:
+            value = request.json.get(f"q_{q.id}") if request.is_json else None
+            if value is not None:
+                try:
+                    save_answer(attempt, q.id, _parse_answer(q, value))
+                except TxError:
+                    break  # الوقت انتهى أو المحاولة سُلّمت — نعتمد المحفوظ فقط
+        submit_attempt(attempt, allow_after_deadline=True)
+        return jsonify({"auto_submit": True, "reason": reason})
+
     if event_type == "tab_switch":
         tab_count = ProctoringLog.query.filter_by(
             attempt_id=attempt_id,
@@ -447,12 +489,7 @@ def proctor_log(attempt_id):
         ).count()
         if tab_count >= quiz.max_tab_switches:
             if attempt.status == "in_progress":
-                for q in quiz.questions:
-                    value = request.json.get(f"q_{q.id}") if request.is_json else None
-                    if value is not None:
-                        save_answer(attempt, q.id, _parse_answer(q, value))
-                submit_attempt(attempt)
-                return jsonify({"auto_submit": True, "reason": "tab_switches_exceeded"})
+                return _force_submit("tab_switches_exceeded")
     elif event_type == "fullscreen_exit" and quiz.fullscreen_required:
         exit_count = ProctoringLog.query.filter_by(
             attempt_id=attempt_id,
@@ -460,12 +497,7 @@ def proctor_log(attempt_id):
         ).count()
         if exit_count >= 2:
             if attempt.status == "in_progress":
-                for q in quiz.questions:
-                    value = request.json.get(f"q_{q.id}") if request.is_json else None
-                    if value is not None:
-                        save_answer(attempt, q.id, _parse_answer(q, value))
-                submit_attempt(attempt)
-                return jsonify({"auto_submit": True, "reason": "fullscreen_exit_exceeded"})
+                return _force_submit("fullscreen_exit_exceeded")
 
     return jsonify({"ok": True, "event_type": event_type})
 

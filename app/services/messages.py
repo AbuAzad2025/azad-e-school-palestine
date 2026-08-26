@@ -1,6 +1,7 @@
 """الرسائل المباشرة: إرسال، استلام، خيوط، غير مقروءة."""
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.message import Message
 from app.models.user import User
@@ -16,18 +17,18 @@ def send_message(
     subject = (subject or "").strip()
     body = (body or "").strip()
     if not subject:
-        return None, "الموضوع مطلوب."
+        return None, _("الموضوع مطلوب.")
     if not body:
-        return None, "نص الرسالة مطلوب."
+        return None, _("نص الرسالة مطلوب.")
     if sender_id == recipient_id:
-        return None, "لا يمكنك إرسال رسالة لنفسك."
+        return None, _("لا يمكنك إرسال رسالة لنفسك.")
     recipient = db.session.get(User, recipient_id)
     if not recipient:
-        return None, "المستلم غير موجود."
+        return None, _("المستلم غير موجود.")
     if parent_message_id is not None:
         parent = db.session.get(Message, parent_message_id)
         if not parent:
-            return None, "الرسالة الأصلية غير موجودة."
+            return None, _("الرسالة الأصلية غير موجودة.")
 
     def _send():
         msg = Message(

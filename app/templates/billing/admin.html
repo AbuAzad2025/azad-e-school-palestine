@@ -9,7 +9,7 @@
     <div>
       <div class="item-title">{{ p.subscription.user.name_ar }} — {{ p.reference }}</div>
       <div class="item-meta">
-        <span>{{ p.amount }} {{ p.subscription.currency }}</span>
+        <span><bdi>{{ p.amount }}</bdi> <bdi>{{ p.subscription.currency }}</bdi></span>
         <span>{{ _('الخطة:') }} {{ p.subscription.plan.name }}</span>
         {% if p.note %}<span>{{ p.note }}</span>{% endif %}
       </div>

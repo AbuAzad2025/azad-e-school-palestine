@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.user import User, UserApprovalStatus, UserRoleLink
 from app.services.communication import notify
@@ -44,17 +45,17 @@ def approve_user_role_link(link_id: int, approver_id: int) -> tuple[bool, str | 
 
     link = db.session.get(UserRoleLink, link_id)
     if not link:
-        return False, "رابط الدور غير موجود."
+        return False, _("رابط الدور غير موجود.")
 
     if not link.user:
-        return False, "المستخدم غير موجود."
+        return False, _("المستخدم غير موجود.")
 
     if link.user.approval_status != UserApprovalStatus.pending:
-        return False, "الحساب ليس في انتظار الموافقة."
+        return False, _("الحساب ليس في انتظار الموافقة.")
 
     approver = db.session.get(User, approver_id)
     if not approver:
-        return False, "الموافق غير موجود."
+        return False, _("الموافق غير موجود.")
 
     # التحقق من الصلاحيات
     if approver.role == "super_admin":
@@ -62,9 +63,9 @@ def approve_user_role_link(link_id: int, approver_id: int) -> tuple[bool, str | 
     elif approver.role == "school_admin":
         # المشرف المدرسي يمكنه الموافقة فقط على مدرسته
         if link.school_id != approver.school_id:
-            return False, "لا يمكنك الموافقة على مستخدمين من مدارس أخرى."
+            return False, _("لا يمكنك الموافقة على مستخدمين من مدارس أخرى.")
     else:
-        return False, "ليس لديك صلاحية الموافقة."
+        return False, _("ليس لديك صلاحية الموافقة.")
 
     def _approve():
         link.approved_by = approver_id
@@ -91,26 +92,26 @@ def reject_user_role_link(link_id: int, approver_id: int, reason: str | None = N
 
     link = db.session.get(UserRoleLink, link_id)
     if not link:
-        return False, "رابط الدور غير موجود."
+        return False, _("رابط الدور غير موجود.")
 
     if not link.user:
-        return False, "المستخدم غير موجود."
+        return False, _("المستخدم غير موجود.")
 
     if link.user.approval_status != UserApprovalStatus.pending:
-        return False, "الحساب ليس في انتظار الموافقة."
+        return False, _("الحساب ليس في انتظار الموافقة.")
 
     approver = db.session.get(User, approver_id)
     if not approver:
-        return False, "الموافق غير موجود."
+        return False, _("الموافق غير موجود.")
 
     # التحقق من الصلاحيات
     if approver.role == "super_admin":
         pass
     elif approver.role == "school_admin":
         if link.school_id != approver.school_id:
-            return False, "لا يمكنك رفض مستخدمين من مدارس أخرى."
+            return False, _("لا يمكنك رفض مستخدمين من مدارس أخرى.")
     else:
-        return False, "ليس لديك صلاحية الرفض."
+        return False, _("ليس لديك صلاحية الرفض.")
 
     def _reject():
         link.user.approval_status = UserApprovalStatus.rejected

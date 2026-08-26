@@ -34,7 +34,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="azad-btn-outline azad-btn-sm" style="margin:2px">{{ icon('check') }} {{ _('اعتماد') }}</button>
           </form>
-          <button type="button" class="azad-btn-outline azad-btn-sm azad-btn-danger" style="margin:2px" onclick="openRejectModal({{ p.id }})">
+          <button type="button" class="azad-btn-outline azad-btn-sm azad-btn-danger" style="margin:2px" data-reject-open="{{ p.id }}">
             {{ icon('x') }} {{ _('رفض') }}
           </button>
           {% endif %}
@@ -53,7 +53,7 @@
   <div class="modal" style="max-width:500px">
     <div class="modal-header">
       <h3 class="modal-title" id="reject-modal-title">{{ _('رفض طلب السحب') }}</h3>
-      <button class="modal-close" onclick="closeRejectModal()" aria-label="{{ _('إغلاق') }}">{{ icon('x') }}</button>
+      <button class="modal-close" data-reject-close aria-label="{{ _('إغلاق') }}">{{ icon('x') }}</button>
     </div>
     <form method="post" id="reject-form">
       <div class="modal-body">
@@ -64,14 +64,15 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       </div>
       <div class="modal-footer">
-        <button type="button" class="azad-btn-outline" onclick="closeRejectModal()">{{ _('إلغاء') }}</button>
+        <button type="button" class="azad-btn-outline" data-reject-close>{{ _('إلغاء') }}</button>
         <button type="submit" class="azad-btn azad-btn-danger">{{ icon('x') }} {{ _('تأكيد الرفض') }}</button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
+// P2-03: ربط بالتفويض بدل onclick المضمّنة
 function openRejectModal(payoutId) {
   document.getElementById('reject-form').action = '{{ url_for("admin.review_payout", payout_id=0, result="reject") }}'.replace('/0', '/' + payoutId);
   document.getElementById('reject-modal').style.display = 'flex';
@@ -82,6 +83,15 @@ function closeRejectModal() {
   document.getElementById('reject-modal').style.display = 'none';
   document.body.style.overflow = '';
 }
+
+document.addEventListener('click', function(e) {
+  var openBtn = e.target.closest('[data-reject-open]');
+  if (openBtn) {
+    openRejectModal(openBtn.dataset.rejectOpen);
+    return;
+  }
+  if (e.target.closest('[data-reject-close]')) closeRejectModal();
+});
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeRejectModal();

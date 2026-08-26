@@ -74,10 +74,12 @@ class _BaseConfig:
     TALISMAN_FORCE_HTTPS = os.getenv("TALISMAN_FORCE_HTTPS", "1") == "1"
     TALISMAN_STRICT_TRANSPORT_SECURITY = True
     TALISMAN_STRICT_TRANSPORT_SECURITY_MAX_AGE = 31536000
+    # P2-03: لا 'unsafe-inline' للسكربتات — nonce لكل طلب عبر '{CSP_NONCE}'
+    # (يُستبدل في after_request بقيمة فعلية من g.csp_nonce)
     TALISMAN_CONTENT_SECURITY_POLICY = {
         "default-src": "'self'",
         "script-src": (
-            "'self' 'unsafe-inline' "
+            "'self' 'nonce-{CSP_NONCE}' "
             "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
             "https://browser.sentry-cdn.com https://plausible.io"
         ),

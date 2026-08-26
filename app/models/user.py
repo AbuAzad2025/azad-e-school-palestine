@@ -52,10 +52,17 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
     locked_until = db.Column(db.DateTime(timezone=True))
     # تاريخ كلمات المرور (لتجنب إعادة الاستخدام)
     password_history: Mapped[list[str]] = mapped_column(db.JSON, default=list, nullable=False)
+    # P1-02: طابع آخر تغيير لكلمة المرور — يُبطل رموز reset ويُسقط الجلسات القديمة
+    password_changed_at = db.Column(db.DateTime(timezone=True))
 
     role_links: Mapped[list["UserRoleLink"]] = relationship(
         back_populates="user", foreign_keys="UserRoleLink.user_id", cascade="all, delete-orphan"
     )
+
+    def get_id(self) -> str:
+        """هوية الجلسة تتضمن طابع تغيير كلمة المرور — أي تغيير يُبطل كل الجلسات السابقة."""
+        stamp = self.password_changed_at.isoformat() if self.password_changed_at else ""
+        return f"{self.id}:{stamp}"
 
     @property
     def is_authenticated_prop(self):

@@ -3,6 +3,7 @@
 M0: هيكل قابل للتشغيل. تُضاف الوحدات (blueprints) في مراحلها.
 """
 
+import secrets
 import shutil
 import time as _time
 from collections import deque
@@ -117,6 +118,8 @@ def create_app(config_class=Config):
     @app.before_request
     def _track_response_time():
         g._request_start = _time.monotonic()
+        # P2-03: nonce فريد لكل طلب لدعم CSP بلا unsafe-inline
+        g.csp_nonce = secrets.token_urlsafe(16)
         if app.config.get("SENTRY_DSN"):
             set_sentry_user(current_user)
 
@@ -125,6 +128,11 @@ def create_app(config_class=Config):
         if hasattr(g, "_request_start"):
             elapsed_ms = int((_time.monotonic() - g._request_start) * 1000)
             _response_times.append(elapsed_ms)
+        # P2-03: استبدال العنصر النائب في سياسة CSP بالـ nonce الفعلي
+        csp = response.headers.get("Content-Security-Policy")
+        if csp and "{CSP_NONCE}" in csp:
+            nonce = getattr(g, "csp_nonce", "")
+            response.headers["Content-Security-Policy"] = csp.replace("{CSP_NONCE}", nonce)
         return response
 
     if not app.config.get("TALISMAN_ENABLED", True):
@@ -219,6 +227,17 @@ def create_app(config_class=Config):
 
     # Initialize Swagger/OpenAPI
     init_swagger(app)
+
+    # P3-15: مهمة دورية — انتهاء الاشتراكات (cron/systemd timer: flask expire-subscriptions)
+    import click
+
+    @app.cli.command("expire-subscriptions")
+    def expire_subscriptions_cmd():
+        """إنهاء الاشتراكات المنتهية — شغّلها دورياً من cron لا من عرض الصفحات."""
+        from .services.billing import expire_subscriptions
+
+        count = expire_subscriptions()
+        click.echo(f"expired_subscriptions={count}")
 
     from .core import context
 
@@ -368,46 +387,6 @@ def create_app(config_class=Config):
         logger.exception("Unhandled exception: %s", e)
         db.session.rollback()
         return render_template("errors/500.html"), 500
-
-    @app.template_filter("format_datetime")
-    def _format_datetime(value, fmt="%Y-%m-%d %H:%M"):
-        """تنسيق timestamp بشكل موحد في القوالب."""
-        if not value:
-            return "—"
-        return value.strftime(fmt)
-
-    @app.template_filter("format_date")
-    def _format_date(value):
-        """تنسيق تاريخ فقط."""
-        if not value:
-            return "—"
-        return value.strftime("%Y-%m-%d")
-
-    @app.template_filter("format_time")
-    def _format_time(value):
-        """تنسيق وقت فقط."""
-        if not value:
-            return "—"
-        return value.strftime("%H:%M")
-
-    @app.template_filter("relative_time")
-    def _relative_time(value):
-        """وقت نسبي (منذ X دقائق/ساعات)."""
-        if not value:
-            return "—"
-        now = datetime.now(UTC) if value.tzinfo else datetime.now(UTC)
-        delta = now - value
-        if delta.days > 365:
-            return f"{delta.days // 365}y"
-        if delta.days > 30:
-            return f"{delta.days // 30}mo"
-        if delta.days > 0:
-            return f"{delta.days}d"
-        if delta.seconds > 3600:
-            return f"{delta.seconds // 3600}h"
-        if delta.seconds > 60:
-            return f"{delta.seconds // 60}m"
-        return "now"
 
     @app.template_filter("currencyformat")
     def _format_currency(value, currency: str = "ILS") -> str:

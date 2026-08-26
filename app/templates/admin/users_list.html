@@ -31,7 +31,9 @@
 
 {% set rows = [] %}
 {% for u in pagination.items %}
-  {% set status_badge = '<span class=\"badge-status badge-' ~ ('ok' if u.is_active else 'err') ~ '\">' ~ (_('نشط') if u.is_active else _('معطل')) ~ '</span>' %}
+  {# P2-17: كتل set تُنتج Markup آمناً مع تهريب القيم الداخلية تلقائياً #}
+  {% set status_badge %}<span class="badge-status badge-{{ 'ok' if u.is_active else 'err' }}">{{ _('نشط') if u.is_active else _('معطل') }}</span>{% endset %}
+  {% set role_chip %}<span class="meta-chip">{{ u.role.value }}</span>{% endset %}
   {% set actions_html %}
     <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('فتح') }}</a>
     {% if u.role.value != 'super_admin' and u.id != current_user.id %}
@@ -50,7 +52,7 @@
     'cells': {
       'name': u.name_ar,
       'email': u.email,
-      'role': '<span class=\"meta-chip\">' ~ u.role.value ~ '</span>',
+      'role': role_chip,
       'status': status_badge,
       'created': u.created_at.strftime('%Y-%m-%d')
     },

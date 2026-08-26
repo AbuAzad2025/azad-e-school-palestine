@@ -2,6 +2,8 @@
  * Toast notification module — ES module
  */
 
+const t = (key, fallback) => window.AzadToastLabels?.[key] || fallback;
+
 const ICONS = {
   success:
     '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>',
@@ -56,7 +58,7 @@ export function show(options) {
       ${title ? `<div class="azad-toast__title">${title}</div>` : ""}
       <div class="azad-toast__message">${message}</div>
     </div>
-    <button class="azad-toast__close" aria-label="إغلاق">
+    <button class="azad-toast__close" aria-label="${t("close", "إغلاق")}">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
     <div class="azad-toast__progress" style="animation-duration: ${duration}ms"></div>
@@ -76,10 +78,12 @@ export function show(options) {
 }
 
 export const success = (msg, title) =>
-  show({ type: "success", title: title || "نجح", message: msg });
-export const error = (msg, title) => show({ type: "error", title: title || "خطأ", message: msg });
+  show({ type: "success", title: title || t("success", "نجح"), message: msg });
+export const error = (msg, title) =>
+  show({ type: "error", title: title || t("error", "خطأ"), message: msg });
 export const warning = (msg, title) =>
-  show({ type: "warning", title: title || "تنبيه", message: msg });
-export const info = (msg, title) => show({ type: "info", title: title || "معلومة", message: msg });
+  show({ type: "warning", title: title || t("warning", "تنبيه"), message: msg });
+export const info = (msg, title) =>
+  show({ type: "info", title: title || t("info", "معلومة"), message: msg });
 
 export default { show, success, error, warning, info };

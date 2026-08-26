@@ -253,6 +253,28 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS price NUMERIC(10,2)"))
         db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS duration_days SMALLINT"))
 
+        # Audit hardening batch (2026-08): password stamp + partial unique indexes
+        db_engine.session.execute(
+            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ")
+        )
+        # P2-07: استبدال قيد الاشتراك النشط القديم بفهرس جزئي
+        db_engine.session.execute(
+            text("ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS uq_subscription_active")
+        )
+        db_engine.session.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_subscription_active "
+                "ON subscriptions (user_id, class_id) WHERE status = 'active'"
+            )
+        )
+        # P1-05: محاولة واحدة مفتوحة لكل (اختبار، طالب)
+        db_engine.session.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_attempt_open_per_quiz_student "
+                "ON quiz_attempts (quiz_id, student_id) WHERE status = 'in_progress'"
+            )
+        )
+
         db_engine.session.commit()
     except Exception:
         db_engine.session.rollback()

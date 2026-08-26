@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import date as date_
+from decimal import Decimal
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,7 +25,7 @@ class SubscriptionPlan(PKMixin, db.Model):
     class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id"))  # NULL = خطة عامة للمدرسة
     name: Mapped[str] = mapped_column(Text, nullable=False)  # فصل أول / فصل ثاني / سنوي
     plan: Mapped[str] = mapped_column(String(15), nullable=False)  # first_term/second_term/annual
-    price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
     duration_days: Mapped[int | None] = mapped_column(Integer)
     benefits: Mapped[dict | None] = mapped_column(JSONB)  # مزايا المواد الاختيارية
@@ -32,12 +34,22 @@ class SubscriptionPlan(PKMixin, db.Model):
 
 class Subscription(PKMixin, db.Model):
     __tablename__ = "subscriptions"
-    __table_args__ = (UniqueConstraint("user_id", "plan_id", "class_id", "status", name="uq_subscription_active"),)
+    __table_args__ = (
+        # P2-07: فريد جزئي — اشتراك نشط واحد لكل (مستخدم، صف) بغضّ النظر عن الخطة.
+        # القيد القديم على الأعمدة الأربعة كان يمنع إعادة الاشتراك بعد الانتهاء.
+        Index(
+            "uq_subscription_active",
+            "user_id",
+            "class_id",
+            unique=True,
+            postgresql_where=sa_text("status = 'active'"),
+        ),
+    )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("subscription_plans.id"), nullable=False)
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
-    price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
     start_at = db.Column(db.DateTime(timezone=True))
     end_at = db.Column(db.DateTime(timezone=True))
@@ -58,7 +70,7 @@ class ManualPayment(PKMixin, db.Model):
 
     subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"), nullable=False)
     reference: Mapped[str] = mapped_column(Text, nullable=False)  # رقم مرجع التحويل
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     note: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/approved/rejected
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
@@ -114,7 +126,7 @@ class DiscountCode(PKMixin, db.Model):
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(String(15), nullable=False)  # percentage/fixed
-    value: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    value: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     max_uses: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     used_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     expiry_date: Mapped[date_ | None] = mapped_column(db.Date, nullable=True)

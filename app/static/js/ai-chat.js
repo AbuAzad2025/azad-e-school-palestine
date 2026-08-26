@@ -492,24 +492,34 @@
   }
 
   function _(text) {
-    // Simple i18n - in production use Flask's gettext
-    const translations = {
-      "مرحباً! كيف يمكنني مساعدتك اليوم؟": "مرحباً! كيف يمكنني مساعدتك اليوم؟",
-      "شرح نظرية فيثاغورس": "شرح نظرية فيثاغورس",
-      "حل معادلة": "حل معادلة",
-      "كتابة مقال": "كتابة مقال",
-      "قوانين نيوتن": "قوانين نيوتن",
-      "تم النسخ": "تم النسخ",
-      "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.": "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.",
-      "لا توجد محادثات سابقة": "لا توجد محادثات سابقة",
-      "محادثة جديدة": "محادثة جديدة",
+    // النصوص تُحقن من الخادم مترجمة عبر window.AzadAiChatLabels — والنص العربي fallback فقط.
+    const L = window.AzadAiChatLabels || {};
+    const map = {
+      "مرحباً! كيف يمكنني مساعدتك اليوم؟": L.welcome,
+      "اشرح لي نظرية فيثاغورس بالتفصيل": L.suggest1,
+      "شرح نظرية فيثاغورس": L.suggest1Label,
+      "ساعدني في حل هذه المعادلة: 2x + 5 = 15": L.suggest2,
+      "حل معادلة": L.suggest2Label,
+      "اكتب لي مقالاً عن أهمية الرياضة": L.suggest3,
+      "كتابة مقال": L.suggest3Label,
+      "ما هي قوانين نيوتن الثلاثة؟": L.suggest4,
+      "قوانين نيوتن": L.suggest4Label,
+      نسخ: L.copy,
+      "تم النسخ": L.copied,
+      "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.": L.timeout,
+      "انتهت مهلة الاتصال": L.timeoutToast,
+      "حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.": L.connError,
+      "حدث خطأ: ": L.errorPrefix,
+      "لا توجد محادثات سابقة": L.noHistory,
+      "محادثة جديدة": L.newChat,
+      حذف: L.delete,
     };
-    return translations[text] || text;
+    return map[text] || text;
   }
 
   function formatDate(dateStr) {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ar", {
+    return date.toLocaleDateString(document.documentElement.lang || "ar", {
       month: "short",
       day: "numeric",
       hour: "2-digit",

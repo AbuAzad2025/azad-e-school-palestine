@@ -21,7 +21,7 @@
       {% endif %}
     </div>
     <div class="card-footer" style="border-top:1px solid var(--azad-border);padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
-      <button class="azad-btn" onclick="selectPaymentMethod('{{ method.id }}')">{{ _('اختيار') }}</button>
+      <button class="azad-btn" data-select-method="{{ method.id }}">{{ _('اختيار') }}</button>
     </div>
   </div>
   {% endfor %}
@@ -29,11 +29,17 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
+// P2-03: ربط بالتفويض بدل onclick المضمّنة
 function selectPaymentMethod(methodId) {
   // يمكن إضافة منطق اختيار طريقة الدفع هنا
   console.log('Selected payment method:', methodId);
   alert('{{ _('تم اختيار:') }} ' + methodId);
 }
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-select-method]');
+  if (btn) selectPaymentMethod(btn.dataset.selectMethod);
+});
 </script>
 {% endblock %}

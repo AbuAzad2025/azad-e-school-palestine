@@ -5,6 +5,7 @@
 const STORAGE_KEY = "azad-tour-completed";
 const COOKIE_NAME = "azad_show_tour";
 
+// نصوص الخطوات تأتي من الخادم مترجمة عبر window.AzadTourLabels.steps — والثوابت أدناه fallback فقط.
 const STEPS = [
   {
     target: "[data-tour-target='navbar']",
@@ -27,6 +28,10 @@ const STEPS = [
     text: "إعدادات الملف الشخصي، المظهر، والخروج.",
   },
 ];
+
+const tourLabels = () => window.AzadTourLabels || {};
+const localizedSteps = () =>
+  STEPS.map((step, i) => ({ ...step, ...(tourLabels().steps?.[i] || {}) }));
 
 function getCookie(name) {
   const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
@@ -51,14 +56,14 @@ function createModal() {
     modal.className = "azad-tour";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.setAttribute("aria-label", "جولة تعريفية");
+    modal.setAttribute("aria-label", tourLabels().modalLabel || "جولة تعريفية");
     modal.setAttribute("hidden", "");
     modal.innerHTML = `
       <div class="azad-tour__overlay" data-tour-overlay></div>
       <div class="azad-tour__card">
         <div class="azad-tour__header">
           <h2 class="azad-tour__title" data-tour-step-title></h2>
-          <button type="button" class="azad-tour__close" data-tour-close aria-label="إغلاق">×</button>
+          <button type="button" class="azad-tour__close" data-tour-close aria-label="${tourLabels().close || "إغلاق"}">×</button>
         </div>
         <p class="azad-tour__text" data-tour-step-text></p>
         <div class="azad-tour__progress" aria-hidden="true">
@@ -95,13 +100,13 @@ export function initTour() {
   if (skipBtn) skipBtn.textContent = labels.skip || "تخطي";
 
   const renderStep = () => {
-    const step = STEPS[current];
+    const step = localizedSteps()[current];
     titleEl.textContent = step.title;
     textEl.textContent = step.text;
     nextBtn.textContent =
       current === STEPS.length - 1
-        ? window.AzadTourLabels?.finish || "انتهاء"
-        : window.AzadTourLabels?.next || "التالي";
+        ? tourLabels().finish || "انتهاء"
+        : tourLabels().next || "التالي";
     modal.querySelectorAll("[data-tour-dot]").forEach((dot, i) => {
       dot.classList.toggle("azad-tour__dot--active", i === current);
     });

@@ -6,6 +6,7 @@
 
 from .context import register as register_context
 from .db import TxError, tx
+from .i18n import _
 from .logging import get_correlation_id, get_logger
 from .permissions import role_required
 from .security import hash_password, verify_password
@@ -14,6 +15,7 @@ from .tokens import make_activation_token, make_reset_token, make_token, read_re
 from .uploads import allowed_extension, save_upload
 
 __all__ = [
+    "_",
     "TxError",
     "allowed_extension",
     "get_correlation_id",

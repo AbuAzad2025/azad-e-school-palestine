@@ -571,11 +571,11 @@ def backup_create():
         if result.returncode == 0:
             flash(_("تم إنشاء النسخة الاحتياطية بنجاح"), "success")
         else:
-            flash(f"فشل النسخ الاحتياطي: {result.stderr}", "danger")
+            flash(_("فشل النسخ الاحتياطي: %(detail)s", detail=result.stderr), "danger")
     except FileNotFoundError:
         flash(_("لم يتم العثور على pg_dump — تأكد من تثبيت PostgreSQL"), "danger")
     except Exception as e:
-        flash(f"خطأ: {e}", "danger")
+        flash(_("خطأ: %(detail)s", detail=e), "danger")
 
     return redirect(url_for("admin.backups_list"))
 
@@ -607,11 +607,11 @@ def backup_restore(filename):
         if result.returncode == 0:
             flash(_("تمت الاستعادة بنجاح"), "success")
         else:
-            flash(f"فشل الاستعادة: {result.stderr}", "danger")
+            flash(_("فشل الاستعادة: %(detail)s", detail=result.stderr), "danger")
     except FileNotFoundError:
         flash(_("لم يتم العثور على psql — تأكد من تثبيت PostgreSQL"), "danger")
     except Exception as e:
-        flash(f"خطأ: {e}", "danger")
+        flash(_("خطأ: %(detail)s", detail=e), "danger")
 
     return redirect(url_for("admin.backups_list"))
 

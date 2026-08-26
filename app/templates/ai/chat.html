@@ -31,7 +31,7 @@
       <div class="sidebar-content">
         <ul id="chat-history" class="chat-history-list"></ul>
         {% if chat_sessions %}
-        <script>
+        <script nonce="{{ g.csp_nonce }}">
           window.INITIAL_CHATS = {{ chat_sessions | tojson }};
         </script>
         {% endif %}

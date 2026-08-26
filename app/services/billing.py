@@ -1,22 +1,34 @@
-"""خدمات الاشتراك والدفع اليدوي (D12 — لا بوابات؛ اعتماد بشري)."""
+"""خدمات الاشتراك والدفع اليدوي (D12 — لا بوابات؛ اعتماد بشري).
+
+P1-08: كل الحسابات المالية Decimal(10,2) بتقريب ROUND_HALF_UP — لا Float إطلاقاً.
+"""
 
 from datetime import UTC, datetime, timedelta
 from datetime import date as date_
+from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.orm import joinedload
 
 from app.core.db import TxError, tx
+from app.core.i18n import _
 from app.core.uploads import save_upload
 from app.extensions import db
 from app.models.billing import DiscountCode, ManualPayment, PaymentReceipt, Subscription, SubscriptionPlan
+
+CENT = Decimal("0.01")
+
+
+def money(value: Decimal | float | int | str) -> Decimal:
+    """يطبّع أي مدخل مالي إلى Decimal مقرّباً لأقرب قرش (ROUND_HALF_UP)."""
+    return Decimal(str(value)).quantize(CENT, rounding=ROUND_HALF_UP)
 
 
 def create_plan(
     school_id: int,
     name: str,
     plan: str,
-    price: float,
+    price: Decimal | float | int | str,
     class_id: int | None = None,
     currency: str = "ILS",
     duration_days: int | None = None,
@@ -24,9 +36,9 @@ def create_plan(
 ) -> tuple[SubscriptionPlan | None, str | None]:
     name = (name or "").strip()
     if not name or price is None:
-        return None, "الاسم والسعر مطلوبان."
+        return None, _("الاسم والسعر مطلوبان.")
     if plan not in ("first_term", "second_term", "annual"):
-        return None, "نوع خطة غير صالح."
+        return None, _("نوع خطة غير صالح.")
 
     def _create():
         return SubscriptionPlan(
@@ -34,7 +46,7 @@ def create_plan(
             class_id=class_id,
             name=name,
             plan=plan,
-            price=price,
+            price=money(price),
             currency=currency,
             duration_days=duration_days,
             benefits=benefits,
@@ -58,7 +70,7 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
     """يبدأ اشتراكاً بحالة pending — لا يُفعَّل إلا بعد اعتماد دفع يدوي."""
     active = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").first()
     if active:
-        return None, "لديك اشتراك نشط في هذا الصف."
+        return None, _("لديك اشتراك نشط في هذا الصف.")
 
     def _create():
         return Subscription(
@@ -86,11 +98,16 @@ def list_subscriptions(user_id: int | None = None, class_id: int | None = None, 
 
 
 def record_manual_payment(
-    subscription: Subscription, reference: str, amount: float, note: str | None = None, receipt_file=None
+    subscription: Subscription,
+    reference: str,
+    amount: Decimal | float | int | str,
+    note: str | None = None,
+    receipt_file=None,
 ) -> tuple[ManualPayment | None, str | None]:
     reference = (reference or "").strip()
-    if not reference or amount is None or amount <= 0:
-        return None, "المرجع والمبلغ مطلوبان."
+    amount_dec = money(amount) if amount is not None else None
+    if not reference or amount_dec is None or amount_dec <= 0:
+        return None, _("المرجع والمبلغ مطلوبان.")
 
     stored = None
     original = None
@@ -109,10 +126,12 @@ def record_manual_payment(
         payment = ManualPayment(
             subscription_id=subscription.id,
             reference=reference,
-            amount=amount,
+            amount=amount_dec,
             note=note,
         )
         db.session.add(payment)
+        # P0-04: flush داخل نفس المعاملة ليُحسم payment.id قبل ربط الإيصال
+        db.session.flush()
         if stored:
             db.session.add(
                 PaymentReceipt(
@@ -140,9 +159,12 @@ def _activate(subscription: Subscription, duration_days: int | None = None, auto
 
 
 def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> Subscription:
-    """اعتماد الدفع اليدوي → تفعيل الاشتراك (ذرّية)."""
+    """اعتماد الدفع اليدوي → تفعيل الاشتراك (ذرّية + حماية من الاعتماد المكرر)."""
 
     def _approve():
+        # P2-10: منع إعادة الاعتماد (توسيع الاشتراك مجاناً)
+        if payment.status != "pending":
+            raise TxError(_("تمت مراجعة هذا الدفع مسبقاً."))
         payment.status = "approved"
         payment.reviewed_by = reviewer_id
         payment.reviewed_at = db.func.now()
@@ -156,6 +178,8 @@ def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> S
 
 def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> None:
     def _reject():
+        if payment.status != "pending":
+            raise TxError(_("تمت مراجعة هذا الدفع مسبقاً."))
         payment.status = "rejected"
         payment.reviewed_by = reviewer_id
         payment.reviewed_at = db.func.now()
@@ -177,8 +201,7 @@ def pending_payments():
 
 
 def expire_subscriptions() -> int:
-    """يُنهي الاشتراكات المنتهية (يُستدعى عند عرض الاشتراكات — بدون مؤقت خارجي)."""
-    from sqlalchemy import update
+    """يُنهي الاشتراكات المنتهية — تُستدعى من CLI/cron (P3-15) لا من عرض الصفحات."""
 
     def _expire():
         now = datetime.now(UTC)
@@ -199,30 +222,26 @@ def has_active_subscription(user_id: int, class_id: int) -> bool:
     return sub is not None
 
 
-def subscription_balance(subscription_id: int) -> float:
-    """الرصيد المتبقي للاشتراك = السعر - مجموع الدفعات المعتمدة."""
+def subscription_balance(subscription_id: int) -> Decimal:
+    """الرصيد المتبقي للاشتراك = السعر - مجموع الدفعات المعتمدة (Decimal)."""
     sub = db.session.get(Subscription, subscription_id)
     if not sub:
-        return 0
-    paid = (
-        db.session.query(func.sum(ManualPayment.amount))
-        .filter(
-            ManualPayment.subscription_id == subscription_id,
-            ManualPayment.status == "approved",
-        )
-        .scalar()
-        or 0
-    )
-    return float(sub.price) - float(paid)
+        return Decimal("0.00")
+    paid = db.session.query(func.sum(ManualPayment.amount)).filter(
+        ManualPayment.subscription_id == subscription_id,
+        ManualPayment.status == "approved",
+    ).scalar() or Decimal("0")
+    return (sub.price - paid).quantize(CENT, rounding=ROUND_HALF_UP)
 
 
-def can_record_payment(subscription_id: int, amount: float) -> tuple[bool, str]:
+def can_record_payment(subscription_id: int, amount: Decimal | float | int | str) -> tuple[bool, str]:
     """يتحقق مما إذا كان المبلغ لا يتجاوز الرصيد المتبقي."""
+    amount_dec = money(amount)
     balance = subscription_balance(subscription_id)
-    if amount <= 0:
-        return False, "المبلغ يجب أن يكون أكبر من صفر."
-    if amount > balance:
-        return False, f"المبلغ ({amount}) يتجاوز الرصيد المتبقي ({balance})."
+    if amount_dec <= 0:
+        return False, _("المبلغ يجب أن يكون أكبر من صفر.")
+    if amount_dec > balance:
+        return False, _("المبلغ (%(amount)s) يتجاوز الرصيد المتبقي (%(balance)s).", amount=amount_dec, balance=balance)
     return True, ""
 
 
@@ -234,11 +253,12 @@ def subscription_payment_summary(subscription_id: int) -> dict:
     payments = ManualPayment.query.filter_by(subscription_id=subscription_id).all()
     approved = [p for p in payments if p.status == "approved"]
     pending = [p for p in payments if p.status == "pending"]
-    total_paid = sum(float(p.amount) for p in approved)
+    total_paid = sum((p.amount for p in approved), Decimal("0.00")).quantize(CENT, rounding=ROUND_HALF_UP)
+    balance = (sub.price - total_paid).quantize(CENT, rounding=ROUND_HALF_UP)
     return {
-        "total_price": float(sub.price),
+        "total_price": sub.price.quantize(CENT, rounding=ROUND_HALF_UP),
         "total_paid": total_paid,
-        "balance": float(sub.price) - total_paid,
+        "balance": balance,
         "approved_count": len(approved),
         "pending_count": len(pending),
     }
@@ -249,7 +269,7 @@ def create_discount_code(
     code: str,
     name: str,
     type_: str,
-    value: float,
+    value: Decimal | float | int | str,
     max_uses: int = 1,
     expiry_date: date_ | None = None,
     applicable_plan_ids: list[int] | None = None,
@@ -259,27 +279,27 @@ def create_discount_code(
     code = (code or "").strip().upper()
     name = (name or "").strip()
     if not code:
-        return None, "كود الخصم مطلوب."
+        return None, _("كود الخصم مطلوب.")
     if not name:
-        return None, "اسم الخصم مطلوب."
+        return None, _("اسم الخصم مطلوب.")
     if type_ not in ("percentage", "fixed"):
-        return None, "نوع الخصم غير صالح (percentage/fixed)."
-    if value <= 0:
-        return None, "قيمة الخصم يجب أن تكون أكبر من صفر."
+        return None, _("نوع الخصم غير صالح (percentage/fixed).")
+    if money(value) <= 0:
+        return None, _("قيمة الخصم يجب أن تكون أكبر من صفر.")
     if max_uses < 1:
-        return None, "الحد الأقصى للاستخدام يجب أن يكون 1 على الأقل."
+        return None, _("الحد الأقصى للاستخدام يجب أن يكون 1 على الأقل.")
     if expiry_date and expiry_date < date_.today():
-        return None, "تاريخ الانتهاء لا يمكن أن يكون في الماضي."
+        return None, _("تاريخ الانتهاء لا يمكن أن يكون في الماضي.")
 
     if DiscountCode.query.filter_by(code=code).first():
-        return None, "كود الخصم موجود مسبقاً."
+        return None, _("كود الخصم موجود مسبقاً.")
 
     def _create():
         dc = DiscountCode(
             code=code,
             name=name,
             type=type_,
-            value=value,
+            value=money(value),
             max_uses=max_uses,
             expiry_date=expiry_date,
             applicable_plan_ids=applicable_plan_ids,
@@ -291,23 +311,23 @@ def create_discount_code(
     return tx(_create), None
 
 
-def validate_discount_code(code: str, plan_id: int) -> tuple[float | None, str | None]:
-    """التحقق من صلاحية كود الخصم وإرجاع مبلغ الخصم."""
+def validate_discount_code(code: str, plan_id: int) -> tuple[Decimal | None, str | None]:
+    """التحقق من صلاحية كود الخصم وإرجاع مبلغ الخصم (Decimal)."""
     code = (code or "").strip().upper()
     if not code:
-        return None, "كود الخصم مطلوب."
+        return None, _("كود الخصم مطلوب.")
 
     dc = DiscountCode.query.filter_by(code=code).first()
     if not dc:
-        return None, "كود الخصم غير صالح."
+        return None, _("كود الخصم غير صالح.")
     if not dc.is_active:
-        return None, "كود الخصم غير مفعل."
+        return None, _("كود الخصم غير مفعل.")
     if dc.expiry_date and dc.expiry_date < date_.today():
-        return None, "كود الخصم منتهي الصلاحية."
+        return None, _("كود الخصم منتهي الصلاحية.")
     if dc.used_count >= dc.max_uses:
-        return None, "تم استنفاد عدد استخدامات كود الخصم."
+        return None, _("تم استنفاد عدد استخدامات كود الخصم.")
     if dc.applicable_plan_ids and plan_id not in dc.applicable_plan_ids:
-        return None, "كود الخصم غير صالح لهذه الخطة."
+        return None, _("كود الخصم غير صالح لهذه الخطة.")
     if dc.school_id:
         # School check will be done at subscription level
         pass
@@ -315,42 +335,51 @@ def validate_discount_code(code: str, plan_id: int) -> tuple[float | None, str |
     # Calculate discount amount
     plan = db.session.get(SubscriptionPlan, plan_id)
     if not plan:
-        return None, "الخطة غير موجودة."
+        return None, _("الخطة غير موجودة.")
 
-    plan_price = float(plan.price)
+    plan_price: Decimal = plan.price.quantize(CENT, rounding=ROUND_HALF_UP)
     if dc.type == "percentage":
-        discount = plan_price * (float(dc.value) / 100)
+        discount = (plan_price * dc.value / Decimal("100")).quantize(CENT, rounding=ROUND_HALF_UP)
     else:
-        discount = float(dc.value)
+        discount = dc.value.quantize(CENT, rounding=ROUND_HALF_UP)
 
     # Cap discount at plan price
     discount = min(discount, plan_price)
     return discount, None
 
 
-def apply_discount_code(subscription_id: int, code: str) -> tuple[float | None, str | None]:
-    """تطبيق كود خصم على اشتراك."""
+def apply_discount_code(subscription_id: int, code: str) -> tuple[Decimal | None, str | None]:
+    """تطبيق كود خصم على اشتراك (ذرّي — P1-09: لا تجاوز لحد الاستخدام تحت التزامن)."""
     code = (code or "").strip().upper()
     if not code:
-        return None, "كود الخصم مطلوب."
+        return None, _("كود الخصم مطلوب.")
 
     sub = db.session.get(Subscription, subscription_id)
     if not sub:
-        return None, "الاشتراك غير موجود."
+        return None, _("الاشتراك غير موجود.")
 
     discount, error = validate_discount_code(code, sub.plan_id)
     if error:
         return None, error
 
     def _apply():
-        # Store discount info in subscription (could add fields to Subscription model)
-        # For now, we'll adjust the subscription price
         if discount is None:
             raise ValueError("Discount cannot be None")
-        sub.price = float(sub.price) - discount
-        dc = DiscountCode.query.filter_by(code=code.upper()).first()
-        if dc:
-            dc.used_count += 1
+        # P1-09: زيادة ذرّية مشروطة — تفشل إن استُنفد الحد بين التحقق والتطبيق
+        result = db.session.execute(
+            update(DiscountCode)
+            .where(DiscountCode.code == code.upper(), DiscountCode.used_count < DiscountCode.max_uses)
+            .values(used_count=DiscountCode.used_count + 1)
+        )
+        if result.rowcount != 1:  # type: ignore[attr-defined]
+            raise TxError(_("تم استنفاد عدد استخدامات كود الخصم."))
+        new_price = (sub.price - discount).quantize(CENT, rounding=ROUND_HALF_UP)
+        if new_price < 0:
+            raise TxError(_("قيمة الخصم تتجاوز سعر الاشتراك."))
+        sub.price = new_price
         return discount
 
-    return tx(_apply), None
+    try:
+        return tx(_apply), None
+    except TxError as exc:
+        return None, str(exc)

@@ -12,6 +12,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.tutoring import (
     TutorCommission,
@@ -40,7 +41,7 @@ def create_tutor_profile(
 ) -> tuple[TutorProfile | None, str | None]:
     """ينشئ ملف معلم خصوصي (ملف واحد لكل معلم)."""
     if TutorProfile.query.filter_by(tutor_id=tutor_id).first():
-        return None, "لديك ملف دروس خصوصية مسبقاً."
+        return None, _("لديك ملف دروس خصوصية مسبقاً.")
     code = _invite_code()
     while TutorProfile.query.filter_by(invite_code=code).first():
         code = _invite_code()
@@ -99,7 +100,7 @@ def create_request(
     """طلب حجز من طالب لمعلم. يمنع طلباً مفتوحاً مكرراً."""
     open_req = TutoringRequest.query.filter_by(tutor_id=tutor_id, student_id=student_id, status="pending").first()
     if open_req:
-        return None, "لديك طلب معلّق لهذا المعلم."
+        return None, _("لديك طلب معلّق لهذا المعلم.")
 
     def _create():
         return TutoringRequest(
@@ -126,7 +127,7 @@ def respond_request(request_: TutoringRequest, accept: bool) -> None:
                     request_id=request_.id,
                     tutor_id=request_.tutor_id,
                     student_id=request_.student_id,
-                    subject=request_.subject or "دروس خصوصية",
+                    subject=request_.subject or _("دروس خصوصية"),
                     scheduled_at=request_.preferred_time,
                     mode=request_.mode,
                     price=request_.price_quote,
@@ -222,16 +223,16 @@ def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, st
 
     session_ = db.session.get(TutoringSession, session_id)
     if not session_:
-        return None, "الجلسة غير موجودة."
+        return None, _("الجلسة غير موجودة.")
     if session_.tutor_id != user_id and session_.student_id != user_id:
-        return None, "غير مصرح."
+        return None, _("غير مصرح.")
 
     account_id = os.getenv("ZOOM_ACCOUNT_ID", "")
     client_id = os.getenv("ZOOM_CLIENT_ID", "")
     client_secret = os.getenv("ZOOM_CLIENT_SECRET", "")
 
     if not all([account_id, client_id, client_secret]):
-        return None, "إعدادات Zoom غير مكتملة."
+        return None, _("إعدادات Zoom غير مكتملة.")
 
     token_url = f"https://zoom.us/oauth/token?grant_type=account_credentials&account_id={account_id}"
     token_data = f"{client_id}:{client_secret}".encode()
@@ -244,7 +245,7 @@ def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, st
             token_resp = json.loads(resp.read())
         access_token = token_resp["access_token"]
     except Exception as e:
-        return None, f"فشل الحصول على رمز Zoom: {e}"
+        return None, _("فشل الحصول على رمز Zoom: %(detail)s", detail=e)
 
     start_time = session_.scheduled_at.isoformat() if session_.scheduled_at else None
     duration = session_.duration_min or 60
@@ -292,7 +293,7 @@ def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, st
         body = e.read().decode() if e.fp else str(e)
         return None, f"Zoom API error: {e.code} — {body}"
     except Exception as e:
-        return None, f"خطأ غير متوقع: {e}"
+        return None, _("خطأ غير متوقع: %(detail)s", detail=e)
 
 
 def generate_live_session_url(session_id: int, user_id: int) -> str | None:
@@ -377,11 +378,11 @@ def rate_session(
 
     session_ = db.session.get(TutoringSession, session_id)
     if not session_:
-        return None, "الجلسة غير موجودة."
+        return None, _("الجلسة غير موجودة.")
     if session_.student_id != student_id:
-        return None, "ليس لديك صلاحية تقييم هذه الجلسة."
+        return None, _("ليس لديك صلاحية تقييم هذه الجلسة.")
     if session_.status not in ("completed", "ended"):
-        return None, "لا يمكن تقييم جلسة لم تنتهِ بعد."
+        return None, _("لا يمكن تقييم جلسة لم تنتهِ بعد.")
 
     end_time = session_.end_time or session_.scheduled_at
     if session_.duration_min and session_.scheduled_at:
@@ -392,16 +393,16 @@ def rate_session(
         if end_time.tzinfo is None:
             end_time = end_time.replace(tzinfo=UTC)
         if now - end_time > timedelta(hours=24):
-            return None, "انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة)."
+            return None, _("انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة).")
 
     existing = db.session.execute(
         db.select(TutorReview).where(TutorReview.session_id == session_id, TutorReview.student_id == student_id)
     ).scalar_one_or_none()
     if existing:
-        return None, "لقد قيّمت هذه الجلسة مسبقاً."
+        return None, _("لقد قيّمت هذه الجلسة مسبقاً.")
 
     if not (1 <= rating <= 5):
-        return None, "التقييم يجب أن يكون بين 1 و 5."
+        return None, _("التقييم يجب أن يكون بين 1 و 5.")
 
     def _rate():
         review = TutorReview(
@@ -497,12 +498,16 @@ def create_commission_record(session: TutoringSession) -> TutorCommission | None
 def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, str | None]:
     """طلب سحب أرباح — الحد الأدنى 200₪."""
     if amount < 200:
-        return None, "الحد الأدنى للسحب 200₪."
+        return None, _("الحد الأدنى للسحب 200₪.")
     # Check withdrawable balance
     pending = TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending").all()
     withdrawable = sum(float(c.tutor_net) for c in pending)
     if amount > withdrawable:
-        return None, f"المبلغ المطلوب ({amount}) يتجاوز الرصيد المتاح ({withdrawable})."
+        return None, _(
+            "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s).",
+            amount=amount,
+            balance=withdrawable,
+        )
 
     def _create():
         p = TutorPayout(tutor_id=tutor_id, amount=amount)

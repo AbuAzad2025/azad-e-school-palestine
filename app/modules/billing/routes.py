@@ -1,6 +1,8 @@
 """مسارات الاشتراكات والدفع اليدوي"""
 
 from app.core import role_required
+from app.core.db import TxError
+from app.extensions import db
 from app.models.billing import ManualPayment, Subscription
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
@@ -9,7 +11,6 @@ from app.services.billing import (
     approve_payment,
     create_discount_code,
     create_plan,
-    expire_subscriptions,
     get_plan,
     list_plans,
     list_subscriptions,
@@ -41,7 +42,7 @@ def class_billing(class_id):
     class_room = _class_or_404(class_id)
     if not can_view_class(class_room, current_user):
         abort(403)
-    expire_subscriptions()
+    # P3-15: انتهاء الاشتراكات انتقل لمهمة CLI دورية (flask expire-subscriptions)
     plans = list_plans(class_id=class_id)
     my_sub = None
     if current_user.role == UserRole.student:
@@ -79,7 +80,7 @@ def plan_create(class_id):
         if error:
             flash(_(error), "danger")
         elif plan is not None:
-            audit("billing.plan", "subscription_plans", plan.id, amount=plan.price, currency=plan.currency)
+            audit("billing.plan", "subscription_plans", plan.id, amount=float(plan.price), currency=plan.currency)
             flash(_("حُفظت الخطة."), "success")
     return redirect(url_for("billing.class_billing", class_id=class_id))
 
@@ -106,7 +107,7 @@ def subscribe_route(class_id):
                     "billing.subscribe",
                     "subscriptions",
                     sub.id,
-                    amount=sub.price,
+                    amount=float(sub.price),
                     currency=sub.currency,
                     subscription_id=sub.id,
                 )
@@ -139,7 +140,7 @@ def payment_create(subscription_id):
                 "billing.payment",
                 "manual_payments",
                 payment.id,
-                amount=payment.amount,
+                amount=float(payment.amount),
                 currency=sub.currency,
                 gateway="manual",
                 subscription_id=sub.id,
@@ -152,7 +153,6 @@ def payment_create(subscription_id):
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def admin():
-    expire_subscriptions()
     payments = pending_payments()
     return render_template("billing/admin.html", payments=payments)
 
@@ -163,7 +163,12 @@ def admin():
 def review(payment_id, result):
     payment = ManualPayment.query.get_or_404(payment_id)
     if result == "approve":
-        sub = approve_payment(payment, reviewer_id=current_user.id)
+        try:
+            sub = approve_payment(payment, reviewer_id=current_user.id)
+        except TxError as exc:
+            db.session.rollback()
+            flash(_(str(exc)), "warning")
+            return redirect(url_for("billing.admin"))
         notify(sub.user_id, "subscription", _("فعّل اشتراكك"), str(sub.end_at))
         from app.services.email import send_payment_approved_email
 
@@ -172,14 +177,19 @@ def review(payment_id, result):
             "billing.approve",
             "subscriptions",
             sub.id,
-            amount=payment.amount,
+            amount=float(payment.amount),
             currency=sub.currency,
             gateway="manual",
             subscription_id=sub.id,
         )
         flash(_("اعتُمد الدفع وفُعّل الاشتراك."), "success")
     elif result == "reject":
-        reject_payment(payment, reviewer_id=current_user.id)
+        try:
+            reject_payment(payment, reviewer_id=current_user.id)
+        except TxError as exc:
+            db.session.rollback()
+            flash(_(str(exc)), "warning")
+            return redirect(url_for("billing.admin"))
         notify(payment.subscription.user_id, "subscription", _("رُفض دفعك — راجع البيانات."))
         from app.services.email import send_payment_rejected_email
 
@@ -188,7 +198,7 @@ def review(payment_id, result):
             "billing.reject",
             "manual_payments",
             payment.id,
-            amount=payment.amount,
+            amount=float(payment.amount),
             currency=payment.subscription.currency,
             gateway="manual",
             subscription_id=payment.subscription_id,

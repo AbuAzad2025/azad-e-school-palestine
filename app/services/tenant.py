@@ -1,6 +1,7 @@
 """خدمات حدود التينانتس — فحص الحدود قبل إضافة موارد."""
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.tenant import TenantQuota
@@ -69,7 +70,7 @@ def check_quota(school_id: int, resource: str) -> tuple[bool, str]:
             or 0
         )
         if current >= quota.max_students:
-            return False, f"تم الوصول للحد الأقصى للطلاب ({quota.max_students})."
+            return False, _("تم الوصول للحد الأقصى للطلاب (%(max)s).", max=quota.max_students)
 
     elif resource == "teachers":
         current = (
@@ -78,16 +79,16 @@ def check_quota(school_id: int, resource: str) -> tuple[bool, str]:
             .count()
         )
         if current >= quota.max_teachers:
-            return False, f"تم الوصول للحد الأقصى للمعلمين ({quota.max_teachers})."
+            return False, _("تم الوصول للحد الأقصى للمعلمين (%(max)s).", max=quota.max_teachers)
 
     elif resource == "classes":
         current = ClassRoom.query.filter_by(school_id=school_id, deleted_at=None).count()
         if current >= quota.max_classes:
-            return False, f"تم الوصول للحد الأقصى للصفوف ({quota.max_classes})."
+            return False, _("تم الوصول للحد الأقصى للصفوف (%(max)s).", max=quota.max_classes)
 
     elif resource == "ai":
         if not quota.ai_enabled:
-            return False, "خدمة الذكاء الاصطناعي غير مفعّلة في باقتك."
+            return False, _("خدمة الذكاء الاصطناعي غير مفعّلة في باقتك.")
 
     return True, ""
 
@@ -95,7 +96,7 @@ def check_quota(school_id: int, resource: str) -> tuple[bool, str]:
 def set_tier(school_id: int, tier: str) -> tuple[TenantQuota | None, str | None]:
     """تحديث باقة المدرسة."""
     if tier not in TIER_DEFAULTS:
-        return None, "الباقة غير صالحة."
+        return None, _("الباقة غير صالحة.")
 
     defaults = TIER_DEFAULTS[tier]
     quota = TenantQuota.query.filter_by(school_id=school_id).first()

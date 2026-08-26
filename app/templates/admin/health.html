@@ -48,7 +48,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 setTimeout(function(){ location.reload(); }, 30000);
 </script>
 {% endblock %}

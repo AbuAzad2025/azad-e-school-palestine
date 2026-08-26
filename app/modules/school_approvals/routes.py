@@ -10,6 +10,7 @@ from app.services.school_approvals import (
     reject_user_role_link,
 )
 from flask import abort, flash, redirect, render_template, request, url_for
+from flask_babel import _
 from flask_login import current_user, login_required
 
 from . import bp
@@ -37,7 +38,7 @@ def approve(link_id):
     if error:
         flash(error, "danger")
     else:
-        flash("تم قبول المستخدم بنجاح.", "success")
+        flash(_("تم قبول المستخدم بنجاح."), "success")
         audit(
             "school_approval.approve",
             "user_role_links",
@@ -62,7 +63,7 @@ def reject(link_id):
     if error:
         flash(error, "danger")
     else:
-        flash("تم رفض المستخدم.", "warning")
+        flash(_("تم رفض المستخدم."), "warning")
         audit(
             "school_approval.reject",
             "user_role_links",

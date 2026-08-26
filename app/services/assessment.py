@@ -1,8 +1,19 @@
-"""خدمات التقييم: اختبارات، أسئلة، محاولات، تصحيح آلي ونتائج."""
+"""خدمات التقييم: اختبارات، أسئلة، محاولات، تصحيح آلي ونتائج.
 
+P1-05/06/11: قيد جزئي على المحاولات المفتوحة، قفل صفوف عند التسليم،
+وفرض مؤقت الاختبار من الخادم (مع مهلة سماح قابلة للضبط).
+"""
+
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+
+from flask import current_app
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 
-from app.core.db import tx
+from app.core.db import TxError, tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.assessment import Answer, Question, Quiz, QuizAttempt
 
@@ -18,7 +29,7 @@ def create_quiz(
 ) -> tuple[Quiz | None, str | None]:
     title = (title or "").strip()
     if not title:
-        return None, "عنوان الاختبار مطلوب."
+        return None, _("عنوان الاختبار مطلوب.")
 
     def _create():
         quiz = Quiz(
@@ -69,23 +80,63 @@ def delete_question(question: Question) -> None:
 
 
 def start_attempt(quiz: Quiz, student_id: int) -> tuple[QuizAttempt | None, str | None]:
-    """محاولة جديدة (مع احترام عدد المحاولات المسموح). يعيد محاولة جارية قائمة إن وجدت."""
+    """
+    محاولة جديدة (مع احترام عدد المحاولات المسموح). يعيد محاولة جارية قائمة إن وجدت.
+    P1-05: عند سباق متزامن يفشل الإدخال على القيد الجزئي فنعيد المحاولة القائمة بدل 500.
+    """
     in_progress = QuizAttempt.query.filter_by(quiz_id=quiz.id, student_id=student_id, status="in_progress").first()
     if in_progress:
         return in_progress, None
     used = QuizAttempt.query.filter_by(quiz_id=quiz.id, student_id=student_id).count()
     if used >= quiz.attempts_allowed:
-        return None, "استنفدت محاولاتك لهذا الاختبار."
+        return None, _("استنفدت محاولاتك لهذا الاختبار.")
 
     def _create():
-        attempt = QuizAttempt(quiz_id=quiz.id, student_id=student_id, attempt_no=used + 1, status="in_progress")
+        attempt = QuizAttempt(
+            quiz_id=quiz.id,
+            student_id=student_id,
+            attempt_no=used + 1,
+            status="in_progress",
+            started_at=datetime.now(UTC),
+        )
         db.session.add(attempt)
         return attempt
 
-    return tx(_create), None
+    try:
+        return tx(_create), None
+    except SQLAlchemyError:
+        # سباق تزامن: محاولة أخرى أنشأت صفّاً في نفس اللحظة — أعِد الجارية إن وجدت
+        existing = QuizAttempt.query.filter_by(quiz_id=quiz.id, student_id=student_id, status="in_progress").first()
+        if existing:
+            return existing, None
+        raise
+
+
+def deadline_exceeded(attempt: QuizAttempt) -> bool:
+    """
+    P1-11: هل تجاوزت المحاولة مدة الاختبار المحددة من الخادم؟
+    مهلة السماح QUIZ_GRACE_SECONDS (افتراضي 30 ثانية) لتقلبات الشبكة.
+    """
+    quiz = attempt.quiz
+    if not quiz.duration_min or not attempt.started_at:
+        return False
+    started = attempt.started_at
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=UTC)
+    elapsed = datetime.now(UTC) - started
+    grace = timedelta(seconds=current_app.config.get("QUIZ_GRACE_SECONDS", 30))
+    return elapsed > timedelta(minutes=quiz.duration_min) + grace
 
 
 def save_answer(attempt: QuizAttempt, question_id: int, answer) -> None:
+    """
+    يحفظ إجابة سؤال — P1-11: يرفض أي حفظ بعد انتهاء وقت الاختبار من الخادم.
+    """
+    if attempt.status != "in_progress":
+        raise TxError(_("هذه المحاولة مُسلَّمة بالفعل."))
+    if deadline_exceeded(attempt):
+        raise TxError(_("انتهى وقت الاختبار — لم يُقبل حفظ إجابات جديدة."))
+
     def _save():
         row = Answer.query.filter_by(attempt_id=attempt.id, question_id=question_id).first()
         if row:
@@ -115,29 +166,56 @@ def _grade_answer(question: Question, answer) -> tuple[bool | None, float | None
     return None, None  # essay/matching — تصحيح يدوي
 
 
-def submit_attempt(attempt: QuizAttempt) -> float:
-    """يُنهي المحاولة: تصحيح آلي + حساب الدرجة الكلية. يعيد الدرجة."""
-    total = 0.0
+def submit_attempt(attempt: QuizAttempt, *, allow_after_deadline: bool = False) -> float:
+    """
+    يُنهي المحاولة: تصحيح آلي + حساب الدرجة الكلية. يعيد الدرجة.
+    P1-06: قفل صف المحاولة (FOR UPDATE) لمنع تسليم مزدوج متزامن.
+    P2-14: جلب كل الإجابات دفعة واحدة بدل استعلام لكل سؤال (N+1).
+    P1-11: يرفض التسليم اليدوي بعد انتهاء الوقت إلا مع allow_after_deadline
+    (التصحيح التلقائي عند نفاد الوقت أو المراقبة proctoring).
+    """
+    total = Decimal("0")
 
     def _submit():
         nonlocal total
-        for question in attempt.quiz.questions:
-            answer = Answer.query.filter_by(attempt_id=attempt.id, question_id=question.id).first()
+        locked = db.session.execute(
+            select(QuizAttempt).where(QuizAttempt.id == attempt.id).with_for_update()
+        ).scalar_one()
+        if locked.status != "in_progress":
+            raise TxError(_("تم تسليم هذه المحاولة مسبقاً."))
+        if not allow_after_deadline and deadline_exceeded(locked):
+            raise TxError(_("انتهى وقت الاختبار."))
+
+        questions = locked.quiz.questions
+        # P2-14: استعلام واحد بدل N+1
+        answers = {
+            a.question_id: a
+            for a in Answer.query.filter(
+                Answer.attempt_id == locked.id,
+                Answer.question_id.in_([q.id for q in questions] or [0]),
+            ).all()
+        }
+        for question in questions:
+            answer = answers.get(question.id)
             if answer is None:
-                answer = Answer(attempt_id=attempt.id, question_id=question.id, answer=None)
+                answer = Answer(attempt_id=locked.id, question_id=question.id, answer=None)
                 db.session.add(answer)
             if answer.answer is not None:
                 is_correct, mark = _grade_answer(question, answer.answer)
                 answer.is_correct = is_correct
                 answer.awarded_mark = mark
                 if mark:
-                    total += float(mark)
-        attempt.status = "submitted"
-        attempt.submitted_at = db.func.now()
-        attempt.score = round(total, 2)
+                    total += Decimal(str(mark))
+        locked.status = "submitted"
+        locked.submitted_at = db.func.now()
+        locked.score = float(total.quantize(Decimal("0.01")))
 
-    tx(_submit)
-    return round(total, 2)
+    try:
+        tx(_submit)
+    except TxError:
+        db.session.rollback()
+        raise
+    return float(total.quantize(Decimal("0.01")))
 
 
 def grade_essay(answer: Answer, awarded_mark: float | None) -> None:

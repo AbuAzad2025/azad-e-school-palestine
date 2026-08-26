@@ -67,7 +67,7 @@
 </form>
 {% endblock %}
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
   window.AzadQuizLabels = {
     progress: "{{ _('{answered} من {total} تمت الإجابة عليه') }}"
   };

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
+from app.core.i18n import _
 from app.core.logging import get_logger
 from app.extensions import db
 from app.models.ai import AiMessage, AiSession, AiUsageLog
@@ -521,30 +522,25 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
 
     def _mock_ai_answer(self, question: str, context: str | None = None) -> str:
         if not question:
-            return "Please ask a question."
+            return _("يرجى طرح سؤال.")
 
         q_lower = question.lower()
         if "math" in q_lower or "equation" in q_lower or "solve" in q_lower:
-            return (
-                "بصفتي مساعد رياضيات، I notice you're asking about math. "
-                "For specific equation solving, please provide the equation "
-                "details, and I'll help step-by-step."
-            )
+            return _("أنا مساعد رياضيات. لتصحيح معادلة محددة، اكتب المعادلة كاملة وسأساعدك خطوة بخطوة.")
         elif "question" in q_lower or "test" in q_lower or "exam" in q_lower:
-            return "لدي مجموعة من اختبارات الرياضيات. هل تريد مراجعة درس معين أو حل تمارين من الكتاب؟"
+            return _("لدي مجموعة من اختبارات الرياضيات. هل تريد مراجعة درس معين أو حل تمارين من الكتاب؟")
         elif "grade" in q_lower or "mark" in q_lower or "score" in q_lower:
-            return (
-                'يمكنك رؤية درجاتك في "الدashboard" > "grades". '
-                "إذا كان هناك استفسار حول تصحيح معين، حدده بالتفصيل "
-                "وسأقوم بمساعدتك."
+            return _(
+                "يمكنك رؤية درجاتك في قسم الدرجات. إذا كان هناك استفسار حول تصحيح معين، حدده بالتفصيل وسأقوم بمساعدتك."
             )
         elif "homework" in q_lower or "assignment" in q_lower:
-            return "يمكنك عرض الواجبات في قسم الواجبات. هل تريد مساعدة في مشكلة معينة؟"
+            return _("يمكنك عرض الواجبات في قسم الواجبات. هل تريد مساعدة في مشكلة معينة؟")
         else:
-            return (
-                f'سؤالك: "{question[:80]}...". '
+            return _(
+                'سؤالك: "%(question)s...". '
                 "أنا مساعد ذكاء اصطناعي مخصص للمنصة، يمكنك أن تطرح سؤالك عن المادة، الواجب، "
-                "أو الاختبار وسأبذل قصارى جهدي للمساعدة ضمن سياق النظام."
+                "أو الاختبار وسأبذل قصارى جهدي للمساعدة ضمن سياق النظام.",
+                question=question[:80],
             )
 
     def _mock_stream_chunks(self, text: str) -> list[str]:

@@ -201,7 +201,7 @@
         {% endif %}
       </div>
       <div class="azad-flash__content">{{ message }}</div>
-      <button class="azad-flash__close" onclick="this.parentElement.remove()" aria-label="{{ _('إغلاق') }}">
+      <button class="azad-flash__close" data-dismiss-flash aria-label="{{ _('إغلاق') }}">
         {{ icon('x') }}
       </button>
     </div>
@@ -244,11 +244,12 @@
       <td class="azad-table__checkbox"><input type="checkbox" data-bulk-id="{{ row.id }}" aria-label="{{ _('اختيار') }}"></td>
       {% endif %}
       {% for h in headers %}
-      <td data-label="{{ h.label }}" class="{{ h.class|default('') }}">{{ row.cells[h.key]|safe if h.key in row.cells else '' }}</td>
+      {# P2-17: بلا |safe — المنتِج يمرّر Markup() صراحةً لHTML المبني خادمياً #}
+      <td data-label="{{ h.label }}" class="{{ h.class|default('') }}">{{ row.cells[h.key] if h.key in row.cells else '' }}</td>
       {% endfor %}
       {% if actions %}
       <td class="azad-table__actions">
-        <div class="azad-table__actions-cell">{{ row.actions|safe }}</div>
+        <div class="azad-table__actions-cell">{{ row.actions }}</div>
       </td>
       {% endif %}
     </tr>

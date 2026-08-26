@@ -3,6 +3,7 @@
 from datetime import date
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.calendar import AcademicEvent
 
@@ -17,11 +18,11 @@ def create_event(
     """إنشاء حدث أكاديمي."""
     title = (title or "").strip()
     if not title:
-        return None, "العنوان مطلوب."
+        return None, _("العنوان مطلوب.")
     if event_type not in ("term_start", "term_end", "exam_period", "enrollment", "holiday"):
-        return None, "نوع الحدث غير صالح."
+        return None, _("نوع الحدث غير صالح.")
     if end_date and end_date < start_date:
-        return None, "تاريخ النهاية يجب أن يكون بعد تاريخ البداية."
+        return None, _("تاريخ النهاية يجب أن يكون بعد تاريخ البداية.")
 
     def _create():
         return AcademicEvent(
@@ -47,7 +48,7 @@ def delete_event(event_id: int) -> tuple[bool, str | None]:
     """حذف حدث (حذف ناعم)."""
     event = db.session.get(AcademicEvent, event_id)
     if not event:
-        return False, "الحدث غير موجود."
+        return False, _("الحدث غير موجود.")
 
     def _delete():
         event.is_active = False

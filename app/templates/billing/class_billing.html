@@ -18,7 +18,7 @@
   <div class="item-meta billing-meta">
     <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ my_sub.status }}</span>
     <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
-    <span>{{ _('المبلغ:') }} {{ my_sub.price }} {{ my_sub.currency }}</span>
+    <span>{{ _('المبلغ:') }} <bdi>{{ my_sub.price }}</bdi> <bdi>{{ my_sub.currency }}</bdi></span>
     {% if my_sub.end_at %}<span>{{ _('ينتهي:') }} {{ my_sub.end_at.strftime('%Y-%m-%d') }}</span>{% endif %}
     {% if my_sub.auto_activated_at %}<span class="auto-badge">{{ _('تم التفعيل تلقائياً:') }} {{ my_sub.auto_activated_at.strftime('%Y-%m-%d %H:%M') }}</span>{% endif %}
   </div>
@@ -32,7 +32,7 @@
   <div class="azad-item">
     <div>
       <div class="item-title">{{ p.name }} <span class="meta-chip">{{ p.plan }}</span></div>
-      <div class="item-meta"><span>{{ p.price }} {{ p.currency }}</span></div>
+      <div class="item-meta"><span><bdi>{{ p.price }}</bdi> <bdi>{{ p.currency }}</bdi></span></div>
     </div>
     {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') %}
     <div class="item-actions">
@@ -99,7 +99,7 @@
         <label class="azad-field__label">{{ _('اختر الخطة') }}</label>
         <select name="plan_id" id="discount-plan-select" class="azad-field__select" required>
           {% for p in plans %}
-          <option value="{{ p.id }}">{{ p.name }} ({{ p.price }} {{ p.currency }})</option>
+          <option value="{{ p.id }}">{{ p.name }} (<bdi>{{ p.price }}</bdi> <bdi>{{ p.currency }}</bdi>)</option>
           {% endfor %}
         </select>
       </div>
@@ -114,7 +114,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('discount-form');
   const resultDiv = document.getElementById('discount-result');

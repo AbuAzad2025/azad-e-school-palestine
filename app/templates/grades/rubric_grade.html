@@ -54,7 +54,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 (function(){
   var totalEl = document.getElementById('total-score');
   document.querySelectorAll('input[name^="score_"]').forEach(function(inp){

@@ -53,7 +53,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
   // Auto-check for badges on page load
   fetch('/profile/badges/check', {

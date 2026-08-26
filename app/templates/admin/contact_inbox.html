@@ -42,7 +42,8 @@
             <button type="submit" class="azad-btn-outline azad-btn-sm">{{ icon('check') }} {{ _('تعليم كمقروء') }}</button>
           </form>
           {% endif %}
-          <button type="button" class="azad-btn-outline azad-btn-sm" onclick="openReplyModal({{ msg.id }}, '{{ msg.email }}', '{{ msg.subject }}')">
+          <button type="button" class="azad-btn-outline azad-btn-sm"
+                  data-reply-open data-msg-id="{{ msg.id }}" data-email="{{ msg.email }}" data-subject="{{ msg.subject }}">
             {{ icon('reply') }} {{ _('رد') }}
           </button>
         </td>
@@ -60,7 +61,7 @@
   <div class="modal" style="max-width:600px">
     <div class="modal-header">
       <h3 class="modal-title" id="reply-modal-title">{{ _('الرد على الرسالة') }}</h3>
-      <button class="modal-close" onclick="closeReplyModal()" aria-label="{{ _('إغلاق') }}">{{ icon('x') }}</button>
+      <button class="modal-close" data-reply-close aria-label="{{ _('إغلاق') }}">{{ icon('x') }}</button>
     </div>
     <form method="post" id="reply-form">
       <div class="modal-body">
@@ -79,14 +80,15 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       </div>
       <div class="modal-footer">
-        <button type="button" class="azad-btn-outline" onclick="closeReplyModal()">{{ _('إلغاء') }}</button>
+        <button type="button" class="azad-btn-outline" data-reply-close>{{ _('إلغاء') }}</button>
         <button type="submit" class="azad-btn">{{ icon('send') }} {{ _('إرسال الرد') }}</button>
       </div>
     </form>
   </div>
 </div>
 
-<script>
+<script nonce="{{ g.csp_nonce }}">
+// P2-03: ربط بالتفويض بدل onclick المضمّنة
 function openReplyModal(messageId, email, subject) {
   document.getElementById('reply-form').action = '{{ url_for("admin.contact_reply", message_id=0) }}'.replace('/0', '/' + messageId);
   document.getElementById('reply-to').value = email;
@@ -100,6 +102,15 @@ function closeReplyModal() {
   document.getElementById('reply-modal').style.display = 'none';
   document.body.style.overflow = '';
 }
+
+document.addEventListener('click', function(e) {
+  var openBtn = e.target.closest('[data-reply-open]');
+  if (openBtn) {
+    openReplyModal(openBtn.dataset.msgId, openBtn.dataset.email, openBtn.dataset.subject);
+    return;
+  }
+  if (e.target.closest('[data-reply-close]')) closeReplyModal();
+});
 
 document.getElementById('reply-form').addEventListener('submit', function(e) {
   // Form submits normally

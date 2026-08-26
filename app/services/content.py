@@ -4,6 +4,7 @@ import bleach
 from sqlalchemy.orm import selectinload
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.core.uploads import save_upload
 from app.extensions import db
 from app.models.content import Lesson, LessonAttachment, Unit
@@ -92,7 +93,7 @@ def create_lesson(
 ) -> tuple[Lesson | None, str | None]:
     title = (title or "").strip()
     if not title:
-        return None, "عنوان الدرس مطلوب."
+        return None, _("عنوان الدرس مطلوب.")
 
     def _create():
         return Lesson(
@@ -182,12 +183,12 @@ def import_lesson(lesson_id: int, target_class_id: int, user_id: int) -> tuple[L
 
     lesson = get_lesson(lesson_id)
     if not lesson:
-        return None, "الدرس غير موجود."
+        return None, _("الدرس غير موجود.")
     if not lesson.is_shared:
-        return None, "هذا الدرس خاص ولا يمكن استيراده."
+        return None, _("هذا الدرس خاص ولا يمكن استيراده.")
     target_class = ClassRoom.query.filter_by(id=target_class_id, deleted_at=None).first()
     if not target_class:
-        return None, "الصف الهدف غير موجود."
+        return None, _("الصف الهدف غير موجود.")
 
     def _import():
         new_lesson = Lesson(

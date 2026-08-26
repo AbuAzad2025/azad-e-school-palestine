@@ -103,7 +103,7 @@
 
 {% endblock %}
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
   var typeSelect = document.getElementById('qb-type');
   var mcqOpts = document.getElementById('qb-mcq-opts');

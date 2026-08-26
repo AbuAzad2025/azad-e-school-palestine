@@ -9,7 +9,7 @@
   <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
     <span style="color:var(--muted)">{{ _('فترة:') }}</span>
     <form method="get" style="display:inline">
-      <select name="days" class="azad-field__select" style="width:auto;min-width:140px" onchange="this.form.submit()" aria-label="{{ _('اختر الفترة الزمنية') }}">
+      <select name="days" data-auto-submit class="azad-field__select" style="width:auto;min-width:140px" aria-label="{{ _('اختر الفترة الزمنية') }}">
         <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
         <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوماً') }}</option>
         <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوماً') }}</option>
@@ -71,7 +71,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
+<script nonce="{{ g.csp_nonce }}">
 const data = {{ data | tojson }};
 
 const colors = {

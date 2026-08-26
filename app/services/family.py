@@ -4,6 +4,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.family import FamilyLink, FamilyLinkCode
 from app.models.user import User, UserRole
@@ -13,7 +14,7 @@ def generate_link_code(student_id: int) -> tuple[str | None, str | None]:
     """ينشئ رمز ربط جديد للطالب (8 أحرف) — صلاحية 24 ساعة."""
     student = db.session.get(User, student_id)
     if not student or student.role != UserRole.student:
-        return None, "المستخدم ليس طالباً."
+        return None, _("المستخدم ليس طالباً.")
 
     code = secrets.token_urlsafe(6)[:8].upper()
     expires_at = datetime.now(UTC) + timedelta(hours=24)
@@ -31,27 +32,27 @@ def link_parent(parent_id: int, code: str) -> tuple[FamilyLink | None, str | Non
     """يربط ولي الأمر بالطالب عبر الرمز."""
     code = (code or "").strip().upper()
     if not code:
-        return None, "الرمز مطلوب."
+        return None, _("الرمز مطلوب.")
 
     parent = db.session.get(User, parent_id)
     if not parent or parent.role != UserRole.parent:
-        return None, "المستخدم ليس ولي أمر."
+        return None, _("المستخدم ليس ولي أمر.")
 
     link_code = FamilyLinkCode.query.filter_by(code=code, used=False).first()
     if not link_code:
-        return None, "الرمز غير صالح أو مستخدم مسبقاً."
+        return None, _("الرمز غير صالح أو مستخدم مسبقاً.")
 
     # تحقق من انتهاء الصلاحية
     if link_code.expires_at and link_code.expires_at < datetime.now(UTC):
-        return None, "انتهت صلاحية الرمز."
+        return None, _("انتهت صلاحية الرمز.")
 
     # منع ربط الطالب بنفسه
     if link_code.student_id == parent_id:
-        return None, "لا يمكن ربط الحساب بنفسه."
+        return None, _("لا يمكن ربط الحساب بنفسه.")
 
     existing = FamilyLink.query.filter_by(parent_id=parent_id, student_id=link_code.student_id, status="active").first()
     if existing:
-        return None, "أنت مرتبط بهذا الطالب مسبقاً."
+        return None, _("أنت مرتبط بهذا الطالب مسبقاً.")
 
     def _link():
         link_code.used = True
@@ -78,7 +79,7 @@ def remove_link(link_id: int, parent_id: int) -> tuple[bool, str | None]:
     """يزيل رابط ولي أمر بالطالب."""
     link = db.session.get(FamilyLink, link_id)
     if not link or link.parent_id != parent_id:
-        return False, "الرابط غير موجود."
+        return False, _("الرابط غير موجود.")
 
     def _remove():
         link.status = "removed"

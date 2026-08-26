@@ -23,6 +23,7 @@ from app.models.school import School
 from app.models.tutoring import TutoringSession
 from app.models.user import User, UserRole, UserRoleLink
 from flask import request
+from flask_babel import _
 from flask_login import current_user
 from sqlalchemy import or_
 
@@ -99,12 +100,12 @@ def api_schools_get(school_id: int):
     """جلب مدرسة محددة."""
     school = School.query.filter_by(id=school_id, is_active=True).first()
     if not school:
-        return api_error("المدرسة غير موجودة", 404, "NOT_FOUND")
+        return api_error(_("المدرسة غير موجودة"), 404, "NOT_FOUND")
 
     # tenancy check
     user_school_id = getattr(current_user, "school_id", None)
     if current_user.role != UserRole.super_admin and user_school_id != school_id:
-        return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+        return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
     return api_response(
         {
@@ -168,7 +169,7 @@ def api_lessons_get(lesson_id: int):
     """جلب درس محدد."""
     lesson = Lesson.query.get(lesson_id)
     if not lesson:
-        return api_error("الدرس غير موجود", 404, "NOT_FOUND")
+        return api_error(_("الدرس غير موجود"), 404, "NOT_FOUND")
 
     # authorization: must be a member of the class or admin
     if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
@@ -177,7 +178,7 @@ def api_lessons_get(lesson_id: int):
             is not None
         )
         if not is_member:
-            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
     return api_response(
         {
@@ -238,12 +239,12 @@ def api_tutoring_sessions_get(session_id: int):
     """جلب جلسة تعليمية محددة."""
     session = TutoringSession.query.get(session_id)
     if not session:
-        return api_error("الجلسة غير موجودة", 404, "NOT_FOUND")
+        return api_error(_("الجلسة غير موجودة"), 404, "NOT_FOUND")
 
     # authorization: must be the student, tutor, or admin
     if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
         if session.student_id != current_user.id and session.tutor_id != current_user.id:
-            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
     return api_response(
         {
@@ -304,14 +305,14 @@ def api_users_get(user_id: int):
     """جلب مستخدم محدد."""
     user = User.query.filter_by(id=user_id, is_active=True).first()
     if not user:
-        return api_error("المستخدم غير موجود", 404, "NOT_FOUND")
+        return api_error(_("المستخدم غير موجود"), 404, "NOT_FOUND")
 
     # tenancy check: same school or admin
     if current_user.role != UserRole.super_admin:
         current_school_ids = {link.school_id for link in current_user.role_links if link.is_active}
         user_school_ids = {link.school_id for link in user.role_links if link.is_active}
         if not (current_school_ids & user_school_ids):
-            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
     return api_response(
         {
@@ -371,7 +372,7 @@ def api_classes_get(class_id: int):
     """جلب صف محدد."""
     class_room = ClassRoom.query.filter_by(id=class_id, is_active=True).first()
     if not class_room:
-        return api_error("الصف غير موجود", 404, "NOT_FOUND")
+        return api_error(_("الصف غير موجود"), 404, "NOT_FOUND")
 
     # authorization: school admin, member, or super admin
     if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
@@ -379,7 +380,7 @@ def api_classes_get(class_id: int):
             ClassMember.query.filter_by(class_id=class_id, user_id=current_user.id, status="active").first() is not None
         )
         if not is_member:
-            return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
     return api_response(
         {
@@ -403,7 +404,7 @@ def api_search():
     """بحث عالمي عبر الكيانات الرئيسية."""
     query = (request.args.get("q") or "").strip()
     if not query or len(query) < 2:
-        return api_error("يجب إدخال حرفين على الأقل", 400, "QUERY_TOO_SHORT")
+        return api_error(_("يجب إدخال حرفين على الأقل"), 400, "QUERY_TOO_SHORT")
 
     limit = min(request.args.get("limit", 5, type=int), 20)
     like = f"%{query}%"
@@ -540,24 +541,24 @@ def api_search():
 
 @bp.errorhandler(404)
 def api_404(e):
-    return api_error("المورد غير موجود", 404, "NOT_FOUND")
+    return api_error(_("المورد غير موجود"), 404, "NOT_FOUND")
 
 
 @bp.errorhandler(403)
 def api_403(e):
-    return api_error("غير مصرح بالوصول", 403, "FORBIDDEN")
+    return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
 
 @bp.errorhandler(401)
 def api_401(e):
-    return api_error("غير مصادق عليه", 401, "UNAUTHORIZED")
+    return api_error(_("غير مصادق عليه"), 401, "UNAUTHORIZED")
 
 
 @bp.errorhandler(429)
 def api_429(e):
-    return api_error("تم تجاوز الحد المسموح", 429, "RATE_LIMITED")
+    return api_error(_("تم تجاوز الحد المسموح"), 429, "RATE_LIMITED")
 
 
 @bp.errorhandler(500)
 def api_500(e):
-    return api_error("خطأ داخلي في الخادم", 500, "INTERNAL_ERROR")
+    return api_error(_("خطأ داخلي في الخادم"), 500, "INTERNAL_ERROR")

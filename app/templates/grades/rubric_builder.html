@@ -82,7 +82,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 (function(){
   var idx = 1;
   var container = document.getElementById('criteria-container');

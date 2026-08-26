@@ -9,7 +9,7 @@
   </div>
   <form method="get" style="display:flex;gap:.5rem;align-items:end">
     <label class="form-label">{{ _('الفترة') }}</label>
-    <select name="days" class="form-select" onchange="this.form.submit()" style="width:auto">
+    <select name="days" data-auto-submit class="form-select" style="width:auto">
       <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
       <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوم') }}</option>
       <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوم') }}</option>
@@ -68,7 +68,7 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
   // Gateway Pie Chart
   const gatewayData = {{ data.by_gateway | tojson }};

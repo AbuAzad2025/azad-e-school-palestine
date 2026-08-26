@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -49,7 +50,17 @@ class Question(PKMixin, db.Model):
 
 class QuizAttempt(PKMixin, db.Model):
     __tablename__ = "quiz_attempts"
-    __table_args__ = (db.UniqueConstraint("quiz_id", "student_id", "attempt_no", name="uq_quiz_attempt"),)
+    __table_args__ = (
+        db.UniqueConstraint("quiz_id", "student_id", "attempt_no", name="uq_quiz_attempt"),
+        # P1-05: محاولة واحدة قائمة فقط لكل (اختبار، طالب) — يمنع سباق بدء المحاولات
+        Index(
+            "uq_attempt_open_per_quiz_student",
+            "quiz_id",
+            "student_id",
+            unique=True,
+            postgresql_where=sa_text("status = 'in_progress'"),
+        ),
+    )
 
     quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), nullable=False)
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)

@@ -87,7 +87,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
   var sel = document.querySelector('[name="qtype"]');
   function toggle() {
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (sel) { sel.addEventListener('change', toggle); toggle(); }
 });
 </script>
-<script>
+<script nonce="{{ g.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
   // Handle AI form submission
   var aiForm = document.querySelector('.ai-generate-form');

@@ -82,7 +82,7 @@ async function applyBulk(table) {
       window.location.reload();
       return; // reload will abort further execution
     } else {
-      showError(result.message || "فشل تنفيذ الإجراء");
+      showError(result.message || window.AzadBulkLabels?.actionFailed || "فشل تنفيذ الإجراء");
     }
   } catch {
     showError(window.AzadBulkLabels?.error || "حدث خطأ أثناء تنفيذ الإجراء الجماعي");

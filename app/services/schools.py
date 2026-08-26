@@ -5,6 +5,7 @@ import secrets
 from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.school import Grade, School, Subject
@@ -17,11 +18,11 @@ def create_school(
     """ينشئ مدرسة. يعيد (school, error)."""
     name_ar = (name_ar or "").strip()
     if not name_ar:
-        return None, "اسم المدرسة مطلوب."
+        return None, _("اسم المدرسة مطلوب.")
     if domain:
         domain = domain.strip().lower()
         if School.query.filter_by(domain=domain).first():
-            return None, "هذا النطاق مستخدم لمدرسة أخرى."
+            return None, _("هذا النطاق مستخدم لمدرسة أخرى.")
 
     def _create():
         return School(name_ar=name_ar, name_en=name_en, domain=domain or None)
@@ -204,15 +205,15 @@ def join_class_individual(student_id: int, class_id: int) -> tuple[ClassMember |
     user = db.session.get(User, student_id)
     cls = db.session.get(ClassRoom, class_id)
     if not user or not cls:
-        return None, "غير موجود."
+        return None, _("المستخدم أو الصف غير موجود.")
     if not cls.is_public:
-        return None, "هذا الصف غير متاح للاشتراك الفردي."
+        return None, _("هذا الصف غير متاح للاشتراك الفردي.")
     if is_member(cls, user):
-        return None, "أنت عضو في هذا الصف مسبقاً."
+        return None, _("أنت عضو في هذا الصف مسبقاً.")
     if cls.max_students:
         current_count = ClassMember.query.filter_by(class_id=cls.id, status="active").count()
         if current_count >= cls.max_students:
-            return None, "الصف ممتلئ."
+            return None, _("الصف ممتلئ.")
 
     def _join():
         db.session.add(ClassMember(class_id=cls.id, user_id=user.id, status="active", joined_at=db.func.now()))

@@ -1,6 +1,7 @@
 """بنك الأسئلة: إنشاء، بحث، استيراد."""
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.assessment import Question, Quiz
 from app.models.question_bank import QuestionBank
@@ -20,11 +21,11 @@ def create_bank_question(
 ) -> tuple[QuestionBank | None, str | None]:
     question_text = (question_text or "").strip()
     if not question_text:
-        return None, "نص السؤال مطلوب."
+        return None, _("نص السؤال مطلوب.")
     if question_type not in ("mcq", "true_false", "essay"):
-        return None, "نوع السؤال غير صالح."
+        return None, _("نوع السؤال غير صالح.")
     if not (1 <= difficulty <= 5):
-        return None, "الصعوبة يجب أن تكون بين 1 و 5."
+        return None, _("الصعوبة يجب أن تكون بين 1 و 5.")
 
     def _create():
         bq = QuestionBank(
@@ -68,9 +69,9 @@ def update_bank_question(
 ) -> tuple[QuestionBank | None, str | None]:
     bq = db.session.get(QuestionBank, question_id)
     if not bq:
-        return None, "السؤال غير موجود."
+        return None, _("السؤال غير موجود.")
     if bq.teacher_id != teacher_id:
-        return None, "ليس لديك صلاحية تعديل هذا السؤال."
+        return None, _("ليس لديك صلاحية تعديل هذا السؤال.")
     allowed = {
         "question_text",
         "question_type",
@@ -95,9 +96,9 @@ def update_bank_question(
 def delete_bank_question(question_id: int, teacher_id: int) -> tuple[bool, str | None]:
     bq = db.session.get(QuestionBank, question_id)
     if not bq:
-        return False, "السؤال غير موجود."
+        return False, _("السؤال غير موجود.")
     if bq.teacher_id != teacher_id:
-        return False, "ليس لديك صلاحية حذف هذا السؤال."
+        return False, _("ليس لديك صلاحية حذف هذا السؤال.")
 
     def _del():
         db.session.delete(bq)

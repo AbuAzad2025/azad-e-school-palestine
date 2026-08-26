@@ -16,8 +16,8 @@
     {% endif %}
     <div class="price-card__label">{{ plan.name }}</div>
     <div class="price-card__price">
-      <span class="price-card__amount">{{ plan.price }}</span>
-      <span class="price-card__currency">{{ plan.currency }}</span>
+      <span class="price-card__amount"><bdi>{{ plan.price }}</bdi></span>
+      <span class="price-card__currency"><bdi>{{ plan.currency }}</bdi></span>
       <span class="price-card__period">{{ plan.period }}</span>
     </div>
     <ul class="price-card__features">

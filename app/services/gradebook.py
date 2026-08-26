@@ -5,6 +5,7 @@ from datetime import date
 from sqlalchemy.orm import joinedload
 
 from app.core.db import TxError, tx
+from app.core.i18n import _
 from app.core.uploads import save_upload
 from app.extensions import db
 from app.models.attendance import Attendance
@@ -17,7 +18,7 @@ def create_assignment(
 ) -> tuple[Assignment | None, str | None]:
     title = (title or "").strip()
     if not title:
-        return None, "عنوان الواجب مطلوب."
+        return None, _("عنوان الواجب مطلوب.")
 
     def _create():
         return Assignment(
@@ -41,7 +42,7 @@ def submit_assignment(
 ) -> tuple[Submission | None, str | None]:
     """تسليم الطالب للواجب (نص و/أو ملف). يعيد (submission, error)."""
     if not body and not file:
-        return None, "أضف نصاً أو ملفاً للتسليم."
+        return None, _("أضف نصاً أو ملفاً للتسليم.")
     stored = None
     if file:
         try:
