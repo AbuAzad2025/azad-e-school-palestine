@@ -253,6 +253,11 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS price NUMERIC(10,2)"))
         db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS duration_days SMALLINT"))
 
+        # School join_code column (auth registration by join code)
+        db_engine.session.execute(
+            text("ALTER TABLE schools ADD COLUMN IF NOT EXISTS join_code CITEXT")
+        )
+
         # Audit hardening batch (2026-08): password stamp + partial unique indexes
         db_engine.session.execute(
             text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ")
@@ -333,6 +338,7 @@ def make_school(app, **kw):
             name_ar=kw.get("name_ar", f"مدرسة {_uid()}"),
             name_en=kw.get("name_en", f"School {_uid()}"),
             domain=f"{_uid()}.test.org",
+            join_code=kw.get("join_code", f"S-{_uid()[:6]}"),
         )
         _db.session.add(s)
         _db.session.commit()

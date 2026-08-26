@@ -21,6 +21,31 @@ globalThis.localStorage = {
   clear: () => { Object.keys(store).forEach((k) => delete store[k]); },
 };
 
+// Mock DataTransfer + DataTransferItem + DataTransferItemList (not available in jsdom)
+if (typeof globalThis.DataTransfer === "undefined") {
+  class MockDataTransferItemList {
+    constructor() {
+      this._items = [];
+    }
+    add(file) {
+      this._items.push(file);
+    }
+    get length() {
+      return this._items.length;
+    }
+  }
+  class MockDataTransfer {
+    constructor() {
+      this.items = new MockDataTransferItemList();
+    }
+    get files() {
+      return this.items._items;
+    }
+  }
+  globalThis.DataTransfer = MockDataTransfer;
+  window.DataTransfer = MockDataTransfer;
+}
+
 // Attach AzadToast to window for legacy tests
 import AzadToast from "@app-static/js/components/toast.js";
 window.AzadToast = AzadToast;

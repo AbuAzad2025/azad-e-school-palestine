@@ -15,6 +15,7 @@ class School(PKMixin, db.Model):
     name_ar: Mapped[str] = mapped_column(Text, nullable=False)
     name_en: Mapped[str | None] = mapped_column(Text)
     domain: Mapped[str | None] = mapped_column(CITEXT, unique=True)
+    join_code: Mapped[str | None] = mapped_column(CITEXT, unique=True)
     academic_year: Mapped[str | None] = mapped_column(String(20))
     stages: Mapped[list | None] = mapped_column(JSONB)  # ["primary","prep","secondary"]
     settings: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)

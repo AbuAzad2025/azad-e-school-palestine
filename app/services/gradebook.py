@@ -21,7 +21,7 @@ def create_assignment(
         return None, _("عنوان الواجب مطلوب.")
 
     def _create():
-        return Assignment(
+        a = Assignment(
             class_id=class_id,
             title=title,
             body=body,
@@ -29,6 +29,8 @@ def create_assignment(
             max_mark=max_mark,
             created_by=created_by,
         )
+        db.session.add(a)
+        return a
 
     return tx(_create), None
 
@@ -90,7 +92,9 @@ def grade_submission(submission: Submission, mark, feedback: str | None = None, 
 # ============ دفتر الدرجات ============
 def create_category(class_id: int, name: str, weight=None) -> GradeCategory:
     def _create():
-        return GradeCategory(class_id=class_id, name=name.strip(), weight=weight)
+        c = GradeCategory(class_id=class_id, name=name.strip(), weight=weight)
+        db.session.add(c)
+        return c
 
     return tx(_create)
 
@@ -101,9 +105,11 @@ def list_categories(class_id: int):
 
 def create_grade_item(category: GradeCategory, title: str, max_mark=None, kind: str = "exam") -> GradeItem:
     def _create():
-        return GradeItem(
+        i = GradeItem(
             class_id=category.class_id, category_id=category.id, title=title.strip(), max_mark=max_mark, kind=kind
         )
+        db.session.add(i)
+        return i
 
     return tx(_create)
 

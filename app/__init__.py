@@ -153,7 +153,12 @@ def create_app(config_class=Config):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return db.session.get(User, int(user_id))
+        # P1-02: get_id() returns "id:stamp" — extract numeric part
+        try:
+            uid = int(user_id.split(":")[0])
+        except (ValueError, AttributeError):
+            return None
+        return db.session.get(User, uid)
 
     from .modules.admin import bp as admin_bp
     from .modules.ai import bp as ai_bp
