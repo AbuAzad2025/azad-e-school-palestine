@@ -234,6 +234,7 @@ def attempt_submit(attempt_id):
                 f"{current_user.name_ar}: {score}",
             )
         send_quiz_result_email(current_user, attempt.quiz, score)
+
     if attempt.status != "in_progress":
         return redirect(url_for("assessment.attempt_result", attempt_id=attempt.id))
     # P1-11: حفظ الإجابات الواردة قبل انتهاء الوقت فقط، ثم تصحيح ما حُفظ
