@@ -142,8 +142,9 @@ class TestSubscribe:
     def test_subscribe_active_already_exists(self, app):
         with app.app_context():
             sid, uid, plan_id, cls_id = _sub_ctx(app)
+            # Create an active subscription directly
+            sub_id = make_subscription(app, uid, plan_id, cls_id, status="active")
             plan = db.session.get(SubscriptionPlan, plan_id)
-            subscribe(uid, plan, cls_id)
             sub2, error = subscribe(uid, plan, cls_id)
             assert sub2 is None
             assert error is not None
@@ -472,19 +473,13 @@ class TestValidateDiscountCode:
 class TestApplyDiscountCode:
     def test_apply_success(self, app):
         with app.app_context():
-            sid = make_school(app)
+            sid, uid, plan_id, cls_id = _sub_ctx(app)
             create_discount_code(sid, "AP10", "Apply", "percentage", 10, max_uses=5)
-            plan_id = make_subscription_plan(app, sid, price=200)
-            uid = make_user(app, "student", school_id=sid)
-            sub_id = make_subscription(app, uid, plan_id, 1)
-            # Need a real class_id for subscription FK
-            gid = make_grade(app, sid)
-            sub = make_subject(app)
-            cls_id = make_class(app, sid, gid, sub)
-            sub_id2 = make_subscription(app, uid, plan_id, cls_id)
-            d, err = apply_discount_code(sub_id2, "AP10")
+            sub_id = make_subscription(app, uid, plan_id, cls_id)
+            d, err = apply_discount_code(sub_id, "AP10")
             assert err is None
-            assert d == Decimal("20.00")
+            # Plan price=100, 10% discount = 10.00
+            assert d == Decimal("10.00")
 
     def test_apply_invalid(self, app):
         with app.app_context():
