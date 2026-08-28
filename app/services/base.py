@@ -114,14 +114,9 @@ class BaseService(Generic[T]):
             raise TxError("model غير محدد في Service.")
 
         model = cls.model
-        if model is None:
-            raise TxError("model غير محدد في Service.")
 
         def _create() -> T:
             obj = model(**kwargs)
-            db.session.add(obj)
-            return obj
-            obj = cls.model(**kwargs)
             db.session.add(obj)
             return obj
 

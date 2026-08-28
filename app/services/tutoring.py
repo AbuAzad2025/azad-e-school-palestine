@@ -47,7 +47,7 @@ def create_tutor_profile(
         code = _invite_code()
 
     def _create():
-        return TutorProfile(
+        p = TutorProfile(
             tutor_id=tutor_id,
             subject=subject.strip(),
             price_hour=price_hour,
@@ -58,6 +58,8 @@ def create_tutor_profile(
             bio=bio,
             invite_code=code,
         )
+        db.session.add(p)
+        return p
 
     return tx(_create), None
 
@@ -103,7 +105,7 @@ def create_request(
         return None, _("لديك طلب معلّق لهذا المعلم.")
 
     def _create():
-        return TutoringRequest(
+        req = TutoringRequest(
             tutor_id=tutor_id,
             student_id=student_id,
             subject=subject,
@@ -112,6 +114,8 @@ def create_request(
             price_quote=price_quote,
             note=note,
         )
+        db.session.add(req)
+        return req
 
     return tx(_create), None
 
@@ -151,7 +155,7 @@ def create_session(
     request_id: int | None = None,
 ) -> TutoringSession:
     def _create():
-        return TutoringSession(
+        s = TutoringSession(
             request_id=request_id,
             tutor_id=tutor_id,
             student_id=student_id,
@@ -163,6 +167,8 @@ def create_session(
             online_link=online_link,
             location=location,
         )
+        db.session.add(s)
+        return s
 
     return tx(_create)
 

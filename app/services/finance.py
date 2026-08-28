@@ -68,10 +68,14 @@ def student_balance(student_id: int, class_id: int) -> dict:
 
 def accounts_receivable(school_id: int) -> list[dict]:
     """جميع الأرصدة المستحقة في المدرسة."""
-    subs = Subscription.query.filter(
-        Subscription.school_id == school_id,
-        Subscription.status.in_(["pending", "active"]),
-    ).all()
+    subs = (
+        Subscription.query.join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
+        .filter(
+            SubscriptionPlan.school_id == school_id,
+            Subscription.status.in_(["pending", "active"]),
+        )
+        .all()
+    )
 
     results = []
     for sub in subs:

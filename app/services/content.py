@@ -64,7 +64,9 @@ def _sanitize_html(raw: str | None) -> str | None:
 
 def create_unit(class_id: int, title: str, sort_order: int | None = None) -> Unit:
     def _create():
-        return Unit(class_id=class_id, title=title.strip(), sort_order=sort_order)
+        u = Unit(class_id=class_id, title=title.strip(), sort_order=sort_order)
+        db.session.add(u)
+        return u
 
     return tx(_create)
 
@@ -96,13 +98,15 @@ def create_lesson(
         return None, _("عنوان الدرس مطلوب.")
 
     def _create():
-        return Lesson(
+        lesson = Lesson(
             class_id=class_id,
             unit_id=unit_id,
             title=title,
             body_html=_sanitize_html(body_html),
             created_by=created_by,
         )
+        db.session.add(lesson)
+        return lesson
 
     return tx(_create), None
 
@@ -143,7 +147,7 @@ def add_attachment(lesson: Lesson, file, title: str | None = None) -> LessonAtta
     )
 
     def _add():
-        return LessonAttachment(
+        att = LessonAttachment(
             lesson_id=lesson.id,
             kind=kind,
             title=title,
@@ -152,6 +156,8 @@ def add_attachment(lesson: Lesson, file, title: str | None = None) -> LessonAtta
             mime=file.mimetype,
             size_bytes=file.content_length or 0,
         )
+        db.session.add(att)
+        return att
 
     return tx(_add)
 
@@ -160,12 +166,15 @@ def add_youtube(lesson: Lesson, url: str, title: str | None = None) -> LessonAtt
     """مقطع فيديو خارجي (YouTube) — لا رفع ملف."""
 
     def _add():
-        return LessonAttachment(
+        att = LessonAttachment(
             lesson_id=lesson.id,
             kind="video",
             title=title,
+            stored_name=url.strip(),
             youtube_url=url.strip(),
         )
+        db.session.add(att)
+        return att
 
     return tx(_add)
 
@@ -235,5 +244,5 @@ def shared_lessons(school_id: int, subject_id: int | None = None) -> list[Lesson
         Lesson.deleted_at.is_(None),
     )
     if subject_id is not None:
-        query = query.join(ClassRoom).filter(ClassRoom.subject_id == subject_id)
+        query = query.filter(ClassRoom.subject_id == subject_id)
     return query.order_by(Lesson.created_at.desc()).all()

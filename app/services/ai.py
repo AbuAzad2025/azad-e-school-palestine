@@ -557,7 +557,9 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
         self, user_id: int, session_type: str, class_id: int | None = None, lesson_id: int | None = None
     ) -> AiSession:
         def _create():
-            return AiSession(user_id=user_id, session_type=session_type, class_id=class_id, lesson_id=lesson_id)
+            s = AiSession(user_id=user_id, session_type=session_type, class_id=class_id, lesson_id=lesson_id)
+            db.session.add(s)
+            return s
 
         return tx(_create)
 

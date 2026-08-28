@@ -20,13 +20,15 @@ def record_lesson_view(student_id: int, lesson_id: int, class_id: int) -> Studen
         return existing
 
     def _create():
-        return StudentProgress(
+        p = StudentProgress(
             student_id=student_id,
             lesson_id=lesson_id,
             class_id=class_id,
             status="in_progress",
             started_at=datetime.now(UTC),
         )
+        db.session.add(p)
+        return p
 
     return tx(_create)
 
@@ -75,7 +77,7 @@ def update_video_progress(
 
     def _create():
         completed = total_seconds > 0 and seconds_watched >= total_seconds * 0.9
-        return VideoProgress(
+        vp = VideoProgress(
             student_id=student_id,
             attachment_id=attachment_id,
             lesson_id=lesson_id,
@@ -85,6 +87,8 @@ def update_video_progress(
             completed=completed,
             last_watched_at=datetime.now(UTC),
         )
+        db.session.add(vp)
+        return vp
 
     return tx(_create)
 

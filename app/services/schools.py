@@ -25,7 +25,9 @@ def create_school(
             return None, _("هذا النطاق مستخدم لمدرسة أخرى.")
 
     def _create():
-        return School(name_ar=name_ar, name_en=name_en, domain=domain or None)
+        s = School(name_ar=name_ar, name_en=name_en, domain=domain or None)
+        db.session.add(s)
+        return s
 
     return tx(_create), None
 
@@ -56,7 +58,7 @@ def create_class(
         code = _join_code()
 
     def _create():
-        return ClassRoom(
+        cr = ClassRoom(
             school_id=school_id,
             subject_id=subject_id,
             grade_id=grade_id,
@@ -69,6 +71,8 @@ def create_class(
             price_annual=price_annual,
             currency=currency,
         )
+        db.session.add(cr)
+        return cr
 
     return tx(_create), None
 
@@ -136,7 +140,13 @@ def get_or_create_subject(name_ar: str, code: str | None = None) -> Subject:
     subject = Subject.query.filter_by(name_ar=name_ar).first()
     if subject:
         return subject
-    return tx(lambda: Subject(name_ar=name_ar, code=code))
+
+    def _create():
+        s = Subject(name_ar=name_ar, code=code)
+        db.session.add(s)
+        return s
+
+    return tx(_create)
 
 
 def add_grade(school_id: int, grade_level: int, name_ar: str | None = None, stage: str | None = None) -> Grade:
@@ -146,7 +156,9 @@ def add_grade(school_id: int, grade_level: int, name_ar: str | None = None, stag
         return existing
 
     def _add():
-        return Grade(school_id=school_id, grade_level=grade_level, name_ar=name_ar, stage=stage)
+        g = Grade(school_id=school_id, grade_level=grade_level, name_ar=name_ar, stage=stage)
+        db.session.add(g)
+        return g
 
     return tx(_add)
 

@@ -59,13 +59,15 @@ def submit_assignment(
             sub.file = stored or sub.file
             sub.submitted_at = db.func.now()
             return sub
-        return Submission(
+        sub = Submission(
             assignment_id=assignment.id,
             student_id=student_id,
             body=body,
             file=stored,
             submitted_at=db.func.now(),
         )
+        db.session.add(sub)
+        return sub
 
     return tx(_submit), None
 

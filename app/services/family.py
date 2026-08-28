@@ -22,7 +22,9 @@ def generate_link_code(student_id: int) -> tuple[str | None, str | None]:
     def _create():
         # إلغاء الرموز القديمة
         FamilyLinkCode.query.filter_by(student_id=student_id, used=False).update({"used": True})
-        return FamilyLinkCode(student_id=student_id, code=code, expires_at=expires_at)
+        flc = FamilyLinkCode(student_id=student_id, code=code, expires_at=expires_at)
+        db.session.add(flc)
+        return flc
 
     result = tx(_create)
     return result.code if result else None, None
@@ -57,11 +59,13 @@ def link_parent(parent_id: int, code: str) -> tuple[FamilyLink | None, str | Non
     def _link():
         link_code.used = True
         link_code.used_by = parent_id
-        return FamilyLink(
+        link = FamilyLink(
             parent_id=parent_id,
             student_id=link_code.student_id,
             status="active",
         )
+        db.session.add(link)
+        return link
 
     return tx(_link), None
 

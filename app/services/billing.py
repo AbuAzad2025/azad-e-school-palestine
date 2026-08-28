@@ -41,7 +41,7 @@ def create_plan(
         return None, _("نوع خطة غير صالح.")
 
     def _create():
-        return SubscriptionPlan(
+        p = SubscriptionPlan(
             school_id=school_id,
             class_id=class_id,
             name=name,
@@ -51,6 +51,8 @@ def create_plan(
             duration_days=duration_days,
             benefits=benefits,
         )
+        db.session.add(p)
+        return p
 
     return tx(_create), None
 
@@ -73,7 +75,7 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
         return None, _("لديك اشتراك نشط في هذا الصف.")
 
     def _create():
-        return Subscription(
+        sub = Subscription(
             user_id=user_id,
             plan_id=plan.id,
             class_id=class_id,
@@ -82,6 +84,8 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
             status="pending",
             source="manual",
         )
+        db.session.add(sub)
+        return sub
 
     return tx(_create), None
 

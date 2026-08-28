@@ -50,7 +50,9 @@ def get_quota(school_id: int) -> TenantQuota:
         defaults = TIER_DEFAULTS["free"]
 
         def _create():
-            return TenantQuota(school_id=school_id, tier="free", **defaults)
+            q = TenantQuota(school_id=school_id, tier="free", **defaults)
+            db.session.add(q)
+            return q
 
         quota = tx(_create)
     return quota
@@ -103,7 +105,9 @@ def set_tier(school_id: int, tier: str) -> tuple[TenantQuota | None, str | None]
 
     def _update():
         if not quota:
-            return TenantQuota(school_id=school_id, tier=tier, **defaults)
+            q = TenantQuota(school_id=school_id, tier=tier, **defaults)
+            db.session.add(q)
+            return q
         quota.tier = tier
         for key, value in defaults.items():
             setattr(quota, key, value)

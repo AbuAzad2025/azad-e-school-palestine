@@ -25,13 +25,15 @@ def create_event(
         return None, _("تاريخ النهاية يجب أن يكون بعد تاريخ البداية.")
 
     def _create():
-        return AcademicEvent(
+        ev = AcademicEvent(
             school_id=school_id,
             title=title,
             event_type=event_type,
             start_date=start_date,
             end_date=end_date,
         )
+        db.session.add(ev)
+        return ev
 
     return tx(_create), None
 
