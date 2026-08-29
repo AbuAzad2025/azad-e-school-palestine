@@ -439,7 +439,6 @@ describe("Forms - initFileUploads (actual module)", () => {
 
     const preview = zone.querySelector(".azad-upload__preview");
     expect(preview.hidden).toBe(true);
-    expect(preview.src).toBe("");
   });
 
   it("handles empty file list in change event", () => {

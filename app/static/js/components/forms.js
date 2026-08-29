@@ -111,9 +111,13 @@ function handleFiles(zone, files) {
   const input = zone.querySelector(".azad-upload__input");
   if (!input) return;
   if (files.length) {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(files[0]);
-    input.files = dataTransfer.files;
+    try {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(files[0]);
+      input.files = dataTransfer.files;
+    } catch {
+      // input.files may be read-only in some environments
+    }
     updateUploadZone(zone, files[0]);
   }
 }
