@@ -200,4 +200,14 @@ if (document.readyState === "loading") {
   init();
 }
 
-export { autoSubmit, updateProgress };
+export {
+  autoSubmit,
+  getStoredData,
+  init,
+  initFlags,
+  initProctoring,
+  initSaveButton,
+  initTimer,
+  setStoredData,
+  updateProgress,
+};

@@ -201,3 +201,13 @@ if (document.readyState === "loading") {
 import("./components/toast.js").then((m) => {
   window.AzadToast = m.default;
 });
+
+export {
+  init,
+  initAdminDrawer,
+  initAutoDismissFlashes,
+  initNav,
+  initPwaBanner,
+  initScrollAnimations,
+  initServiceWorker,
+};
