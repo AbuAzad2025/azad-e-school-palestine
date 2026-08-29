@@ -1,0 +1,22 @@
+[run]
+source = app
+branch = True
+omit =
+    app/migrations/*
+    app/models/__init__.py
+    app/core/__init__.py
+    app/services/__init__.py
+    app/modules/*/forms.py
+    app/modules/*/__init__.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if TYPE_CHECKING:
+    if __name__ == .__main__
+    raise NotImplementedError
+    pass
+    @overload
+show_missing = True
+fail_under = 70

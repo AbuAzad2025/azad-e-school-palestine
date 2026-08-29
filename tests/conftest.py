@@ -655,14 +655,6 @@ def make_user_role_link(app, user_id, school_id, role="teacher", approved_by=Non
         return rl.id
 
 
-def make_revenue_ledger_entry(app, school_id, amount, currency="ILS", gateway="manual", subscription_id=None):
-    with app.app_context():
-
-        # This is a helper to create test revenue data
-        # We'll use ManualPayment as the ledger entry
-        pass
-        return r.id
-
 
 def make_system_school(app):
     with app.app_context():

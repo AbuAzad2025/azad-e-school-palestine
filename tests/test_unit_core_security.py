@@ -134,3 +134,52 @@ class TestCheckPasswordReuse:
 
         ok, msg = check_password_reuse(FakeUser(), h2)
         assert ok is True
+
+    def test_none_history(self):
+        """User with None password_history should not crash."""
+        class FakeUser:
+            password_history = None
+
+        new_hash = hash_password("NewP@ss1")
+        ok, msg = check_password_reuse(FakeUser(), new_hash)
+        assert ok is True
+
+
+class TestValidatePasswordPolicyEdgeCases:
+    def test_custom_min_length_boundary(self, app):
+        with app.app_context():
+            app.config["PASSWORD_MIN_LENGTH"] = 3
+            ok, _ = validate_password_policy("Ab1!")
+            assert ok is True
+
+    def test_disable_all_requirements(self, app):
+        with app.app_context():
+            app.config["PASSWORD_REQUIRE_UPPER"] = False
+            app.config["PASSWORD_REQUIRE_LOWER"] = False
+            app.config["PASSWORD_REQUIRE_DIGIT"] = False
+            app.config["PASSWORD_REQUIRE_SPECIAL"] = False
+            app.config["PASSWORD_MIN_LENGTH"] = 1
+            ok, _ = validate_password_policy("a")
+            assert ok is True
+
+    def test_exact_min_length(self, app):
+        with app.app_context():
+            app.config["PASSWORD_MIN_LENGTH"] = 8
+            ok, _ = validate_password_policy("Ab1!Ab1!")
+            assert ok is True
+            ok, _ = validate_password_policy("Ab1!Ab1")
+            assert ok is False
+
+    def test_all_common_passwords_rejected(self, app):
+        """Every password in COMMON_PASSWORDS should fail policy checks."""
+        with app.app_context():
+            for pw in COMMON_PASSWORDS:
+                # Common passwords lack uppercase/digit/special, so they fail
+                ok, _ = validate_password_policy(pw)
+                assert ok is False, f"'{pw}' should be rejected"
+
+    def test_very_long_password_accepted(self, app):
+        with app.app_context():
+            long_pw = "A" + "1" + "!" + "a" * 200
+            ok, _ = validate_password_policy(long_pw)
+            assert ok is True

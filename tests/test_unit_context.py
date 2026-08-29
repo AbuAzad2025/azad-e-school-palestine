@@ -169,3 +169,80 @@ class TestAccessChecks:
         with app.app_context():
             with app.test_request_context():
                 assert can_access_admin() is False
+
+
+class TestIconEdgeCases:
+    def test_icon_with_empty_string(self, app):
+        with app.app_context():
+            with app.test_request_context():
+                result = icon("")
+                assert "svg" in result
+
+    def test_icon_with_none_fallback(self, app):
+        with app.app_context():
+            with app.test_request_context():
+                result = icon(None)
+                assert "svg" in result
+
+    def test_icon_with_numeric_string(self, app):
+        with app.app_context():
+            with app.test_request_context():
+                result = icon("123")
+                assert "svg" in result
+
+
+class TestHasRoleEdgeCases:
+    def test_has_role_with_unauthenticated_user(self, app):
+        with app.app_context():
+            with app.test_request_context():
+                assert has_role(UserRole.teacher) is False
+                assert has_role(UserRole.student) is False
+                assert has_role(UserRole.super_admin) is False
+
+    def test_has_any_role_with_no_args(self, app):
+        with app.app_context():
+            uid = make_user(app, "student")
+            with app.test_request_context():
+                user = db.session.get(User, uid)
+                login_user(user)
+                assert has_any_role() is False
+
+
+class TestRoleChecksEdgeCases:
+    def test_school_admin_is_not_student(self, app):
+        with app.app_context():
+            sid = make_school(app)
+            uid = make_user(app, "school_admin", school_id=sid)
+            with app.test_request_context():
+                user = db.session.get(User, uid)
+                login_user(user)
+                assert is_school_admin() is True
+                assert is_student() is False
+                assert is_teacher() is False
+
+    def test_parent_is_not_teacher(self, app):
+        with app.app_context():
+            uid = make_user(app, "parent")
+            with app.test_request_context():
+                user = db.session.get(User, uid)
+                login_user(user)
+                assert is_parent() is True
+                assert is_teacher() is False
+                assert is_student() is False
+
+    def test_teacher_cannot_access_admin(self, app):
+        with app.app_context():
+            uid = make_user(app, "teacher")
+            with app.test_request_context():
+                user = db.session.get(User, uid)
+                login_user(user)
+                assert can_access_admin() is False
+
+    def test_school_admin_can_access_admin(self, app):
+        with app.app_context():
+            sid = make_school(app)
+            uid = make_user(app, "school_admin", school_id=sid)
+            with app.test_request_context():
+                user = db.session.get(User, uid)
+                login_user(user)
+                assert can_access_admin() is True

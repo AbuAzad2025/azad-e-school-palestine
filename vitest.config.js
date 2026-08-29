@@ -17,7 +17,7 @@ export default defineConfig({
       reporter: ["text", "lcov", "html", "cobertura"],
       reportsDirectory: "coverage/js",
       include: ["app/static/js/**/*.js"],
-      exclude: ["app/static/js/ai-chat.js"],
+      exclude: [],
     },
   },
 });

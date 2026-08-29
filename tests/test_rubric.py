@@ -222,3 +222,44 @@ def test_rubric_template_with_empty_criteria(app):
         fetched = get_rubric_template(t.id)
         assert fetched is not None
         assert len(fetched.criteria) == 0
+
+
+def test_grade_with_rubric_empty_grades(app):
+    """Grading with empty grades list should return empty list."""
+    school_id, teacher_id, student_id, *_rest, submission_id = _setup(app)
+    with app.app_context():
+        create_rubric_template(
+            teacher_id=teacher_id,
+            school_id=school_id,
+            title="R",
+            criteria=[{"title": "X", "max_score": 10}],
+        )
+        results = grade_with_rubric(
+            submission_id=submission_id,
+            grades=[],
+            graded_by=teacher_id,
+        )
+        assert results == []
+
+
+def test_get_rubric_template_nonexistent(app):
+    """Getting a nonexistent template returns None."""
+    with app.app_context():
+        result = get_rubric_template(999999)
+        assert result is None
+
+
+def test_get_rubric_grades_empty(app):
+    """Getting grades for ungraded submission returns empty list."""
+    school_id, teacher_id, student_id, *_rest, submission_id = _setup(app)
+    with app.app_context():
+        gs = get_rubric_grades(submission_id)
+        assert gs == []
+
+
+def test_rubric_total_score_no_grades(app):
+    """Total score for ungraded submission returns 0."""
+    school_id, teacher_id, student_id, *_rest, submission_id = _setup(app)
+    with app.app_context():
+        total = rubric_total_score(submission_id)
+        assert total == 0
