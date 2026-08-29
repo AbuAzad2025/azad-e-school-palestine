@@ -9,28 +9,20 @@ from decimal import Decimal
 
 import pytest
 from app import create_app
-from app.extensions import db as _db
 from app.core.security import hash_password
-from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
+from app.extensions import db as _db
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.content import Lesson, LessonAttachment
-from app.models.gamification import Badge, BadgeCriteriaType, StudentBadge
+from app.models.gamification import Badge, BadgeCriteriaType
 from app.models.gradebook import (
     Assignment,
-    GradeAppeal,
     GradeCategory,
     GradeEntry,
     GradeItem,
-    RubricCriterion,
-    RubricGrade,
-    RubricTemplate,
     Submission,
 )
-from app.models.progress import StudentProgress, VideoProgress
 from app.models.school import Grade, School, Subject
-from app.models.system import CertificateTemplate, HealthCheck, OnboardingProgress, Setting
-from app.models.tenant import TenantQuota
-from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
+from app.models.user import User, UserApprovalStatus, UserRole
 
 
 # ---- Fixtures ----
@@ -44,6 +36,7 @@ def app():
     a.config["SESSION_COOKIE_SECURE"] = False
     with a.app_context():
         from sqlalchemy import text
+
         _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         _db.session.commit()
         _db.create_all()
@@ -59,7 +52,8 @@ def client(app):
 def _clean(app):
     yield
     with app.app_context():
-        from sqlalchemy import text, inspect
+        from sqlalchemy import inspect, text
+
         inspector = inspect(_db.engine)
         tables = inspector.get_table_names(schema="public")
         tables = [t for t in tables if t != "alembic_version"]
@@ -70,6 +64,7 @@ def _clean(app):
 
 def _uid():
     import uuid
+
     return uuid.uuid4().hex[:10]
 
 
@@ -107,8 +102,12 @@ def _make_school(app, **kw):
 def _make_class(app, school_id, grade_id, subject_id, teacher_id=None):
     with app.app_context():
         c = ClassRoom(
-            school_id=school_id, grade_id=grade_id, subject_id=subject_id,
-            teacher_id=teacher_id, join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}",
+            school_id=school_id,
+            grade_id=grade_id,
+            subject_id=subject_id,
+            teacher_id=teacher_id,
+            join_code=f"C-{_uid()[:6]}",
+            name=f"صف {_uid()}",
         )
         _db.session.add(c)
         _db.session.commit()
@@ -137,6 +136,7 @@ def _make_subject(app):
 class TestHealthService:
     def test_check_database_healthy(self, app):
         from app.services.health import check_database
+
         with app.app_context():
             result = check_database()
             assert result["component"] == "database"
@@ -146,6 +146,7 @@ class TestHealthService:
 
     def test_check_disk_healthy(self, app):
         from app.services.health import check_disk
+
         with app.app_context():
             result = check_disk()
             assert result["component"] == "disk"
@@ -154,6 +155,7 @@ class TestHealthService:
 
     def test_record_health(self, app):
         from app.services.health import record_health
+
         with app.app_context():
             hc = record_health({"component": "test", "status": "healthy", "latency_ms": 5, "message": None})
             assert hc.id is not None
@@ -161,6 +163,7 @@ class TestHealthService:
 
     def test_run_all_checks(self, app):
         from app.services.health import run_all_checks
+
         with app.app_context():
             results = run_all_checks()
             assert len(results) == 2
@@ -169,6 +172,7 @@ class TestHealthService:
 
     def test_get_recent_checks(self, app):
         from app.services.health import get_recent_checks, record_health
+
         with app.app_context():
             record_health({"component": "db", "status": "healthy", "latency_ms": 1})
             checks = get_recent_checks(hours=24)
@@ -176,6 +180,7 @@ class TestHealthService:
 
     def test_get_system_status_empty(self, app):
         from app.services.health import get_system_status
+
         with app.app_context():
             status = get_system_status()
             assert status["overall"] == "unknown"
@@ -183,6 +188,7 @@ class TestHealthService:
 
     def test_get_system_status_healthy(self, app):
         from app.services.health import get_system_status, record_health
+
         with app.app_context():
             record_health({"component": "db", "status": "healthy", "latency_ms": 1})
             record_health({"component": "disk", "status": "healthy", "latency_ms": 0})
@@ -191,6 +197,7 @@ class TestHealthService:
 
     def test_get_system_status_degraded(self, app):
         from app.services.health import get_system_status, record_health
+
         with app.app_context():
             record_health({"component": "db", "status": "healthy", "latency_ms": 1})
             record_health({"component": "cache", "status": "degraded", "latency_ms": 50})
@@ -199,6 +206,7 @@ class TestHealthService:
 
     def test_get_system_status_down(self, app):
         from app.services.health import get_system_status, record_health
+
         with app.app_context():
             record_health({"component": "db", "status": "down", "latency_ms": 1})
             status = get_system_status()
@@ -225,6 +233,7 @@ class TestGamificationService:
 
     def test_get_active_badges(self, app):
         from app.services.gamification import get_active_badges
+
         with app.app_context():
             self._make_badge(app)
             badges = get_active_badges()
@@ -232,6 +241,7 @@ class TestGamificationService:
 
     def test_get_student_badges_empty(self, app):
         from app.services.gamification import get_student_badges
+
         with app.app_context():
             uid = _make_user(app)
             badges = get_student_badges(uid)
@@ -239,6 +249,7 @@ class TestGamificationService:
 
     def test_has_badge_false(self, app):
         from app.services.gamification import has_badge
+
         with app.app_context():
             uid = _make_user(app)
             bid = self._make_badge(app)
@@ -246,6 +257,7 @@ class TestGamificationService:
 
     def test_award_badge(self, app):
         from app.services.gamification import award_badge, has_badge
+
         with app.app_context():
             uid = _make_user(app)
             bid = self._make_badge(app)
@@ -255,6 +267,7 @@ class TestGamificationService:
 
     def test_award_badge_duplicate_returns_none(self, app):
         from app.services.gamification import award_badge
+
         with app.app_context():
             uid = _make_user(app)
             bid = self._make_badge(app)
@@ -264,6 +277,7 @@ class TestGamificationService:
 
     def test_check_and_award_first_quiz(self, app):
         from app.services.gamification import check_and_award_badges
+
         with app.app_context():
             uid = _make_user(app)
             self._make_badge(app, criteria_type=BadgeCriteriaType.first_quiz)
@@ -272,26 +286,25 @@ class TestGamificationService:
 
     def test_check_and_award_perfect_score(self, app):
         from app.services.gamification import check_and_award_badges
+
         with app.app_context():
             uid = _make_user(app)
             self._make_badge(app, criteria_type=BadgeCriteriaType.perfect_score)
-            new_badges = check_and_award_badges(
-                uid, "quiz_submitted", {"score": 100, "max_score": 100}
-            )
+            new_badges = check_and_award_badges(uid, "quiz_submitted", {"score": 100, "max_score": 100})
             assert len(new_badges) >= 1
 
     def test_check_and_award_perfect_score_not_perfect(self, app):
         from app.services.gamification import check_and_award_badges
+
         with app.app_context():
             uid = _make_user(app)
             self._make_badge(app, criteria_type=BadgeCriteriaType.perfect_score)
-            new_badges = check_and_award_badges(
-                uid, "quiz_submitted", {"score": 80, "max_score": 100}
-            )
+            new_badges = check_and_award_badges(uid, "quiz_submitted", {"score": 80, "max_score": 100})
             assert len(new_badges) == 0
 
     def test_check_and_award_no_new_event_type(self, app):
         from app.services.gamification import check_and_award_badges
+
         with app.app_context():
             uid = _make_user(app)
             self._make_badge(app, criteria_type=BadgeCriteriaType.first_quiz)
@@ -300,26 +313,24 @@ class TestGamificationService:
 
     def test_check_and_award_early_bird(self, app):
         from app.services.gamification import check_and_award_badges
+
         with app.app_context():
             uid = _make_user(app)
             self._make_badge(app, criteria_type=BadgeCriteriaType.early_bird)
             future = (datetime.now(UTC) + timedelta(days=2)).isoformat()
             past = datetime.now(UTC).isoformat()
-            new_badges = check_and_award_badges(
-                uid, "assignment_submitted", {"deadline": future, "submitted_at": past}
-            )
+            new_badges = check_and_award_badges(uid, "assignment_submitted", {"deadline": future, "submitted_at": past})
             assert len(new_badges) >= 1
 
     def test_check_and_award_early_bird_too_late(self, app):
         from app.services.gamification import check_and_award_badges
+
         with app.app_context():
             uid = _make_user(app)
             self._make_badge(app, criteria_type=BadgeCriteriaType.early_bird)
             now = datetime.now(UTC).isoformat()
             past = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
-            new_badges = check_and_award_badges(
-                uid, "assignment_submitted", {"deadline": now, "submitted_at": past}
-            )
+            new_badges = check_and_award_badges(uid, "assignment_submitted", {"deadline": now, "submitted_at": past})
             assert len(new_badges) == 0
 
 
@@ -329,11 +340,14 @@ class TestGamificationService:
 class TestRubricService:
     def test_create_rubric_template(self, app):
         from app.services.rubric import create_rubric_template
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
             t = create_rubric_template(
-                tid, sid, "قالب الاختبار",
+                tid,
+                sid,
+                "قالب الاختبار",
                 criteria=[{"title": "معيار 1", "max_score": 10}, {"title": "معيار 2", "max_score": 5}],
             )
             assert t.id is not None
@@ -341,6 +355,7 @@ class TestRubricService:
 
     def test_create_rubric_template_no_criteria(self, app):
         from app.services.rubric import create_rubric_template
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
@@ -349,6 +364,7 @@ class TestRubricService:
 
     def test_get_rubric_template(self, app):
         from app.services.rubric import create_rubric_template, get_rubric_template
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
@@ -358,6 +374,7 @@ class TestRubricService:
 
     def test_list_rubric_templates(self, app):
         from app.services.rubric import create_rubric_template, list_rubric_templates
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
@@ -367,7 +384,8 @@ class TestRubricService:
             assert len(result) == 2
 
     def test_grade_with_rubric(self, app):
-        from app.services.rubric import create_rubric_template, grade_with_rubric, get_rubric_grades, rubric_total_score
+        from app.services.rubric import create_rubric_template, get_rubric_grades, grade_with_rubric, rubric_total_score
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
@@ -391,6 +409,7 @@ class TestRubricService:
 
     def test_grade_with_rubric_update_existing(self, app):
         from app.services.rubric import create_rubric_template, grade_with_rubric
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
@@ -432,6 +451,7 @@ class TestGradeAppealsService:
 
     def test_submit_appeal(self, app):
         from app.services.grade_appeals import submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             appeal = submit_appeal(sub_id, student_id, "الدرجة غير صحيحة")
@@ -440,6 +460,7 @@ class TestGradeAppealsService:
 
     def test_submit_appeal_empty_reason_returns_none(self, app):
         from app.services.grade_appeals import submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             assert submit_appeal(sub_id, student_id, "") is None
@@ -447,13 +468,15 @@ class TestGradeAppealsService:
 
     def test_submit_appeal_duplicate_returns_none(self, app):
         from app.services.grade_appeals import submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             submit_appeal(sub_id, student_id, "أول")
             assert submit_appeal(sub_id, student_id, "ثاني") is None
 
     def test_review_appeal_approve(self, app):
-        from app.services.grade_appeals import submit_appeal, review_appeal
+        from app.services.grade_appeals import review_appeal, submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             appeal = submit_appeal(sub_id, student_id, "خطأ")
@@ -462,7 +485,8 @@ class TestGradeAppealsService:
             assert result.status == "approved"
 
     def test_review_appeal_reject(self, app):
-        from app.services.grade_appeals import submit_appeal, review_appeal
+        from app.services.grade_appeals import review_appeal, submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             appeal = submit_appeal(sub_id, student_id, "خطأ")
@@ -471,7 +495,8 @@ class TestGradeAppealsService:
             assert result.status == "rejected"
 
     def test_review_appeal_invalid_status(self, app):
-        from app.services.grade_appeals import submit_appeal, review_appeal
+        from app.services.grade_appeals import review_appeal, submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             appeal = submit_appeal(sub_id, student_id, "خطأ")
@@ -480,12 +505,14 @@ class TestGradeAppealsService:
 
     def test_review_appeal_nonexistent(self, app):
         from app.services.grade_appeals import review_appeal
+
         with app.app_context():
             reviewer = _make_user(app, "teacher")
             assert review_appeal(99999, "approved", None, reviewer) is None
 
     def test_get_student_appeals(self, app):
-        from app.services.grade_appeals import submit_appeal, get_student_appeals
+        from app.services.grade_appeals import get_student_appeals, submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             submit_appeal(sub_id, student_id, "سبب")
@@ -493,7 +520,8 @@ class TestGradeAppealsService:
             assert len(appeals) == 1
 
     def test_get_pending_appeals(self, app):
-        from app.services.grade_appeals import submit_appeal, get_pending_appeals
+        from app.services.grade_appeals import get_pending_appeals, submit_appeal
+
         with app.app_context():
             sub_id, student_id, _ = self._make_submission(app)
             submit_appeal(sub_id, student_id, "سبب")
@@ -528,6 +556,7 @@ class TestGradeCalcService:
 
     def test_calculate_student_grade(self, app):
         from app.services.grade_calc import calculate_student_grade
+
         with app.app_context():
             cid, student = self._setup_grades(app)
             result = calculate_student_grade(student, cid)
@@ -537,6 +566,7 @@ class TestGradeCalcService:
 
     def test_calculate_student_grade_no_grades(self, app):
         from app.services.grade_calc import calculate_student_grade
+
         with app.app_context():
             tid = _make_user(app, "teacher")
             sid = _make_school(app)
@@ -549,6 +579,7 @@ class TestGradeCalcService:
 
     def test_class_grades_summary(self, app):
         from app.services.grade_calc import class_grades_summary
+
         with app.app_context():
             cid, student = self._setup_grades(app)
             result = class_grades_summary(cid)
@@ -562,6 +593,7 @@ class TestGradeCalcService:
 class TestFinanceService:
     def test_school_revenue_summary_empty(self, app):
         from app.services.finance import school_revenue_summary
+
         with app.app_context():
             sid = _make_school(app)
             result = school_revenue_summary(sid)
@@ -570,6 +602,7 @@ class TestFinanceService:
 
     def test_student_balance_no_subscription(self, app):
         from app.services.finance import student_balance
+
         with app.app_context():
             uid = _make_user(app)
             result = student_balance(uid, 999)
@@ -577,6 +610,7 @@ class TestFinanceService:
 
     def test_accounts_receivable_empty(self, app):
         from app.services.finance import accounts_receivable
+
         with app.app_context():
             sid = _make_school(app)
             result = accounts_receivable(sid)
@@ -589,13 +623,15 @@ class TestFinanceService:
 class TestNotificationPreferencesService:
     def test_get_preferences_empty(self, app):
         from app.services.notification_preferences import get_preferences
+
         with app.app_context():
             uid = _make_user(app)
             prefs = get_preferences(uid)
             assert len(prefs) == 0
 
     def test_update_preference_create(self, app):
-        from app.services.notification_preferences import update_preference, get_preference
+        from app.services.notification_preferences import get_preference, update_preference
+
         with app.app_context():
             uid = _make_user(app)
             pref = update_preference(uid, "result", True, False)
@@ -605,7 +641,8 @@ class TestNotificationPreferencesService:
             assert found is not None
 
     def test_update_preference_update(self, app):
-        from app.services.notification_preferences import update_preference, get_preference
+        from app.services.notification_preferences import get_preference, update_preference
+
         with app.app_context():
             uid = _make_user(app)
             update_preference(uid, "result", True, True)
@@ -615,13 +652,15 @@ class TestNotificationPreferencesService:
 
     def test_should_notify_default(self, app):
         from app.services.notification_preferences import should_notify
+
         with app.app_context():
             uid = _make_user(app)
             assert should_notify(uid, "result", "in_app") is True
             assert should_notify(uid, "result", "email") is True
 
     def test_should_notify_disabled(self, app):
-        from app.services.notification_preferences import update_preference, should_notify
+        from app.services.notification_preferences import should_notify, update_preference
+
         with app.app_context():
             uid = _make_user(app)
             update_preference(uid, "result", False, False)
@@ -635,6 +674,7 @@ class TestNotificationPreferencesService:
 class TestTenantService:
     def test_get_quota_creates_default(self, app):
         from app.services.tenant import get_quota
+
         with app.app_context():
             sid = _make_school(app)
             q = get_quota(sid)
@@ -643,6 +683,7 @@ class TestTenantService:
 
     def test_check_quota_students_ok(self, app):
         from app.services.tenant import check_quota
+
         with app.app_context():
             sid = _make_school(app)
             ok, msg = check_quota(sid, "students")
@@ -650,6 +691,7 @@ class TestTenantService:
 
     def test_check_quota_ai_disabled(self, app):
         from app.services.tenant import check_quota
+
         with app.app_context():
             sid = _make_school(app)
             ok, msg = check_quota(sid, "ai")
@@ -657,6 +699,7 @@ class TestTenantService:
 
     def test_check_quota_classes_ok(self, app):
         from app.services.tenant import check_quota
+
         with app.app_context():
             sid = _make_school(app)
             ok, msg = check_quota(sid, "classes")
@@ -664,6 +707,7 @@ class TestTenantService:
 
     def test_set_tier(self, app):
         from app.services.tenant import set_tier
+
         with app.app_context():
             sid = _make_school(app)
             q, err = set_tier(sid, "pro")
@@ -673,6 +717,7 @@ class TestTenantService:
 
     def test_set_tier_invalid(self, app):
         from app.services.tenant import set_tier
+
         with app.app_context():
             sid = _make_school(app)
             q, err = set_tier(sid, "nonexistent")
@@ -686,6 +731,7 @@ class TestTenantService:
 class TestAnalyticsService:
     def test_get_analytics_data(self, app):
         from app.services.analytics import get_analytics_data
+
         with app.app_context():
             data = get_analytics_data(days=30)
             assert "dau" in data
@@ -715,6 +761,7 @@ class TestOfflineService:
 
     def test_mark_for_download(self, app):
         from app.services.offline import mark_for_download
+
         with app.app_context():
             uid = _make_user(app)
             att_id, lesson_id = self._make_attachment(app)
@@ -724,6 +771,7 @@ class TestOfflineService:
 
     def test_mark_for_download_duplicate(self, app):
         from app.services.offline import mark_for_download
+
         with app.app_context():
             uid = _make_user(app)
             att_id, lesson_id = self._make_attachment(app)
@@ -732,7 +780,8 @@ class TestOfflineService:
             assert result is None
 
     def test_get_offline_items(self, app):
-        from app.services.offline import mark_for_download, get_offline_items
+        from app.services.offline import get_offline_items, mark_for_download
+
         with app.app_context():
             uid = _make_user(app)
             att_id, lesson_id = self._make_attachment(app)
@@ -741,7 +790,8 @@ class TestOfflineService:
             assert len(items) == 1
 
     def test_remove_offline(self, app):
-        from app.services.offline import mark_for_download, remove_offline, get_offline_items
+        from app.services.offline import get_offline_items, mark_for_download, remove_offline
+
         with app.app_context():
             uid = _make_user(app)
             att_id, lesson_id = self._make_attachment(app)
@@ -752,6 +802,7 @@ class TestOfflineService:
 
     def test_expire_old_downloads(self, app):
         from app.services.offline import expire_old_downloads
+
         with app.app_context():
             count = expire_old_downloads()
             assert count == 0
@@ -763,11 +814,13 @@ class TestOfflineService:
 class TestOnboardingService:
     def test_get_wizard_steps(self, app):
         from app.services.onboarding import get_wizard_steps
+
         steps = get_wizard_steps()
         assert len(steps) == 5
 
     def test_start_onboarding(self, app):
-        from app.services.onboarding import start_onboarding, get_onboarding
+        from app.services.onboarding import start_onboarding
+
         with app.app_context():
             sid = _make_school(app)
             p = start_onboarding(sid)
@@ -776,6 +829,7 @@ class TestOnboardingService:
 
     def test_start_onboarding_existing(self, app):
         from app.services.onboarding import start_onboarding
+
         with app.app_context():
             sid = _make_school(app)
             p1 = start_onboarding(sid)
@@ -783,7 +837,8 @@ class TestOnboardingService:
             assert p1.id == p2.id
 
     def test_complete_step(self, app):
-        from app.services.onboarding import start_onboarding, complete_step
+        from app.services.onboarding import complete_step, start_onboarding
+
         with app.app_context():
             sid = _make_school(app)
             start_onboarding(sid)
@@ -793,6 +848,7 @@ class TestOnboardingService:
 
     def test_complete_step_invalid(self, app):
         from app.services.onboarding import complete_step
+
         with app.app_context():
             sid = _make_school(app)
             assert complete_step(sid, 0) is None
@@ -800,31 +856,36 @@ class TestOnboardingService:
 
     def test_complete_step_not_started(self, app):
         from app.services.onboarding import complete_step
+
         with app.app_context():
             sid = _make_school(app)
             assert complete_step(sid, 1) is None
 
     def test_complete_all_steps(self, app):
-        from app.services.onboarding import start_onboarding, complete_step
+        from app.services.onboarding import complete_step, start_onboarding
+
         with app.app_context():
             sid = _make_school(app)
             start_onboarding(sid)
             for i in range(1, 6):
                 complete_step(sid, i)
             from app.services.onboarding import get_onboarding
+
             p = get_onboarding(sid)
             assert p.is_complete is True
             assert p.completed_at is not None
 
     def test_get_onboarding_status_not_started(self, app):
         from app.services.onboarding import get_onboarding_status
+
         with app.app_context():
             sid = _make_school(app)
             status = get_onboarding_status(sid)
             assert status["started"] is False
 
     def test_get_onboarding_status_started(self, app):
-        from app.services.onboarding import start_onboarding, get_onboarding_status
+        from app.services.onboarding import get_onboarding_status, start_onboarding
+
         with app.app_context():
             sid = _make_school(app)
             start_onboarding(sid)
@@ -851,6 +912,7 @@ class TestExportService:
 
     def test_export_students_excel(self, app):
         from app.services.export import export_students_excel
+
         with app.app_context():
             cid, _, _ = self._setup_class_with_members(app)
             data = export_students_excel(cid)
@@ -858,6 +920,7 @@ class TestExportService:
 
     def test_export_grades_excel(self, app):
         from app.services.export import export_grades_excel
+
         with app.app_context():
             cid, _, _ = self._setup_class_with_members(app)
             data = export_grades_excel(cid)
@@ -865,6 +928,7 @@ class TestExportService:
 
     def test_export_progress_excel(self, app):
         from app.services.export import export_progress_excel
+
         with app.app_context():
             cid, _, _ = self._setup_class_with_members(app)
             data = export_progress_excel(cid)
@@ -872,6 +936,7 @@ class TestExportService:
 
     def test_export_moe_format(self, app):
         from app.services.export import export_moe_format
+
         with app.app_context():
             data = export_moe_format()
             assert len(data) > 0
@@ -883,6 +948,7 @@ class TestExportService:
 class TestReportCardService:
     def test_calculate_gpa_no_memberships(self, app):
         from app.services.report_card import calculate_gpa
+
         with app.app_context():
             uid = _make_user(app)
             sid = _make_school(app)
@@ -892,6 +958,7 @@ class TestReportCardService:
 
     def test_generate_report_card(self, app):
         from app.services.report_card import generate_report_card
+
         with app.app_context():
             sid = _make_school(app)
             gid = _make_grade(app, sid)
@@ -909,6 +976,7 @@ class TestReportCardService:
 
     def test_letter_grade(self, app):
         from app.services.report_card import _letter_grade
+
         assert _letter_grade(95) == "ممتاز"
         assert _letter_grade(85) == "جيد جداً"
         assert _letter_grade(75) == "جيد"

@@ -4,51 +4,52 @@ Tests input surfaces with SQLi payloads, XSS injections, malformed JSON,
 oversized file uploads, password policy, and upload security.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 from io import BytesIO
-from werkzeug.datastructures import FileStorage
 
+import pytest
+from app.core.db import TxError
 from app.core.security import (
-    hash_password,
-    verify_password,
-    validate_password_policy,
-    check_password_reuse,
     COMMON_PASSWORDS,
+    check_password_reuse,
+    hash_password,
+    validate_password_policy,
+    verify_password,
 )
 from app.core.uploads import (
+    _detect_magic_type,
     allowed_extension,
     allowed_mime,
-    validate_file_content,
     save_upload,
-    ALLOWED_MIME_TYPES,
-    _detect_magic_type,
+    validate_file_content,
 )
-from app.core.db import TxError
 from app.extensions import db
 from app.models.user import User
 from tests.conftest import make_school, make_user
+from werkzeug.datastructures import FileStorage
 
 
 # ---------------------------------------------------------------------------
 # Password Policy
 # ---------------------------------------------------------------------------
 class TestPasswordPolicy:
-    @pytest.mark.parametrize("pwd,expected", [
-        ("StrongP@ss1", True),
-        ("Abcdef1!xyz", True),
-        ("Test1234!A", True),
-        ("X9k!mN2pQr", True),
-        ("123456789!", False),       # no upper
-        ("abcdefgh!", False),        # no upper
-        ("ABCDEFGH!", False),        # no lower
-        ("ABCDEFGH1", False),        # no special
-        ("StrongPass", False),       # no digit
-        ("", False),                 # too short
-        ("Short1!", False),          # < 10 chars
-        ("password123!", False),     # common
-        ("123456789A!", False),      # common pattern
-    ])
+    @pytest.mark.parametrize(
+        "pwd,expected",
+        [
+            ("StrongP@ss1", True),
+            ("Abcdef1!xyz", True),
+            ("Test1234!A", True),
+            ("X9k!mN2pQr", True),
+            ("123456789!", False),  # no upper
+            ("abcdefgh!", False),  # no upper
+            ("ABCDEFGH!", False),  # no lower
+            ("ABCDEFGH1", False),  # no special
+            ("StrongPass", False),  # no digit
+            ("", False),  # too short
+            ("Short1!", False),  # < 10 chars
+            ("password123!", False),  # common
+            ("123456789A!", False),  # common pattern
+        ],
+    )
     def test_validate_password_policy(self, app, pwd, expected):
         with app.app_context():
             ok, msg = validate_password_policy(pwd)
@@ -128,29 +129,42 @@ class TestCheckPasswordReuse:
 # Upload: allowed_extension
 # ---------------------------------------------------------------------------
 class TestAllowedExtension:
-    @pytest.mark.parametrize("filename,expected", [
-        ("doc.pdf", True),
-        ("image.png", True),
-        ("photo.jpg", True),
-        ("image.jpeg", True),
-        ("image.webp", True),
-        ("image.gif", True),
-        ("video.mp4", True),
-        ("video.webm", True),
-        ("audio.mp3", True),
-        ("file.docx", True),
-        ("file.pptx", True),
-        ("file.xlsx", True),
-        ("malware.exe", False),
-        ("script.sh", False),
-        ("virus.bat", False),
-        ("noext", False),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected",
+        [
+            ("doc.pdf", True),
+            ("image.png", True),
+            ("photo.jpg", True),
+            ("image.jpeg", True),
+            ("image.webp", True),
+            ("image.gif", True),
+            ("video.mp4", True),
+            ("video.webm", True),
+            ("audio.mp3", True),
+            ("file.docx", True),
+            ("file.pptx", True),
+            ("file.xlsx", True),
+            ("malware.exe", False),
+            ("script.sh", False),
+            ("virus.bat", False),
+            ("noext", False),
+        ],
+    )
     def test_allowed_extension(self, app, filename, expected):
         with app.test_request_context():
             app.config["ALLOWED_EXTENSIONS"] = {
-                "pdf", "png", "jpg", "jpeg", "webp", "gif",
-                "mp4", "webm", "mp3", "docx", "pptx", "xlsx"
+                "pdf",
+                "png",
+                "jpg",
+                "jpeg",
+                "webp",
+                "gif",
+                "mp4",
+                "webm",
+                "mp3",
+                "docx",
+                "pptx",
+                "xlsx",
             }
             result = allowed_extension(filename)
             assert result is expected
@@ -160,17 +174,20 @@ class TestAllowedExtension:
 # Upload: allowed_mime
 # ---------------------------------------------------------------------------
 class TestAllowedMime:
-    @pytest.mark.parametrize("mime,expected", [
-        ("image/png", True),
-        ("image/jpeg", True),
-        ("application/pdf", True),
-        ("video/mp4", True),
-        ("audio/mpeg", True),
-        ("application/x-executable", False),
-        ("text/html", False),
-        ("", False),
-        ("application/octet-stream", False),
-    ])
+    @pytest.mark.parametrize(
+        "mime,expected",
+        [
+            ("image/png", True),
+            ("image/jpeg", True),
+            ("application/pdf", True),
+            ("video/mp4", True),
+            ("audio/mpeg", True),
+            ("application/x-executable", False),
+            ("text/html", False),
+            ("", False),
+            ("application/octet-stream", False),
+        ],
+    )
     def test_allowed_mime(self, mime, expected):
         assert allowed_mime(mime) is expected
 
@@ -201,15 +218,23 @@ class TestDetectMagicType:
 
     def test_zip_docx(self):
         header = b"PK\x03\x04" + b"\x00" * 12
-        assert _detect_magic_type(header, ".docx") == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        assert (
+            _detect_magic_type(header, ".docx")
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
     def test_zip_xlsx(self):
         header = b"PK\x03\x04" + b"\x00" * 12
-        assert _detect_magic_type(header, ".xlsx") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        assert (
+            _detect_magic_type(header, ".xlsx") == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     def test_zip_pptx(self):
         header = b"PK\x03\x04" + b"\x00" * 12
-        assert _detect_magic_type(header, ".pptx") == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        assert (
+            _detect_magic_type(header, ".pptx")
+            == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
 
     def test_zip_unknown_ext(self):
         header = b"PK\x03\x04" + b"\x00" * 12

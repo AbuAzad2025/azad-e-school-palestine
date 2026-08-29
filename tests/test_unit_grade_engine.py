@@ -1,9 +1,15 @@
 """اختبارات C2 — محرك حساب الدرجات (calculate_student_grade, letter grades)."""
 
-from app.extensions import db
 from tests.conftest import (
-    make_class, make_class_member, make_grade, make_grade_category,
-    make_grade_entry, make_grade_item, make_school, make_subject, make_user,
+    make_class,
+    make_class_member,
+    make_grade,
+    make_grade_category,
+    make_grade_entry,
+    make_grade_item,
+    make_school,
+    make_subject,
+    make_user,
 )
 
 
@@ -81,8 +87,8 @@ def test_weighted_average_two_categories(app):
         cat2 = make_grade_category(app, class_id, "ثاني", 0.6)
         item1 = make_grade_item(app, class_id, cat1, "اختبار1", 20)
         item2 = make_grade_item(app, class_id, cat2, "اختبار2", 20)
-        make_grade_entry(app, student_id, item1, 18)   # 90%
-        make_grade_entry(app, student_id, item2, 12)   # 60%
+        make_grade_entry(app, student_id, item1, 18)  # 90%
+        make_grade_entry(app, student_id, item2, 12)  # 60%
         # weighted = 90*0.4 + 60*0.6 = 36+36 = 72
         result = calculate_student_grade(student_id, class_id)
         assert result["final_grade"] == 72.0

@@ -1,8 +1,14 @@
 """اختبارات C13 — حدود التينانتس (TenantQuota — check_quota, set_tier, get_quota)."""
 
-from app.extensions import db
-from app.models.tenant import TenantQuota
-from tests.conftest import make_class, make_class_member, make_grade, make_school, make_subject, make_tenant_quota, make_user
+from tests.conftest import (
+    make_class,
+    make_class_member,
+    make_grade,
+    make_school,
+    make_subject,
+    make_tenant_quota,
+    make_user,
+)
 
 
 def test_get_quota_creates_default(app):

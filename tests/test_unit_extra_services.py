@@ -139,12 +139,14 @@ class TestHealth:
         from app.services.health import record_health
 
         with app.app_context():
-            result = record_health({
-                "component": "database",
-                "status": "healthy",
-                "message": "OK",
-                "latency_ms": 5,
-            })
+            result = record_health(
+                {
+                    "component": "database",
+                    "status": "healthy",
+                    "message": "OK",
+                    "latency_ms": 5,
+                }
+            )
             assert result.id is not None
             assert result.status == "healthy"
 

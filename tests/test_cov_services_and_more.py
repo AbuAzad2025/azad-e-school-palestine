@@ -4,29 +4,14 @@ schools, base, assessment, content, tutoring, billing."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 from app import create_app
-from app.extensions import db as _db
 from app.core.security import hash_password
-from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
+from app.extensions import db as _db
 from app.models.class_room import ClassMember, ClassRoom
-from app.models.communication import Announcement, ContactMessage, Notification, NotificationPreference
-from app.models.content import Lesson, LessonAttachment, Unit
-from app.models.family import FamilyLink, FamilyLinkCode
-from app.models.gradebook import (
-    Assignment,
-    GradeCategory,
-    GradeEntry,
-    GradeItem,
-    Submission,
-)
-from app.models.message import Message
-from app.models.progress import StudentProgress, VideoProgress
 from app.models.school import Grade, School, Subject
-from app.models.tutoring import TutorCommission, TutorProfile, TutoringRequest, TutoringSession, TutorPayout
 from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 
 
@@ -40,6 +25,7 @@ def app():
     a.config["SESSION_COOKIE_SECURE"] = False
     with a.app_context():
         from sqlalchemy import text
+
         _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         _db.session.commit()
         _db.create_all()
@@ -55,7 +41,8 @@ def client(app):
 def _clean(app):
     yield
     with app.app_context():
-        from sqlalchemy import text, inspect
+        from sqlalchemy import inspect, text
+
         inspector = inspect(_db.engine)
         tables = inspector.get_table_names(schema="public")
         tables = [t for t in tables if t != "alembic_version"]
@@ -66,6 +53,7 @@ def _clean(app):
 
 def _uid():
     import uuid
+
     return uuid.uuid4().hex[:10]
 
 
@@ -119,8 +107,12 @@ def _subject(app):
 def _class(app, school_id, grade_id, subject_id, teacher_id=None):
     with app.app_context():
         c = ClassRoom(
-            school_id=school_id, grade_id=grade_id, subject_id=subject_id,
-            teacher_id=teacher_id, join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}",
+            school_id=school_id,
+            grade_id=grade_id,
+            subject_id=subject_id,
+            teacher_id=teacher_id,
+            join_code=f"C-{_uid()[:6]}",
+            name=f"صف {_uid()}",
         )
         _db.session.add(c)
         _db.session.commit()
@@ -140,7 +132,8 @@ def _role_link(app, user_id, school_id, role="teacher"):
 # ======================================================================
 class TestCommunicationService:
     def test_notify(self, app):
-        from app.services.communication import notify, unread_count, mark_all_read
+        from app.services.communication import mark_all_read, notify, unread_count
+
         with app.app_context():
             uid = _user(app)
             notify(uid, "result", "نتيجة جديدة", "حصلت على درجة 90")
@@ -151,21 +144,24 @@ class TestCommunicationService:
     def test_audit(self, app):
         from app.services.communication import audit
         from flask_login import login_user
+
         uid = _user(app)
         with app.app_context():
-            user = __import__('app.models.user', fromlist=['User']).User.query.get(uid)
+            user = __import__("app.models.user", fromlist=["User"]).User.query.get(uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit("test.action", "users", 1, detail={"key": "value"})
                 from app.models.system import AuditLog
+
                 assert AuditLog.query.count() >= 1
 
     def test_audit_with_financial(self, app):
         from app.services.communication import audit
         from flask_login import login_user
+
         uid = _user(app)
         with app.app_context():
-            user = __import__('app.models.user', fromlist=['User']).User.query.get(uid)
+            user = __import__("app.models.user", fromlist=["User"]).User.query.get(uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit(
@@ -178,19 +174,22 @@ class TestCommunicationService:
                     subscription_id=1,
                 )
             from app.models.system import AuditLog
+
             log = AuditLog.query.first()
             assert log.detail["amount"] == 100.0
 
     def test_audit_with_changes(self, app):
         from app.services.communication import audit
         from flask_login import login_user
+
         uid = _user(app)
         with app.app_context():
-            user = __import__('app.models.user', fromlist=['User']).User.query.get(uid)
+            user = __import__("app.models.user", fromlist=["User"]).User.query.get(uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit("test.update", changes={"name": {"old": "a", "new": "b"}})
             from app.models.system import AuditLog
+
             log = AuditLog.query.first()
             assert "changes" in log.detail
 
@@ -201,6 +200,7 @@ class TestCommunicationService:
 class TestMessagesService:
     def test_send_message(self, app):
         from app.services.messages import send_message
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -210,6 +210,7 @@ class TestMessagesService:
 
     def test_send_message_no_subject(self, app):
         from app.services.messages import send_message
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -218,6 +219,7 @@ class TestMessagesService:
 
     def test_send_message_no_body(self, app):
         from app.services.messages import send_message
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -226,6 +228,7 @@ class TestMessagesService:
 
     def test_send_message_to_self(self, app):
         from app.services.messages import send_message
+
         with app.app_context():
             uid = _user(app)
             msg, err = send_message(uid, uid, "موضوع", "نص")
@@ -233,13 +236,15 @@ class TestMessagesService:
 
     def test_send_message_nonexistent_recipient(self, app):
         from app.services.messages import send_message
+
         with app.app_context():
             sender = _user(app)
             msg, err = send_message(sender, 99999, "موضوع", "نص")
             assert msg is None
 
     def test_inbox(self, app):
-        from app.services.messages import send_message, inbox
+        from app.services.messages import inbox, send_message
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -249,6 +254,7 @@ class TestMessagesService:
 
     def test_sent(self, app):
         from app.services.messages import send_message, sent
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -257,7 +263,8 @@ class TestMessagesService:
             assert len(messages) == 1
 
     def test_mark_read(self, app):
-        from app.services.messages import send_message, mark_read, unread_count
+        from app.services.messages import mark_read, send_message, unread_count
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -267,7 +274,8 @@ class TestMessagesService:
             assert unread_count(recipient) == 0
 
     def test_get_thread(self, app):
-        from app.services.messages import send_message, get_thread
+        from app.services.messages import get_thread, send_message
+
         with app.app_context():
             sender = _user(app)
             recipient = _user(app)
@@ -282,6 +290,7 @@ class TestMessagesService:
 class TestRevenueService:
     def test_get_revenue_summary(self, app):
         from app.services.revenue import get_revenue_summary
+
         with app.app_context():
             result = get_revenue_summary()
             assert "total_revenue" in result
@@ -289,30 +298,35 @@ class TestRevenueService:
 
     def test_get_revenue_by_gateway(self, app):
         from app.services.revenue import get_revenue_by_gateway
+
         with app.app_context():
             result = get_revenue_by_gateway()
             assert isinstance(result, list)
 
     def test_get_revenue_by_school(self, app):
         from app.services.revenue import get_revenue_by_school
+
         with app.app_context():
             result = get_revenue_by_school()
             assert isinstance(result, list)
 
     def test_get_monthly_revenue_trend(self, app):
         from app.services.revenue import get_monthly_revenue_trend
+
         with app.app_context():
             result = get_monthly_revenue_trend(6)
             assert isinstance(result, list)
 
     def test_get_growth_rate(self, app):
         from app.services.revenue import get_growth_rate
+
         with app.app_context():
             rate = get_growth_rate()
             assert isinstance(rate, float)
 
     def test_get_revenue_dashboard_data(self, app):
         from app.services.revenue import get_revenue_dashboard_data
+
         with app.app_context():
             data = get_revenue_dashboard_data(30)
             assert "summary" in data
@@ -333,6 +347,7 @@ class TestQuestionBankService:
 
     def test_create_bank_question(self, app):
         from app.services.question_bank import create_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             q, err = create_bank_question(tid, sid, "ما هو 2+2؟", "mcq", difficulty=3)
@@ -341,6 +356,7 @@ class TestQuestionBankService:
 
     def test_create_bank_question_empty_text(self, app):
         from app.services.question_bank import create_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             q, err = create_bank_question(tid, sid, "", "mcq")
@@ -348,6 +364,7 @@ class TestQuestionBankService:
 
     def test_create_bank_question_invalid_type(self, app):
         from app.services.question_bank import create_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             q, err = create_bank_question(tid, sid, "سؤال", "invalid")
@@ -355,6 +372,7 @@ class TestQuestionBankService:
 
     def test_create_bank_question_invalid_difficulty(self, app):
         from app.services.question_bank import create_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             q, err = create_bank_question(tid, sid, "سؤال", "mcq", difficulty=10)
@@ -362,6 +380,7 @@ class TestQuestionBankService:
 
     def test_list_bank_questions(self, app):
         from app.services.question_bank import create_bank_question, list_bank_questions
+
         with app.app_context():
             tid, sid = self._setup(app)
             create_bank_question(tid, sid, "سؤال 1", "mcq")
@@ -371,6 +390,7 @@ class TestQuestionBankService:
 
     def test_update_bank_question(self, app):
         from app.services.question_bank import create_bank_question, update_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             q, _ = create_bank_question(tid, sid, "سؤال", "mcq")
@@ -379,6 +399,7 @@ class TestQuestionBankService:
 
     def test_delete_bank_question(self, app):
         from app.services.question_bank import create_bank_question, delete_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             q, _ = create_bank_question(tid, sid, "سؤال", "mcq")
@@ -387,6 +408,7 @@ class TestQuestionBankService:
 
     def test_delete_bank_question_wrong_teacher(self, app):
         from app.services.question_bank import create_bank_question, delete_bank_question
+
         with app.app_context():
             tid, sid = self._setup(app)
             tid2 = _user(app, "teacher")
@@ -401,13 +423,15 @@ class TestQuestionBankService:
 class TestQuizStatsService:
     def test_get_quiz_stats_nonexistent(self, app):
         from app.services.quiz_stats import get_quiz_stats
+
         with app.app_context():
             result = get_quiz_stats(99999)
             assert result is None
 
     def test_get_quiz_stats_empty(self, app):
-        from app.services.quiz_stats import get_quiz_stats
         from app.models.assessment import Quiz
+        from app.services.quiz_stats import get_quiz_stats
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -436,6 +460,7 @@ class TestGradebookService:
 
     def test_create_assignment(self, app):
         from app.services.gradebook import create_assignment
+
         with app.app_context():
             _, _, cid = self._setup(app)
             a, err = create_assignment(cid, "واجب 1", body="محتوى")
@@ -444,6 +469,7 @@ class TestGradebookService:
 
     def test_create_assignment_empty_title(self, app):
         from app.services.gradebook import create_assignment
+
         with app.app_context():
             _, _, cid = self._setup(app)
             a, err = create_assignment(cid, "")
@@ -451,6 +477,7 @@ class TestGradebookService:
 
     def test_list_assignments(self, app):
         from app.services.gradebook import create_assignment, list_assignments
+
         with app.app_context():
             _, _, cid = self._setup(app)
             create_assignment(cid, "واجب 1")
@@ -459,7 +486,8 @@ class TestGradebookService:
             assert len(result) == 2
 
     def test_submit_assignment(self, app):
-        from app.services.gradebook import create_assignment, submit_assignment, list_submissions
+        from app.services.gradebook import create_assignment, list_submissions, submit_assignment
+
         with app.app_context():
             _, _, cid = self._setup(app)
             a, _ = create_assignment(cid, "واجب 1")
@@ -473,7 +501,8 @@ class TestGradebookService:
             assert len(subs) == 1
 
     def test_grade_submission(self, app):
-        from app.services.gradebook import create_assignment, submit_assignment, grade_submission
+        from app.services.gradebook import create_assignment, grade_submission, submit_assignment
+
         with app.app_context():
             _, _, cid = self._setup(app)
             a, _ = create_assignment(cid, "واجب 1", max_mark=10)
@@ -484,6 +513,7 @@ class TestGradebookService:
 
     def test_create_category(self, app):
         from app.services.gradebook import create_category, list_categories
+
         with app.app_context():
             _, _, cid = self._setup(app)
             c = create_category(cid, "الفصل الأول", weight=Decimal("0.5"))
@@ -498,6 +528,7 @@ class TestGradebookService:
 class TestFamilyService:
     def test_generate_link_code(self, app):
         from app.services.family import generate_link_code
+
         with app.app_context():
             student = _user(app, "student")
             code, err = generate_link_code(student)
@@ -506,6 +537,7 @@ class TestFamilyService:
 
     def test_generate_link_code_not_student(self, app):
         from app.services.family import generate_link_code
+
         with app.app_context():
             teacher = _user(app, "teacher")
             code, err = generate_link_code(teacher)
@@ -513,6 +545,7 @@ class TestFamilyService:
 
     def test_link_parent(self, app):
         from app.services.family import generate_link_code, link_parent
+
         with app.app_context():
             student = _user(app, "student")
             code, _ = generate_link_code(student)
@@ -523,6 +556,7 @@ class TestFamilyService:
 
     def test_link_parent_invalid_code(self, app):
         from app.services.family import link_parent
+
         with app.app_context():
             parent = _user(app, "parent")
             link, err = link_parent(parent, "INVALID")
@@ -530,6 +564,7 @@ class TestFamilyService:
 
     def test_list_children(self, app):
         from app.services.family import generate_link_code, link_parent, list_children
+
         with app.app_context():
             student = _user(app, "student")
             code, _ = generate_link_code(student)
@@ -539,7 +574,8 @@ class TestFamilyService:
             assert len(children) == 1
 
     def test_is_parent_of(self, app):
-        from app.services.family import generate_link_code, link_parent, is_parent_of
+        from app.services.family import generate_link_code, is_parent_of, link_parent
+
         with app.app_context():
             student = _user(app, "student")
             code, _ = generate_link_code(student)
@@ -549,7 +585,8 @@ class TestFamilyService:
             assert is_parent_of(student, parent) is False
 
     def test_get_parent(self, app):
-        from app.services.family import generate_link_code, link_parent, get_parent
+        from app.services.family import generate_link_code, get_parent, link_parent
+
         with app.app_context():
             student = _user(app, "student")
             code, _ = generate_link_code(student)
@@ -559,7 +596,8 @@ class TestFamilyService:
             assert found is not None
 
     def test_remove_link(self, app):
-        from app.services.family import generate_link_code, link_parent, remove_link, list_children
+        from app.services.family import generate_link_code, link_parent, list_children, remove_link
+
         with app.app_context():
             student = _user(app, "student")
             code, _ = generate_link_code(student)
@@ -576,6 +614,7 @@ class TestFamilyService:
 class TestSchoolApprovalsService:
     def test_get_school_admins(self, app):
         from app.services.school_approvals import get_school_admins
+
         with app.app_context():
             sid = _school(app)
             admin = _user(app, "school_admin")
@@ -585,6 +624,7 @@ class TestSchoolApprovalsService:
 
     def test_get_pending_approvals_empty(self, app):
         from app.services.school_approvals import get_pending_approvals_for_school
+
         with app.app_context():
             sid = _school(app)
             result = get_pending_approvals_for_school(sid)
@@ -592,6 +632,7 @@ class TestSchoolApprovalsService:
 
     def test_approve_user_role_link(self, app):
         from app.services.school_approvals import approve_user_role_link
+
         with app.app_context():
             sid = _school(app)
             student = _user(app, "student", approval_status=UserApprovalStatus.pending)
@@ -604,6 +645,7 @@ class TestSchoolApprovalsService:
 
     def test_approve_nonexistent_link(self, app):
         from app.services.school_approvals import approve_user_role_link
+
         with app.app_context():
             approver = _user(app, "super_admin")
             ok, err = approve_user_role_link(99999, approver)
@@ -611,6 +653,7 @@ class TestSchoolApprovalsService:
 
     def test_reject_user_role_link(self, app):
         from app.services.school_approvals import reject_user_role_link
+
         with app.app_context():
             sid = _school(app)
             student = _user(app, "student", approval_status=UserApprovalStatus.pending)
@@ -623,6 +666,7 @@ class TestSchoolApprovalsService:
 
     def test_can_user_approve(self, app):
         from app.services.school_approvals import can_user_approve
+
         with app.app_context():
             sid = _school(app)
             student = _user(app, "student", approval_status=UserApprovalStatus.pending)
@@ -634,6 +678,7 @@ class TestSchoolApprovalsService:
 
     def test_can_user_approve_regular_user(self, app):
         from app.services.school_approvals import can_user_approve
+
         with app.app_context():
             sid = _school(app)
             student = _user(app, "student", approval_status=UserApprovalStatus.pending)
@@ -650,6 +695,7 @@ class TestSchoolApprovalsService:
 class TestSchoolsService:
     def test_create_school(self, app):
         from app.services.schools import create_school
+
         with app.app_context():
             s, err = create_school("مدرسة تجريبية")
             assert s is not None
@@ -657,12 +703,14 @@ class TestSchoolsService:
 
     def test_create_school_empty_name(self, app):
         from app.services.schools import create_school
+
         with app.app_context():
             s, err = create_school("")
             assert s is None
 
     def test_create_school_duplicate_domain(self, app):
         from app.services.schools import create_school
+
         with app.app_context():
             create_school("م1", domain="test.com")
             s, err = create_school("م2", domain="test.com")
@@ -670,6 +718,7 @@ class TestSchoolsService:
 
     def test_list_schools(self, app):
         from app.services.schools import create_school, list_schools
+
         with app.app_context():
             create_school("م1")
             create_school("م2")
@@ -678,6 +727,7 @@ class TestSchoolsService:
 
     def test_create_class(self, app):
         from app.services.schools import create_class
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -688,6 +738,7 @@ class TestSchoolsService:
 
     def test_create_class_with_teacher(self, app):
         from app.services.schools import create_class
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -699,6 +750,7 @@ class TestSchoolsService:
 
     def test_regenerate_join_code(self, app):
         from app.services.schools import create_class, regenerate_join_code
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -709,13 +761,15 @@ class TestSchoolsService:
             assert new_code != old_code
 
     def test_join_class(self, app):
-        from app.services.schools import join_class, is_member
+        from app.services.schools import is_member, join_class
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
             subjid = _subject(app)
-            c_obj = ClassRoom(school_id=sid, subject_id=subjid, grade_id=gid,
-                              join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}")
+            c_obj = ClassRoom(
+                school_id=sid, subject_id=subjid, grade_id=gid, join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}"
+            )
             _db.session.add(c_obj)
             _db.session.commit()
             student = _user(app, "student")
@@ -725,12 +779,14 @@ class TestSchoolsService:
 
     def test_join_class_already_member(self, app):
         from app.services.schools import join_class
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
             subjid = _subject(app)
-            c_obj = ClassRoom(school_id=sid, subject_id=subjid, grade_id=gid,
-                              join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}")
+            c_obj = ClassRoom(
+                school_id=sid, subject_id=subjid, grade_id=gid, join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}"
+            )
             _db.session.add(c_obj)
             _db.session.commit()
             student = _user(app, "student")
@@ -740,13 +796,19 @@ class TestSchoolsService:
 
     def test_join_class_full(self, app):
         from app.services.schools import join_class
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
             subjid = _subject(app)
-            c_obj = ClassRoom(school_id=sid, subject_id=subjid, grade_id=gid,
-                              join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}",
-                              max_students=1)
+            c_obj = ClassRoom(
+                school_id=sid,
+                subject_id=subjid,
+                grade_id=gid,
+                join_code=f"C-{_uid()[:6]}",
+                name=f"صف {_uid()}",
+                max_students=1,
+            )
             _db.session.add(c_obj)
             _db.session.commit()
             s1 = _user(app, "student")
@@ -757,6 +819,7 @@ class TestSchoolsService:
 
     def test_get_or_create_subject(self, app):
         from app.services.schools import get_or_create_subject
+
         with app.app_context():
             s1 = get_or_create_subject("رياضيات")
             s2 = get_or_create_subject("رياضيات")
@@ -764,6 +827,7 @@ class TestSchoolsService:
 
     def test_add_grade(self, app):
         from app.services.schools import add_grade
+
         with app.app_context():
             sid = _school(app)
             g = add_grade(sid, 1, "الصف الأول")
@@ -773,15 +837,18 @@ class TestSchoolsService:
 
     def test_create_school_with_defaults(self, app):
         from app.services.schools import create_school_with_defaults
+
         with app.app_context():
             s, err = create_school_with_defaults("مدرسة كاملة")
             assert s is not None
             from app.models.school import Grade
+
             grades = Grade.query.filter_by(school_id=s.id).count()
             assert grades == 12
 
     def test_get_or_create_system_school(self, app):
         from app.services.schools import get_or_create_system_school
+
         with app.app_context():
             s1 = get_or_create_system_school()
             s2 = get_or_create_system_school()
@@ -790,14 +857,22 @@ class TestSchoolsService:
 
     def test_join_class_individual(self, app):
         from app.services.schools import join_class_individual
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
             subjid = _subject(app)
             teacher = _user(app, "teacher")
-            c_obj = ClassRoom(school_id=sid, subject_id=subjid, grade_id=gid,
-                              teacher_id=teacher, join_code=f"C-{_uid()[:6]}",
-                              name=f"صف {_uid()}", is_public=True, price=50.0)
+            c_obj = ClassRoom(
+                school_id=sid,
+                subject_id=subjid,
+                grade_id=gid,
+                teacher_id=teacher,
+                join_code=f"C-{_uid()[:6]}",
+                name=f"صف {_uid()}",
+                is_public=True,
+                price=50.0,
+            )
             _db.session.add(c_obj)
             _db.session.commit()
             student = _user(app)
@@ -806,12 +881,19 @@ class TestSchoolsService:
 
     def test_join_class_individual_not_public(self, app):
         from app.services.schools import join_class_individual
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
             subjid = _subject(app)
-            c_obj = ClassRoom(school_id=sid, subject_id=subjid, grade_id=gid,
-                              join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}", is_public=False)
+            c_obj = ClassRoom(
+                school_id=sid,
+                subject_id=subjid,
+                grade_id=gid,
+                join_code=f"C-{_uid()[:6]}",
+                name=f"صف {_uid()}",
+                is_public=False,
+            )
             _db.session.add(c_obj)
             _db.session.commit()
             student = _user(app)
@@ -832,6 +914,7 @@ class TestContentService:
 
     def test_create_unit(self, app):
         from app.services.content import create_unit, list_units
+
         with app.app_context():
             _, cid = self._setup(app)
             u = create_unit(cid, "الوحدة الأولى")
@@ -840,6 +923,7 @@ class TestContentService:
 
     def test_create_lesson(self, app):
         from app.services.content import create_lesson, list_lessons
+
         with app.app_context():
             _, cid = self._setup(app)
             l, err = create_lesson(cid, "درس 1")
@@ -849,6 +933,7 @@ class TestContentService:
 
     def test_create_lesson_empty_title(self, app):
         from app.services.content import create_lesson
+
         with app.app_context():
             _, cid = self._setup(app)
             l, err = create_lesson(cid, "")
@@ -856,6 +941,7 @@ class TestContentService:
 
     def test_get_lesson(self, app):
         from app.services.content import create_lesson, get_lesson
+
         with app.app_context():
             _, cid = self._setup(app)
             l, _ = create_lesson(cid, "درس")
@@ -863,7 +949,8 @@ class TestContentService:
             assert found is not None
 
     def test_publish_unpublish_lesson(self, app):
-        from app.services.content import create_lesson, publish_lesson, unpublish_lesson, list_lessons
+        from app.services.content import create_lesson, list_lessons, publish_lesson, unpublish_lesson
+
         with app.app_context():
             _, cid = self._setup(app)
             l, _ = create_lesson(cid, "درس")
@@ -877,6 +964,7 @@ class TestContentService:
 
     def test_update_lesson(self, app):
         from app.services.content import create_lesson, update_lesson
+
         with app.app_context():
             _, cid = self._setup(app)
             l, _ = create_lesson(cid, "درس قديم")
@@ -884,7 +972,8 @@ class TestContentService:
             assert l.title == "درس جديد"
 
     def test_add_youtube(self, app):
-        from app.services.content import create_lesson, add_youtube
+        from app.services.content import add_youtube, create_lesson
+
         with app.app_context():
             _, cid = self._setup(app)
             l, _ = create_lesson(cid, "درس")
@@ -892,17 +981,20 @@ class TestContentService:
             assert att.youtube_url is not None
 
     def test_delete_attachment(self, app):
-        from app.services.content import create_lesson, add_youtube, delete_attachment
+        from app.services.content import add_youtube, create_lesson, delete_attachment
+
         with app.app_context():
             _, cid = self._setup(app)
             l, _ = create_lesson(cid, "درس")
             att = add_youtube(l, "https://youtube.com/watch?v=123")
             delete_attachment(att)
             from app.models.content import LessonAttachment
+
             assert LessonAttachment.query.get(att.id) is None
 
     def test_shared_lessons(self, app):
         from app.services.content import create_lesson, shared_lessons
+
         with app.app_context():
             sid, cid = self._setup(app)
             l, _ = create_lesson(cid, "درس مشترك")
@@ -913,6 +1005,7 @@ class TestContentService:
 
     def test_sanitize_html(self, app):
         from app.services.content import _sanitize_html
+
         with app.app_context():
             clean = _sanitize_html("<p>نص</p><script>alert('x')</script>")
             assert "<script>" not in clean
@@ -920,11 +1013,13 @@ class TestContentService:
 
     def test_sanitize_html_none(self, app):
         from app.services.content import _sanitize_html
+
         with app.app_context():
             assert _sanitize_html(None) is None
 
     def test_import_lesson(self, app):
         from app.services.content import create_lesson, import_lesson
+
         with app.app_context():
             sid, cid = self._setup(app)
             gid2 = _grade(app, sid, grade_level=2)

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _('الصفحة غير موجودة') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-error">
+<div class="card azad-error" role="alert">
   <h1 class="azad-error__code">404</h1>
   <p class="azad-error__message">{{ _('الصفحة غير موجودة.') }}</p>
   <p class="azad-error__hint">{{ _('قد تكون الصفحة حُذفت أو انتقل رابطها.') }}</p>

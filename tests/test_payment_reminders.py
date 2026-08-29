@@ -1,11 +1,10 @@
 """اختبارات Payment Reminders Cron"""
 
-import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import patch, MagicMock
 import uuid
+from datetime import UTC, datetime, timedelta
+from unittest.mock import patch
 
-from app.models.billing import Subscription, ReminderLog
+from app.models.billing import ReminderLog, Subscription
 
 
 def _unique_domain():
@@ -22,12 +21,11 @@ def _unique_join_code():
 
 def test_daily_reminders_sends_for_expiring_sub(app):
     """يرسل تذكير للاشتراكات التي تنتهي خلال 7 أيام"""
-    from app import create_app
     from app.extensions import db
-    from app.models.user import User, UserRole
-    from app.models.school import School, Grade, Subject
-    from app.models.class_room import ClassRoom
     from app.models.billing import SubscriptionPlan
+    from app.models.class_room import ClassRoom
+    from app.models.school import Grade, School, Subject
+    from app.models.user import User, UserRole
     from scripts.daily_reminders import run_daily_reminders
 
     with app.app_context():
@@ -37,8 +35,14 @@ def test_daily_reminders_sends_for_expiring_sub(app):
         db.session.commit()
 
         # Create user
-        user = User(email=_unique_email(), name_ar="طالب اختبار", role=UserRole.student,
-                    password_hash="hash", approval_status="approved", is_active=True)
+        user = User(
+            email=_unique_email(),
+            name_ar="طالب اختبار",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add(user)
         db.session.commit()
 
@@ -48,21 +52,40 @@ def test_daily_reminders_sends_for_expiring_sub(app):
         db.session.add_all([grade, subject])
         db.session.commit()
 
-        class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code=_unique_join_code(), name="صف العاشر")
+        class_room = ClassRoom(
+            school_id=school.id,
+            grade_id=grade.id,
+            subject_id=subject.id,
+            join_code=_unique_join_code(),
+            name="صف العاشر",
+        )
         db.session.add(class_room)
         db.session.commit()
 
         # Create plan
-        plan = SubscriptionPlan(school_id=school.id, class_id=class_room.id, name="خطة",
-                                plan="annual", price=100, currency="ILS", duration_days=30)
+        plan = SubscriptionPlan(
+            school_id=school.id,
+            class_id=class_room.id,
+            name="خطة",
+            plan="annual",
+            price=100,
+            currency="ILS",
+            duration_days=30,
+        )
         db.session.add(plan)
         db.session.commit()
 
         # Create subscription ending in 7 days
         end_at = datetime.now(UTC) + timedelta(days=7)
-        sub = Subscription(user_id=user.id, plan_id=plan.id, class_id=class_room.id,
-                           price=100, currency="ILS", status="active", end_at=end_at)
+        sub = Subscription(
+            user_id=user.id,
+            plan_id=plan.id,
+            class_id=class_room.id,
+            price=100,
+            currency="ILS",
+            status="active",
+            end_at=end_at,
+        )
         db.session.add(sub)
         db.session.commit()
 
@@ -79,12 +102,11 @@ def test_daily_reminders_sends_for_expiring_sub(app):
 
 def test_daily_reminders_skips_already_sent(app):
     """يتجاهل التذكير إذا تم إرساله مسبقاً"""
-    from app import create_app
     from app.extensions import db
-    from app.models.user import User, UserRole
-    from app.models.school import School, Grade, Subject
+    from app.models.billing import ReminderLog, SubscriptionPlan
     from app.models.class_room import ClassRoom
-    from app.models.billing import SubscriptionPlan, ReminderLog
+    from app.models.school import Grade, School, Subject
+    from app.models.user import User, UserRole
     from scripts.daily_reminders import run_daily_reminders
 
     with app.app_context():
@@ -93,8 +115,14 @@ def test_daily_reminders_skips_already_sent(app):
         db.session.add(school)
         db.session.commit()
 
-        user = User(email=_unique_email(), name_ar="طالب 2", role=UserRole.student,
-                    password_hash="hash", approval_status="approved", is_active=True)
+        user = User(
+            email=_unique_email(),
+            name_ar="طالب 2",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add(user)
         db.session.commit()
 
@@ -103,19 +131,38 @@ def test_daily_reminders_skips_already_sent(app):
         db.session.add_all([grade, subject])
         db.session.commit()
 
-        class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code=_unique_join_code(), name="صف العاشر 2")
+        class_room = ClassRoom(
+            school_id=school.id,
+            grade_id=grade.id,
+            subject_id=subject.id,
+            join_code=_unique_join_code(),
+            name="صف العاشر 2",
+        )
         db.session.add(class_room)
         db.session.commit()
 
-        plan = SubscriptionPlan(school_id=school.id, class_id=class_room.id, name="خطة",
-                                plan="annual", price=100, currency="ILS", duration_days=30)
+        plan = SubscriptionPlan(
+            school_id=school.id,
+            class_id=class_room.id,
+            name="خطة",
+            plan="annual",
+            price=100,
+            currency="ILS",
+            duration_days=30,
+        )
         db.session.add(plan)
         db.session.commit()
 
         end_at = datetime.now(UTC) + timedelta(days=7)
-        sub = Subscription(user_id=user.id, plan_id=plan.id, class_id=class_room.id,
-                           price=100, currency="ILS", status="active", end_at=end_at)
+        sub = Subscription(
+            user_id=user.id,
+            plan_id=plan.id,
+            class_id=class_room.id,
+            price=100,
+            currency="ILS",
+            status="active",
+            end_at=end_at,
+        )
         db.session.add(sub)
         db.session.commit()
 

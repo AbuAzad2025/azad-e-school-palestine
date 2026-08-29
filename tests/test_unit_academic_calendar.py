@@ -51,6 +51,7 @@ def test_delete_event_soft(app):
         ok, err = delete_event(ev_id)
         assert ok
         from app.models.calendar import AcademicEvent
+
         ev = db.session.get(AcademicEvent, ev_id)
         assert ev.is_active is False
 

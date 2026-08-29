@@ -1,9 +1,7 @@
 """اختبارات مكتبة المحتوى المشتركة — استيراد دروس."""
 
-import pytest
-
 from app.services.content import import_lesson, shared_lessons
-from tests.conftest import make_attachment, make_class, make_class_member, make_grade, make_lesson, make_school, make_subject, make_user
+from tests.conftest import make_attachment, make_class, make_grade, make_lesson, make_school, make_subject, make_user
 
 
 def test_import_lesson_success(app):
@@ -16,7 +14,7 @@ def test_import_lesson_success(app):
     target_class_id = make_class(app, school_id, grade_id, subject_id, teacher_id=teacher_id)
 
     with app.app_context():
-        from app.models.content import Lesson, LessonAttachment
+        from app.models.content import Lesson
 
         source_lesson_id = make_lesson(app, source_class_id, title="الدرس الأصلي", status="published")
         make_attachment(app, source_lesson_id, kind="video", youtube_url="https://youtube.com/watch?v=abc")
@@ -25,6 +23,7 @@ def test_import_lesson_success(app):
         source_lesson = Lesson.query.get(source_lesson_id)
         source_lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
         new_lesson, error = import_lesson(source_lesson_id, target_class_id, teacher_id)
@@ -33,15 +32,16 @@ def test_import_lesson_success(app):
     # Query the imported lesson fresh with attachments to avoid DetachedInstanceError
     with app.app_context():
         from app.extensions import db
-        from sqlalchemy.orm import selectinload
         from app.models.content import Lesson
+        from sqlalchemy.orm import selectinload
+
         new_lesson = db.session.execute(
             db.select(Lesson)
             .options(selectinload(Lesson.attachments))
             .where(
                 Lesson.class_id == target_class_id,
                 Lesson.title == "الدرس الأصلي",
-                Lesson.original_lesson_id == source_lesson_id
+                Lesson.original_lesson_id == source_lesson_id,
             )
         ).scalar_one_or_none()
     assert new_lesson.id != source_lesson_id
@@ -104,6 +104,7 @@ def test_import_lesson_invalid_class_fails(app):
         source_lesson = Lesson.query.get(source_lesson_id)
         source_lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
     with app.app_context():
@@ -130,6 +131,7 @@ def test_shared_lessons_list(app):
         shared_lesson = Lesson.query.get(shared_id)
         shared_lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
         lessons = shared_lessons(school_id)
@@ -156,6 +158,7 @@ def test_import_lesson_student_forbidden(app):
         source_lesson = Lesson.query.get(source_lesson_id)
         source_lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
     # student tries to import
@@ -180,10 +183,12 @@ def test_shared_library_page(app, client):
 
     with app.app_context():
         from app.models.content import Lesson
+
         lesson_id = make_lesson(app, class_id, title="درس مشترك", status="published")
         lesson = Lesson.query.get(lesson_id)
         lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
     with client:
@@ -206,15 +211,19 @@ def test_import_lesson_route_success(app, client):
 
     with app.app_context():
         from app.models.content import Lesson
+
         source_lesson_id = make_lesson(app, source_class_id, title="درس مشترك", status="published")
         lesson = Lesson.query.get(source_lesson_id)
         lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
     with client:
         client.post("/auth/login", data={"email": teacher_email, "password": "TestPass123!"})
-        resp = client.post(f"/classes/import/{source_lesson_id}", data={"target_class_id": target_class_id}, follow_redirects=True)
+        resp = client.post(
+            f"/classes/import/{source_lesson_id}", data={"target_class_id": target_class_id}, follow_redirects=True
+        )
         assert resp.status_code == 200
         data = resp.get_data(as_text=True)
         assert "تم استيراد الدرس بنجاح" in data or resp.status_code == 200
@@ -227,18 +236,24 @@ def test_import_lesson_route_student_forbidden(app, client):
     student_id = make_user(app, role="student", school_id=school_id, email=student_email)
     grade_id = make_grade(app, school_id)
     subject_id = make_subject(app)
-    class_id = make_class(app, school_id, grade_id, subject_id, teacher_id=make_user(app, role="teacher", school_id=school_id))
+    class_id = make_class(
+        app, school_id, grade_id, subject_id, teacher_id=make_user(app, role="teacher", school_id=school_id)
+    )
 
     with app.app_context():
         from app.models.content import Lesson
+
         lesson_id = make_lesson(app, class_id, title="درس مشترك", status="published")
         lesson = Lesson.query.get(lesson_id)
         lesson.is_shared = True
         from app.extensions import db
+
         db.session.commit()
 
     with client:
-        login_resp = client.post("/auth/login", data={"email": student_email, "password": "TestPass123!"}, follow_redirects=True)
+        login_resp = client.post(
+            "/auth/login", data={"email": student_email, "password": "TestPass123!"}, follow_redirects=True
+        )
         assert login_resp.status_code == 200, f"Login failed with status {login_resp.status_code}"
         login_data = login_resp.get_data(as_text=True)
         assert "تسجيل الدخول" not in login_data, f"Login failed - still on login page: {login_data[:200]}"

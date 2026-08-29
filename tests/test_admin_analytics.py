@@ -1,7 +1,5 @@
 """اختبارات لوحة تحليلات المشرف"""
 
-import pytest
-from datetime import UTC, datetime, timedelta
 import uuid
 
 from app.services.analytics import get_analytics_data
@@ -34,11 +32,11 @@ def test_get_analytics_data_returns_all_keys(app):
 def test_analytics_dau_calculation(app):
     """DAU يحسب بشكل صحيح"""
     from app.extensions import db
-    from app.models.user import User, UserRole
-    from app.models.school import School, Grade, Subject
-    from app.models.class_room import ClassRoom, ClassMember
+    from app.models.class_room import ClassMember, ClassRoom
     from app.models.content import Lesson
     from app.models.progress import StudentProgress
+    from app.models.school import Grade, School, Subject
+    from app.models.user import User, UserRole
 
     with app.app_context():
         # Create test data
@@ -51,8 +49,13 @@ def test_analytics_dau_calculation(app):
         db.session.add_all([grade, subject])
         db.session.commit()
 
-        class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code=_unique_join_code(), name="صف العاشر")
+        class_room = ClassRoom(
+            school_id=school.id,
+            grade_id=grade.id,
+            subject_id=subject.id,
+            join_code=_unique_join_code(),
+            name="صف العاشر",
+        )
         db.session.add(class_room)
         db.session.commit()
 
@@ -60,8 +63,14 @@ def test_analytics_dau_calculation(app):
         db.session.add(lesson)
         db.session.commit()
 
-        student = User(email=_unique_email(), name_ar="طالب", role=UserRole.student,
-                       password_hash="hash", approval_status="approved", is_active=True)
+        student = User(
+            email=_unique_email(),
+            name_ar="طالب",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add(student)
         db.session.commit()
 
@@ -70,8 +79,9 @@ def test_analytics_dau_calculation(app):
         db.session.commit()
 
         # Add progress (activity)
-        progress = StudentProgress(student_id=student.id, lesson_id=lesson.id,
-                                   class_id=class_room.id, status="completed", progress_pct=100)
+        progress = StudentProgress(
+            student_id=student.id, lesson_id=lesson.id, class_id=class_room.id, status="completed", progress_pct=100
+        )
         db.session.add(progress)
         db.session.commit()
 
@@ -87,8 +97,14 @@ def test_analytics_new_users_count(app):
 
     with app.app_context():
         # Create new user
-        user = User(email=_unique_email(), name_ar="مستخدم جديد", role=UserRole.student,
-                    password_hash="hash", approval_status="approved", is_active=True)
+        user = User(
+            email=_unique_email(),
+            name_ar="مستخدم جديد",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add(user)
         db.session.commit()
 
@@ -101,10 +117,7 @@ def test_analytics_route_renders(client, admin_user):
     """مسار التحليلات يعرض بنجاح"""
     admin_email = admin_user
     # Login as admin
-    client.post("/auth/login", data={
-        "email": admin_email,
-        "password": "TestPass123!"
-    }, follow_redirects=True)
+    client.post("/auth/login", data={"email": admin_email, "password": "TestPass123!"}, follow_redirects=True)
 
     response = client.get("/admin/analytics")
     assert response.status_code == 200

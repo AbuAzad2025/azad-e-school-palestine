@@ -5,15 +5,12 @@ execution and session cleanup.
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-
-from app.core.db import tx, TxError
+from app.core.db import TxError, tx
+from app.core.security import hash_password
 from app.extensions import db
 from app.models.school import School
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.core.security import hash_password
-from tests.conftest import make_school, make_user
+from app.models.user import User, UserRole
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class TestTxFunction:
@@ -21,6 +18,7 @@ class TestTxFunction:
 
     def test_successful_commit(self, app):
         with app.app_context():
+
             def create_school():
                 s = School(name_ar="TX School", name_en="TX School")
                 db.session.add(s)
@@ -54,6 +52,7 @@ class TestTxFunction:
 
     def test_rollback_on_generic_exception(self, app):
         with app.app_context():
+
             def failing_operation():
                 s = School(name_ar="Generic Fail")
                 db.session.add(s)
@@ -68,6 +67,7 @@ class TestTxFunction:
 
     def test_tx_error_propagation(self, app):
         with app.app_context():
+
             def raise_tx_error():
                 raise TxError("Business logic error")
 
@@ -81,6 +81,7 @@ class TestTransactionIntegrity:
     def test_partial_write_rollback(self, app):
         """Verify that a failed transaction doesn't leave partial data."""
         with app.app_context():
+
             def create_then_fail():
                 s1 = School(name_ar="Good School")
                 db.session.add(s1)
@@ -96,6 +97,7 @@ class TestTransactionIntegrity:
     def test_multiple_operations_rollback(self, app):
         """Multiple DB operations in one tx should all rollback on failure."""
         with app.app_context():
+
             def multi_op():
                 s = School(name_ar="Multi School")
                 db.session.add(s)
@@ -119,6 +121,7 @@ class TestTransactionIntegrity:
     def test_session_clean_after_rollback(self, app):
         """After a rollback, the session should be usable for new operations."""
         with app.app_context():
+
             def failing():
                 raise SQLAlchemyError("Error")
 

@@ -4,38 +4,42 @@ Tests expired subscriptions, idempotency on webhooks, failed payments,
 discount codes, and balance calculations.
 """
 
-import pytest
-from datetime import UTC, datetime, timedelta, date
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
+import pytest
 from app.core.db import TxError
 from app.extensions import db
 from app.models.billing import (
     Subscription,
     SubscriptionPlan,
-    ManualPayment,
-    DiscountCode,
 )
 from app.services.billing import (
-    money,
-    create_plan,
-    list_plans,
-    subscribe,
-    list_subscriptions,
-    record_manual_payment,
-    approve_payment,
-    reject_payment,
-    expire_subscriptions,
-    subscription_balance,
-    can_record_payment,
-    subscription_payment_summary,
-    create_discount_code,
-    validate_discount_code,
     apply_discount_code,
+    approve_payment,
+    can_record_payment,
+    create_discount_code,
+    create_plan,
+    expire_subscriptions,
+    list_plans,
+    list_subscriptions,
+    money,
+    record_manual_payment,
+    reject_payment,
+    subscribe,
+    subscription_balance,
+    subscription_payment_summary,
+    validate_discount_code,
 )
 from tests.conftest import (
-    make_school, make_user, make_class, make_grade, make_subject,
-    make_subscription_plan, make_subscription, make_payment,
+    make_class,
+    make_grade,
+    make_payment,
+    make_school,
+    make_subject,
+    make_subscription,
+    make_subscription_plan,
+    make_user,
 )
 
 
@@ -54,15 +58,18 @@ def _sub_ctx(app):
 # money()
 # ---------------------------------------------------------------------------
 class TestMoney:
-    @pytest.mark.parametrize("input_val,expected", [
-        (100, Decimal("100.00")),
-        (99.999, Decimal("100.00")),
-        (99.994, Decimal("99.99")),
-        ("50.50", Decimal("50.50")),
-        (0, Decimal("0.00")),
-        (-10, Decimal("-10.00")),
-        ("0.001", Decimal("0.00")),
-    ])
+    @pytest.mark.parametrize(
+        "input_val,expected",
+        [
+            (100, Decimal("100.00")),
+            (99.999, Decimal("100.00")),
+            (99.994, Decimal("99.99")),
+            ("50.50", Decimal("50.50")),
+            (0, Decimal("0.00")),
+            (-10, Decimal("-10.00")),
+            ("0.001", Decimal("0.00")),
+        ],
+    )
     def test_money_rounding(self, input_val, expected):
         assert money(input_val) == expected
 

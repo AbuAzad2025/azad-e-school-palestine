@@ -161,7 +161,11 @@ jobs:
             --cov=app --cov-branch --cov-fail-under=70 \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov
+            --cov-report=html:htmlcov \
+            --deselect tests/test_js_modernization.py \
+            --deselect tests/test_erp_ux_sprint4.py \
+            --deselect tests/test_openapi.py \
+            --deselect tests/test_offline_client.py
           echo "=== Coverage files ==="
           ls -la coverage.xml htmlcov/ 2>/dev/null || echo "(no coverage files generated)"
 

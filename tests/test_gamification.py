@@ -5,10 +5,10 @@ from datetime import UTC, datetime, timedelta
 from app.extensions import db
 from app.models.gamification import Badge, StudentBadge
 from app.services.gamification import (
+    award_badge,
     check_and_award_badges,
     get_student_badges,
     has_badge,
-    award_badge,
 )
 from tests.conftest import make_user
 

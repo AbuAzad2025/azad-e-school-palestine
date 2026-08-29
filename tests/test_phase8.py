@@ -12,8 +12,6 @@ from tests.conftest import (
     make_subject,
     make_system_school,
     make_user,
-    _uid,
-    _email,
 )
 
 
@@ -21,8 +19,8 @@ def test_landing_renders_for_anonymous(client):
     r = client.get("/")
     html = r.get_data(as_text=True)
     assert r.status_code == 200
-    assert "dir=\"rtl\"" in html
-    assert "lang=\"ar\"" in html
+    assert 'dir="rtl"' in html
+    assert 'lang="ar"' in html
 
 
 def test_landing_en_renders_ltr(client):
@@ -37,8 +35,8 @@ def test_landing_en_renders_ltr(client):
 def test_landing_ar_rtl(client):
     r = client.get("/")
     html = r.get_data(as_text=True)
-    assert "dir=\"rtl\"" in html
-    assert "lang=\"ar\"" in html
+    assert 'dir="rtl"' in html
+    assert 'lang="ar"' in html
 
 
 def test_landing_authenticated_redirects(client, app):

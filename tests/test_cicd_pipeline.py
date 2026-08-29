@@ -1,7 +1,8 @@
 """CI/CD pipeline tests — Phase 7"""
-from pathlib import Path
-import pytest
 
+from pathlib import Path
+
+import pytest
 
 BASE_DIR = Path.cwd()
 WORKFLOWS_DIR = BASE_DIR / ".github" / "workflows"

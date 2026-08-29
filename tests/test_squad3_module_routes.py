@@ -1,9 +1,7 @@
 """SQUAD 3 EXTRA: Module route tests — every HTML blueprint."""
 
-import pytest
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.core.security import hash_password
+from app.models.user import User
 from tests.conftest import make_school, make_user
 
 

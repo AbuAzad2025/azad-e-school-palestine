@@ -3,16 +3,10 @@ from unittest.mock import MagicMock, patch
 
 from app.extensions import db
 from tests.conftest import (
-    make_class,
-    make_class_member,
-    make_grade,
-    make_school,
-    make_subject,
+    make_system_school,
     make_tutor_profile,
     make_tutoring_session,
     make_user,
-    make_system_school,
-    _uid,
 )
 
 
@@ -111,18 +105,23 @@ def test_generate_zoom_meeting_api_success(app):
     session_id = make_tutoring_session(app, tutor_id, student_id)
 
     mock_token_resp = json.dumps({"access_token": "fake-token-123"}).encode()
-    mock_meeting_resp = json.dumps({
-        "id": 999999999,
-        "join_url": "https://zoom.us/j/999999999",
-        "start_url": "https://zoom.us/s/999999999",
-    }).encode()
+    mock_meeting_resp = json.dumps(
+        {
+            "id": 999999999,
+            "join_url": "https://zoom.us/j/999999999",
+            "start_url": "https://zoom.us/s/999999999",
+        }
+    ).encode()
 
     with app.app_context():
-        with patch.dict("os.environ", {
-            "ZOOM_ACCOUNT_ID": "acc123",
-            "ZOOM_CLIENT_ID": "client123",
-            "ZOOM_CLIENT_SECRET": "secret123",
-        }):
+        with patch.dict(
+            "os.environ",
+            {
+                "ZOOM_ACCOUNT_ID": "acc123",
+                "ZOOM_CLIENT_ID": "client123",
+                "ZOOM_CLIENT_SECRET": "secret123",
+            },
+        ):
             mock_resp_token = MagicMock()
             mock_resp_token.read.return_value = mock_token_resp
             mock_resp_token.__enter__ = lambda s: s
@@ -158,11 +157,14 @@ def test_generate_zoom_meeting_api_error(app):
     mock_token_resp = json.dumps({"access_token": "fake-token"}).encode()
 
     with app.app_context():
-        with patch.dict("os.environ", {
-            "ZOOM_ACCOUNT_ID": "acc123",
-            "ZOOM_CLIENT_ID": "client123",
-            "ZOOM_CLIENT_SECRET": "secret123",
-        }):
+        with patch.dict(
+            "os.environ",
+            {
+                "ZOOM_ACCOUNT_ID": "acc123",
+                "ZOOM_CLIENT_ID": "client123",
+                "ZOOM_CLIENT_SECRET": "secret123",
+            },
+        ):
             mock_resp_token = MagicMock()
             mock_resp_token.read.return_value = mock_token_resp
             mock_resp_token.__enter__ = lambda s: s
@@ -216,6 +218,7 @@ def test_session_template_shows_provider(app):
             sess["_user_id"] = str(tutor_id)
         with app.app_context():
             from app.models.tutoring import TutoringSession
+
             ts = db.session.get(TutoringSession, session_id)
         r = client.get(f"/tutoring/sessions/{session_id}")
         assert r.status_code == 200

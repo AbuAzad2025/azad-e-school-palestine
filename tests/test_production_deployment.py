@@ -1,7 +1,8 @@
 """Production deployment artifacts tests — Phase 6"""
-from pathlib import Path
-import pytest
 
+from pathlib import Path
+
+import pytest
 
 BASE_DIR = Path.cwd()
 

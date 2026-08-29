@@ -1,10 +1,14 @@
 """اختبارات C6 — تتبع تقدم الطالب (record_lesson_view, update_time_spent, update_video_progress)."""
 
-from app.extensions import db
 from tests.conftest import (
-    make_attachment, make_class, make_class_member, make_grade,
-    make_lesson, make_school, make_student_progress, make_subject,
-    make_user, make_video_progress,
+    make_attachment,
+    make_class,
+    make_grade,
+    make_lesson,
+    make_school,
+    make_student_progress,
+    make_subject,
+    make_user,
 )
 
 

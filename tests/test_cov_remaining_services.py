@@ -3,37 +3,22 @@ tutoring, billing, payments, progress, gradebook (more), base."""
 
 from __future__ import annotations
 
-import secrets
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 from app import create_app
-from app.extensions import db as _db
 from app.core.security import hash_password
-from app.models.assessment import Answer, Question, Quiz, QuizAttempt
+from app.extensions import db as _db
+from app.models.assessment import Question, Quiz
 from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.content import Lesson, LessonAttachment
 from app.models.gradebook import (
-    Assignment,
-    GradeCategory,
     GradeEntry,
-    GradeItem,
-    Submission,
 )
-from app.models.progress import StudentProgress, VideoProgress
-from app.models.question_bank import QuestionBank
 from app.models.school import Grade, School, Subject
-from app.models.tutoring import (
-    TutorCommission,
-    TutorProfile,
-    TutoringRequest,
-    TutoringSession,
-    TutorPayout,
-    TutorReview,
-)
-from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
+from app.models.user import User, UserApprovalStatus, UserRole
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +33,7 @@ def app():
     a.config["LOGIN_LOCKOUT_DURATION"] = 900
     with a.app_context():
         from sqlalchemy import text
+
         _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         _db.session.commit()
         _db.create_all()
@@ -63,7 +49,8 @@ def client(app):
 def _clean(app):
     yield
     with app.app_context():
-        from sqlalchemy import text, inspect
+        from sqlalchemy import inspect, text
+
         inspector = inspect(_db.engine)
         tables = inspector.get_table_names(schema="public")
         tables = [t for t in tables if t != "alembic_version"]
@@ -74,6 +61,7 @@ def _clean(app):
 
 def _uid():
     import uuid
+
     return uuid.uuid4().hex[:10]
 
 
@@ -127,8 +115,12 @@ def _subject(app):
 def _class(app, school_id, grade_id, subject_id, teacher_id=None):
     with app.app_context():
         c = ClassRoom(
-            school_id=school_id, grade_id=grade_id, subject_id=subject_id,
-            teacher_id=teacher_id, join_code=f"C-{_uid()[:6]}", name=f"صف {_uid()}",
+            school_id=school_id,
+            grade_id=grade_id,
+            subject_id=subject_id,
+            teacher_id=teacher_id,
+            join_code=f"C-{_uid()[:6]}",
+            name=f"صف {_uid()}",
         )
         _db.session.add(c)
         _db.session.commit()
@@ -148,14 +140,22 @@ class TestAssessmentService:
         quiz = Quiz(class_id=cid, title="اختبار", status="published", total_mark=10.0)
         _db.session.add(quiz)
         _db.session.commit()
-        q = Question(quiz_id=quiz.id, type="mcq", prompt="ما هو 1+1؟",
-                     options={"a": "2", "b": "3"}, correct_answer="a", mark=5.0, sort_order=1)
+        q = Question(
+            quiz_id=quiz.id,
+            type="mcq",
+            prompt="ما هو 1+1؟",
+            options={"a": "2", "b": "3"},
+            correct_answer="a",
+            mark=5.0,
+            sort_order=1,
+        )
         _db.session.add(q)
         _db.session.commit()
         return quiz, q, tid, cid, sid
 
     def test_create_quiz(self, app):
         from app.models.assessment import Quiz as QuizModel
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -174,6 +174,7 @@ class TestAssessmentService:
 class TestTutoringService:
     def test_create_tutor_profile(self, app):
         from app.services.tutoring import create_tutor_profile
+
         with app.app_context():
             tid = _user(app, "teacher")
             profile, err = create_tutor_profile(tid, "رياضيات", price_hour=100.0)
@@ -183,6 +184,7 @@ class TestTutoringService:
 
     def test_create_tutor_profile_duplicate(self, app):
         from app.services.tutoring import create_tutor_profile
+
         with app.app_context():
             tid = _user(app, "teacher")
             create_tutor_profile(tid, "رياضيات")
@@ -191,6 +193,7 @@ class TestTutoringService:
 
     def test_get_profile(self, app):
         from app.services.tutoring import create_tutor_profile, get_profile
+
         with app.app_context():
             tid = _user(app, "teacher")
             create_tutor_profile(tid, "رياضيات")
@@ -199,6 +202,7 @@ class TestTutoringService:
 
     def test_search_tutors(self, app):
         from app.services.tutoring import create_tutor_profile, search_tutors
+
         with app.app_context():
             tid = _user(app, "teacher")
             create_tutor_profile(tid, "رياضيات", bio="معلم خبرة 5 سنوات")
@@ -207,6 +211,7 @@ class TestTutoringService:
 
     def test_find_by_invite_code(self, app):
         from app.services.tutoring import create_tutor_profile, find_by_invite_code
+
         with app.app_context():
             tid = _user(app, "teacher")
             p, _ = create_tutor_profile(tid, "رياضيات")
@@ -214,7 +219,8 @@ class TestTutoringService:
             assert found is not None
 
     def test_update_profile(self, app):
-        from app.services.tutoring import create_tutor_profile, update_profile, get_profile
+        from app.services.tutoring import create_tutor_profile, get_profile, update_profile
+
         with app.app_context():
             tid = _user(app, "teacher")
             p, _ = create_tutor_profile(tid, "رياضيات")
@@ -223,7 +229,8 @@ class TestTutoringService:
             assert updated.bio == "معلم ممتاز"
 
     def test_create_request(self, app):
-        from app.services.tutoring import create_tutor_profile, create_request
+        from app.services.tutoring import create_request, create_tutor_profile
+
         with app.app_context():
             tid = _user(app, "teacher")
             create_tutor_profile(tid, "رياضيات")
@@ -232,7 +239,8 @@ class TestTutoringService:
             assert req is not None
 
     def test_create_request_duplicate(self, app):
-        from app.services.tutoring import create_tutor_profile, create_request
+        from app.services.tutoring import create_request, create_tutor_profile
+
         with app.app_context():
             tid = _user(app, "teacher")
             create_tutor_profile(tid, "رياضيات")
@@ -248,6 +256,7 @@ class TestTutoringService:
 class TestBillingService:
     def test_subscription_payment_summary(self, app):
         from app.services.billing import subscription_payment_summary
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -262,10 +271,12 @@ class TestBillingService:
             _db.session.commit()
             result = subscription_payment_summary(sub.id)
             assert "total_paid" in result
-            assert "remaining" in result
+            assert "balance" in result
+            assert "total_price" in result
 
     def test_approve_payment(self, app):
         from app.services.billing import approve_payment
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -278,7 +289,9 @@ class TestBillingService:
             sub = Subscription(user_id=student, plan_id=plan.id, class_id=cid, price=100.0, status="pending")
             _db.session.add(sub)
             _db.session.commit()
-            payment = ManualPayment(subscription_id=sub.id, reference=f"ref-{_uid()[:6]}", amount=50.0, status="pending")
+            payment = ManualPayment(
+                subscription_id=sub.id, reference=f"ref-{_uid()[:6]}", amount=50.0, status="pending"
+            )
             _db.session.add(payment)
             _db.session.commit()
             reviewer = _user(app, "super_admin")
@@ -287,6 +300,7 @@ class TestBillingService:
 
     def test_reject_payment(self, app):
         from app.services.billing import reject_payment
+
         with app.app_context():
             sid = _school(app)
             gid = _grade(app, sid)
@@ -299,7 +313,9 @@ class TestBillingService:
             sub = Subscription(user_id=student, plan_id=plan.id, class_id=cid, price=100.0, status="pending")
             _db.session.add(sub)
             _db.session.commit()
-            payment = ManualPayment(subscription_id=sub.id, reference=f"ref-{_uid()[:6]}", amount=50.0, status="pending")
+            payment = ManualPayment(
+                subscription_id=sub.id, reference=f"ref-{_uid()[:6]}", amount=50.0, status="pending"
+            )
             _db.session.add(payment)
             _db.session.commit()
             reviewer = _user(app, "super_admin")
@@ -328,6 +344,7 @@ class TestProgressService:
 
     def test_record_lesson_view(self, app):
         from app.services.progress import record_lesson_view
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             p = record_lesson_view(student, lid, cid)
@@ -335,6 +352,7 @@ class TestProgressService:
 
     def test_record_lesson_view_existing(self, app):
         from app.services.progress import record_lesson_view
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             p1 = record_lesson_view(student, lid, cid)
@@ -343,6 +361,7 @@ class TestProgressService:
 
     def test_update_time_spent(self, app):
         from app.services.progress import record_lesson_view, update_time_spent
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             record_lesson_view(student, lid, cid)
@@ -351,12 +370,14 @@ class TestProgressService:
 
     def test_update_time_spent_not_found(self, app):
         from app.services.progress import update_time_spent
+
         with app.app_context():
             p = update_time_spent(99999, 99999, 60)
             assert p is None
 
     def test_update_video_progress(self, app):
         from app.services.progress import update_video_progress
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             att = LessonAttachment(lesson_id=lid, kind="video", stored_name="test.mp4")
@@ -367,6 +388,7 @@ class TestProgressService:
 
     def test_update_video_progress_completed(self, app):
         from app.services.progress import update_video_progress
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             att = LessonAttachment(lesson_id=lid, kind="video", stored_name="test.mp4")
@@ -377,6 +399,7 @@ class TestProgressService:
 
     def test_student_class_progress(self, app):
         from app.services.progress import student_class_progress
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             result = student_class_progress(student, cid)
@@ -384,13 +407,15 @@ class TestProgressService:
 
     def test_class_progress_overview(self, app):
         from app.services.progress import class_progress_overview
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             result = class_progress_overview(cid)
             assert len(result) >= 1
 
     def test_last_active_days(self, app):
-        from app.services.progress import record_lesson_view, last_active_days
+        from app.services.progress import last_active_days, record_lesson_view
+
         with app.app_context():
             cid, student, lid = self._setup(app)
             record_lesson_view(student, lid, cid)
@@ -399,11 +424,12 @@ class TestProgressService:
 
 
 # ======================================================================
-# auth.py service tests  
+# auth.py service tests
 # ======================================================================
 class TestAuthService:
     def test_register_user(self, app):
         from app.services.auth import register_user
+
         with app.app_context():
             user, err = register_user("new@test.com", "مستخدم جديد", "student", "StrongPass123!")
             assert user is not None
@@ -411,6 +437,7 @@ class TestAuthService:
 
     def test_register_user_duplicate(self, app):
         from app.services.auth import register_user
+
         with app.app_context():
             email = _email()
             register_user(email, "مستخدم", "student", "StrongPass123!")
@@ -419,25 +446,34 @@ class TestAuthService:
 
     def test_register_user_weak_password(self, app):
         from app.services.auth import register_user
+
         with app.app_context():
             user, err = register_user("new@test.com", "مستخدم", "student", "weak")
             assert user is None
 
     def test_register_user_invalid_role(self, app):
         from app.services.auth import register_user
+
         with app.app_context():
             user, err = register_user("new@test.com", "مستخدم", "invalid_role", "StrongPass123!")
             assert user is None
 
     def test_authenticate_success(self, app):
-        from app.services.auth import register_user, authenticate
+        from app.services.auth import authenticate, register_user
+
         with app.app_context():
-            register_user("auth@test.com", "مستخدم", "student", "StrongPass123!")
-            user, err = authenticate("auth@test.com", "StrongPass123!")
+            email = _email()
+            register_user(email, "مستخدم", "student", "StrongPass123!")
+            # Register with pending status, so we need to approve first
+            u = User.query.filter_by(email=email).first()
+            u.approval_status = UserApprovalStatus.approved
+            _db.session.commit()
+            user, err = authenticate(email, "StrongPass123!")
             assert user is not None
 
     def test_authenticate_wrong_password(self, app):
-        from app.services.auth import register_user, authenticate
+        from app.services.auth import authenticate, register_user
+
         with app.app_context():
             register_user("auth2@test.com", "مستخدم", "student", "StrongPass123!")
             user, err = authenticate("auth2@test.com", "WrongPassword1!")
@@ -445,12 +481,14 @@ class TestAuthService:
 
     def test_authenticate_nonexistent(self, app):
         from app.services.auth import authenticate
+
         with app.app_context():
             user, err = authenticate("nonexistent@test.com", "password")
             assert user is None
 
     def test_authenticate_inactive(self, app):
         from app.services.auth import authenticate
+
         with app.app_context():
             uid = _user(app)
             u = User.query.get(uid)
@@ -462,6 +500,7 @@ class TestAuthService:
 
     def test_request_password_reset(self, app):
         from app.services.auth import request_password_reset
+
         with app.app_context():
             uid = _user(app)
             u = User.query.get(uid)
@@ -470,12 +509,14 @@ class TestAuthService:
 
     def test_request_password_reset_nonexistent(self, app):
         from app.services.auth import request_password_reset
+
         with app.app_context():
             token = request_password_reset("nonexistent@test.com")
             assert token is None
 
     def test_mark_login(self, app):
         from app.services.auth import mark_login
+
         with app.app_context():
             uid = _user(app)
             u = User.query.get(uid)
@@ -484,6 +525,7 @@ class TestAuthService:
 
     def test_register_individual(self, app):
         from app.services.auth import register_individual
+
         with app.app_context():
             user, err = register_individual("ind@test.com", "طالب فردي", "StrongPass123!")
             assert user is not None
@@ -504,6 +546,7 @@ class TestGradebookMore:
 
     def test_create_grade_item(self, app):
         from app.services.gradebook import create_category, create_grade_item
+
         with app.app_context():
             _, cid, _ = self._setup(app)
             cat = create_category(cid, "الفصل", weight=Decimal("0.5"))
@@ -512,6 +555,7 @@ class TestGradebookMore:
 
     def test_set_grade(self, app):
         from app.services.gradebook import create_category, create_grade_item, set_grade
+
         with app.app_context():
             _, cid, _ = self._setup(app)
             cat = create_category(cid, "الفصل", weight=Decimal("0.5"))
@@ -525,6 +569,7 @@ class TestGradebookMore:
 
     def test_student_gradebook(self, app):
         from app.services.gradebook import create_category, create_grade_item, set_grade, student_gradebook
+
         with app.app_context():
             _, cid, _ = self._setup(app)
             cat = create_category(cid, "الفصل", weight=Decimal("0.5"))
@@ -538,21 +583,24 @@ class TestGradebookMore:
             assert len(result) >= 1
 
     def test_record_attendance(self, app):
-        from app.services.gradebook import record_attendance, get_attendance, attendance_summary
+        from app.services.gradebook import attendance_summary, get_attendance, record_attendance
+
         with app.app_context():
             _, cid, _ = self._setup(app)
             student = _user(app)
             cm = ClassMember(class_id=cid, user_id=student, status="active")
             _db.session.add(cm)
             _db.session.commit()
-            record_attendance(cid, student, "present", date=datetime.now(UTC).date())
+            record_attendance(cid, datetime.now(UTC).date(), {student: "present"})
             attendees = get_attendance(cid, datetime.now(UTC).date())
             assert len(attendees) >= 1
             summary = attendance_summary(cid, student)
-            assert "present" in summary
+            assert len(summary) >= 1
+            assert summary[0].status == "present"
 
     def test_submit_assignment_resubmit(self, app):
         from app.services.gradebook import create_assignment, submit_assignment
+
         with app.app_context():
             _, cid, _ = self._setup(app)
             a, _ = create_assignment(cid, "واجب")

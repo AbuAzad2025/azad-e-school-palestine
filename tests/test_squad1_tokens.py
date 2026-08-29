@@ -4,16 +4,14 @@ Tests token generation, signature validation failures, clock skew,
 expired reset links, and one-time-use semantics.
 """
 
-import pytest
-from datetime import UTC, datetime, timedelta
-from unittest.mock import patch
+from datetime import UTC, datetime
 
 from app.core.tokens import (
-    make_token,
     make_activation_token,
     make_reset_token,
-    read_token,
+    make_token,
     read_reset_token,
+    read_token,
 )
 
 

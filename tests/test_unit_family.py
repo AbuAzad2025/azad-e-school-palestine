@@ -1,9 +1,8 @@
 """اختبارات C1 — روابط الأسرة (generate_link_code, link_parent, is_parent_of, remove_link)."""
 
 from app.extensions import db
-from app.models.family import FamilyLink, FamilyLinkCode
-from app.models.user import User, UserRole, UserApprovalStatus
-from tests.conftest import make_family_link, make_family_link_code, make_user, make_school, _uid
+from app.models.family import FamilyLinkCode
+from tests.conftest import _uid, make_family_link, make_school, make_user
 
 
 def test_generate_link_code(app):
@@ -34,8 +33,6 @@ def test_generate_link_code_rejects_non_student(app):
 def test_link_parent_success(app):
     """ربط ولي أمر بالطالب عبر الرمز."""
     from app.services.family import link_parent
-    from app.extensions import db
-    from app.models.family import FamilyLinkCode
 
     school_id = make_school(app)
     parent_id = make_user(app, role="parent", school_id=school_id)
@@ -95,7 +92,7 @@ def test_is_parent_of(app):
 
 def test_remove_link(app):
     """إزالة رابط ولي الأمر."""
-    from app.services.family import remove_link, list_children
+    from app.services.family import list_children, remove_link
 
     school_id = make_school(app)
     parent_id = make_user(app, role="parent", school_id=school_id)

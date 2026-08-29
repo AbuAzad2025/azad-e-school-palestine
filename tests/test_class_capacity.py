@@ -6,7 +6,7 @@ from app.services.schools import join_class
 
 
 def test_class_without_capacity_allows_join(app):
-    from tests.conftest import make_class, make_class_member, make_grade, make_school, make_subject, make_user
+    from tests.conftest import make_class, make_grade, make_school, make_subject, make_user
 
     school_id = make_school(app)
     grade_id = make_grade(app, school_id)
@@ -17,6 +17,7 @@ def test_class_without_capacity_allows_join(app):
 
     with app.app_context():
         from app.models.user import User
+
         student = User.query.get(student_id)
         room = ClassRoom.query.get(class_id)
         result = join_class(room, student)
@@ -185,7 +186,7 @@ def test_class_with_capacity_set(app):
 
 
 def test_existing_member_not_affected_by_capacity(app):
-    from tests.conftest import make_class, make_class_member, make_grade, make_school, make_subject, make_user
+    from tests.conftest import make_class, make_grade, make_school, make_subject, make_user
 
     school_id = make_school(app)
     grade_id = make_grade(app, school_id)

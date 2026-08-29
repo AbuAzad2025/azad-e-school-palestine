@@ -4,30 +4,25 @@ Tests session invalidation (password_changed_at), expired tokens,
 invalid JWTs, refresh loops, brute force lockout, and login flows.
 """
 
-import pytest
 from datetime import UTC, datetime, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from app.core.db import tx
 from app.core.security import (
     hash_password,
     verify_password,
-    validate_password_policy,
-    check_password_reuse,
-    COMMON_PASSWORDS,
 )
-from app.core.tokens import make_reset_token, read_reset_token, make_token, read_token
+from app.core.tokens import make_reset_token, make_token, read_reset_token
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus, UserRoleLink
+from app.models.user import User, UserApprovalStatus
 from app.services.auth import (
     authenticate,
+    confirm_email,
+    is_current,
     mark_login,
+    register_individual,
     register_user,
     request_password_reset,
     reset_password,
-    confirm_email,
-    is_current,
-    register_individual,
 )
 from tests.conftest import make_school, make_user
 
@@ -251,10 +246,7 @@ class TestRegisterUserValidation:
 
     def test_register_with_invalid_join_code(self, app):
         with app.app_context():
-            user, error = register_user(
-                "fail@test.com", "Student", "student", "StrongP@ss1",
-                school_join_code="WRONG"
-            )
+            user, error = register_user("fail@test.com", "Student", "student", "StrongP@ss1", school_join_code="WRONG")
             assert user is None
 
     def test_register_adds_password_to_history(self, app):
@@ -290,7 +282,6 @@ class TestIsCurrent:
             user_obj = db.session.get(User, uid)
 
             with app.test_request_context():
-                from flask_login import LoginManager
                 with patch("app.services.auth.current_user") as mock_user:
                     mock_user.is_authenticated = True
                     mock_user.id = uid

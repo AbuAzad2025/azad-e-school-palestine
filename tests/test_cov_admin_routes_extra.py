@@ -17,6 +17,7 @@ from tests.conftest import (
 
 def _uid():
     import uuid
+
     return uuid.uuid4().hex[:10]
 
 

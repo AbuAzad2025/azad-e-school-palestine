@@ -4,15 +4,11 @@ Tests all role matrix combinations (Admin, Teacher, Student, Parent, Anonymous)
 across role_required and any_role.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
-from flask import abort
+from unittest.mock import patch
 
-from app.core.permissions import role_required, any_role, _has_any, SUPER_ROLE
-from app.extensions import db
-from app.models.user import User, UserRole, UserRoleLink, UserApprovalStatus
-from app.core.security import hash_password
-from tests.conftest import make_school, make_user
+import pytest
+from app.core.permissions import SUPER_ROLE, _has_any, any_role, role_required
+from app.models.user import UserRole
 
 
 class TestRoleRequiredDecorator:

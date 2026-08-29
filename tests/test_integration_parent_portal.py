@@ -1,9 +1,14 @@
 """اختبارات تكامل — بوابة ولي الأمر (family blueprint HTTP routes)."""
 
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.core.security import hash_password
-from app.extensions import db
-from tests.conftest import make_family_link, make_user, make_school, make_class, make_grade, make_subject, make_class_member, make_student_progress, make_lesson
+from tests.conftest import (
+    make_class,
+    make_class_member,
+    make_family_link,
+    make_grade,
+    make_school,
+    make_subject,
+    make_user,
+)
 
 
 def test_parent_index_page_renders(app, client):

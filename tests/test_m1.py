@@ -1,14 +1,15 @@
 """م1 — المصادقة، القواميس (i18n)، الذرّية، والتينانتس المركزي"""
+
 import uuid
 
 import pytest
-
 from app import create_app
 from app.core.db import tx
 from app.core.security import hash_password, verify_password
 from app.core.tenancy import scope_by_school
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus
+from app.models.user import User, UserApprovalStatus, UserRole
+
 
 @pytest.fixture()
 def app():
@@ -76,11 +77,11 @@ def test_admin_can_approve_user(app, client):
     with app.app_context():
         user = User.query.filter_by(email=email).first()
         assert user.approval_status == UserApprovalStatus.pending
-        
+
         # محاكاة موافقة السوبر أدمن
         user.approval_status = UserApprovalStatus.approved
         db.session.commit()
-        
+
         # الآن المستخدم يستطيع تسجيل الدخول
         user = User.query.filter_by(email=email).first()
         assert user.approval_status == UserApprovalStatus.approved
@@ -94,7 +95,7 @@ def test_admin_can_reject_user(app, client):
         user = User.query.filter_by(email=email).first()
         user.approval_status = UserApprovalStatus.rejected
         db.session.commit()
-        
+
         user = User.query.filter_by(email=email).first()
         assert user.approval_status == UserApprovalStatus.rejected
         assert user.is_approved == False
@@ -107,7 +108,7 @@ def test_rejected_user_cannot_login(app, client):
         user = User.query.filter_by(email=email).first()
         user.approval_status = UserApprovalStatus.rejected
         db.session.commit()
-    
+
     r = client.post(
         "/auth/login",
         data={"email": email, "password": "Secret123!"},
@@ -124,7 +125,7 @@ def test_full_login_after_approval(app, client):
         user = User.query.filter_by(email=email).first()
         user.approval_status = UserApprovalStatus.approved
         db.session.commit()
-    
+
     r = client.post(
         "/auth/login",
         data={"email": email, "password": "Secret123!"},
@@ -177,11 +178,10 @@ def test_tx_rolls_back_on_error(app):
         db.session.add(user)
         db.session.commit()
         count_before = User.query.count()
+
         # خدمة ترفع خطأً في منتصف الكتابة — يجب التراجع كاملاً
         def _boom():
-            db.session.add(
-                User(email="n@example.com", name_ar="ن", role=UserRole.student, password_hash="h")
-            )
+            db.session.add(User(email="n@example.com", name_ar="ن", role=UserRole.student, password_hash="h"))
             raise RuntimeError("فشل مقصود")
 
         with pytest.raises(RuntimeError):

@@ -1,7 +1,5 @@
 """اختبارات تكامل — لوحة تحكم مدير المدرسة (C12 — admin routes)."""
 
-from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus
 from tests.conftest import make_class, make_class_member, make_grade, make_school, make_subject, make_user
 
 

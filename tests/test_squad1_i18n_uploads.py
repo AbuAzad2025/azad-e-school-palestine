@@ -1,6 +1,5 @@
 """SQUAD 1 EXTRA: Tests for i18n module and expanded uploads."""
 
-import pytest
 from app.core.i18n import _
 
 

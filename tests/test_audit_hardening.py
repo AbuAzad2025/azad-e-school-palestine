@@ -9,15 +9,11 @@ from datetime import UTC, datetime, timedelta
 from io import BytesIO
 
 import pytest
-from werkzeug.datastructures import FileStorage
-
 from app.core.db import TxError
 from app.core.tokens import make_activation_token, make_reset_token, read_reset_token
 from app.extensions import db as _db
-from app.models.assessment import Answer, Question, Quiz, QuizAttempt
-from app.models.billing import DiscountCode, ManualPayment, Subscription, SubscriptionPlan
-from app.models.class_room import ClassRoom
-from app.models.school import Grade, School, Subject
+from app.models.assessment import Answer, Question, Quiz
+from app.models.billing import DiscountCode, ManualPayment, Subscription
 from app.services.assessment import (
     deadline_exceeded,
     save_answer,
@@ -42,6 +38,7 @@ from tests.conftest import (
     make_subscription_plan,
     make_user,
 )
+from werkzeug.datastructures import FileStorage
 
 
 def _uid() -> str:
@@ -234,8 +231,9 @@ def test_submit_attempt_locks_against_double_submit(app):
         quiz_id, student_id, _ = _make_quiz_with_question(app)
         attempt, error = start_attempt(_db.session.get(Quiz, quiz_id), student_id)
         assert error is None
-        answer = Answer(attempt_id=attempt.id, question_id=_db.session.get(Quiz, quiz_id).questions[0].id,
-                        answer={"index": 1})
+        answer = Answer(
+            attempt_id=attempt.id, question_id=_db.session.get(Quiz, quiz_id).questions[0].id, answer={"index": 1}
+        )
         _db.session.add(answer)
         _db.session.commit()
 
@@ -286,9 +284,8 @@ def test_start_attempt_sets_started_at(app):
 
 
 def test_parse_answer_bad_mcq_index_aborts_400(app):
-    from werkzeug.exceptions import BadRequest
-
     from app.modules.assessment.routes import _parse_answer
+    from werkzeug.exceptions import BadRequest
 
     q = Question(type="mcq", prompt="x")
     with pytest.raises(BadRequest):
@@ -319,9 +316,7 @@ def test_resubscribe_allowed_after_expiry_same_plan(app):
         plan_id = make_subscription_plan(app, school_id)
         class_id = make_class(app, school_id, make_grade(app, school_id), make_subject(app))
 
-        expired = Subscription(
-            user_id=user_id, plan_id=plan_id, class_id=class_id, price=100, status="expired"
-        )
+        expired = Subscription(user_id=user_id, plan_id=plan_id, class_id=class_id, price=100, status="expired")
         _db.session.add(expired)
         _db.session.commit()
 

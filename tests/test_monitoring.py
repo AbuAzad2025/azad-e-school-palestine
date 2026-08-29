@@ -1,7 +1,8 @@
 """Monitoring & alerting tests — Phase 8"""
-from pathlib import Path
-import pytest
 
+from pathlib import Path
+
+import pytest
 
 BASE_DIR = Path.cwd()
 
@@ -14,7 +15,7 @@ class TestSentryModule:
         assert path.exists() and path.stat().st_size > 0
 
     def test_sentry_exports_init_and_helpers(self):
-        from app.core.sentry import init_sentry, set_sentry_user, capture_exception, capture_message
+        from app.core.sentry import capture_exception, capture_message, init_sentry, set_sentry_user
 
         assert callable(init_sentry)
         assert callable(set_sentry_user)

@@ -1,10 +1,8 @@
 """Load-test infrastructure tests — Phase 5"""
-import os
-import subprocess
-import sys
-from pathlib import Path
-import pytest
 
+from pathlib import Path
+
+import pytest
 
 BASE_DIR = Path.cwd()
 LOCUSTFILE = BASE_DIR / "tests" / "load" / "locustfile.py"
@@ -35,6 +33,7 @@ class TestLocustfile:
     def test_locustfile_can_be_imported(self):
         """Verify the locustfile is valid Python syntax without importing locust."""
         import ast
+
         content = _read(LOCUSTFILE)
         tree = ast.parse(content)
         classes = [node.name for node in ast.walk(tree) if isinstance(node, ast.ClassDef)]

@@ -4,15 +4,12 @@ Tests fallback configurations when preferences are missing,
 disabled channels, and opt-out logic.
 """
 
-import pytest
-from app.extensions import db
-from app.models.communication import NotificationPreference
 from app.services.notification_preferences import (
-    get_preferences,
-    get_preference,
-    update_preference,
-    should_notify,
     DEFAULT_TYPES,
+    get_preference,
+    get_preferences,
+    should_notify,
+    update_preference,
 )
 from tests.conftest import make_user
 

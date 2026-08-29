@@ -4,22 +4,20 @@ Tests message delivery flows, failed channels, template rendering errors,
 and notification dispatch.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
-
 from app.extensions import db
 from app.models.communication import Notification, NotificationPreference
-from app.models.message import Message
-from app.services.communication import notify, unread_count, mark_all_read, audit
+from app.services.communication import audit, mark_all_read, notify, unread_count
 from app.services.messages import (
-    send_message,
-    inbox,
-    sent,
     get_thread,
+    inbox,
     mark_read,
+    send_message,
+    sent,
+)
+from app.services.messages import (
     unread_count as msg_unread_count,
 )
-from tests.conftest import make_user, make_school
+from tests.conftest import make_school, make_user
 
 
 # ---------------------------------------------------------------------------
@@ -94,8 +92,10 @@ class TestMarkAllRead:
 class TestAudit:
     def test_creates_audit_log(self, app):
         with app.app_context():
-            from app.models.system import AuditLog
             from unittest.mock import patch as _patch
+
+            from app.models.system import AuditLog
+
             with _patch("app.services.communication.current_user") as mock_cu:
                 mock_cu.is_authenticated = False
                 audit("test_action", entity="users", entity_id=1, detail={"key": "value"})
@@ -104,8 +104,10 @@ class TestAudit:
 
     def test_with_financial_detail(self, app):
         with app.app_context():
-            from app.models.system import AuditLog
             from unittest.mock import patch as _patch
+
+            from app.models.system import AuditLog
+
             with _patch("app.services.communication.current_user") as mock_cu:
                 mock_cu.is_authenticated = False
                 audit(
@@ -122,8 +124,10 @@ class TestAudit:
 
     def test_with_changes(self, app):
         with app.app_context():
-            from app.models.system import AuditLog
             from unittest.mock import patch as _patch
+
+            from app.models.system import AuditLog
+
             with _patch("app.services.communication.current_user") as mock_cu:
                 mock_cu.is_authenticated = False
                 audit(

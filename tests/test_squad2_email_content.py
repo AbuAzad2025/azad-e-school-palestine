@@ -1,22 +1,29 @@
 """SQUAD 2 EXTRA: Tests for email service, content service, impersonation."""
 
-import pytest
-from unittest.mock import patch, MagicMock
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.services.email import (
-    _recipient_locale, _dir, _fmt_date, _footer,
-    send_welcome_email, send_payment_approved_email, send_payment_rejected_email,
-    send_grade_published_email, send_quiz_result_email,
-    send_absence_alert_email, send_contact_reply_email,
-)
+from app.models.user import User, UserRole
 from app.services.content import (
-    create_unit, list_units, create_lesson, get_lesson,
-    publish_lesson, unpublish_lesson, _sanitize_html,
-    list_lessons, update_lesson,
+    _sanitize_html,
+    create_lesson,
+    create_unit,
+    get_lesson,
+    list_units,
+    publish_lesson,
+    unpublish_lesson,
+    update_lesson,
+)
+from app.services.email import (
+    _dir,
+    _fmt_date,
+    _footer,
+    _recipient_locale,
+    send_welcome_email,
 )
 from app.services.impersonation import (
-    is_impersonating, impersonator_user, clear_impersonation, SESSION_KEY,
+    SESSION_KEY,
+    clear_impersonation,
+    impersonator_user,
+    is_impersonating,
 )
 from tests.conftest import make_school, make_user
 
@@ -57,38 +64,63 @@ class TestEmailService:
 
 # ── Content Service ──
 class TestContentService:
+    def _cid(self, app):
+        """Create a valid class and return its ID."""
+        sid = make_school(app)
+        tid = make_user(app, "teacher", school_id=sid)
+        gid = db.session.execute(
+            db.text("INSERT INTO grades (school_id, grade_level, name_ar) VALUES (:sid, 1, 'G1') RETURNING id"),
+            {"sid": sid},
+        ).scalar()
+        subid = db.session.execute(db.text("INSERT INTO subjects (name_ar) VALUES ('Math') RETURNING id"), {}).scalar()
+        cid = db.session.execute(
+            db.text(
+                "INSERT INTO classes"
+                " (school_id, grade_id, subject_id, teacher_id, join_code, name)"
+                " VALUES (:sid, :gid, :subid, :tid, 'C1', 'Class1') RETURNING id"
+            ),
+            {"sid": sid, "gid": gid, "subid": subid, "tid": tid},
+        ).scalar()
+        return cid
+
     def test_create_unit(self, app):
         with app.app_context():
-            u = create_unit(1, "Unit 1")
+            cid = self._cid(app)
+            u = create_unit(cid, "Unit 1")
             assert u.title == "Unit 1"
 
     def test_list_units(self, app):
         with app.app_context():
-            create_unit(1, "Unit A")
-            create_unit(1, "Unit B")
-            units = list_units(1)
+            cid = self._cid(app)
+            create_unit(cid, "Unit A")
+            create_unit(cid, "Unit B")
+            units = list_units(cid)
             assert len(units) == 2
 
     def test_create_lesson(self, app):
         with app.app_context():
-            lesson, err = create_lesson(1, "Lesson 1")
+            cid = self._cid(app)
+            lesson, err = create_lesson(cid, "Lesson 1")
             assert err is None
             assert lesson.title == "Lesson 1"
 
     def test_create_lesson_empty_title(self, app):
         with app.app_context():
-            lesson, err = create_lesson(1, "")
+            cid = self._cid(app)
+            lesson, err = create_lesson(cid, "")
             assert lesson is None
 
     def test_get_lesson(self, app):
         with app.app_context():
-            lesson, _ = create_lesson(1, "Test Lesson")
+            cid = self._cid(app)
+            lesson, _ = create_lesson(cid, "Test Lesson")
             fetched = get_lesson(lesson.id)
             assert fetched is not None
 
     def test_publish_unpublish(self, app):
         with app.app_context():
-            lesson, _ = create_lesson(1, "Draft Lesson")
+            cid = self._cid(app)
+            lesson, _ = create_lesson(cid, "Draft Lesson")
             publish_lesson(lesson)
             assert lesson.status == "published"
             unpublish_lesson(lesson)
@@ -104,7 +136,8 @@ class TestContentService:
 
     def test_update_lesson(self, app):
         with app.app_context():
-            lesson, _ = create_lesson(1, "Original")
+            cid = self._cid(app)
+            lesson, _ = create_lesson(cid, "Original")
             update_lesson(lesson, title="Updated", unit_id=None, body_html="<p>Body</p>")
             assert lesson.title == "Updated"
 
@@ -113,7 +146,6 @@ class TestContentService:
 class TestImpersonation:
     def test_not_impersonating(self, app):
         with app.test_request_context():
-            from flask import session
             assert is_impersonating() is False
 
     def test_impersonator_user_none(self, app):
@@ -123,6 +155,7 @@ class TestImpersonation:
     def test_clear_impersonation(self, app):
         with app.test_request_context():
             from flask import session
+
             session[SESSION_KEY] = "1"
             clear_impersonation()
             assert SESSION_KEY not in session

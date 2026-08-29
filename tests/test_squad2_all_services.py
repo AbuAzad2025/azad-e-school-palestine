@@ -1,24 +1,22 @@
 """SQUAD 2 MEGA: Tests for AI, analytics, gamification, progress, offline,
 quiz_stats, question_bank, tenant, individual, invoice services."""
 
-import math
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
+
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.models.school import School
-from app.models.gamification import Badge, BadgeCriteriaType, StudentBadge
-from app.models.progress import StudentProgress, VideoProgress
-from app.models.offline import OfflineDownload
-from app.models.tenant import TenantQuota
-from app.models.class_room import ClassRoom, ClassMember
+from app.models.gamification import Badge, BadgeCriteriaType
+from app.models.user import User, UserRole
+from app.services.ai import (
+    MODEL_PRICING,
+    AiConfig,
+    AiService,
+    BudgetTracker,
+    RateLimiter,
+    get_ai_service,
+)
 
 # ── AI Service ──
-from app.services.ai import (
-    AiConfig, AiService, RateLimiter, BudgetTracker,
-    MODEL_PRICING, get_ai_service,
-)
+from tests.conftest import make_school, make_user
 
 
 class TestRateLimiter:
@@ -173,7 +171,8 @@ class TestAiService:
 
     def test_verify_permission_no_role(self):
         svc = AiService()
-        u = User(name_ar="T", email="t@t.com", role=UserRole.teacher, password_hash="x")
+        u = User(name_ar="T", email="t@t.com", role=UserRole.teacher, password_hash="x", is_active=True)
+        u.is_authenticated = True
         assert svc._verify_permission(u, None) is True
 
     def test_mock_stream_chunks(self):
@@ -181,10 +180,11 @@ class TestAiService:
         chunks = svc._mock_stream_chunks("Hello world this is a test")
         assert len(chunks) > 0
 
-    def test_usage_stats(self):
-        svc = AiService()
-        stats = svc.get_usage_stats()
-        assert "total_requests" in stats
+    def test_usage_stats(self, app):
+        with app.app_context():
+            svc = AiService()
+            stats = svc.get_usage_stats()
+            assert "total_requests" in stats
 
 
 # ── Analytics ──
@@ -192,6 +192,7 @@ class TestAnalytics:
     def test_get_analytics_data(self, app):
         with app.app_context():
             from app.services.analytics import get_analytics_data
+
             data = get_analytics_data()
             assert "dau" in data
             assert "role_distribution" in data
@@ -203,13 +204,21 @@ class TestGamification:
     def test_get_active_badges(self, app):
         with app.app_context():
             from app.services.gamification import get_active_badges
+
             badges = get_active_badges()
             assert isinstance(badges, list)
 
     def test_award_badge(self, app):
         with app.app_context():
             from app.services.gamification import award_badge
-            badge = Badge(name="Test Badge", description="desc", icon="star", criteria_type=BadgeCriteriaType.first_quiz, is_active=True)
+
+            badge = Badge(
+                name="Test Badge",
+                description="desc",
+                icon_name="star",
+                criteria_type=BadgeCriteriaType.first_quiz,
+                is_active=True,
+            )
             db.session.add(badge)
             db.session.flush()
             sb = award_badge(1, badge.id)
@@ -218,7 +227,14 @@ class TestGamification:
     def test_award_badge_duplicate(self, app):
         with app.app_context():
             from app.services.gamification import award_badge
-            badge = Badge(name="Dup Badge", description="desc", icon="star", criteria_type=BadgeCriteriaType.first_quiz, is_active=True)
+
+            badge = Badge(
+                name="Dup Badge",
+                description="desc",
+                icon_name="star",
+                criteria_type=BadgeCriteriaType.first_quiz,
+                is_active=True,
+            )
             db.session.add(badge)
             db.session.flush()
             award_badge(1, badge.id)
@@ -227,8 +243,15 @@ class TestGamification:
 
     def test_has_badge(self, app):
         with app.app_context():
-            from app.services.gamification import has_badge, award_badge
-            badge = Badge(name="Check Badge", description="d", icon="t", criteria_type=BadgeCriteriaType.first_quiz, is_active=True)
+            from app.services.gamification import award_badge, has_badge
+
+            badge = Badge(
+                name="Check Badge",
+                description="d",
+                icon_name="t",
+                criteria_type=BadgeCriteriaType.first_quiz,
+                is_active=True,
+            )
             db.session.add(badge)
             db.session.flush()
             assert has_badge(1, badge.id) is False
@@ -238,6 +261,7 @@ class TestGamification:
     def test_check_and_award_badges_no_match(self, app):
         with app.app_context():
             from app.services.gamification import check_and_award_badges
+
             new = check_and_award_badges(1, "random_event")
             assert new == []
 
@@ -247,12 +271,14 @@ class TestProgress:
     def test_record_lesson_view(self, app):
         with app.app_context():
             from app.services.progress import record_lesson_view
+
             p = record_lesson_view(1, 1, 1)
             assert p.status == "in_progress"
 
     def test_record_lesson_view_existing(self, app):
         with app.app_context():
             from app.services.progress import record_lesson_view
+
             p1 = record_lesson_view(1, 1, 1)
             p2 = record_lesson_view(1, 1, 1)
             assert p1.id == p2.id
@@ -260,51 +286,97 @@ class TestProgress:
     def test_update_time_spent_no_progress(self, app):
         with app.app_context():
             from app.services.progress import update_time_spent
+
             result = update_time_spent(999, 999, 60)
             assert result is None
 
     def test_last_active_days(self, app):
         with app.app_context():
             from app.services.progress import last_active_days
+
             days = last_active_days(1)
             assert isinstance(days, list)
 
 
 # ── Offline ──
 class TestOffline:
+    @staticmethod
+    def _make_offline_data(app):
+        from tests.conftest import make_school, make_user
+
+        sid = make_school(app)
+        tid = make_user(app, "teacher", school_id=sid)
+        t = db.text
+        gid = db.session.execute(
+            t("INSERT INTO grades (school_id, grade_level, name_ar) VALUES (:s, 1, 'G1') RETURNING id"),
+            {"s": sid},
+        ).scalar()
+        subid = db.session.execute(
+            t("INSERT INTO subjects (name_ar) VALUES ('M') RETURNING id"),
+            {},
+        ).scalar()
+        cid = db.session.execute(
+            t(
+                "INSERT INTO classes"
+                " (school_id, grade_id, subject_id, teacher_id, join_code, name)"
+                " VALUES (:s, :g, :su, :t, :c, :n) RETURNING id"
+            ),
+            {"s": sid, "g": gid, "su": subid, "t": tid, "c": "C1", "n": "Cls"},
+        ).scalar()
+        lid = db.session.execute(
+            t(
+                "INSERT INTO lessons (class_id, title, status, sort_order)"
+                " VALUES (:c, 'L', 'published', 1) RETURNING id"
+            ),
+            {"c": cid},
+        ).scalar()
+        aid = db.session.execute(
+            t("INSERT INTO lesson_attachments (lesson_id, kind, stored_name) VALUES (:l, 'pdf', 't.pdf') RETURNING id"),
+            {"l": lid},
+        ).scalar()
+        uid = make_user(app, "student", school_id=sid)
+        return uid, aid, lid
+
     def test_mark_for_download(self, app):
         with app.app_context():
             from app.services.offline import mark_for_download
-            od = mark_for_download(1, 1, 1)
+
+            uid, aid, lid = self._make_offline_data(app)
+            od = mark_for_download(uid, aid, lid)
             assert od is not None
             assert od.status == "ready"
 
     def test_mark_for_download_duplicate(self, app):
         with app.app_context():
             from app.services.offline import mark_for_download
-            mark_for_download(1, 1, 1)
-            od2 = mark_for_download(1, 1, 1)
+
+            uid, aid, lid = self._make_offline_data(app)
+            mark_for_download(uid, aid, lid)
+            od2 = mark_for_download(uid, aid, lid)
             assert od2 is None
 
     def test_get_offline_items(self, app):
         with app.app_context():
-            from app.services.offline import mark_for_download, get_offline_items
-            mark_for_download(1, 1, 1)
-            items = get_offline_items(1)
+            from app.services.offline import get_offline_items, mark_for_download
+
+            uid, aid, lid = self._make_offline_data(app)
+            mark_for_download(uid, aid, lid)
+            items = get_offline_items(uid)
             assert len(items) == 1
 
     def test_expire_old_downloads(self, app):
         with app.app_context():
             from app.services.offline import expire_old_downloads
+
             count = expire_old_downloads()
             assert count >= 0
 
 
-# ── Quiz Stats ──
 class TestQuizStats:
     def test_get_quiz_stats_nonexistent(self, app):
         with app.app_context():
             from app.services.quiz_stats import get_quiz_stats
+
             result = get_quiz_stats(99999)
             assert result is None
 
@@ -314,6 +386,7 @@ class TestQuestionBank:
     def test_create_bank_question(self, app):
         with app.app_context():
             from app.services.question_bank import create_bank_question
+
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
             q, err = create_bank_question(tid, sid, "What is 2+2?", "mcq")
@@ -323,24 +396,28 @@ class TestQuestionBank:
     def test_create_empty_text(self, app):
         with app.app_context():
             from app.services.question_bank import create_bank_question
+
             q, err = create_bank_question(1, 1, "", "mcq")
             assert q is None
 
     def test_create_invalid_type(self, app):
         with app.app_context():
             from app.services.question_bank import create_bank_question
+
             q, err = create_bank_question(1, 1, "Q?", "invalid")
             assert q is None
 
     def test_create_invalid_difficulty(self, app):
         with app.app_context():
             from app.services.question_bank import create_bank_question
+
             q, err = create_bank_question(1, 1, "Q?", "mcq", difficulty=10)
             assert q is None
 
     def test_list_bank_questions(self, app):
         with app.app_context():
             from app.services.question_bank import create_bank_question, list_bank_questions
+
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
             create_bank_question(tid, sid, "Q1?", "mcq")
@@ -351,6 +428,7 @@ class TestQuestionBank:
     def test_list_filtered(self, app):
         with app.app_context():
             from app.services.question_bank import create_bank_question, list_bank_questions
+
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
             create_bank_question(tid, sid, "Q1?", "mcq", difficulty=3)
@@ -364,6 +442,7 @@ class TestTenantQuotas:
     def test_get_quota_creates_default(self, app):
         with app.app_context():
             from app.services.tenant import get_quota
+
             sid = make_school(app)
             q = get_quota(sid)
             assert q.tier == "free"
@@ -372,6 +451,7 @@ class TestTenantQuotas:
     def test_check_quota_classes(self, app):
         with app.app_context():
             from app.services.tenant import check_quota
+
             sid = make_school(app)
             ok, msg = check_quota(sid, "classes")
             assert ok is True
@@ -379,6 +459,7 @@ class TestTenantQuotas:
     def test_check_quota_ai_disabled(self, app):
         with app.app_context():
             from app.services.tenant import check_quota
+
             sid = make_school(app)
             ok, msg = check_quota(sid, "ai")
             assert ok is False
@@ -386,6 +467,7 @@ class TestTenantQuotas:
     def test_set_tier(self, app):
         with app.app_context():
             from app.services.tenant import set_tier
+
             sid = make_school(app)
             q, err = set_tier(sid, "pro")
             assert err is None
@@ -395,11 +477,13 @@ class TestTenantQuotas:
     def test_set_invalid_tier(self, app):
         with app.app_context():
             from app.services.tenant import set_tier
+
             q, err = set_tier(1, "invalid")
             assert q is None
 
     def test_tier_defaults(self):
         from app.services.tenant import TIER_DEFAULTS
+
         assert "free" in TIER_DEFAULTS
         assert "enterprise" in TIER_DEFAULTS
         assert TIER_DEFAULTS["enterprise"]["max_students"] > TIER_DEFAULTS["free"]["max_students"]
@@ -410,6 +494,7 @@ class TestIndividual:
     def test_get_public_classes(self, app):
         with app.app_context():
             from app.services.individual import get_public_classes
+
             classes = get_public_classes()
             assert isinstance(classes, list)
 
@@ -418,15 +503,13 @@ class TestIndividual:
 class TestInvoice:
     def test_generate_invoice_number(self, app):
         with app.app_context():
-            from app.services.invoice import generate_invoice_number
             from unittest.mock import MagicMock
+
+            from app.services.invoice import generate_invoice_number
+
             sub = MagicMock()
             sub.class_id = 5
             sub.id = 42
             num = generate_invoice_number(sub)
             assert "INV-5" in num
             assert "42" in num
-
-
-# Import helper
-from tests.conftest import make_school, make_user

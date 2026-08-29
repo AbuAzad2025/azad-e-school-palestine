@@ -1,9 +1,5 @@
 """اختبارات موافقات المدرسة — توزيع صلاحيات الموافقة."""
 
-import pytest
-
-from app.extensions import db
-from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 from app.services.school_approvals import (
     approve_user_role_link,
     can_user_approve,
@@ -13,7 +9,7 @@ from app.services.school_approvals import (
     get_school_admins,
     reject_user_role_link,
 )
-from tests.conftest import make_class, make_grade, make_school, make_subject, make_user, make_user_role_link
+from tests.conftest import make_school, make_user
 
 
 def test_school_admin_can_approve_own_school(app):
@@ -24,6 +20,7 @@ def test_school_admin_can_approve_own_school(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
         assert link is not None
 
@@ -36,6 +33,7 @@ def test_school_admin_can_approve_own_school(app):
     with app.app_context():
         from app.extensions import db
         from app.models.user import User, UserApprovalStatus
+
         teacher = db.session.get(User, teacher_id)
         assert teacher.approval_status == UserApprovalStatus.approved
 
@@ -49,6 +47,7 @@ def test_school_admin_cannot_approve_other_school(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id_2).first()
         assert link is not None
 
@@ -67,6 +66,7 @@ def test_super_admin_can_approve_any_school(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
         assert link is not None
 
@@ -85,6 +85,7 @@ def test_school_admin_can_reject_own_school(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     with app.app_context():
@@ -94,7 +95,8 @@ def test_school_admin_can_reject_own_school(app):
 
     with app.app_context():
         from app.extensions import db
-        from app.models.user import User, UserApprovalStatus
+        from app.models.user import User
+
         teacher = db.session.get(User, teacher_id)
         assert teacher.approval_status == "rejected"
 
@@ -107,6 +109,7 @@ def test_super_admin_can_reject_any_school(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     with app.app_context():
@@ -123,6 +126,7 @@ def test_can_user_approve_super_admin(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     with app.app_context():
@@ -141,6 +145,7 @@ def test_school_admin_can_approve_only_own_school(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link_1 = UserRoleLink.query.filter_by(user_id=teacher_id_1, school_id=school_id_1).first()
         link_2 = UserRoleLink.query.filter_by(user_id=teacher_id_2, school_id=school_id_2).first()
 
@@ -188,6 +193,7 @@ def test_get_approval_queue_for_user(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     # للمشرف المدرسي
@@ -225,20 +231,17 @@ def test_approve_reject_notifications(app):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     # الموافقة
     with app.app_context():
-        from app.services.communication import notify
-        from app.extensions import db
         from app.models.communication import Notification
 
         success, error = approve_user_role_link(link.id, school_admin_id)
         assert success is True
 
-        notification = Notification.query.filter_by(
-            user_id=teacher_id, type="approval"
-        ).first()
+        notification = Notification.query.filter_by(user_id=teacher_id, type="approval").first()
         assert notification is not None
         assert "قبول" in notification.title
 
@@ -246,15 +249,14 @@ def test_approve_reject_notifications(app):
     teacher_id_2 = make_user(app, role="teacher", school_id=school_id, approved=False)
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link2 = UserRoleLink.query.filter_by(user_id=teacher_id_2, school_id=school_id).first()
 
     with app.app_context():
         success, error = reject_user_role_link(link2.id, school_admin_id, reason="بيانات ناقصة")
         assert success is True
 
-        notification = Notification.query.filter_by(
-            user_id=teacher_id_2, type="rejection"
-        ).first()
+        notification = Notification.query.filter_by(user_id=teacher_id_2, type="rejection").first()
         assert notification is not None
         assert "رفض" in notification.title
 
@@ -297,6 +299,7 @@ def test_approve_route_school_admin(app, client):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     with client:
@@ -307,7 +310,8 @@ def test_approve_route_school_admin(app, client):
 
     with app.app_context():
         from app.extensions import db
-        from app.models.user import User, UserApprovalStatus
+        from app.models.user import User
+
         teacher = db.session.get(User, teacher_id)
         assert teacher.approval_status == "approved"
 
@@ -321,17 +325,21 @@ def test_reject_route_school_admin(app, client):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id).first()
 
     with client:
         client.post("/auth/login", data={"email": school_admin_email, "password": "TestPass123!"})
-        resp = client.post(f"/school-admin/approvals/{link.id}/reject", data={"reason": "بيانات ناقصة"}, follow_redirects=True)
+        resp = client.post(
+            f"/school-admin/approvals/{link.id}/reject", data={"reason": "بيانات ناقصة"}, follow_redirects=True
+        )
         assert resp.status_code == 200
         assert "تم رفض المستخدم" in resp.get_data(as_text=True)
 
     with app.app_context():
         from app.extensions import db
-        from app.models.user import User, UserApprovalStatus
+        from app.models.user import User
+
         teacher = db.session.get(User, teacher_id)
         assert teacher.approval_status == "rejected"
 
@@ -346,6 +354,7 @@ def test_school_admin_cannot_access_other_school_approvals(app, client):
 
     with app.app_context():
         from app.models.user import UserRoleLink
+
         link = UserRoleLink.query.filter_by(user_id=teacher_id, school_id=school_id_2).first()
 
     with client:

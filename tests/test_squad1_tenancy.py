@@ -4,23 +4,20 @@ Tests isolated tenant data leaks, missing tenant headers, cross-tenant
 mutation attacks, and tenant_scope failures.
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
-from flask import g
 from app.core.tenancy import (
+    TenantContext,
     current_school_id,
     get_school_or_404,
     scope_by_school,
     tenant_scope,
-    TenantContext,
 )
-from app.core.db import TxError
-from app.extensions import db
-from app.models.school import School
 from app.models.class_room import ClassRoom
-from app.models.user import User, UserRole, UserRoleLink, UserApprovalStatus
-from app.core.security import hash_password
-from tests.conftest import make_school, make_user, make_class, make_grade, make_subject
+from app.models.school import School
+from app.models.user import UserRole
+from tests.conftest import make_class, make_grade, make_school, make_subject
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +139,7 @@ class TestGetSchoolOr404:
                 mock_user.role = UserRole.super_admin
                 mock_user.school_id = None
                 from werkzeug.exceptions import NotFound
+
                 with pytest.raises(NotFound):
                     get_school_or_404(99999)
 
@@ -154,6 +152,7 @@ class TestGetSchoolOr404:
                 mock_user.role = UserRole.student
                 mock_user.school_id = s1
                 from werkzeug.exceptions import Forbidden
+
                 with pytest.raises(Forbidden):
                     get_school_or_404(s2)
 

@@ -192,6 +192,7 @@ class TestRoleRequiredEdgeCases:
     def test_unauthenticated_returns_401(self, app):
         with app.app_context():
             with app.test_request_context():
+
                 @role_required(UserRole.teacher)
                 def protected():
                     return "ok"

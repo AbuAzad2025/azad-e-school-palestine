@@ -1,13 +1,11 @@
 """اختبارات معالج الإعداد الأولي."""
-from datetime import datetime, timezone
 
-from app.extensions import db
+from datetime import datetime
+
 from app.services.onboarding import (
-    WIZARD_STEPS,
     complete_step,
     get_onboarding,
     get_onboarding_status,
-    get_wizard_steps,
     start_onboarding,
 )
 
@@ -15,6 +13,7 @@ from app.services.onboarding import (
 def test_start_onboarding(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         progress = start_onboarding(school_id)
         assert progress.id is not None
@@ -28,6 +27,7 @@ def test_start_onboarding(app):
 def test_start_onboarding_idempotent(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         p1 = start_onboarding(school_id)
         p2 = start_onboarding(school_id)
@@ -37,6 +37,7 @@ def test_start_onboarding_idempotent(app):
 def test_complete_step(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         start_onboarding(school_id)
         result = complete_step(school_id, 1, {"name": "مدرسة النور"})
@@ -50,6 +51,7 @@ def test_complete_step(app):
 def test_complete_multiple_steps(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         start_onboarding(school_id)
         for i in range(1, 6):
@@ -61,6 +63,7 @@ def test_complete_multiple_steps(app):
 def test_wizard_completion(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         start_onboarding(school_id)
         for i in range(1, 6):
@@ -74,6 +77,7 @@ def test_wizard_completion(app):
 def test_invalid_step_rejected(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         start_onboarding(school_id)
         assert complete_step(school_id, 0) is None
@@ -83,6 +87,7 @@ def test_invalid_step_rejected(app):
 def test_get_onboarding_status_not_started(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         status = get_onboarding_status(school_id)
         assert status["started"] is False
@@ -93,6 +98,7 @@ def test_get_onboarding_status_not_started(app):
 def test_get_onboarding_status_in_progress(app):
     with app.app_context():
         from tests.conftest import make_school
+
         school_id = make_school(app)
         start_onboarding(school_id)
         complete_step(school_id, 1)

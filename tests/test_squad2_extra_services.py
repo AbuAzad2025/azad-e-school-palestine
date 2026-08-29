@@ -1,32 +1,45 @@
 """SQUAD 2 EXTRA: Tests for family, health, onboarding, school_approvals, grade_appeals, rubric."""
 
-import pytest
-from datetime import UTC, datetime, timedelta
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus, UserRoleLink
-from app.models.family import FamilyLink, FamilyLinkCode
-from app.models.gradebook import GradeAppeal, Submission, Assignment, RubricTemplate, RubricCriterion, RubricGrade
-from app.models.system import HealthCheck, OnboardingProgress
+from app.models.gradebook import Assignment, Submission
+from app.models.user import UserRoleLink
 from app.services.family import (
-    generate_link_code, link_parent, list_children, remove_link,
-    is_parent_of, get_parent,
-)
-from app.services.health import (
-    check_database, check_disk, record_health, get_system_status,
-)
-from app.services.onboarding import (
-    get_wizard_steps, get_onboarding, start_onboarding, complete_step, get_onboarding_status,
-)
-from app.services.school_approvals import (
-    get_pending_approvals_for_school, get_school_admins,
-    approve_user_role_link, reject_user_role_link, can_user_approve,
+    generate_link_code,
+    get_parent,
+    is_parent_of,
+    link_parent,
+    list_children,
+    remove_link,
 )
 from app.services.grade_appeals import (
-    submit_appeal, review_appeal, get_student_appeals, get_pending_appeals,
+    get_pending_appeals,
+    review_appeal,
+    submit_appeal,
+)
+from app.services.health import (
+    check_database,
+    check_disk,
+    get_system_status,
+    record_health,
+)
+from app.services.onboarding import (
+    complete_step,
+    get_onboarding_status,
+    get_wizard_steps,
+    start_onboarding,
 )
 from app.services.rubric import (
-    create_rubric_template, get_rubric_template, list_rubric_templates,
-    grade_with_rubric, get_rubric_grades, rubric_total_score,
+    create_rubric_template,
+    get_rubric_template,
+    grade_with_rubric,
+    list_rubric_templates,
+    rubric_total_score,
+)
+from app.services.school_approvals import (
+    approve_user_role_link,
+    can_user_approve,
+    get_school_admins,
+    reject_user_role_link,
 )
 from tests.conftest import make_school, make_user
 
@@ -214,10 +227,8 @@ class TestSchoolApprovals:
             sid = make_school(app)
             admin_uid = make_user(app, "school_admin", school_id=sid)
             student_uid = make_user(app, "student", school_id=sid, approved=False)
-            # Create role link
-            rl = UserRoleLink(user_id=student_uid, school_id=sid, role=UserRole.student)
-            db.session.add(rl)
-            db.session.commit()
+            # make_user already creates a UserRoleLink, fetch it
+            rl = UserRoleLink.query.filter_by(user_id=student_uid, school_id=sid).first()
             ok, err = approve_user_role_link(rl.id, admin_uid)
             assert ok is True
 
@@ -226,16 +237,14 @@ class TestSchoolApprovals:
             sid = make_school(app)
             admin_uid = make_user(app, "school_admin", school_id=sid)
             student_uid = make_user(app, "student", school_id=sid, approved=False)
-            rl = UserRoleLink(user_id=student_uid, school_id=sid, role=UserRole.student)
-            db.session.add(rl)
-            db.session.commit()
+            rl = UserRoleLink.query.filter_by(user_id=student_uid, school_id=sid).first()
             ok, err = reject_user_role_link(rl.id, admin_uid)
             assert ok is True
 
     def test_get_school_admins(self, app):
         with app.app_context():
             sid = make_school(app)
-            admin_uid = make_user(app, "school_admin", school_id=sid)
+            make_user(app, "school_admin", school_id=sid)
             admins = get_school_admins(sid)
             assert len(admins) >= 1
 
@@ -244,9 +253,7 @@ class TestSchoolApprovals:
             sid = make_school(app)
             admin_uid = make_user(app, "school_admin", school_id=sid)
             student_uid = make_user(app, "student", school_id=sid, approved=False)
-            rl = UserRoleLink(user_id=student_uid, school_id=sid, role=UserRole.student)
-            db.session.add(rl)
-            db.session.commit()
+            rl = UserRoleLink.query.filter_by(user_id=student_uid, school_id=sid).first()
             assert can_user_approve(admin_uid, rl.id) is True
 
     def test_can_user_approve_wrong_role(self, app):
@@ -254,45 +261,73 @@ class TestSchoolApprovals:
             sid = make_school(app)
             teacher_uid = make_user(app, "teacher", school_id=sid)
             student_uid = make_user(app, "student", school_id=sid, approved=False)
-            rl = UserRoleLink(user_id=student_uid, school_id=sid, role=UserRole.student)
-            db.session.add(rl)
-            db.session.commit()
+            rl = UserRoleLink.query.filter_by(user_id=student_uid, school_id=sid).first()
             assert can_user_approve(teacher_uid, rl.id) is False
 
 
 # ── Grade Appeals ──
 class TestGradeAppeals:
+    def _setup_student(self, app):
+        from tests.conftest import make_school
+
+        sid = make_school(app)
+        student_uid = make_user(app, "student", school_id=sid)
+        return sid, student_uid
+
+    def _create_submission(self, app, student_uid):
+        a = Assignment(class_id=1, title="Test Assignment")
+        db.session.add(a)
+        db.session.flush()
+        s = Submission(assignment_id=a.id, student_id=student_uid, body="answer")
+        db.session.add(s)
+        db.session.commit()
+        return s.id
+
     def test_submit_appeal(self, app):
         with app.app_context():
-            a = submit_appeal(1, 1, "I think this is wrong")
+            sid, student_uid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid)
+            a = submit_appeal(sub_id, student_uid, "I think this is wrong")
             assert a is not None
 
     def test_submit_empty_reason(self, app):
         with app.app_context():
-            a = submit_appeal(1, 1, "")
+            sid, student_uid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid)
+            a = submit_appeal(sub_id, student_uid, "")
             assert a is None
 
     def test_submit_duplicate(self, app):
         with app.app_context():
-            submit_appeal(1, 1, "First appeal")
-            a = submit_appeal(1, 1, "Second appeal")
+            sid, student_uid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid)
+            submit_appeal(sub_id, student_uid, "First appeal")
+            a = submit_appeal(sub_id, student_uid, "Second appeal")
             assert a is None
 
     def test_review_appeal(self, app):
         with app.app_context():
-            a = submit_appeal(2, 2, "Wrong grade")
-            reviewed = review_appeal(a.id, "approved", "Fixed", 1)
+            sid, student_uid = self._setup_student(app)
+            reviewer_uid = make_user(app, "teacher", school_id=sid)
+            sub_id = self._create_submission(app, student_uid)
+            a = submit_appeal(sub_id, student_uid, "Wrong grade")
+            reviewed = review_appeal(a.id, "approved", "Fixed", reviewer_uid)
             assert reviewed.status == "approved"
 
     def test_review_invalid_status(self, app):
         with app.app_context():
-            a = submit_appeal(3, 3, "Wrong")
-            reviewed = review_appeal(a.id, "invalid", None, 1)
+            sid, student_uid = self._setup_student(app)
+            reviewer_uid = make_user(app, "teacher", school_id=sid)
+            sub_id = self._create_submission(app, student_uid)
+            a = submit_appeal(sub_id, student_uid, "Wrong")
+            reviewed = review_appeal(a.id, "invalid", None, reviewer_uid)
             assert reviewed is None
 
     def test_pending_appeals(self, app):
         with app.app_context():
-            submit_appeal(10, 10, "Fix this")
+            sid, student_uid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid)
+            submit_appeal(sub_id, student_uid, "Fix this")
             pending = get_pending_appeals()
             assert len(pending) >= 1
 
@@ -303,10 +338,15 @@ class TestRubricServices:
         with app.app_context():
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
-            t = create_rubric_template(tid, sid, "Essay Rubric", criteria=[
-                {"title": "Content", "max_score": 10},
-                {"title": "Grammar", "max_score": 5},
-            ])
+            t = create_rubric_template(
+                tid,
+                sid,
+                "Essay Rubric",
+                criteria=[
+                    {"title": "Content", "max_score": 10},
+                    {"title": "Grammar", "max_score": 5},
+                ],
+            )
             assert len(t.criteria) == 2
 
     def test_get_template(self, app):
@@ -328,24 +368,51 @@ class TestRubricServices:
 
     def test_grade_with_rubric(self, app):
         with app.app_context():
+            from app.models.gradebook import Assignment, Submission
+
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
+            student_uid = make_user(app, "student", school_id=sid)
             t = create_rubric_template(tid, sid, "R", criteria=[{"title": "C1", "max_score": 10}])
             c = t.criteria[0]
-            grades = grade_with_rubric(1, [{"criterion_id": c.id, "score": 8, "comment": "Good"}], tid)
+            a = Assignment(class_id=1, title="Test A")
+            db.session.add(a)
+            db.session.flush()
+            sub = Submission(assignment_id=a.id, student_id=student_uid, body="answer")
+            db.session.add(sub)
+            db.session.commit()
+            grades = grade_with_rubric(sub.id, [{"criterion_id": c.id, "score": 8, "comment": "Good"}], tid)
             assert len(grades) == 1
 
     def test_rubric_total_score(self, app):
         with app.app_context():
+            from app.models.gradebook import Assignment, Submission
+
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
-            t = create_rubric_template(tid, sid, "R", criteria=[
-                {"title": "C1", "max_score": 10},
-                {"title": "C2", "max_score": 5},
-            ])
-            grades = grade_with_rubric(5, [
-                {"criterion_id": t.criteria[0].id, "score": 8},
-                {"criterion_id": t.criteria[1].id, "score": 4},
-            ], tid)
-            total = rubric_total_score(5)
+            student_uid = make_user(app, "student", school_id=sid)
+            t = create_rubric_template(
+                tid,
+                sid,
+                "R",
+                criteria=[
+                    {"title": "C1", "max_score": 10},
+                    {"title": "C2", "max_score": 5},
+                ],
+            )
+            a = Assignment(class_id=1, title="Test A")
+            db.session.add(a)
+            db.session.flush()
+            sub = Submission(assignment_id=a.id, student_id=student_uid, body="answer")
+            db.session.add(sub)
+            db.session.commit()
+            grade_with_rubric(
+                sub.id,
+                [
+                    {"criterion_id": t.criteria[0].id, "score": 8},
+                    {"criterion_id": t.criteria[1].id, "score": 4},
+                ],
+                tid,
+            )
+            total = rubric_total_score(sub.id)
             assert total == 12.0

@@ -1,12 +1,11 @@
 """اختبارات نظام عمولة المعلمين"""
 
-import pytest
-from datetime import UTC, datetime, timedelta
 import uuid
+from datetime import UTC, datetime, timedelta
 
-from app.services.tutoring import get_tutor_earnings, create_commission_record, request_payout
-from app.models.tutoring import TutoringSession, TutorCommission, TutorPayout, TutorProfile
+from app.models.tutoring import TutoringSession
 from app.models.user import User, UserRole
+from app.services.tutoring import create_commission_record, request_payout
 
 
 def _unique_email():
@@ -19,10 +18,22 @@ def test_create_commission_on_session_complete(app):
         from app.extensions import db
 
         # Create tutor and student
-        tutor = User(email=_unique_email(), name_ar="معلم", role=UserRole.teacher,
-                     password_hash="hash", approval_status="approved", is_active=True)
-        student = User(email=_unique_email(), name_ar="طالب", role=UserRole.student,
-                       password_hash="hash", approval_status="approved", is_active=True)
+        tutor = User(
+            email=_unique_email(),
+            name_ar="معلم",
+            role=UserRole.teacher,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
+        student = User(
+            email=_unique_email(),
+            name_ar="طالب",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add_all([tutor, student])
         db.session.commit()
 
@@ -55,10 +66,22 @@ def test_commission_calculation_20_percent(app):
     with app.app_context():
         from app.extensions import db
 
-        tutor = User(email=_unique_email(), name_ar="معلم 2", role=UserRole.teacher,
-                     password_hash="hash", approval_status="approved", is_active=True)
-        student = User(email=_unique_email(), name_ar="طالب 2", role=UserRole.student,
-                       password_hash="hash", approval_status="approved", is_active=True)
+        tutor = User(
+            email=_unique_email(),
+            name_ar="معلم 2",
+            role=UserRole.teacher,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
+        student = User(
+            email=_unique_email(),
+            name_ar="طالب 2",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add_all([tutor, student])
         db.session.commit()
 
@@ -93,10 +116,22 @@ def test_no_duplicate_commission(app):
     with app.app_context():
         from app.extensions import db
 
-        tutor = User(email=_unique_email(), name_ar="معلم 3", role=UserRole.teacher,
-                     password_hash="hash", approval_status="approved", is_active=True)
-        student = User(email=_unique_email(), name_ar="طالب 3", role=UserRole.student,
-                       password_hash="hash", approval_status="approved", is_active=True)
+        tutor = User(
+            email=_unique_email(),
+            name_ar="معلم 3",
+            role=UserRole.teacher,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
+        student = User(
+            email=_unique_email(),
+            name_ar="طالب 3",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add_all([tutor, student])
         db.session.commit()
 
@@ -128,10 +163,22 @@ def test_request_payout_success(app):
     with app.app_context():
         from app.extensions import db
 
-        tutor = User(email=_unique_email(), name_ar="معلم 4", role=UserRole.teacher,
-                     password_hash="hash", approval_status="approved", is_active=True)
-        student = User(email=_unique_email(), name_ar="طالب 4", role=UserRole.student,
-                       password_hash="hash", approval_status="approved", is_active=True)
+        tutor = User(
+            email=_unique_email(),
+            name_ar="معلم 4",
+            role=UserRole.teacher,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
+        student = User(
+            email=_unique_email(),
+            name_ar="طالب 4",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add_all([tutor, student])
         db.session.commit()
 
@@ -165,8 +212,14 @@ def test_request_payout_below_minimum(app):
     with app.app_context():
         from app.extensions import db
 
-        tutor = User(email=_unique_email(), name_ar="معلم 5", role=UserRole.teacher,
-                     password_hash="hash", approval_status="approved", is_active=True)
+        tutor = User(
+            email=_unique_email(),
+            name_ar="معلم 5",
+            role=UserRole.teacher,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add(tutor)
         db.session.commit()
 
@@ -181,10 +234,22 @@ def test_request_payout_exceeds_balance(app):
     with app.app_context():
         from app.extensions import db
 
-        tutor = User(email=_unique_email(), name_ar="معلم 6", role=UserRole.teacher,
-                     password_hash="hash", approval_status="approved", is_active=True)
-        student = User(email=_unique_email(), name_ar="طالب 6", role=UserRole.student,
-                       password_hash="hash", approval_status="approved", is_active=True)
+        tutor = User(
+            email=_unique_email(),
+            name_ar="معلم 6",
+            role=UserRole.teacher,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
+        student = User(
+            email=_unique_email(),
+            name_ar="طالب 6",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add_all([tutor, student])
         db.session.commit()
 

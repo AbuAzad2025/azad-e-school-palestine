@@ -1,11 +1,14 @@
 """اختبارات تكامل — السجل المالي + الفواتير (C7, C9, finance services)."""
 
-from app.extensions import db
-from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
 from tests.conftest import (
-    make_class, make_class_member, make_grade, make_payment,
-    make_school, make_student_progress, make_subject, make_subscription,
-    make_subscription_plan, make_user,
+    make_class,
+    make_grade,
+    make_payment,
+    make_school,
+    make_subject,
+    make_subscription,
+    make_subscription_plan,
+    make_user,
 )
 
 

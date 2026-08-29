@@ -1,7 +1,5 @@
 """اختبارات صفحة الأسعار"""
 
-import pytest
-
 
 def test_pricing_route_returns_200(client):
     """صفحة الأسعار تعمل وتعيد 200"""

@@ -4,34 +4,34 @@ Deep tests for all CRUD, cascade deletes, orphaned records, and database
 constraint violations in schools.py.
 """
 
-import pytest
-from app.core.db import TxError
 from app.extensions import db
-from app.models.school import School, Grade, Subject, SubjectGradeLink
-from app.models.class_room import ClassRoom, ClassMember
-from app.models.user import User, UserRole, UserRoleLink, UserApprovalStatus
-from app.core.security import hash_password
+from app.models.class_room import ClassRoom
+from app.models.school import Grade, School
+from app.models.user import User
 from app.services.schools import (
-    create_school,
-    list_schools,
-    create_class,
-    regenerate_join_code,
-    list_classes,
-    get_class_members,
-    join_class,
-    is_member,
-    get_or_create_subject,
     add_grade,
-    create_school_with_defaults,
+    create_class,
+    create_school,
+    get_class_members,
+    get_or_create_subject,
     get_or_create_system_school,
-    is_individual_user,
     has_active_subscription,
+    is_individual_user,
+    is_member,
+    join_class,
     join_class_individual,
-    _join_code,
+    list_classes,
+    list_schools,
+    regenerate_join_code,
 )
 from tests.conftest import (
-    make_school, make_user, make_class, make_grade, make_subject,
-    make_class_member, make_public_class,
+    make_class,
+    make_class_member,
+    make_grade,
+    make_public_class,
+    make_school,
+    make_subject,
+    make_user,
 )
 
 
@@ -473,6 +473,7 @@ class TestHasActiveSubscription:
             uid = make_user(app, "student", school_id=sid)
 
             from app.models.billing import Subscription, SubscriptionPlan
+
             plan = SubscriptionPlan(school_id=sid, name="Test", plan="annual", price=100)
             db.session.add(plan)
             db.session.flush()
@@ -486,5 +487,6 @@ class TestHasActiveSubscription:
 def make_system_school_and_id(app):
     with app.app_context():
         from app.services.schools import get_or_create_system_school
+
         s = get_or_create_system_school()
         return s.id

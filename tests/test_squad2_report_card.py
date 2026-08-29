@@ -7,25 +7,34 @@ which calls calculate_student_grade directly.
 """
 
 import pytest
-from app.extensions import db
 from app.services.report_card import (
-    generate_report_card,
     _letter_grade,
+    generate_report_card,
 )
 from tests.conftest import (
-    make_class, make_class_member, make_grade, make_grade_category,
-    make_grade_entry, make_grade_item, make_school, make_subject, make_user,
+    make_class,
+    make_class_member,
+    make_grade,
+    make_grade_category,
+    make_grade_entry,
+    make_grade_item,
+    make_school,
+    make_subject,
+    make_user,
 )
 
 
 class TestReportCardLetterGrade:
-    @pytest.mark.parametrize("score,expected", [
-        (95, "ممتاز"),
-        (85, "جيد جداً"),
-        (75, "جيد"),
-        (65, "مقبول"),
-        (50, "راسب"),
-    ])
+    @pytest.mark.parametrize(
+        "score,expected",
+        [
+            (95, "ممتاز"),
+            (85, "جيد جداً"),
+            (75, "جيد"),
+            (65, "مقبول"),
+            (50, "راسب"),
+        ],
+    )
     def test_letter_grades(self, score, expected):
         assert _letter_grade(score) == expected
 

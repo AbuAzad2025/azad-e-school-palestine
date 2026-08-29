@@ -8,12 +8,9 @@ Covers:
 - Agent 15: Server Errors (500 Handler)
 """
 
-import json
 import pytest
-from unittest.mock import patch, MagicMock
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.core.security import hash_password
+from app.models.user import User
 from tests.conftest import make_school, make_user
 
 
@@ -117,7 +114,13 @@ class TestValidation400:
     def test_register_empty_email(self, client):
         resp = client.post(
             "/auth/register",
-            data={"name_ar": "Test", "email": "", "password": "StrongP@ss1", "confirm_password": "StrongP@ss1", "role": "student"},
+            data={
+                "name_ar": "Test",
+                "email": "",
+                "password": "StrongP@ss1",
+                "confirm_password": "StrongP@ss1",
+                "role": "student",
+            },
             follow_redirects=True,
         )
         assert resp.status_code == 200  # form re-rendered
@@ -125,7 +128,13 @@ class TestValidation400:
     def test_register_mismatched_passwords(self, client):
         resp = client.post(
             "/auth/register",
-            data={"name_ar": "Test", "email": "test@test.com", "password": "StrongP@ss1", "confirm_password": "Different", "role": "student"},
+            data={
+                "name_ar": "Test",
+                "email": "test@test.com",
+                "password": "StrongP@ss1",
+                "confirm_password": "Different",
+                "role": "student",
+            },
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -133,7 +142,13 @@ class TestValidation400:
     def test_register_weak_password(self, client):
         resp = client.post(
             "/auth/register",
-            data={"name_ar": "Test", "email": "weak@test.com", "password": "123", "confirm_password": "123", "role": "student"},
+            data={
+                "name_ar": "Test",
+                "email": "weak@test.com",
+                "password": "123",
+                "confirm_password": "123",
+                "role": "student",
+            },
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -207,11 +222,14 @@ class TestAuthorization401403:
 # Agent 14: Resource Lifecycle (404/409)
 # =========================================================================
 class TestResourceLifecycle404:
-    @pytest.mark.parametrize("path", [
-        "/nonexistent-page-12345",
-        "/auth/nonexistent",
-        "/admin/nonexistent",
-    ])
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/nonexistent-page-12345",
+            "/auth/nonexistent",
+            "/admin/nonexistent",
+        ],
+    )
     def test_404_page(self, client, path):
         resp = client.get(path)
         assert resp.status_code == 404
@@ -241,7 +259,13 @@ class TestResourceLifecycle409:
             uid = make_user(app, "student", school_id=sid, email="dup@test.com")
         resp = client.post(
             "/auth/register",
-            data={"name_ar": "Dup", "email": "dup@test.com", "password": "StrongP@ss1", "confirm_password": "StrongP@ss1", "role": "student"},
+            data={
+                "name_ar": "Dup",
+                "email": "dup@test.com",
+                "password": "StrongP@ss1",
+                "confirm_password": "StrongP@ss1",
+                "role": "student",
+            },
             follow_redirects=True,
         )
         # Should re-render with error, not crash
@@ -269,6 +293,7 @@ class TestServerErrors500:
         """Rate limit page should be returned for 429."""
         # Just verify the handler is registered
         from app import create_app
+
         app = create_app()
         assert "429" in app.error_handler_spec.get(None, {}).__repr__() or True
 

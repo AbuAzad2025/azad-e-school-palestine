@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _('لا تملك صلاحية الوصول') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-error">
+<div class="card azad-error" role="alert">
   <h1 class="azad-error__code">403</h1>
   <p class="azad-error__message">{{ _('لا تملك صلاحية الوصول إلى هذه الصفحة.') }}</p>
   <p class="azad-error__hint">{{ _('هذه الصفحة متاحة لدور محدّد (مثل الطلاب أو المعلمين أو المشرفين). سجّل الدخول بالحساب المناسب ثم حاول مجدداً.') }}</p>

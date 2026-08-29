@@ -1,7 +1,5 @@
 """اختبارات API Versioning — /api/v1/ endpoints"""
 
-import pytest
-
 
 def _login_as(client, email, password="TestPass123!"):
     client.post("/auth/login", data={"email": email, "password": password}, follow_redirects=True)

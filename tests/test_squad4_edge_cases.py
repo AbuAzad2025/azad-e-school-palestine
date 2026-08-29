@@ -7,24 +7,24 @@ Covers:
 - Agent 20: Fixture & Mock Architect patterns
 """
 
-import pytest
-from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from unittest.mock import patch
 
-from app.core.db import tx, TxError
-from app.extensions import db
-from app.models.billing import Subscription, SubscriptionPlan, ProcessedEvent
-from app.models.school import School, Grade
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.models.class_room import ClassRoom, ClassMember
+import pytest
 from app.core.security import hash_password
-from app.services.billing import money, expire_subscriptions
+from app.extensions import db
+from app.models.billing import ProcessedEvent
+from app.models.class_room import ClassMember
+from app.models.school import School
+from app.models.user import User, UserApprovalStatus, UserRole
+from app.services.billing import expire_subscriptions, money
+from sqlalchemy.exc import IntegrityError
 from tests.conftest import (
-    make_school, make_user, make_class, make_grade, make_subject,
-    make_subscription_plan, make_subscription, make_payment,
-    make_class_member,
+    make_class,
+    make_grade,
+    make_school,
+    make_subject,
+    make_user,
 )
 
 
@@ -55,13 +55,13 @@ class TestMockedExternalAPIs:
     def test_notify_called(self, mock_notify, app):
         with app.app_context():
             from app.services.communication import notify
+
             notify(1, "test", "Title", "Body")
             mock_notify.assert_called_once()
 
     @patch("app.services.billing.expire_subscriptions")
     def test_expire_mocked(self, mock_expire, app):
         mock_expire.return_value = 5
-        from app.services.billing import expire_subscriptions
         count = expire_subscriptions()
         assert count == 5
         mock_expire.assert_called_once()
@@ -84,10 +84,14 @@ class TestConcurrencyEdgeCases:
 
     def test_unique_email_constraint(self, app):
         with app.app_context():
-            u1 = User(email="unique@test.com", name_ar="User1", role=UserRole.student, password_hash=hash_password("Test123!"))
+            u1 = User(
+                email="unique@test.com", name_ar="User1", role=UserRole.student, password_hash=hash_password("Test123!")
+            )
             db.session.add(u1)
             db.session.commit()
-            u2 = User(email="unique@test.com", name_ar="User2", role=UserRole.student, password_hash=hash_password("Test123!"))
+            u2 = User(
+                email="unique@test.com", name_ar="User2", role=UserRole.student, password_hash=hash_password("Test123!")
+            )
             db.session.add(u2)
             with pytest.raises(IntegrityError):
                 db.session.commit()
@@ -121,6 +125,7 @@ class TestMockPatterns:
             mock_user.role = UserRole.super_admin
             mock_user.school_id = None
             from app.core.tenancy import current_school_id
+
             assert current_school_id() is None
 
     @patch("app.core.tenancy.current_user")
@@ -130,6 +135,7 @@ class TestMockPatterns:
             mock_user.role = UserRole.student
             mock_user.school_id = 42
             from app.core.tenancy import current_school_id
+
             assert current_school_id() == 42
 
     def test_factory_pattern_school(self, app):
@@ -189,14 +195,17 @@ class TestServiceEdgeCases:
     def test_base_service_no_model(self, app):
         with app.app_context():
             from app.services.base import BaseService, TxError
+
             class NoModelService(BaseService):
                 model = None
+
             with pytest.raises(TxError):
                 NoModelService.get(1)
 
     def test_pagination_meta(self, app):
         with app.app_context():
-            from app.services.base import PaginationMeta, PaginatedResult
+            from app.services.base import PaginationMeta
+
             meta = PaginationMeta(page=1, per_page=20, total=50)
             d = meta.to_dict()
             assert d["total"] == 50
@@ -205,12 +214,14 @@ class TestServiceEdgeCases:
     def test_pagination_zero_per_page(self, app):
         with app.app_context():
             from app.services.base import PaginationMeta
+
             meta = PaginationMeta(page=1, per_page=0, total=10)
             assert meta.pages == 0
 
     def test_paginated_result_with_serializer(self, app):
         with app.app_context():
             from app.services.base import PaginatedResult, PaginationMeta
+
             meta = PaginationMeta(page=1, per_page=10, total=2)
             result = PaginatedResult(items=["a", "b"], meta=meta)
             d = result.to_dict(serializer=lambda x: {"val": x})
@@ -224,7 +235,8 @@ class TestGradeCalcEdgeCases:
     def test_negative_marks(self, app):
         with app.app_context():
             from app.services.grade_calc import calculate_student_grade
-            from tests.conftest import make_grade_category, make_grade_item, make_grade_entry
+            from tests.conftest import make_grade_category, make_grade_entry, make_grade_item
+
             sid = make_school(app)
             gid = make_grade(app, sid)
             sub = make_subject(app)
@@ -240,7 +252,8 @@ class TestGradeCalcEdgeCases:
     def test_marks_exceeding_max(self, app):
         with app.app_context():
             from app.services.grade_calc import calculate_student_grade
-            from tests.conftest import make_grade_category, make_grade_item, make_grade_entry
+            from tests.conftest import make_grade_category, make_grade_entry, make_grade_item
+
             sid = make_school(app)
             gid = make_grade(app, sid)
             sub = make_subject(app)
@@ -256,7 +269,8 @@ class TestGradeCalcEdgeCases:
     def test_many_categories(self, app):
         with app.app_context():
             from app.services.grade_calc import calculate_student_grade
-            from tests.conftest import make_grade_category, make_grade_item, make_grade_entry
+            from tests.conftest import make_grade_category, make_grade_entry, make_grade_item
+
             sid = make_school(app)
             gid = make_grade(app, sid)
             sub = make_subject(app)
@@ -287,7 +301,9 @@ class TestUserModelEdgeCases:
     def test_password_history_add_to_none(self, app):
         """If password_history is None, add_password_to_history should handle it."""
         with app.app_context():
-            u = User(email="none@test.com", name_ar="Test", role=UserRole.student, password_hash=hash_password("Test123!"))
+            u = User(
+                email="none@test.com", name_ar="Test", role=UserRole.student, password_hash=hash_password("Test123!")
+            )
             # Before flush, password_history is the Python default (list)
             assert u.password_history is not None or True  # model default or DB default
             u.add_password_to_history(hash_password("NewPass123!"))

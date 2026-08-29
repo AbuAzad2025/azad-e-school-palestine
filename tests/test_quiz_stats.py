@@ -1,7 +1,5 @@
 """اختبارات إحصائيات الاختبارات."""
 
-import pytest
-
 from app.services.quiz_stats import get_quiz_stats
 from tests.conftest import make_class, make_grade, make_school, make_subject, make_user
 
@@ -16,6 +14,7 @@ def test_quiz_stats_empty(app):
 
     with app.app_context():
         from app.services.assessment import create_quiz
+
         quiz, _ = create_quiz(class_id, "اختبار تجريبي", created_by=teacher_id)
         quiz_id = quiz.id
 
@@ -44,9 +43,9 @@ def test_quiz_stats_with_attempts(app):
 
     with app.app_context():
         from app.extensions import db
+        from app.models.assessment import Question
         from app.models.class_room import ClassMember
-        from app.models.assessment import Answer, Question, Quiz, QuizAttempt
-        from app.services.assessment import create_quiz, start_attempt, submit_attempt, save_answer
+        from app.services.assessment import create_quiz, save_answer, start_attempt, submit_attempt
 
         # إضافة الطالبين للصف
         cm1 = ClassMember(class_id=class_id, user_id=student1_id, status="active")
@@ -55,9 +54,25 @@ def test_quiz_stats_with_attempts(app):
         db.session.commit()
 
         quiz, _ = create_quiz(class_id, "اختبار إحصائي", created_by=teacher_id)
-        q1 = Question(quiz_id=quiz.id, type="mcq", prompt="2+2=?", options={"items": [{"label": "أ", "text": "3"}, {"label": "ب", "text": "4"}]}, correct_answer={"index": 1}, mark=2.0)
-        q2 = Question(quiz_id=quiz.id, type="mcq", prompt="3+3=?", options={"items": [{"label": "أ", "text": "5"}, {"label": "ب", "text": "6"}]}, correct_answer={"index": 1}, mark=2.0)
-        q3 = Question(quiz_id=quiz.id, type="true_false", prompt="الشمس تشرق من الغرب", correct_answer={"value": False}, mark=1.0)
+        q1 = Question(
+            quiz_id=quiz.id,
+            type="mcq",
+            prompt="2+2=?",
+            options={"items": [{"label": "أ", "text": "3"}, {"label": "ب", "text": "4"}]},
+            correct_answer={"index": 1},
+            mark=2.0,
+        )
+        q2 = Question(
+            quiz_id=quiz.id,
+            type="mcq",
+            prompt="3+3=?",
+            options={"items": [{"label": "أ", "text": "5"}, {"label": "ب", "text": "6"}]},
+            correct_answer={"index": 1},
+            mark=2.0,
+        )
+        q3 = Question(
+            quiz_id=quiz.id, type="true_false", prompt="الشمس تشرق من الغرب", correct_answer={"value": False}, mark=1.0
+        )
         db.session.add_all([q1, q2, q3])
         db.session.commit()
 
@@ -111,16 +126,23 @@ def test_quiz_stats_discrimination_index(app):
 
     with app.app_context():
         from app.extensions import db
+        from app.models.assessment import Question
         from app.models.class_room import ClassMember
-        from app.models.assessment import Answer, Question, Quiz, QuizAttempt
-        from app.services.assessment import create_quiz, start_attempt, submit_attempt, save_answer
+        from app.services.assessment import create_quiz, save_answer, start_attempt, submit_attempt
 
         for sid in students:
             db.session.add(ClassMember(class_id=class_id, user_id=sid, status="active"))
         db.session.commit()
 
         quiz, _ = create_quiz(class_id, "اختبار تمييز", created_by=teacher_id)
-        q = Question(quiz_id=quiz.id, type="mcq", prompt="سؤال للتمييز", options={"items": [{"label": "أ", "text": "خاطئ"}, {"label": "ب", "text": "صحيح"}]}, correct_answer={"index": 1}, mark=1.0)
+        q = Question(
+            quiz_id=quiz.id,
+            type="mcq",
+            prompt="سؤال للتمييز",
+            options={"items": [{"label": "أ", "text": "خاطئ"}, {"label": "ب", "text": "صحيح"}]},
+            correct_answer={"index": 1},
+            mark=1.0,
+        )
         db.session.add(q)
         db.session.commit()
 
@@ -161,6 +183,7 @@ def test_quiz_stats_route_teacher_access(app, client):
 
     with app.app_context():
         from app.services.assessment import create_quiz
+
         quiz, _ = create_quiz(class_id, "اختبار", created_by=teacher_id)
         quiz_id = quiz.id
 
@@ -184,6 +207,7 @@ def test_quiz_stats_route_student_forbidden(app, client):
 
     with app.app_context():
         from app.services.assessment import create_quiz
+
         quiz, _ = create_quiz(class_id, "اختبار", created_by=teacher_id)
         quiz_id = quiz.id
 
@@ -205,6 +229,7 @@ def test_quiz_stats_route_school_admin_access(app, client):
 
     with app.app_context():
         from app.services.assessment import create_quiz
+
         quiz, _ = create_quiz(class_id, "اختبار", created_by=teacher_id)
         quiz_id = quiz.id
 

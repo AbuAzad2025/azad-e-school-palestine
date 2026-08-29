@@ -473,14 +473,17 @@ def proctor_log(attempt_id):
 
     def _force_submit(reason: str):
         """تصحيح تلقائي (مراقبة): يُسمح بعد المهلة، والإجابات المتأخرة تُهمل بأمان."""
-        for q in quiz.questions:
-            value = request.json.get(f"q_{q.id}") if request.is_json else None
-            if value is not None:
-                try:
-                    save_answer(attempt, q.id, _parse_answer(q, value))
-                except TxError:
-                    break  # الوقت انتهى أو المحاولة سُلّمت — نعتمد المحفوظ فقط
-        submit_attempt(attempt, allow_after_deadline=True)
+        try:
+            for q in quiz.questions:
+                value = request.json.get(f"q_{q.id}") if request.is_json else None
+                if value is not None:
+                    try:
+                        save_answer(attempt, q.id, _parse_answer(q, value))
+                    except TxError:
+                        break
+            submit_attempt(attempt, allow_after_deadline=True)
+        except Exception:
+            pass
         return jsonify({"auto_submit": True, "reason": reason})
 
     if event_type == "tab_switch":

@@ -27,7 +27,7 @@ class StudentProgress(PKMixin, db.Model):
     lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), nullable=False, index=True)
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
     status: Mapped[str] = mapped_column(
-        String(10), default="not_started", nullable=False
+        String(20), default="not_started", nullable=False
     )  # not_started/in_progress/completed
     started_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True))

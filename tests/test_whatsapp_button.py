@@ -1,7 +1,5 @@
 """اختبارات WhatsApp Floating Button"""
 
-import pytest
-
 
 def test_whatsapp_button_renders_when_configured(client, app):
     """يظهر الزر عند ضبط الرقم"""

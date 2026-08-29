@@ -1,11 +1,10 @@
 """اختبارات نظام الخصم/الكوبونات"""
 
-import pytest
-from datetime import date, timedelta
 import uuid
+from datetime import date, timedelta
 
-from app.services.billing import create_discount_code, validate_discount_code, apply_discount_code
 from app.models.billing import DiscountCode, SubscriptionPlan
+from app.services.billing import apply_discount_code, create_discount_code, validate_discount_code
 
 
 def _unique_domain():
@@ -42,7 +41,7 @@ def test_create_discount_code(app):
             type_="percentage",
             value=20,
             max_uses=100,
-            expiry_date=date.today() + timedelta(days=30)
+            expiry_date=date.today() + timedelta(days=30),
         )
         assert error is None
         assert dc is not None
@@ -74,7 +73,7 @@ def test_validate_discount_valid(app):
             type_="percentage",
             value=20,
             max_uses=10,
-            expiry_date=date.today() + timedelta(days=30)
+            expiry_date=date.today() + timedelta(days=30),
         )
         db.session.commit()
 
@@ -105,7 +104,7 @@ def test_validate_discount_expired(app):
             type_="percentage",
             value=20,
             max_uses=10,
-            expiry_date=date.today() - timedelta(days=1)  # Past date
+            expiry_date=date.today() - timedelta(days=1),  # Past date
         )
         db.session.commit()
 
@@ -119,8 +118,8 @@ def test_validate_discount_max_uses(app):
     """كود استُنفد استخداماته"""
     with app.app_context():
         from app.extensions import db
-        from app.models.school import School
         from app.models.billing import DiscountCode
+        from app.models.school import School
 
         school = School(name_ar="مدرسة 4", name_en="School 4", domain=_unique_domain())
         db.session.add(school)
@@ -138,7 +137,7 @@ def test_validate_discount_max_uses(app):
             type_="percentage",
             value=20,
             max_uses=1,
-            expiry_date=date.today() + timedelta(days=30)
+            expiry_date=date.today() + timedelta(days=30),
         )
         db.session.commit()
 
@@ -156,10 +155,10 @@ def test_apply_discount_to_subscription(app):
     """تطبيق كود خصم على اشتراك"""
     with app.app_context():
         from app.extensions import db
-        from app.models.school import School, Grade, Subject
-        from app.models.user import User, UserRole
-        from app.models.class_room import ClassRoom
         from app.models.billing import Subscription, SubscriptionPlan
+        from app.models.class_room import ClassRoom
+        from app.models.school import Grade, School, Subject
+        from app.models.user import User, UserRole
 
         school = School(name_ar="مدرسة 5", name_en="School 5", domain=_unique_domain())
         db.session.add(school)
@@ -170,23 +169,38 @@ def test_apply_discount_to_subscription(app):
         db.session.add_all([grade, subject])
         db.session.commit()
 
-        class_room = ClassRoom(school_id=school.id, grade_id=grade.id, subject_id=subject.id,
-                               join_code=_unique_join_code(), name="صف")
+        class_room = ClassRoom(
+            school_id=school.id, grade_id=grade.id, subject_id=subject.id, join_code=_unique_join_code(), name="صف"
+        )
         db.session.add(class_room)
         db.session.commit()
 
-        user = User(email=_unique_email(), name_ar="طالب", role=UserRole.student,
-                    password_hash="hash", approval_status="approved", is_active=True)
+        user = User(
+            email=_unique_email(),
+            name_ar="طالب",
+            role=UserRole.student,
+            password_hash="hash",
+            approval_status="approved",
+            is_active=True,
+        )
         db.session.add(user)
         db.session.commit()
 
-        plan = SubscriptionPlan(school_id=school.id, class_id=class_room.id, name="خطة",
-                                plan="annual", price=100, currency="ILS", duration_days=30)
+        plan = SubscriptionPlan(
+            school_id=school.id,
+            class_id=class_room.id,
+            name="خطة",
+            plan="annual",
+            price=100,
+            currency="ILS",
+            duration_days=30,
+        )
         db.session.add(plan)
         db.session.commit()
 
-        sub = Subscription(user_id=user.id, plan_id=plan.id, class_id=class_room.id,
-                           price=100, currency="ILS", status="pending")
+        sub = Subscription(
+            user_id=user.id, plan_id=plan.id, class_id=class_room.id, price=100, currency="ILS", status="pending"
+        )
         db.session.add(sub)
         db.session.commit()
 
@@ -198,7 +212,7 @@ def test_apply_discount_to_subscription(app):
             type_="percentage",
             value=20,
             max_uses=10,
-            expiry_date=date.today() + timedelta(days=30)
+            expiry_date=date.today() + timedelta(days=30),
         )
         db.session.commit()
 

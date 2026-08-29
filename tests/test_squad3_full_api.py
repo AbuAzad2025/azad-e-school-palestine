@@ -7,16 +7,10 @@ Covers:
 - Pagination, tenancy filtering, authorization per role
 """
 
-import pytest
+from app.core.api import API_VERSION, api_error, api_paginated, api_response
 from app.extensions import db
-from app.models.user import User, UserRole, UserApprovalStatus, UserRoleLink
-from app.models.school import School
-from app.models.class_room import ClassRoom, ClassMember
-from app.models.content import Lesson
-from app.core.security import hash_password
-from app.core.api import api_response, api_error, api_paginated, API_VERSION
-from app.core.api_auth import api_auth_required
-from tests.conftest import make_school, make_user, make_class, make_grade, make_subject, make_class_member
+from app.models.user import User
+from tests.conftest import make_school, make_user
 
 
 def _login(client, email, password="TestPass123!"):
@@ -304,22 +298,26 @@ class TestAPIErrorHandlers:
 # ═══════════════════════════════════════════════════════════════
 class TestContextProcessor:
     def test_icon_valid(self, app):
-        with app.app_context():
+        with app.test_request_context("/"):
             from app.core.context import icon
+
             h = icon("home")
             assert "icon-home" in str(h)
 
     def test_icon_unknown_defaults_to_check(self, app):
-        with app.app_context():
+        with app.test_request_context("/"):
             from app.core.context import icon
+
             h = icon("totally-unknown-icon")
             assert "icon-check" in str(h)
 
     def test_has_role(self, app):
         with app.app_context():
-            from app.core.context import has_role
             from unittest.mock import patch
+
+            from app.core.context import has_role
             from app.models.user import UserRole
+
             with patch("app.core.context.current_user") as cu:
                 cu.is_authenticated = True
                 cu.role = UserRole.student
@@ -328,33 +326,42 @@ class TestContextProcessor:
 
     def test_has_role_unauthenticated(self, app):
         with app.app_context():
-            from app.core.context import has_role
             from unittest.mock import patch
+
+            from app.core.context import has_role
+
             with patch("app.core.context.current_user") as cu:
                 cu.is_authenticated = False
                 assert has_role("student") is False
 
     def test_has_any_role(self, app):
         with app.app_context():
-            from app.core.context import has_any_role
             from unittest.mock import patch
+
+            from app.core.context import has_any_role
             from app.models.user import UserRole
+
             with patch("app.core.context.current_user") as cu:
                 cu.is_authenticated = True
                 cu.role = UserRole.teacher
-                cu.role.value = "teacher"
                 assert has_any_role(UserRole.teacher, UserRole.student) is True
                 assert has_any_role(UserRole.parent) is False
 
     def test_role_checkers(self, app):
         with app.app_context():
-            from app.core.context import (
-                is_super_admin, is_school_admin, is_teacher,
-                is_student, is_parent, is_individual,
-                can_access_admin, can_manage_schools,
-            )
             from unittest.mock import patch
-            from app.models.user import UserRole
+
+            from app.core.context import (
+                can_access_admin,
+                can_manage_schools,
+                is_individual,
+                is_parent,
+                is_school_admin,
+                is_student,
+                is_super_admin,
+                is_teacher,
+            )
+
             with patch("app.core.context.current_user") as cu:
                 cu.is_authenticated = False
                 assert is_super_admin() is False
@@ -368,9 +375,11 @@ class TestContextProcessor:
 
     def test_role_checkers_authenticated(self, app):
         with app.app_context():
-            from app.core.context import is_super_admin, is_student
             from unittest.mock import patch
+
+            from app.core.context import is_student, is_super_admin
             from app.models.user import UserRole
+
             with patch("app.core.context.current_user") as cu:
                 cu.is_authenticated = True
                 cu.role = UserRole.super_admin
@@ -380,8 +389,10 @@ class TestContextProcessor:
 
     def test_individual_checker(self, app):
         with app.app_context():
-            from app.core.context import is_individual
             from unittest.mock import patch
+
+            from app.core.context import is_individual
+
             with patch("app.core.context.current_user") as cu:
                 cu.is_authenticated = True
                 cu.is_individual = True
@@ -390,9 +401,11 @@ class TestContextProcessor:
 
     def test_can_teach_class(self, app):
         with app.app_context():
+            from unittest.mock import MagicMock, patch
+
             from app.core.context import can_teach_class
-            from unittest.mock import patch, MagicMock
             from app.models.user import UserRole
+
             cls = MagicMock()
             cls.school_id = 1
             cls.teacher_id = 99
@@ -410,9 +423,11 @@ class TestContextProcessor:
 
     def test_can_view_class(self, app):
         with app.app_context():
+            from unittest.mock import MagicMock, patch
+
             from app.core.context import can_view_class
-            from unittest.mock import patch, MagicMock
             from app.models.user import UserRole
+
             cls = MagicMock()
             cls.school_id = 1
             with patch("app.core.context.current_user") as cu:

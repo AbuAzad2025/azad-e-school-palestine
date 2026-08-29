@@ -192,9 +192,7 @@ def _ensure_phase2_schema(db_engine):
         )
 
         # Phase 8: MOE Integration & Certificate Templates
-        db_engine.session.execute(
-            text("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS moe_code VARCHAR(50)")
-        )
+        db_engine.session.execute(text("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS moe_code VARCHAR(50)"))
         db_engine.session.execute(
             text("ALTER TABLE subjects ADD COLUMN IF NOT EXISTS moe_curriculum_version VARCHAR(50)")
         )
@@ -210,12 +208,18 @@ def _ensure_phase2_schema(db_engine):
 
         # Phase 9: Zoom + Production Hardening
         db_engine.session.execute(
-            text("ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL")
+            text(
+                "ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL"
+            )
         )
         db_engine.session.execute(
-            text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL")
+            text(
+                "ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL"
+            )
         )
-        db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_meeting_id VARCHAR(64)"))
+        db_engine.session.execute(
+            text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_meeting_id VARCHAR(64)")
+        )
         db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_join_url TEXT"))
         db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS zoom_start_url TEXT"))
 
@@ -254,18 +258,12 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.execute(text("ALTER TABLE classes ADD COLUMN IF NOT EXISTS duration_days SMALLINT"))
 
         # School join_code column (auth registration by join code)
-        db_engine.session.execute(
-            text("ALTER TABLE schools ADD COLUMN IF NOT EXISTS join_code CITEXT")
-        )
+        db_engine.session.execute(text("ALTER TABLE schools ADD COLUMN IF NOT EXISTS join_code CITEXT"))
 
         # Audit hardening batch (2026-08): password stamp + partial unique indexes
-        db_engine.session.execute(
-            text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ")
-        )
+        db_engine.session.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ"))
         # P2-07: استبدال قيد الاشتراك النشط القديم بفهرس جزئي
-        db_engine.session.execute(
-            text("ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS uq_subscription_active")
-        )
+        db_engine.session.execute(text("ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS uq_subscription_active"))
         db_engine.session.execute(
             text(
                 "CREATE UNIQUE INDEX IF NOT EXISTS uq_subscription_active "
@@ -308,14 +306,13 @@ def client(app):
     return app.test_client()
 
 
-
-
 @pytest.fixture(autouse=True)
 def _clean_db(app):
     """Truncate all tables between tests to keep tests isolated."""
     yield
     with app.app_context():
-        from sqlalchemy import text, inspect
+        from sqlalchemy import inspect, text
+
         inspector = inspect(_db.engine)
         tables = inspector.get_table_names(schema="public")
         # Exclude alembic_version
@@ -323,6 +320,7 @@ def _clean_db(app):
         if tables:
             _db.session.execute(text(f"TRUNCATE {', '.join(tables)} RESTART IDENTITY CASCADE"))
             _db.session.commit()
+
 
 def _uid() -> str:
     return uuid.uuid4().hex[:10]
@@ -370,8 +368,9 @@ def make_user(app, role="student", school_id=None, approved=True, **kw):
 def admin_user(app):
     """Create an admin user for testing."""
     with app.app_context():
-        from app.models.user import User, UserRole
         from app.core.security import hash_password
+        from app.models.user import User, UserRole
+
         u = User(
             email=f"admin-{uuid.uuid4().hex[:8]}@test.com",
             name_ar="مدير اختبار",
@@ -552,7 +551,6 @@ def make_video_progress(app, student_id, attachment_id, lesson_id, class_id, sec
 
 def make_academic_event(app, school_id, title, event_type, start_date, end_date=None):
     with app.app_context():
-
         e = AcademicEvent(
             school_id=school_id,
             title=title,
@@ -653,7 +651,6 @@ def make_user_role_link(app, user_id, school_id, role="teacher", approved_by=Non
         _db.session.add(rl)
         _db.session.commit()
         return rl.id
-
 
 
 def make_system_school(app):

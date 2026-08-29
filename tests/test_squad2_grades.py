@@ -6,14 +6,21 @@ missing grade categories, and rounding precision.
 
 import pytest
 from app.services.grade_calc import (
+    ARABIC_GRADES,
     _letter_grade,
     calculate_student_grade,
     class_grades_summary,
-    ARABIC_GRADES,
 )
 from tests.conftest import (
-    make_class, make_class_member, make_grade, make_grade_category,
-    make_grade_entry, make_grade_item, make_school, make_subject, make_user,
+    make_class,
+    make_class_member,
+    make_grade,
+    make_grade_category,
+    make_grade_entry,
+    make_grade_item,
+    make_school,
+    make_subject,
+    make_user,
 )
 
 
@@ -21,21 +28,24 @@ from tests.conftest import (
 # _letter_grade — all boundaries
 # ---------------------------------------------------------------------------
 class TestLetterGrade:
-    @pytest.mark.parametrize("score,expected", [
-        (95, "ممتاز"),
-        (90, "ممتاز"),
-        (89, "جيد جداً"),
-        (80, "جيد جداً"),
-        (79, "جيد"),
-        (70, "جيد"),
-        (69, "مقبول"),
-        (60, "مقبول"),
-        (59, "راسب"),
-        (0, "راسب"),
-        (100, "ممتاز"),
-        (45, "راسب"),
-        (1, "راسب"),
-    ])
+    @pytest.mark.parametrize(
+        "score,expected",
+        [
+            (95, "ممتاز"),
+            (90, "ممتاز"),
+            (89, "جيد جداً"),
+            (80, "جيد جداً"),
+            (79, "جيد"),
+            (70, "جيد"),
+            (69, "مقبول"),
+            (60, "مقبول"),
+            (59, "راسب"),
+            (0, "راسب"),
+            (100, "ممتاز"),
+            (45, "راسب"),
+            (1, "راسب"),
+        ],
+    )
     def test_letter_grades(self, score, expected):
         assert _letter_grade(score) == expected
 

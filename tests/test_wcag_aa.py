@@ -4,15 +4,14 @@ These tests scan Jinja2 templates for the most common accessibility issues.
 Because templates contain Jinja2 expressions, some checks are heuristic and
 intentionally lenient where dynamic IDs or print-only pages are involved.
 """
+
 import os
 import re
+
 import pytest
 from bs4 import BeautifulSoup
 
-
-TEMPLATES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "app", "templates"
-)
+TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app", "templates")
 
 
 def _template_files():
@@ -60,9 +59,7 @@ class TestKeyboardAccessible:
             soup = BeautifulSoup(content, "html.parser")
             for tag in soup.find_all(["div", "span"]):
                 if tag.has_attr("onclick") and not tag.has_attr("tabindex"):
-                    failures.append(
-                        f"{os.path.relpath(path)}: clickable {tag.name} lacks tabindex"
-                    )
+                    failures.append(f"{os.path.relpath(path)}: clickable {tag.name} lacks tabindex")
         assert not failures, "\n".join(failures)
 
 
@@ -70,9 +67,7 @@ class TestFocusVisible:
     """2.4.7 Focus Visible: Focus indicator CSS must exist."""
 
     def test_focus_visible_in_css(self):
-        css_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "app", "static", "css"
-        )
+        css_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app", "static", "css")
         found = False
         for root, _, filenames in os.walk(css_dir):
             for name in filenames:
@@ -114,7 +109,7 @@ class TestResizeText:
                 continue
             with open(path, encoding="utf-8") as f:
                 content = f.read()
-            for m in re.finditer(r'font-size:\s*(\d+)px', content):
+            for m in re.finditer(r"font-size:\s*(\d+)px", content):
                 size = int(m.group(1))
                 if size < 24:
                     failures.append(f"{os.path.relpath(path)}: font-size:{size}px (body text)")
@@ -158,9 +153,7 @@ class TestLabelsOrInstructions:
                     # look for a label anywhere in the parent (covers some Jinja-rendered siblings)
                     if parent.find("label"):
                         continue
-                failures.append(
-                    f"{os.path.relpath(path)}: input name={input_name!r} id={input_id!r} lacks label"
-                )
+                failures.append(f"{os.path.relpath(path)}: input name={input_name!r} id={input_id!r} lacks label")
         assert not failures, "\n".join(failures)
 
 
@@ -176,9 +169,7 @@ class TestErrorIdentification:
             for cls in ["error", "invalid-feedback", "azad-error"]:
                 for el in soup.find_all(class_=cls):
                     if not el.has_attr("role"):
-                        failures.append(
-                            f"{os.path.relpath(path)}: .{cls} element lacks role"
-                        )
+                        failures.append(f"{os.path.relpath(path)}: .{cls} element lacks role")
         assert not failures, "\n".join(failures)
 
 
@@ -196,8 +187,11 @@ class TestConsistentNavigation:
         """Full pages should extend base.html; partials and standalone print pages are exempt."""
         failures = []
         exempt = {
-            "base.html", "landing.html", "offline.html",
-            "billing/invoice.html", "grades/report_card.html",
+            "base.html",
+            "landing.html",
+            "offline.html",
+            "billing/invoice.html",
+            "grades/report_card.html",
         }
         partial_dirs = {"partials", "macros", "errors"}
         for path in _template_files():
@@ -222,7 +216,7 @@ class TestLanguageOfPage:
         path = os.path.join(TEMPLATES_DIR, "base.html")
         with open(path, encoding="utf-8") as f:
             content = f.read()
-        assert '<html' in content, "base.html missing <html> tag"
+        assert "<html" in content, "base.html missing <html> tag"
         assert "lang=" in content, "base.html missing lang attribute"
         assert "dir=" in content, "base.html missing dir attribute"
 

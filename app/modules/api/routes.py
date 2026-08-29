@@ -137,12 +137,11 @@ def api_lessons_list():
     if hasattr(current_user, "school_id") and current_user.school_id:
         if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
             joined_class_ids = (
-                ClassRoom.query.join(ClassMember, ClassMember.class_room_id == ClassRoom.id)
-                .filter(ClassMember.user_id == current_user.id)
-                .with_entities(ClassRoom.id)
+                ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
+                .with_entities(ClassMember.class_id)
                 .all()
             )
-            class_ids = [c.id for c in joined_class_ids]
+            class_ids = [c.class_id for c in joined_class_ids]
             query = query.filter(Lesson.class_id.in_(class_ids)) if class_ids else query.filter(Lesson.id == -1)
 
     query = query.order_by(Lesson.created_at.desc())

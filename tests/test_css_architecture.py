@@ -2,12 +2,12 @@
 
 Validates ITCSS/BEM discipline, design-token usage, and build pipeline.
 """
-import os
+
 import re
 import subprocess
 from pathlib import Path
-import pytest
 
+import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CSS_DIR = BASE_DIR / "app" / "static" / "css"

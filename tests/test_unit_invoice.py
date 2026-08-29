@@ -1,13 +1,21 @@
 """اختبارات C8 — إنشاء الفواتير (generate_invoice_number, generate_invoice_html)."""
 
 from app.extensions import db
-from tests.conftest import make_class, make_grade, make_school, make_subject, make_subscription, make_subscription_plan, make_user
+from tests.conftest import (
+    make_class,
+    make_grade,
+    make_school,
+    make_subject,
+    make_subscription,
+    make_subscription_plan,
+    make_user,
+)
 
 
 def test_generate_invoice_number(app):
     """رقم الفاتورة بالصيغة INV-{class_id}-{year}-{id}."""
-    from app.services.invoice import generate_invoice_number
     from app.models.billing import Subscription
+    from app.services.invoice import generate_invoice_number
 
     school_id = make_school(app)
     student_id = make_user(app, role="student", school_id=school_id)
@@ -34,9 +42,10 @@ def test_generate_invoice_html_nonexistent(app):
 
 def test_generate_invoice_number_format(app):
     """رقم الفاتورة يحتوي على السنة الحالية."""
-    from app.services.invoice import generate_invoice_number
-    from app.models.billing import Subscription
     from datetime import datetime
+
+    from app.models.billing import Subscription
+    from app.services.invoice import generate_invoice_number
 
     school_id = make_school(app)
     student_id = make_user(app, role="student", school_id=school_id)

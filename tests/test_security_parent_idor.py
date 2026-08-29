@@ -1,8 +1,6 @@
 """اختبارات أمنية — منع IDOR في واجهة ولي الأمر."""
 
-from app.models.user import User, UserRole, UserApprovalStatus
-from app.extensions import db
-from tests.conftest import make_family_link, make_user, make_school
+from tests.conftest import make_family_link, make_school, make_user
 
 
 def test_parent_cannot_view_other_parent_child(app, client):

@@ -9,8 +9,8 @@ Environment variables:
     AZAD_TEST_EMAIL    - email for authenticated user flow
     AZAD_TEST_PASSWORD - password for authenticated user flow
 """
+
 import os
-import random
 
 from locust import HttpUser, between, task
 

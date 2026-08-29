@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ _('طلبات كثيرة جداً') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-error">
+<div class="card azad-error" role="alert">
   <h1 class="azad-error__code">429</h1>
   <p class="azad-error__message">{{ _('لقد تجاوزت الحد المسموح من الطلبات.') }}</p>
   <p class="azad-error__hint">{{ _('يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.') }}</p>
