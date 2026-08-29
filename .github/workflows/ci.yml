@@ -165,7 +165,8 @@ jobs:
             --deselect tests/test_js_modernization.py \
             --deselect tests/test_erp_ux_sprint4.py \
             --deselect tests/test_openapi.py \
-            --deselect tests/test_offline_client.py
+            --deselect tests/test_offline_client.py \
+            2>&1 | tee pytest-output.txt
           echo "=== Coverage files ==="
           ls -la coverage.xml htmlcov/ 2>/dev/null || echo "(no coverage files generated)"
 

@@ -1,6 +1,5 @@
 """SQUAD 2 EXTRA: Tests for email service, content service, impersonation."""
 
-from app.extensions import db
 from app.models.user import User, UserRole
 from app.services.content import (
     _sanitize_html,
@@ -66,21 +65,13 @@ class TestEmailService:
 class TestContentService:
     def _cid(self, app):
         """Create a valid class and return its ID."""
+        from tests.conftest import make_class, make_grade, make_subject
+
         sid = make_school(app)
         tid = make_user(app, "teacher", school_id=sid)
-        gid = db.session.execute(
-            db.text("INSERT INTO grades (school_id, grade_level, name_ar) VALUES (:sid, 1, 'G1') RETURNING id"),
-            {"sid": sid},
-        ).scalar()
-        subid = db.session.execute(db.text("INSERT INTO subjects (name_ar) VALUES ('Math') RETURNING id"), {}).scalar()
-        cid = db.session.execute(
-            db.text(
-                "INSERT INTO classes"
-                " (school_id, grade_id, subject_id, teacher_id, join_code, name)"
-                " VALUES (:sid, :gid, :subid, :tid, 'C1', 'Class1') RETURNING id"
-            ),
-            {"sid": sid, "gid": gid, "subid": subid, "tid": tid},
-        ).scalar()
+        gid = make_grade(app, sid)
+        subid = make_subject(app)
+        cid = make_class(app, sid, gid, subid, teacher_id=tid)
         return cid
 
     def test_create_unit(self, app):
