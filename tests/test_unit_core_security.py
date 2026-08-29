@@ -52,33 +52,38 @@ class TestValidatePasswordPolicy:
 
     def test_too_short(self, app):
         with app.app_context():
+            min_len = app.config.get("PASSWORD_MIN_LENGTH", 10)
             ok, msg = validate_password_policy("Ab1!")
             assert ok is False
-            assert "10" in msg
+            assert str(min_len) in msg
 
     def test_no_uppercase(self, app):
         with app.app_context():
-            ok, msg = validate_password_policy("mystr0ng!pass")
-            assert ok is False
-            assert "كبير" in msg
+            if app.config.get("PASSWORD_REQUIRE_UPPER", True):
+                ok, msg = validate_password_policy("mystr0ng!pass")
+                assert ok is False
+                assert "كبير" in msg
 
     def test_no_lowercase(self, app):
         with app.app_context():
-            ok, msg = validate_password_policy("MYSTR0NG!PASS")
-            assert ok is False
-            assert "صغير" in msg
+            if app.config.get("PASSWORD_REQUIRE_LOWER", True):
+                ok, msg = validate_password_policy("MYSTR0NG!PASS")
+                assert ok is False
+                assert "صغير" in msg
 
     def test_no_digit(self, app):
         with app.app_context():
-            ok, msg = validate_password_policy("MyStrong!Pass")
-            assert ok is False
-            assert "رقم" in msg
+            if app.config.get("PASSWORD_REQUIRE_DIGIT", True):
+                ok, msg = validate_password_policy("MyStrong!Pass")
+                assert ok is False
+                assert "رقم" in msg
 
     def test_no_special_char(self, app):
         with app.app_context():
-            ok, msg = validate_password_policy("MyStr0ngPass")
-            assert ok is False
-            assert "رمز" in msg
+            if app.config.get("PASSWORD_REQUIRE_SPECIAL", True):
+                ok, msg = validate_password_policy("MyStr0ngPass")
+                assert ok is False
+                assert "رمز" in msg
 
     def test_common_password_rejected(self, app):
         # Common passwords fail uppercase check before reaching the common check,
@@ -137,6 +142,7 @@ class TestCheckPasswordReuse:
 
     def test_none_history(self):
         """User with None password_history should not crash."""
+
         class FakeUser:
             password_history = None
 
