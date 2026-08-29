@@ -258,20 +258,20 @@ class TestGradesRoutes:
     def test_assignments_list(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/assignments")
+        resp = client.get(f"/classes/{class_id}/assignments")
         assert resp.status_code in (200, 302)
 
     def test_assignments_404(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get("/grades/999999/assignments")
+        resp = client.get("/classes/999999/assignments")
         assert resp.status_code in (404, 302)
 
     def test_assignment_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/{class_id}/assignments",
+            f"/classes/{class_id}/assignments",
             data={"title": "واجب جديد", "body": "solve", "max_mark": 100},
             follow_redirects=False,
         )
@@ -281,13 +281,13 @@ class TestGradesRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         aid = _create_assignment(app, class_id, 1)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/assignments/{aid}")
+        resp = client.get(f"/classes/{class_id}/assignments/{aid}")
         assert resp.status_code in (200, 302)
 
     def test_assignment_detail_404(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/assignments/999999")
+        resp = client.get(f"/classes/{class_id}/assignments/999999")
         assert resp.status_code in (404, 302)
 
     def test_assignment_submit_student(self, app, client):
@@ -296,7 +296,7 @@ class TestGradesRoutes:
         _, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
         resp = client.post(
-            f"/grades/{class_id}/assignments/{aid}/submit",
+            f"/classes/{class_id}/assignments/{aid}/submit",
             data={"body": "here is my answer"},
             follow_redirects=False,
         )
@@ -305,21 +305,21 @@ class TestGradesRoutes:
     def test_gradebook_view(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/gradebook")
+        resp = client.get(f"/classes/{class_id}/gradebook")
         assert resp.status_code in (200, 302)
 
     def test_gradebook_student_view(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         sid, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
-        resp = client.get(f"/grades/{class_id}/gradebook")
+        resp = client.get(f"/classes/{class_id}/gradebook")
         assert resp.status_code in (200, 302)
 
     def test_category_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/{class_id}/categories",
+            f"/classes/{class_id}/categories",
             data={"name": "واجبات", "weight": 40},
             follow_redirects=False,
         )
@@ -334,7 +334,7 @@ class TestGradesRoutes:
             cat_id = cat.id
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/categories/{cat_id}/items",
+            f"/classes/categories/{cat_id}/items",
             data={"title": "امتحان 1", "max_mark": 50, "kind": "exam"},
             follow_redirects=False,
         )
@@ -353,7 +353,7 @@ class TestGradesRoutes:
             item_id = item.id
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/items/{item_id}/grade",
+            f"/classes/items/{item_id}/grade",
             data={"student_id": sid, "mark": 45},
             follow_redirects=False,
         )
@@ -362,7 +362,7 @@ class TestGradesRoutes:
     def test_attendance_view(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/attendance")
+        resp = client.get(f"/classes/{class_id}/attendance")
         assert resp.status_code in (200, 302)
 
     def test_attendance_save(self, app, client):
@@ -370,7 +370,7 @@ class TestGradesRoutes:
         sid, _ = _setup_student_in_class(app, class_id)
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/{class_id}/attendance",
+            f"/classes/{class_id}/attendance",
             data={f"status_{sid}": "present"},
             follow_redirects=False,
         )
@@ -380,14 +380,14 @@ class TestGradesRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         sid, _ = _setup_student_in_class(app, class_id)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/report-card/{sid}")
+        resp = client.get(f"/classes/{class_id}/report-card/{sid}")
         assert resp.status_code in (200, 302)
 
     def test_report_card_student_own(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         sid, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
-        resp = client.get(f"/grades/{class_id}/report-card/{sid}")
+        resp = client.get(f"/classes/{class_id}/report-card/{sid}")
         assert resp.status_code in (200, 302)
 
     def test_report_card_student_forbidden(self, app, client):
@@ -395,20 +395,20 @@ class TestGradesRoutes:
         sid, student_email = _setup_student_in_class(app, class_id)
         sid2, email2 = _setup_student_in_class(app, class_id)
         _login(client, email2)
-        resp = client.get(f"/grades/{class_id}/report-card/{sid}")
+        resp = client.get(f"/classes/{class_id}/report-card/{sid}")
         assert resp.status_code in (403, 302)
 
     def test_rubric_new(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/rubric/new")
+        resp = client.get(f"/classes/{class_id}/rubric/new")
         assert resp.status_code in (200, 302)
 
     def test_rubric_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/{class_id}/rubric",
+            f"/classes/{class_id}/rubric",
             data={
                 "title": "قالب تقييم",
                 "description": "test",
@@ -424,7 +424,7 @@ class TestGradesRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/{class_id}/rubric",
+            f"/classes/{class_id}/rubric",
             data={
                 "title": "",
                 "criteria[0][title]": "محتوى",
@@ -438,7 +438,7 @@ class TestGradesRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/grades/{class_id}/rubric",
+            f"/classes/{class_id}/rubric",
             data={"title": "قالب"},
             follow_redirects=False,
         )
@@ -447,7 +447,7 @@ class TestGradesRoutes:
     def test_appeals_list(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/grades/{class_id}/appeals")
+        resp = client.get(f"/classes/{class_id}/appeals")
         assert resp.status_code in (200, 302)
 
 
@@ -460,27 +460,27 @@ class TestAssessmentRoutes:
     def test_quiz_list(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/{class_id}/quizzes")
+        resp = client.get(f"/classes/{class_id}/quizzes")
         assert resp.status_code in (200, 302)
 
     def test_quiz_list_student(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         sid, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
-        resp = client.get(f"/assessment/{class_id}/quizzes")
+        resp = client.get(f"/classes/{class_id}/quizzes")
         assert resp.status_code in (200, 302)
 
     def test_quiz_new_form(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/{class_id}/quizzes/new")
+        resp = client.get(f"/classes/{class_id}/quizzes/new")
         assert resp.status_code in (200, 302)
 
     def test_quiz_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/assessment/{class_id}/quizzes/new",
+            f"/classes/{class_id}/quizzes/new",
             data={
                 "title": "اختبار جديد",
                 "duration_min": 30,
@@ -496,7 +496,7 @@ class TestAssessmentRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/{class_id}/quizzes/{qid}")
+        resp = client.get(f"/classes/{class_id}/quizzes/{qid}")
         assert resp.status_code in (200, 302)
 
     def test_quiz_manage_add_mcq(self, app, client):
@@ -504,7 +504,7 @@ class TestAssessmentRoutes:
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
         resp = client.post(
-            f"/assessment/{class_id}/quizzes/{qid}",
+            f"/classes/{class_id}/quizzes/{qid}",
             data={
                 "qtype": "mcq",
                 "prompt": "ما هو 1+1؟",
@@ -524,7 +524,7 @@ class TestAssessmentRoutes:
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
         resp = client.post(
-            f"/assessment/{class_id}/quizzes/{qid}",
+            f"/classes/{class_id}/quizzes/{qid}",
             data={
                 "qtype": "true_false",
                 "prompt": "الأرض مسطحة",
@@ -540,7 +540,7 @@ class TestAssessmentRoutes:
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
         resp = client.post(
-            f"/assessment/{class_id}/quizzes/{qid}",
+            f"/classes/{class_id}/quizzes/{qid}",
             data={"qtype": "essay", "prompt": "اكتب مقالة", "mark": 20},
             follow_redirects=False,
         )
@@ -551,7 +551,8 @@ class TestAssessmentRoutes:
         qid = _create_quiz(app, class_id, 1)
         qnid = _create_question(app, qid)
         _login(client, teacher_email)
-        resp = client.post(f"/assessment/questions/{qnid}/delete", follow_redirects=False)
+        resp = client.post(
+            f"/classes/questions/{qnid}/delete", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_attempt_start_student(self, app, client):
@@ -559,14 +560,14 @@ class TestAssessmentRoutes:
         qid = _create_quiz(app, class_id, 1)
         sid, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
-        resp = client.get(f"/assessment/quizzes/{qid}/attempt", follow_redirects=False)
+        resp = client.get(f"/classes/quizzes/{qid}/attempt", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_attempt_start_teacher_redirect(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/quizzes/{qid}/attempt", follow_redirects=False)
+        resp = client.get(f"/classes/quizzes/{qid}/attempt", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_attempt_do(self, app, client):
@@ -575,7 +576,7 @@ class TestAssessmentRoutes:
         sid, student_email = _setup_student_in_class(app, class_id)
         aid = _create_attempt(app, qid, sid)
         _login(client, student_email)
-        resp = client.get(f"/assessment/attempt/{aid}")
+        resp = client.get(f"/classes/attempt/{aid}")
         assert resp.status_code in (200, 302)
 
     def test_attempt_do_completed_redirects(self, app, client):
@@ -584,7 +585,7 @@ class TestAssessmentRoutes:
         sid, student_email = _setup_student_in_class(app, class_id)
         aid = _create_attempt(app, qid, sid, status="completed")
         _login(client, student_email)
-        resp = client.get(f"/assessment/attempt/{aid}", follow_redirects=False)
+        resp = client.get(f"/classes/attempt/{aid}", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_attempt_save(self, app, client):
@@ -595,7 +596,7 @@ class TestAssessmentRoutes:
         aid = _create_attempt(app, qid, sid)
         _login(client, student_email)
         resp = client.post(
-            f"/assessment/attempt/{aid}/save",
+            f"/classes/attempt/{aid}/save",
             data={f"q_{qnid}": "0"},
             follow_redirects=False,
         )
@@ -609,7 +610,7 @@ class TestAssessmentRoutes:
         aid = _create_attempt(app, qid, sid)
         _login(client, student_email)
         resp = client.post(
-            f"/assessment/attempt/{aid}/submit",
+            f"/classes/attempt/{aid}/submit",
             data={f"q_{qnid}": "0"},
             follow_redirects=False,
         )
@@ -621,7 +622,7 @@ class TestAssessmentRoutes:
         sid, student_email = _setup_student_in_class(app, class_id)
         aid = _create_attempt(app, qid, sid, status="completed")
         _login(client, student_email)
-        resp = client.get(f"/assessment/attempt/{aid}/result")
+        resp = client.get(f"/classes/attempt/{aid}/result")
         assert resp.status_code in (200, 302)
 
     def test_attempt_result_teacher(self, app, client):
@@ -630,27 +631,27 @@ class TestAssessmentRoutes:
         sid, student_email = _setup_student_in_class(app, class_id)
         aid = _create_attempt(app, qid, sid, status="completed")
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/attempt/{aid}/result")
+        resp = client.get(f"/classes/attempt/{aid}/result")
         assert resp.status_code in (200, 302)
 
     def test_quiz_results(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/quizzes/{qid}/results")
+        resp = client.get(f"/classes/quizzes/{qid}/results")
         assert resp.status_code in (200, 302)
 
     def test_question_bank_list(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get("/assessment/question-bank")
+        resp = client.get("/classes/question-bank")
         assert resp.status_code in (200, 302)
 
     def test_question_bank_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            "/assessment/question-bank/new",
+            "/classes/question-bank/new",
             data={
                 "question_text": "سؤال بنك",
                 "question_type": "mcq",
@@ -667,7 +668,7 @@ class TestAssessmentRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            "/assessment/question-bank/new",
+            "/classes/question-bank/new",
             data={
                 "question_text": "سؤال بنك ص/خ",
                 "question_type": "true_false",
@@ -682,7 +683,7 @@ class TestAssessmentRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/quiz/{qid}/bank-import")
+        resp = client.get(f"/classes/quiz/{qid}/bank-import")
         assert resp.status_code in (200, 302)
 
     def test_bank_import_action(self, app, client):
@@ -690,7 +691,7 @@ class TestAssessmentRoutes:
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
         resp = client.post(
-            f"/assessment/quiz/{qid}/bank-import",
+            f"/classes/quiz/{qid}/bank-import",
             data={"question_ids": []},
             follow_redirects=False,
         )
@@ -700,7 +701,7 @@ class TestAssessmentRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         qid = _create_quiz(app, class_id, 1)
         _login(client, teacher_email)
-        resp = client.get(f"/assessment/quiz/{qid}/stats", follow_redirects=False)
+        resp = client.get(f"/classes/quiz/{qid}/stats", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_proctor_log(self, app, client):
@@ -710,7 +711,7 @@ class TestAssessmentRoutes:
         aid = _create_attempt(app, qid, sid)
         _login(client, student_email)
         resp = client.post(
-            f"/assessment/attempt/{aid}/proctor",
+            f"/classes/attempt/{aid}/proctor",
             json={"event_type": "tab_switch"},
             content_type="application/json",
         )
@@ -723,7 +724,7 @@ class TestAssessmentRoutes:
         aid = _create_attempt(app, qid, sid)
         _login(client, student_email)
         resp = client.post(
-            f"/assessment/attempt/{aid}/proctor",
+            f"/classes/attempt/{aid}/proctor",
             json={"event_type": "invalid"},
             content_type="application/json",
         )
@@ -937,20 +938,20 @@ class TestContentRoutes:
     def test_class_lessons(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/content/{class_id}/lessons")
+        resp = client.get(f"/classes/{class_id}/lessons")
         assert resp.status_code in (200, 302)
 
     def test_lesson_new_form(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/content/{class_id}/lessons/new")
+        resp = client.get(f"/classes/{class_id}/lessons/new")
         assert resp.status_code in (200, 302)
 
     def test_lesson_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/content/{class_id}/lessons",
+            f"/classes/{class_id}/lessons",
             data={"title": "درس جديد", "body_html": "<p>محتوى</p>"},
             follow_redirects=False,
         )
@@ -960,7 +961,7 @@ class TestContentRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         lid = _create_lesson(app, class_id)
         _login(client, teacher_email)
-        resp = client.get(f"/content/{class_id}/lessons/{lid}")
+        resp = client.get(f"/classes/{class_id}/lessons/{lid}")
         assert resp.status_code in (200, 302)
 
     def test_lesson_detail_student(self, app, client):
@@ -968,7 +969,7 @@ class TestContentRoutes:
         lid = _create_lesson(app, class_id)
         sid, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
-        resp = client.get(f"/content/{class_id}/lessons/{lid}")
+        resp = client.get(f"/classes/{class_id}/lessons/{lid}")
         assert resp.status_code in (200, 302)
 
     def test_lesson_update(self, app, client):
@@ -976,7 +977,7 @@ class TestContentRoutes:
         lid = _create_lesson(app, class_id)
         _login(client, teacher_email)
         resp = client.post(
-            f"/content/{class_id}/lessons/{lid}",
+            f"/classes/{class_id}/lessons/{lid}",
             data={"title": "درس محدث", "body_html": "<p>جديد</p>"},
             follow_redirects=False,
         )
@@ -986,21 +987,21 @@ class TestContentRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         lid = _create_lesson(app, class_id, status="draft")
         _login(client, teacher_email)
-        resp = client.post(f"/content/{class_id}/lessons/{lid}/publish", follow_redirects=False)
+        resp = client.post(f"/classes/{class_id}/lessons/{lid}/publish", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_lesson_unpublish(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         lid = _create_lesson(app, class_id, status="published")
         _login(client, teacher_email)
-        resp = client.post(f"/content/{class_id}/lessons/{lid}/publish", follow_redirects=False)
+        resp = client.post(f"/classes/{class_id}/lessons/{lid}/publish", follow_redirects=False)
         assert resp.status_code in (302, 200)
 
     def test_unit_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.post(
-            f"/content/{class_id}/units",
+            f"/classes/{class_id}/units",
             data={"title": "وحدة 1"},
             follow_redirects=False,
         )
@@ -1011,7 +1012,7 @@ class TestContentRoutes:
         lid = _create_lesson(app, class_id)
         _login(client, teacher_email)
         resp = client.post(
-            f"/content/{class_id}/lessons/{lid}/youtube",
+            f"/classes/{class_id}/lessons/{lid}/youtube",
             data={"url": "https://youtube.com/watch?v=test", "title": "فيديو"},
             follow_redirects=False,
         )
@@ -1020,20 +1021,20 @@ class TestContentRoutes:
     def test_shared_library(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get("/content/shared")
+        resp = client.get("/classes/shared")
         assert resp.status_code in (200, 302)
 
     def test_offline_downloads(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         sid, student_email = _setup_student_in_class(app, class_id)
         _login(client, student_email)
-        resp = client.get("/content/offline")
+        resp = client.get("/classes/offline")
         assert resp.status_code in (200, 302)
 
     def test_lesson_404(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
-        resp = client.get(f"/content/{class_id}/lessons/999999")
+        resp = client.get(f"/classes/{class_id}/lessons/999999")
         assert resp.status_code in (404, 302)
 
 
@@ -1226,3 +1227,338 @@ class TestExportRoutes:
         _login(client, teacher_email)
         resp = client.get("/export/999999/students")
         assert resp.status_code in (404, 302)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# SCHOOLS ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestSchoolRoutes:
+    def test_schools_index(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.get("/schools/")
+        assert resp.status_code in (200, 302)
+
+    def test_school_create_get(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.get("/schools/new")
+        assert resp.status_code in (200, 302)
+
+    def test_school_manage(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        school_id = _create_school(app)
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.get(f"/schools/{school_id}/manage")
+        assert resp.status_code in (200, 302)
+
+    def test_my_classes(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/schools/classes")
+        assert resp.status_code in (200, 302)
+
+    def test_class_detail(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get(f"/schools/class/{class_id}")
+        assert resp.status_code in (200, 302)
+
+    def test_class_detail_student_member(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        sid, student_email = _setup_student_in_class(app, class_id)
+        _login(client, student_email)
+        resp = client.get(f"/schools/class/{class_id}")
+        assert resp.status_code in (200, 302)
+
+    def test_class_code_regenerate(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        _, class_id, _ = _setup_class_with_teacher(app)
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.post(f"/schools/class/{class_id}/code", follow_redirects=False)
+        assert resp.status_code in (302, 200)
+
+    def test_school_classes(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        school_id = _create_school(app)
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.get(f"/schools/{school_id}/classes")
+        assert resp.status_code in (200, 302)
+
+    def test_class_new_get(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        school_id = _create_school(app)
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.get(f"/schools/{school_id}/classes/new")
+        assert resp.status_code in (200, 302)
+
+    def test_class_new_post(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        school_id = _create_school(app)
+        grade_id = _create_grade(app, school_id)
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.post(
+            f"/schools/{school_id}/classes/new",
+            data={
+                "name": "صف اختبار",
+                "subject": "رياضيات",
+                "grade_id": grade_id,
+                "semester": "1",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 200)
+
+    def test_grade_add(self, app, client):
+        admin_id = _create_user(app, role="super_admin")
+        email = f"adm-{_uid()}@test.com"
+        school_id = _create_school(app)
+        with app.app_context():
+            u = _db.session.get(User, admin_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        resp = client.post(
+            f"/schools/{school_id}/grades",
+            data={"grade_level": 2, "name_ar": "الصف الثاني"},
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 200)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# TUTORING ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestTutoringRoutes:
+    def test_tutoring_index(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/tutoring/")
+        assert resp.status_code in (200, 302)
+
+    def test_tutoring_my(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/tutoring/my")
+        assert resp.status_code in (200, 302)
+
+    def test_profile_new_get(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/tutoring/profile/new")
+        assert resp.status_code in (200, 302)
+
+    def test_profile_new_post(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.post(
+            "/tutoring/profile/new",
+            data={
+                "subject": "رياضيات",
+                "price_hour": 100,
+                "price_session": 80,
+                "mode": "online",
+                "bio": "معلم خبرة",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code in (302, 200)
+
+    def test_profile_edit_get(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        # Create profile first
+        client.post(
+            "/tutoring/profile/new",
+            data={
+                "subject": "رياضيات",
+                "price_hour": 100,
+                "price_session": 80,
+                "mode": "online",
+                "bio": "معلم",
+            },
+        )
+        resp = client.get("/tutoring/profile/edit")
+        assert resp.status_code in (200, 302)
+
+    def test_search_tutors(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/tutoring/?q=math")
+        assert resp.status_code in (200, 302)
+
+    def test_book_get(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        # Get teacher ID
+        with app.app_context():
+            teacher_user = User.query.filter_by(email=teacher_email).first()
+            teacher_id = teacher_user.id
+        # Login as student
+        sid, student_email = _setup_student_in_class(app, class_id)
+        _login(client, student_email)
+        resp = client.get(f"/tutoring/book/{teacher_id}")
+        assert resp.status_code in (200, 302)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# PROGRESS ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestProgressRoutes:
+    def test_class_overview(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get(f"/progress/class/{class_id}")
+        assert resp.status_code in (200, 302)
+
+    def test_student_detail(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        sid, student_email = _setup_student_in_class(app, class_id)
+        _login(client, student_email)
+        resp = client.get(f"/progress/class/{class_id}/student/{sid}")
+        assert resp.status_code in (200, 302)
+
+    def test_student_detail_teacher(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        sid, _ = _setup_student_in_class(app, class_id)
+        _login(client, teacher_email)
+        resp = client.get(f"/progress/class/{class_id}/student/{sid}")
+        assert resp.status_code in (200, 302)
+
+    def test_student_detail_forbidden(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        sid, _ = _setup_student_in_class(app, class_id)
+        sid2, email2 = _setup_student_in_class(app, class_id)
+        _login(client, email2)
+        resp = client.get(f"/progress/class/{class_id}/student/{sid}")
+        assert resp.status_code in (403, 302)
+
+    def test_my_progress(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        sid, student_email = _setup_student_in_class(app, class_id)
+        _login(client, student_email)
+        resp = client.get("/progress/my")
+        assert resp.status_code in (200, 302)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# PAYMENTS UI ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestPaymentsRoutes:
+    def test_payment_methods_page(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/payments/")
+        assert resp.status_code in (200, 302)
+
+    def test_payment_methods_api(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/payments/methods")
+        assert resp.status_code in (200, 302)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MESSAGES ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestMessagesRoutes:
+    def test_inbox(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/messages/inbox")
+        assert resp.status_code in (200, 302)
+
+    def test_sent(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/messages/sent")
+        assert resp.status_code in (200, 302)
+
+    def test_send_form(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/messages/send")
+        assert resp.status_code in (200, 302)
+
+    def test_unread_count(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/messages/unread-count")
+        assert resp.status_code in (200, 302)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NOTIFICATIONS ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestNotificationsRoutes:
+    def test_notifications_index(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/notifications/")
+        assert resp.status_code in (200, 302)
+
+    def test_notifications_preferences(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        _login(client, teacher_email)
+        resp = client.get("/notifications/preferences")
+        assert resp.status_code in (200, 302)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# GAMIFICATION ROUTES
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestGamificationRoutes:
+    def test_badges(self, app, client):
+        _, class_id, teacher_email = _setup_class_with_teacher(app)
+        sid, student_email = _setup_student_in_class(app, class_id)
+        _login(client, student_email)
+        resp = client.get("/profile/badges")
+        assert resp.status_code in (200, 302)

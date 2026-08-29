@@ -8,7 +8,7 @@ from app.services.grade_calc import calculate_student_grade
 def calculate_gpa(student_id: int, school_id: int) -> dict:
     """حساب المعدل التراكمي لطالب في مدرسة عبر جميع صفوفه."""
     memberships = (
-        ClassMember.query.join(db.inspect(ClassMember).mapper.class_.class_room.property)
+        ClassMember.query.join(ClassMember.class_room)
         .filter(
             ClassMember.user_id == student_id,
             ClassMember.status == "active",

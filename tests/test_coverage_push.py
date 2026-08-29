@@ -2,58 +2,39 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 
 import pytest
-from app import create_app
-from app.core.db import tx
-from app.core.security import hash_password
 from app.extensions import db as _db
 from app.models.billing import (
     DiscountCode,
-    ManualPayment,
-    ReminderLog,
     Subscription,
     SubscriptionPlan,
 )
-from app.models.calendar import AcademicEvent
-from app.models.class_room import ClassMember, ClassRoom
-from app.models.content import Lesson, LessonAttachment, Unit
-from app.models.family import FamilyLink, FamilyLinkCode
-from app.models.gamification import Badge, StudentBadge
-from app.models.gradebook import GradeCategory, GradeEntry, GradeItem
-from app.models.progress import StudentProgress, VideoProgress
-from app.models.school import Grade, School, Subject
-from app.models.tenant import TenantQuota
-from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
-
+from app.models.class_room import ClassRoom
+from app.models.content import Lesson
+from app.models.user import User
 from tests.conftest import (
     make_class,
     make_class_member,
     make_grade,
-    make_grade_category,
-    make_grade_entry,
-    make_grade_item,
     make_lesson,
-    make_payment,
-    make_student_progress,
+    make_subject,
     make_subscription,
     make_subscription_plan,
-    make_subject,
-    make_system_school,
-    make_tutor_profile,
-    make_tutor_review,
-    make_tutoring_session,
     make_user,
-    make_user_role_link,
 )
-
 
 # ── Schools ──────────────────────────────────────────────────────
 
 
 class TestSchools:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_create_school_success(self, app):
         from app.services.schools import create_school
 
@@ -80,9 +61,6 @@ class TestSchools:
 
     def test_list_schools(self, app):
         from app.services.schools import list_schools
-
-        make_school_id = make_user.__code__.co_varnames  # just ensure import works
-        s1_id = app.test_request_context("/") and None  # dummy
         from tests.conftest import make_school
 
         make_school(app, name_ar="أ")
@@ -92,7 +70,6 @@ class TestSchools:
 
     def test_create_class(self, app):
         from app.services.schools import create_class
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -111,7 +88,6 @@ class TestSchools:
 
     def test_add_grade(self, app):
         from app.services.schools import add_grade
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -144,7 +120,6 @@ class TestSchools:
 
     def test_join_class_individual(self, app):
         from app.services.schools import join_class_individual
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -165,7 +140,6 @@ class TestSchools:
 
     def test_join_class_individual_non_public(self, app):
         from app.services.schools import join_class_individual
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -180,7 +154,6 @@ class TestSchools:
 
     def test_has_active_subscription(self, app):
         from app.services.schools import has_active_subscription
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -193,7 +166,6 @@ class TestSchools:
 
     def test_regenerate_join_code(self, app):
         from app.services.schools import regenerate_join_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -209,7 +181,6 @@ class TestSchools:
 
     def test_get_class_members(self, app):
         from app.services.schools import get_class_members
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -226,7 +197,6 @@ class TestSchools:
 
     def test_is_member(self, app):
         from app.services.schools import is_member
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -246,6 +216,11 @@ class TestSchools:
 
 
 class TestBilling:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_money(self, app):
         from app.services.billing import money
 
@@ -256,7 +231,6 @@ class TestBilling:
 
     def test_create_plan(self, app):
         from app.services.billing import create_plan
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -267,7 +241,6 @@ class TestBilling:
 
     def test_list_plans(self, app):
         from app.services.billing import list_plans
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -278,7 +251,6 @@ class TestBilling:
 
     def test_get_plan(self, app):
         from app.services.billing import get_plan
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -289,7 +261,6 @@ class TestBilling:
 
     def test_subscribe(self, app):
         from app.services.billing import subscribe
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -307,7 +278,6 @@ class TestBilling:
 
     def test_list_subscriptions(self, app):
         from app.services.billing import list_subscriptions
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -323,7 +293,6 @@ class TestBilling:
 
     def test_record_manual_payment(self, app):
         from app.services.billing import record_manual_payment
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -336,13 +305,12 @@ class TestBilling:
 
         with app.app_context():
             sub = _db.session.get(Subscription, sub_id)
-            payment, err = record_manual_payment(sub, 50.0, reference="REF001")
+            payment, err = record_manual_payment(sub, "REF001", 50.0)
             assert payment is not None
             assert err is None
 
     def test_approve_payment(self, app):
         from app.services.billing import approve_payment
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -358,13 +326,12 @@ class TestBilling:
             sub = _db.session.get(Subscription, sub_id)
             from app.services.billing import record_manual_payment
 
-            payment, _ = record_manual_payment(sub, 50.0)
+            payment, _ = record_manual_payment(sub, "REF001", 50.0)
             result = approve_payment(payment, reviewer_id=admin_id)
             assert result is not None
 
     def test_reject_payment(self, app):
         from app.services.billing import reject_payment
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -379,12 +346,11 @@ class TestBilling:
             sub = _db.session.get(Subscription, sub_id)
             from app.services.billing import record_manual_payment
 
-            payment, _ = record_manual_payment(sub, 50.0)
+            payment, _ = record_manual_payment(sub, "REF001", 50.0)
             reject_payment(payment)
 
     def test_pending_payments(self, app):
         from app.services.billing import pending_payments
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -399,13 +365,12 @@ class TestBilling:
             sub = _db.session.get(Subscription, sub_id)
             from app.services.billing import record_manual_payment
 
-            record_manual_payment(sub, 50.0)
+            record_manual_payment(sub, "REF001", 50.0)
             pending = pending_payments()
             assert len(pending) >= 1
 
     def test_has_active_subscription(self, app):
         from app.services.billing import has_active_subscription
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -420,7 +385,6 @@ class TestBilling:
 
     def test_subscription_balance(self, app):
         from app.services.billing import subscription_balance
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -435,13 +399,12 @@ class TestBilling:
             sub = _db.session.get(Subscription, sub_id)
             from app.services.billing import record_manual_payment
 
-            record_manual_payment(sub, 40.0)
+            record_manual_payment(sub, "REF001", 40.0)
             balance = subscription_balance(sub_id)
             assert balance == Decimal("60.00")
 
     def test_can_record_payment(self, app):
         from app.services.billing import can_record_payment
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -460,7 +423,6 @@ class TestBilling:
 
     def test_subscription_payment_summary(self, app):
         from app.services.billing import subscription_payment_summary
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -477,7 +439,6 @@ class TestBilling:
 
     def test_create_discount_code(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -487,7 +448,6 @@ class TestBilling:
 
     def test_create_discount_code_empty_code(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -496,7 +456,6 @@ class TestBilling:
 
     def test_create_discount_code_empty_name(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -505,7 +464,6 @@ class TestBilling:
 
     def test_create_discount_code_invalid_type(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -514,7 +472,6 @@ class TestBilling:
 
     def test_create_discount_code_zero_value(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -523,7 +480,6 @@ class TestBilling:
 
     def test_create_discount_code_max_uses_zero(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -532,7 +488,6 @@ class TestBilling:
 
     def test_create_discount_code_duplicate(self, app):
         from app.services.billing import create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -542,7 +497,6 @@ class TestBilling:
 
     def test_validate_discount_code(self, app):
         from app.services.billing import create_discount_code, validate_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -570,7 +524,6 @@ class TestBilling:
 
     def test_validate_discount_code_inactive(self, app):
         from app.services.billing import create_discount_code, validate_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -586,17 +539,16 @@ class TestBilling:
 
     def test_validate_discount_code_expired(self, app):
         from app.services.billing import create_discount_code, validate_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
-        create_discount_code(school_id, "EXP", "expired", "percentage", 10, expiry_date=date.today() - timedelta(days=1))
+        expired = date.today() - timedelta(days=1)
+        create_discount_code(school_id, "EXP", "expired", "percentage", 10, expiry_date=expired)
         d, err = validate_discount_code("EXP", 1)
         assert d is None
 
     def test_validate_discount_code_max_uses(self, app):
         from app.services.billing import create_discount_code, validate_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -612,7 +564,6 @@ class TestBilling:
 
     def test_validate_discount_code_wrong_plan(self, app):
         from app.services.billing import create_discount_code, validate_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -622,7 +573,6 @@ class TestBilling:
 
     def test_validate_discount_code_fixed(self, app):
         from app.services.billing import create_discount_code, validate_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -637,7 +587,6 @@ class TestBilling:
 
     def test_apply_discount_code(self, app):
         from app.services.billing import apply_discount_code, create_discount_code
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -666,7 +615,6 @@ class TestBilling:
 
     def test_expire_subscriptions(self, app):
         from app.services.billing import expire_subscriptions
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -690,9 +638,13 @@ class TestBilling:
 
 
 class TestContent:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_create_unit(self, app):
         from app.services.content import create_unit
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -704,7 +656,6 @@ class TestContent:
 
     def test_list_units(self, app):
         from app.services.content import create_unit, list_units
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -718,7 +669,6 @@ class TestContent:
 
     def test_list_lessons(self, app):
         from app.services.content import list_lessons
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -731,7 +681,6 @@ class TestContent:
 
     def test_get_lesson(self, app):
         from app.services.content import get_lesson
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -749,7 +698,6 @@ class TestContent:
 
     def test_create_lesson(self, app):
         from app.services.content import create_lesson
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -761,7 +709,6 @@ class TestContent:
 
     def test_update_lesson(self, app):
         from app.services.content import update_lesson
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -777,7 +724,6 @@ class TestContent:
 
     def test_publish_lesson(self, app):
         from app.services.content import publish_lesson
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -793,7 +739,6 @@ class TestContent:
 
     def test_unpublish_lesson(self, app):
         from app.services.content import unpublish_lesson
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -809,7 +754,6 @@ class TestContent:
 
     def test_add_youtube(self, app):
         from app.services.content import add_youtube
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -829,9 +773,13 @@ class TestContent:
 
 
 class TestAssessment:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_create_quiz(self, app):
         from app.services.assessment import create_quiz
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -847,7 +795,6 @@ class TestAssessment:
 
     def test_list_quizzes(self, app):
         from app.services.assessment import create_quiz, list_quizzes
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -864,7 +811,6 @@ class TestAssessment:
 
     def test_add_question(self, app):
         from app.services.assessment import add_question, create_quiz
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -881,7 +827,6 @@ class TestAssessment:
 
     def test_delete_question(self, app):
         from app.services.assessment import add_question, create_quiz, delete_question
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -898,7 +843,6 @@ class TestAssessment:
 
     def test_deadline_exceeded(self, app):
         from app.services.assessment import deadline_exceeded
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -909,7 +853,7 @@ class TestAssessment:
         cls_id = make_class(app, school_id, grade_id, subject_id, teacher_id=teacher_id)
 
         with app.app_context():
-            from app.models.assessment import Quiz, QuizAttempt
+            from app.models.assessment import QuizAttempt
             from app.services.assessment import create_quiz
 
             cls = _db.session.get(ClassRoom, cls_id)
@@ -928,7 +872,6 @@ class TestAssessment:
 
     def test_grade_essay(self, app):
         from app.services.assessment import grade_essay
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -939,7 +882,7 @@ class TestAssessment:
         cls_id = make_class(app, school_id, grade_id, subject_id, teacher_id=teacher_id)
 
         with app.app_context():
-            from app.models.assessment import Answer, Quiz, QuizAttempt, Question
+            from app.models.assessment import Answer, Question, QuizAttempt
             from app.services.assessment import create_quiz
 
             cls = _db.session.get(ClassRoom, cls_id)
@@ -961,7 +904,6 @@ class TestAssessment:
 
     def test_get_attempt(self, app):
         from app.services.assessment import get_attempt
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -988,6 +930,11 @@ class TestAssessment:
 
 
 class TestCommunication:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_notify(self, app):
         from app.services.communication import notify
 
@@ -1024,9 +971,13 @@ class TestCommunication:
 
 
 class TestCalendar:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_create_event(self, app):
         from app.services.calendar import create_event
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1035,7 +986,6 @@ class TestCalendar:
 
     def test_list_events(self, app):
         from app.services.calendar import create_event, list_events
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1046,7 +996,6 @@ class TestCalendar:
 
     def test_list_events_filtered(self, app):
         from app.services.calendar import create_event, list_events
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1057,7 +1006,6 @@ class TestCalendar:
 
     def test_delete_event(self, app):
         from app.services.calendar import create_event, delete_event
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1073,7 +1021,6 @@ class TestCalendar:
 
     def test_current_term(self, app):
         from app.services.calendar import current_term
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1086,6 +1033,11 @@ class TestCalendar:
 
 
 class TestNotificationPreferences:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_get_preferences(self, app):
         from app.services.notification_preferences import get_preferences
 
@@ -1097,7 +1049,7 @@ class TestNotificationPreferences:
         from app.services.notification_preferences import get_preference, update_preference
 
         uid = make_user(app, role="student")
-        update_preference(uid, "quiz_result", email_enabled=False)
+        update_preference(uid, "quiz_result", email_enabled=False, in_app_enabled=True)
         pref = get_preference(uid, "quiz_result")
         assert pref is not None
         assert pref.email_enabled is False
@@ -1106,7 +1058,7 @@ class TestNotificationPreferences:
         from app.services.notification_preferences import should_notify, update_preference
 
         uid = make_user(app, role="student")
-        update_preference(uid, "message", in_app_enabled=True)
+        update_preference(uid, "message", email_enabled=False, in_app_enabled=True)
         assert should_notify(uid, "message", "in_app") is True
 
     def test_get_preference_none(self, app):
@@ -1120,9 +1072,13 @@ class TestNotificationPreferences:
 
 
 class TestOnboarding:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_start_onboarding(self, app):
         from app.services.onboarding import start_onboarding
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1132,7 +1088,6 @@ class TestOnboarding:
 
     def test_start_onboarding_idempotent(self, app):
         from app.services.onboarding import start_onboarding
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1142,7 +1097,6 @@ class TestOnboarding:
 
     def test_complete_step(self, app):
         from app.services.onboarding import complete_step, start_onboarding
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1152,8 +1106,7 @@ class TestOnboarding:
         assert result.current_step == 2
 
     def test_complete_invalid_step(self, app):
-        from app.services.onboarding import start_onboarding, complete_step
-
+        from app.services.onboarding import complete_step, start_onboarding
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1163,7 +1116,6 @@ class TestOnboarding:
 
     def test_get_onboarding_status(self, app):
         from app.services.onboarding import get_onboarding_status, start_onboarding
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1173,7 +1125,6 @@ class TestOnboarding:
 
     def test_get_onboarding_status_not_started(self, app):
         from app.services.onboarding import get_onboarding_status
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1191,9 +1142,13 @@ class TestOnboarding:
 
 
 class TestAccess:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_can_view_class(self, app):
         from app.services.access import can_view_class
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1210,7 +1165,6 @@ class TestAccess:
 
     def test_can_teach_class(self, app):
         from app.services.access import can_teach_class
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1226,7 +1180,6 @@ class TestAccess:
 
     def test_can_teach_class_wrong_teacher(self, app):
         from app.services.access import can_teach_class
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1246,6 +1199,11 @@ class TestAccess:
 
 
 class TestMessages:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_send_message(self, app):
         from app.services.messages import send_message
 
@@ -1321,7 +1279,7 @@ class TestMessages:
         assert thread is not None
 
     def test_send_reply(self, app):
-        from app.services.messages import get_thread, send_message
+        from app.services.messages import send_message
 
         sender_id = make_user(app, role="teacher")
         recipient_id = make_user(app, role="student")
@@ -1334,6 +1292,11 @@ class TestMessages:
 
 
 class TestFamily:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_generate_link_code(self, app):
         from app.services.family import generate_link_code
 
@@ -1391,9 +1354,13 @@ class TestFamily:
 
 
 class TestRubric:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_create_rubric_template(self, app):
         from app.services.rubric import create_rubric_template
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1406,7 +1373,6 @@ class TestRubric:
 
     def test_list_rubric_templates(self, app):
         from app.services.rubric import create_rubric_template, list_rubric_templates
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1417,7 +1383,6 @@ class TestRubric:
 
     def test_get_rubric_template(self, app):
         from app.services.rubric import create_rubric_template, get_rubric_template
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1436,9 +1401,13 @@ class TestRubric:
 
 
 class TestFinance:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_school_revenue_summary(self, app):
         from app.services.finance import school_revenue_summary
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1450,6 +1419,11 @@ class TestFinance:
 
 
 class TestHealth:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_check_database(self, app):
         from app.services.health import check_database
 
@@ -1479,6 +1453,11 @@ class TestHealth:
 
 
 class TestGradeAppeals:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_get_student_appeals(self, app):
         from app.services.grade_appeals import get_student_appeals
 
@@ -1497,6 +1476,11 @@ class TestGradeAppeals:
 
 
 class TestOffline:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_offline_model(self, app):
         from app.models.offline import OfflineDownload
 
@@ -1507,9 +1491,13 @@ class TestOffline:
 
 
 class TestTenant:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_get_quota(self, app):
         from app.services.tenant import get_quota
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1518,7 +1506,6 @@ class TestTenant:
 
     def test_check_quota(self, app):
         from app.services.tenant import check_quota
-
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1530,6 +1517,11 @@ class TestTenant:
 
 
 class TestQuestionBank:
+    @pytest.fixture(autouse=True)
+    def _ctx(self, app):
+        with app.app_context():
+            yield
+
     def test_question_bank_model(self, app):
         from app.models.question_bank import QuestionBank
 
