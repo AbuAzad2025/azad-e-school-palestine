@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from app.core.permissions import class_access_required, class_teach_required
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.gradebook import GradeItem, Submission
 from app.models.user import UserRole
@@ -48,11 +49,8 @@ def _students(class_id):
 
 
 @bp.get("/<int:class_id>/assignments")
-@login_required
-def assignments(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def assignments(class_id, class_room=None):
     form = AssignmentForm()
     subs = {}
     if current_user.role == UserRole.student:
@@ -68,11 +66,8 @@ def assignments(class_id):
 
 
 @bp.post("/<int:class_id>/assignments")
-@login_required
-def assignment_create(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def assignment_create(class_id, class_room=None):
     form = AssignmentForm()
     if form.validate_on_submit():
         assignment, error = create_assignment(
@@ -91,11 +86,8 @@ def assignment_create(class_id):
 
 
 @bp.get("/<int:class_id>/assignments/<int:assignment_id>")
-@login_required
-def assignment_detail(class_id, assignment_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def assignment_detail(class_id, assignment_id, class_room=None):
     assignment = next((a for a in list_assignments(class_id) if a.id == assignment_id), None)
     if not assignment:
         abort(404)
@@ -117,13 +109,8 @@ def assignment_detail(class_id, assignment_id):
 
 
 @bp.post("/<int:class_id>/assignments/<int:assignment_id>/submit")
-@login_required
-def assignment_submit(class_id, assignment_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
-    if current_user.role != UserRole.student:
-        abort(403)
+@class_access_required
+def assignment_submit(class_id, assignment_id, class_room=None):
     assignment = next((a for a in list_assignments(class_id) if a.id == assignment_id), None)
     if not assignment:
         abort(404)
@@ -178,11 +165,8 @@ def submission_grade(submission_id):
 
 
 @bp.get("/<int:class_id>/gradebook")
-@login_required
-def gradebook(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def gradebook(class_id, class_room=None):
     can_teach = can_teach_class(class_room, current_user)
     if current_user.role == UserRole.student:
         categories, items, entries = student_gradebook(current_user.id, class_id)
@@ -212,11 +196,8 @@ def gradebook(class_id):
 
 
 @bp.post("/<int:class_id>/categories")
-@login_required
-def category_create(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def category_create(class_id, class_room=None):
     form = CategoryForm()
     if form.validate_on_submit():
         create_category(class_id, form.name.data, weight=form.weight.data)
@@ -256,11 +237,8 @@ def grade_set(item_id):
 
 
 @bp.get("/<int:class_id>/attendance")
-@login_required
-def attendance(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def attendance(class_id, class_room=None):
     day = request.args.get("date", type=date.fromisoformat) or date.today()
     records = get_attendance(class_id, day)
     members = _students(class_id)
@@ -277,11 +255,8 @@ def attendance(class_id):
 
 
 @bp.post("/<int:class_id>/attendance")
-@login_required
-def attendance_save(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def attendance_save(class_id, class_room=None):
     day = request.args.get("date", type=date.fromisoformat) or date.today()
     records = {}
     for member in _students(class_id):

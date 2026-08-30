@@ -8,7 +8,13 @@ from .context import register as register_context
 from .db import TxError, tx
 from .i18n import _
 from .logging import get_correlation_id, get_logger
-from .permissions import role_required
+from .permissions import (
+    class_access_required,
+    class_teach_required,
+    parent_of_required,
+    role_required,
+    student_only,
+)
 from .security import hash_password, verify_password
 from .tenancy import get_school_or_404, scope_by_school, tenant_scope
 from .tokens import make_activation_token, make_reset_token, make_token, read_reset_token, read_token
@@ -28,7 +34,11 @@ __all__ = [
     "read_reset_token",
     "read_token",
     "register_context",
+    "class_access_required",
+    "class_teach_required",
+    "parent_of_required",
     "role_required",
+    "student_only",
     "save_upload",
     "scope_by_school",
     "tenant_scope",

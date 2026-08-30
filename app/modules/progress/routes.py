@@ -1,9 +1,9 @@
 """مسارات تتبع تقدم الطالب"""
 
-from app.core.permissions import role_required
+from app.core.permissions import class_teach_required, role_required
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
-from app.services.access import can_teach_class, can_view_class
+from app.services.access import can_view_class
 from app.services.progress import (
     class_progress_overview,
     record_lesson_view,
@@ -25,13 +25,9 @@ def _class_or_404(class_id):
 
 
 @bp.get("/class/<int:class_id>")
-@login_required
-@role_required(UserRole.teacher, UserRole.school_admin, UserRole.super_admin)
-def class_overview(class_id):
+@class_teach_required
+def class_overview(class_id, class_room=None):
     """نظرة عامة على تقدم جميع الطلاب في الصف."""
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
     overview = class_progress_overview(class_id)
     return render_template("progress/class_overview.html", class_room=class_room, overview=overview)
 

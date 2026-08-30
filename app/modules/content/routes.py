@@ -1,6 +1,7 @@
 """مسارات المحتوى: دروس + وحدات + مرفقات (وصول مقيّد بأعضاء الصف)"""
 
 from app.core import TxError
+from app.core.permissions import class_access_required, class_teach_required
 from app.models.content import LessonAttachment
 from app.services.access import can_teach_class, can_view_class
 from app.services.communication import audit
@@ -37,11 +38,8 @@ def _class_or_404(class_id):
 
 
 @bp.get("/<int:class_id>/lessons")
-@login_required
-def class_lessons(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def class_lessons(class_id, class_room=None):
     return render_template(
         "content/lessons.html",
         class_room=class_room,
@@ -52,22 +50,16 @@ def class_lessons(class_id):
 
 
 @bp.get("/<int:class_id>/lessons/new")
-@login_required
-def lesson_new(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def lesson_new(class_id, class_room=None):
     form = LessonForm()
     form.unit_id.choices = [(u.id, u.title) for u in list_units(class_id)]
     return render_template("content/lesson_form.html", class_room=class_room, form=form, lesson=None)
 
 
 @bp.post("/<int:class_id>/lessons")
-@login_required
-def lesson_create(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def lesson_create(class_id, class_room=None):
     form = LessonForm()
     form.unit_id.choices = [(u.id, u.title) for u in list_units(class_id)]
     if form.validate_on_submit():
@@ -88,11 +80,8 @@ def lesson_create(class_id):
 
 
 @bp.route("/<int:class_id>/lessons/<int:lesson_id>", methods=["GET", "POST"])
-@login_required
-def lesson_detail(class_id, lesson_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def lesson_detail(class_id, lesson_id, class_room=None):
     lesson = get_lesson(lesson_id)
     if not lesson or lesson.class_id != class_id:
         abort(404)
@@ -129,11 +118,8 @@ def lesson_detail(class_id, lesson_id):
 
 
 @bp.post("/<int:class_id>/lessons/<int:lesson_id>/publish")
-@login_required
-def lesson_publish(class_id, lesson_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def lesson_publish(class_id, lesson_id, class_room=None):
     lesson = get_lesson(lesson_id)
     if not lesson:
         abort(404)
@@ -147,11 +133,8 @@ def lesson_publish(class_id, lesson_id):
 
 
 @bp.post("/<int:class_id>/units")
-@login_required
-def unit_create(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def unit_create(class_id, class_room=None):
     form = UnitForm()
     if form.validate_on_submit():
         create_unit(class_id, form.title.data)

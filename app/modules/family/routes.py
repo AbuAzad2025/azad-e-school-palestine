@@ -1,9 +1,9 @@
 """مسارات روابط الأسرة"""
 
-from app.core.permissions import role_required
+from app.core.permissions import parent_of_required, role_required
 from app.models.user import UserRole
 from app.services.family import generate_link_code, link_parent, list_children, remove_link
-from flask import abort, flash, redirect, render_template, url_for
+from flask import flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 
@@ -57,14 +57,8 @@ def generate_code():
 
 
 @bp.get("/children/<int:student_id>/progress")
-@login_required
-@role_required(UserRole.parent)
+@parent_of_required
 def child_progress(student_id):
-    from app.services.family import is_parent_of
-
-    if not is_parent_of(current_user.id, student_id):
-        abort(403)
-
     from app.models.class_room import ClassMember
 
     memberships = ClassMember.query.filter_by(user_id=student_id, status="active").all()
@@ -72,14 +66,8 @@ def child_progress(student_id):
 
 
 @bp.get("/children/<int:student_id>/grades")
-@login_required
-@role_required(UserRole.parent)
+@parent_of_required
 def child_grades(student_id):
-    from app.services.family import is_parent_of
-
-    if not is_parent_of(current_user.id, student_id):
-        abort(403)
-
     from app.models.class_room import ClassMember
 
     memberships = ClassMember.query.filter_by(user_id=student_id, status="active").all()
