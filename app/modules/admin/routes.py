@@ -2,7 +2,6 @@
 
 import os
 import shutil
-from collections import Counter
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -118,11 +117,16 @@ def dashboard():
     for i in range(5, -1, -1):
         d = now - timedelta(days=i * 30)
         months.append(d.strftime("%Y-%m"))
-    signup_counts = Counter(
-        u.created_at.strftime("%Y-%m")
-        for u in User.query.filter(User.created_at >= now - timedelta(days=180)).all()
-        if u.created_at
+    signup_rows = (
+        db.session.query(
+            func.to_char(User.created_at, 'YYYY-MM').label('month'),
+            func.count(User.id).label('count'),
+        )
+        .filter(User.created_at >= now - timedelta(days=180))
+        .group_by(func.to_char(User.created_at, 'YYYY-MM'))
+        .all()
     )
+    signup_counts = {row.month: row.count for row in signup_rows}
     chart_signups = [{"month": m, "count": signup_counts.get(m, 0)} for m in months]
 
     subs_by_status: dict[str, int] = {
@@ -136,11 +140,16 @@ def dashboard():
         for status in ("active", "pending", "expired", "pending_review")
     ]
 
-    revenue_by_month: dict[str, float] = {}
-    for sub in Subscription.query.filter(Subscription.created_at >= now - timedelta(days=180)).all():
-        if sub.created_at:
-            key = sub.created_at.strftime("%Y-%m")
-            revenue_by_month[key] = revenue_by_month.get(key, 0.0) + float(sub.price or 0)
+    revenue_rows = (
+        db.session.query(
+            func.to_char(Subscription.created_at, 'YYYY-MM').label('month'),
+            func.sum(Subscription.price).label('total'),
+        )
+        .filter(Subscription.created_at >= now - timedelta(days=180))
+        .group_by(func.to_char(Subscription.created_at, 'YYYY-MM'))
+        .all()
+    )
+    revenue_by_month = {row.month: float(row.total or 0) for row in revenue_rows}
     chart_revenue = [{"month": m, "amount": round(revenue_by_month.get(m, 0.0), 2)} for m in months]
 
     return render_template(
@@ -316,7 +325,15 @@ def schools_list():
 @login_required
 def school_detail(school_id):
     school = School.query.get_or_404(school_id)
-    classes = ClassRoom.query.filter_by(school_id=school_id, is_active=True).all()
+    classes = (
+        ClassRoom.query.filter_by(school_id=school_id, is_active=True)
+        .options(
+            joinedload(ClassRoom.subject),
+            joinedload(ClassRoom.grade),
+            joinedload(ClassRoom.teacher),
+        )
+        .all()
+    )
     teachers = (
         User.query.join(User.role_links).filter(User.role_links.any(school_id=school_id, role=UserRole.teacher)).all()
     )
@@ -683,7 +700,6 @@ def school_admin_dashboard():
         d = now - timedelta(days=i * 30)
         months.append(d.strftime("%Y-%m"))
 
-    class_ids = [c.id for c in ClassRoom.query.filter_by(school_id=school_id).all()]
     students_by_class = (
         db.session.query(ClassRoom.name, func.count(User.id))
         .join(ClassMember, ClassRoom.id == ClassMember.class_id)
@@ -694,20 +710,24 @@ def school_admin_dashboard():
     )
     chart_students_by_class = [{"name": name or _("غير مسماً"), "count": count} for name, count in students_by_class]
 
-    recent_subscriptions = Subscription.query.filter(
-        Subscription.class_id.in_(class_ids), Subscription.created_at >= now - timedelta(days=180)
-    ).all()
-    revenue_by_month: dict[str, float] = {}
-    for sub in recent_subscriptions:
-        if sub.created_at:
-            key = sub.created_at.strftime("%Y-%m")
-            revenue_by_month[key] = revenue_by_month.get(key, 0.0) + float(sub.price or 0)
+    revenue_rows = (
+        db.session.query(
+            func.to_char(Subscription.created_at, 'YYYY-MM').label('month'),
+            func.sum(Subscription.price).label('total'),
+        )
+        .join(ClassRoom, Subscription.class_id == ClassRoom.id)
+        .filter(ClassRoom.school_id == school_id, Subscription.created_at >= now - timedelta(days=180))
+        .group_by(func.to_char(Subscription.created_at, 'YYYY-MM'))
+        .all()
+    )
+    revenue_by_month = {row.month: float(row.total or 0) for row in revenue_rows}
     chart_revenue = [{"month": m, "amount": round(revenue_by_month.get(m, 0.0), 2)} for m in months]
 
     subs_by_status: dict[str, int] = {
         status: count
         for status, count in db.session.query(Subscription.status, func.count(Subscription.id))
-        .filter(Subscription.class_id.in_(class_ids))
+        .join(ClassRoom, Subscription.class_id == ClassRoom.id)
+        .filter(ClassRoom.school_id == school_id)
         .group_by(Subscription.status)
         .all()
     }

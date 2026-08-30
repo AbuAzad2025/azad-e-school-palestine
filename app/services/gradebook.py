@@ -102,7 +102,14 @@ def create_category(class_id: int, name: str, weight=None) -> GradeCategory:
 
 
 def list_categories(class_id: int):
-    return GradeCategory.query.filter_by(class_id=class_id).order_by(GradeCategory.id.asc()).all()
+    from sqlalchemy.orm import selectinload
+
+    return (
+        GradeCategory.query.filter_by(class_id=class_id)
+        .options(selectinload(GradeCategory.items))
+        .order_by(GradeCategory.id.asc())
+        .all()
+    )
 
 
 def create_grade_item(category: GradeCategory, title: str, max_mark=None, kind: str = "exam") -> GradeItem:

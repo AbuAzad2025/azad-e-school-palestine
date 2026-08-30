@@ -46,7 +46,7 @@ class StudentBadge(PKMixin, db.Model):
     __table_args__ = (UniqueConstraint("student_id", "badge_id", name="uq_student_badge"),)
 
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    badge_id: Mapped[int] = mapped_column(ForeignKey("badges.id"), nullable=False)
+    badge_id: Mapped[int] = mapped_column(ForeignKey("badges.id"), nullable=False, index=True)
     earned_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
 
     student: Mapped[User] = relationship("User", foreign_keys=[student_id])  # noqa: F821

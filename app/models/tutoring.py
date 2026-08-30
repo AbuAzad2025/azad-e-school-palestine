@@ -82,8 +82,8 @@ class TutorReview(PKMixin, db.Model):
     __tablename__ = "tutor_reviews"
     __table_args__ = (UniqueConstraint("session_id", "student_id", name="uq_tutor_review_per_session"),)
 
-    session_id: Mapped[int] = mapped_column(ForeignKey("tutoring_sessions.id"), nullable=False)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    session_id: Mapped[int] = mapped_column(ForeignKey("tutoring_sessions.id"), nullable=False, index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     rating: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)
 
@@ -96,7 +96,7 @@ class TutorCommission(PKMixin, db.Model):
 
     __tablename__ = "tutor_commissions"
 
-    session_id: Mapped[int] = mapped_column(ForeignKey("tutoring_sessions.id"), unique=True, nullable=False)
+    session_id: Mapped[int] = mapped_column(ForeignKey("tutoring_sessions.id"), unique=True, nullable=False, index=True)
     tutor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     session_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     commission_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=20.0, nullable=False)

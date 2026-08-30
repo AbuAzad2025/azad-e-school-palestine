@@ -45,9 +45,9 @@ class VideoProgress(PKMixin, db.Model):
     __table_args__ = (UniqueConstraint("student_id", "attachment_id", name="uq_student_video_progress"),)
 
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    attachment_id: Mapped[int] = mapped_column(ForeignKey("lesson_attachments.id"), nullable=False)
-    lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), nullable=False)
-    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
+    attachment_id: Mapped[int] = mapped_column(ForeignKey("lesson_attachments.id"), nullable=False, index=True)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), nullable=False, index=True)
+    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
     seconds_watched: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_seconds: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

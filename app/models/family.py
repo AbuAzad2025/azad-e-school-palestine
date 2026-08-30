@@ -36,7 +36,7 @@ class FamilyLinkCode(PKMixin, db.Model):
     __table_args__ = (UniqueConstraint("student_id", "code", name="uq_student_link_code"),)
 
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    code: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False, index=True)
     used: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
     used_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)

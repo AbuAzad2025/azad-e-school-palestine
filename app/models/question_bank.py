@@ -16,7 +16,7 @@ class QuestionBank(PKMixin, db.Model):
 
     teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False, index=True)
-    subject_id: Mapped[int | None] = mapped_column(ForeignKey("subjects.id", ondelete="SET NULL"))
+    subject_id: Mapped[int | None] = mapped_column(ForeignKey("subjects.id", ondelete="SET NULL"), index=True)
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     question_type: Mapped[str] = mapped_column(String(15), nullable=False)  # mcq/true_false/essay
     options: Mapped[dict | None] = mapped_column(JSONB)

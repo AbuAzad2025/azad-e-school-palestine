@@ -12,7 +12,7 @@ from .mixins import PKMixin, SoftDeleteMixin
 class Unit(PKMixin, db.Model):
     __tablename__ = "units"
 
-    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
+    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     sort_order: Mapped[int | None] = mapped_column(SmallInteger)
 
@@ -21,7 +21,7 @@ class Lesson(PKMixin, SoftDeleteMixin, db.Model):
     __tablename__ = "lessons"
 
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
-    unit_id: Mapped[int | None] = mapped_column(ForeignKey("units.id"))
+    unit_id: Mapped[int | None] = mapped_column(ForeignKey("units.id"), index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     body_html: Mapped[str | None] = mapped_column(Text)  # النص المنسّق
     sort_order: Mapped[int | None] = mapped_column(SmallInteger)
@@ -43,7 +43,7 @@ class Lesson(PKMixin, SoftDeleteMixin, db.Model):
 class LessonAttachment(PKMixin, db.Model):
     __tablename__ = "lesson_attachments"
 
-    lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), nullable=False)
+    lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), nullable=False, index=True)
     kind: Mapped[str] = mapped_column(String(10), nullable=False)  # video/pdf/image/graph/audio
     title: Mapped[str | None] = mapped_column(Text)
     stored_name: Mapped[str] = mapped_column(Text, nullable=False)  # اسم عشوائي (D7)

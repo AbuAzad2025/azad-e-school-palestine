@@ -174,7 +174,12 @@ def gradebook(class_id, class_room=None):
             "grades/gradebook_student.html", class_room=class_room, categories=categories, items=items, entries=entries
         )
     categories = list_categories(class_id)
-    items = GradeItem.query.filter_by(class_id=class_id).order_by(GradeItem.id.asc()).all()
+    items = (
+        GradeItem.query.filter_by(class_id=class_id)
+        .options(joinedload(GradeItem.category))
+        .order_by(GradeItem.id.asc())
+        .all()
+    )
     members = _students(class_id)
     from app.models.gradebook import GradeEntry
 

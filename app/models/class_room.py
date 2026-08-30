@@ -19,10 +19,10 @@ class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
         UniqueConstraint("school_id", "subject_id", "grade_id", "semester", name="uq_class_subject_grade_semester"),
     )
 
-    school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
-    subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"), nullable=False)
-    grade_id: Mapped[int] = mapped_column(ForeignKey("grades.id"), nullable=False)
-    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False, index=True)
+    subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"), nullable=False, index=True)
+    grade_id: Mapped[int] = mapped_column(ForeignKey("grades.id"), nullable=False, index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
     semester: Mapped[str | None] = mapped_column(String(10))  # first / second (السنوي من الفصلين)
     name: Mapped[str | None] = mapped_column(Text)
     join_code: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False)
@@ -46,8 +46,8 @@ class ClassMember(PKMixin, db.Model):
     __tablename__ = "class_members"
     __table_args__ = (UniqueConstraint("class_id", "user_id", name="uq_class_member"),)
 
-    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(10), default="active", nullable=False)  # active/removed/pending
     joined_at = db.Column(db.DateTime(timezone=True))
 

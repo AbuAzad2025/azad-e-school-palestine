@@ -37,7 +37,7 @@ class Quiz(PKMixin, db.Model):
 class Question(PKMixin, db.Model):
     __tablename__ = "questions"
 
-    quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), nullable=False)
+    quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), nullable=False, index=True)
     type: Mapped[str] = mapped_column(String(15), nullable=False)  # mcq/true_false/essay/matching
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     options: Mapped[dict | None] = mapped_column(JSONB)  # خيارات MCQ
@@ -62,8 +62,8 @@ class QuizAttempt(PKMixin, db.Model):
         ),
     )
 
-    quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), nullable=False)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), nullable=False, index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     attempt_no: Mapped[int] = mapped_column(SmallInteger, default=1, nullable=False)
     started_at = db.Column(db.DateTime(timezone=True))
     submitted_at = db.Column(db.DateTime(timezone=True))
@@ -78,8 +78,8 @@ class QuizAttempt(PKMixin, db.Model):
 class Answer(PKMixin, db.Model):
     __tablename__ = "answers"
 
-    attempt_id: Mapped[int] = mapped_column(ForeignKey("quiz_attempts.id"), nullable=False)
-    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), nullable=False)
+    attempt_id: Mapped[int] = mapped_column(ForeignKey("quiz_attempts.id"), nullable=False, index=True)
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id"), nullable=False, index=True)
     answer: Mapped[dict | None] = mapped_column(JSONB)
     is_correct: Mapped[bool | None] = mapped_column(Boolean)  # يملؤه المعلم للمقالي
     awarded_mark: Mapped[float | None] = mapped_column(Numeric(5, 2))

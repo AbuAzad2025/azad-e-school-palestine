@@ -61,7 +61,7 @@ class GradeItem(PKMixin, db.Model):
     __tablename__ = "grade_items"
 
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
-    category_id: Mapped[int] = mapped_column(ForeignKey("grade_categories.id"), nullable=False)
+    category_id: Mapped[int] = mapped_column(ForeignKey("grade_categories.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     max_mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
     due_at = db.Column(db.DateTime(timezone=True))
@@ -78,7 +78,7 @@ class GradeEntry(PKMixin, db.Model):
     __table_args__ = (db.UniqueConstraint("student_id", "grade_item_id", name="uq_grade_entry"),)
 
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    grade_item_id: Mapped[int] = mapped_column(ForeignKey("grade_items.id"), nullable=False)
+    grade_item_id: Mapped[int] = mapped_column(ForeignKey("grade_items.id"), nullable=False, index=True)
     mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
     recorded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     note: Mapped[str | None] = mapped_column(Text)
@@ -104,7 +104,7 @@ class RubricCriterion(PKMixin, db.Model):
 
     __tablename__ = "rubric_criteria"
 
-    template_id: Mapped[int] = mapped_column(ForeignKey("rubric_templates.id"), nullable=False)
+    template_id: Mapped[int] = mapped_column(ForeignKey("rubric_templates.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     max_score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
@@ -119,8 +119,8 @@ class RubricGrade(PKMixin, db.Model):
     __tablename__ = "rubric_grades"
     __table_args__ = (db.UniqueConstraint("submission_id", "criterion_id", name="uq_rubric_grade"),)
 
-    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), nullable=False)
-    criterion_id: Mapped[int] = mapped_column(ForeignKey("rubric_criteria.id"), nullable=False)
+    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), nullable=False, index=True)
+    criterion_id: Mapped[int] = mapped_column(ForeignKey("rubric_criteria.id"), nullable=False, index=True)
     score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)
     graded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
@@ -133,8 +133,8 @@ class GradeAppeal(PKMixin, db.Model):
     __tablename__ = "grade_appeals"
     __table_args__ = (db.UniqueConstraint("submission_id", "student_id", name="uq_grade_appeal"),)
 
-    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), nullable=False)
-    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), nullable=False, index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(15), default="pending", nullable=False)
     teacher_response: Mapped[str | None] = mapped_column(Text)

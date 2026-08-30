@@ -24,7 +24,7 @@ class SubscriptionPlan(PKMixin, db.Model):
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
     # NULL = خطة عامة للمدرسة
     class_id: Mapped[int | None] = mapped_column(
-        ForeignKey("classes.id", ondelete="SET NULL")
+        ForeignKey("classes.id", ondelete="SET NULL"), index=True
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)  # فصل أول / فصل ثاني / سنوي
     plan: Mapped[str] = mapped_column(String(15), nullable=False)  # first_term/second_term/annual
@@ -50,8 +50,8 @@ class Subscription(PKMixin, db.Model):
     )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    plan_id: Mapped[int] = mapped_column(ForeignKey("subscription_plans.id"), nullable=False)
-    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("subscription_plans.id"), nullable=False, index=True)
+    class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="ILS", nullable=False)
     start_at = db.Column(db.DateTime(timezone=True))
@@ -71,7 +71,7 @@ class Subscription(PKMixin, db.Model):
 class ManualPayment(PKMixin, db.Model):
     __tablename__ = "manual_payments"
 
-    subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"), nullable=False)
+    subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"), nullable=False, index=True)
     reference: Mapped[str] = mapped_column(Text, nullable=False)  # رقم مرجع التحويل
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     note: Mapped[str | None] = mapped_column(Text)
@@ -87,7 +87,7 @@ class ManualPayment(PKMixin, db.Model):
 class PaymentReceipt(PKMixin, db.Model):
     __tablename__ = "payment_receipts"
 
-    manual_payment_id: Mapped[int] = mapped_column(ForeignKey("manual_payments.id"), nullable=False)
+    manual_payment_id: Mapped[int] = mapped_column(ForeignKey("manual_payments.id"), nullable=False, index=True)
     stored_name: Mapped[str] = mapped_column(Text, nullable=False)
     original_name: Mapped[str | None] = mapped_column(Text)
     mime: Mapped[str | None] = mapped_column(String(120))

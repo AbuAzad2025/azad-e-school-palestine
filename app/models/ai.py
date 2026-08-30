@@ -12,9 +12,9 @@ from .mixins import PKMixin
 class AiSession(PKMixin, db.Model):
     __tablename__ = "ai_sessions"
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id"))
-    lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id"), index=True)
+    lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id"), index=True)
     session_type: Mapped[str] = mapped_column(Text, nullable=False)
     meta: Mapped[dict | None] = mapped_column(JSONB)
 
@@ -26,7 +26,7 @@ class AiSession(PKMixin, db.Model):
 class AiMessage(PKMixin, db.Model):
     __tablename__ = "ai_messages"
 
-    session_id: Mapped[int] = mapped_column(ForeignKey("ai_sessions.id"), nullable=False)
+    session_id: Mapped[int] = mapped_column(ForeignKey("ai_sessions.id"), nullable=False, index=True)
     role: Mapped[str] = mapped_column(Text, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     model: Mapped[str | None] = mapped_column(Text)
