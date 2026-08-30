@@ -509,7 +509,10 @@ class PaymentService:
             logger.warning(f"Could not extract subscription_id from {gateway.value} payload")
             return
 
-        subscription = db.session.get(Subscription, subscription_id)
+        # P0-10: FOR UPDATE على الاشتراك لمنع التفعيل المزدوج
+        subscription = db.session.execute(
+            db.select(Subscription).where(Subscription.id == subscription_id).with_for_update()
+        ).scalar_one_or_none()
         if not subscription:
             logger.warning(f"Subscription {subscription_id} not found")
             return

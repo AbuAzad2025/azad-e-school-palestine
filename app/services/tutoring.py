@@ -11,7 +11,7 @@ from datetime import UTC
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-from app.core.db import tx
+from app.core.db import TxError, tx
 from app.core.i18n import _
 from app.extensions import db
 from app.models.tutoring import (
@@ -475,21 +475,31 @@ def get_tutor_earnings(tutor_id: int) -> dict:
 
 
 def create_commission_record(session: TutoringSession) -> TutorCommission | None:
-    """ينشئ سجل عمولة عند اكتمال الجلسة."""
+    """ينشئ سجل عمولة عند اكتمال الجلسة.
+
+    P0-10: FOR UPDATE + فحص مزدوج لمنع إنشاء عمولة مكررة تحت التزامن.
+    """
     if session.status not in ("completed", "ended"):
         return None
-    existing = TutorCommission.query.filter_by(session_id=session.id).first()
-    if existing:
-        return None
-
-    amount = float(session.price or 0)
-    commission = round(amount * COMMISSION_RATE / 100, 2)
-    net = round(amount - commission, 2)
 
     def _create():
+        # FOR UPDATE على الجلسة لمنع المعالجة المتزامنة
+        locked = db.session.execute(
+            db.select(TutoringSession).where(TutoringSession.id == session.id).with_for_update()
+        ).scalar_one_or_none()
+        if not locked or locked.status not in ("completed", "ended"):
+            return None
+        existing = TutorCommission.query.filter_by(session_id=locked.id).first()
+        if existing:
+            return None
+
+        amount = float(locked.price or 0)
+        commission = round(amount * COMMISSION_RATE / 100, 2)
+        net = round(amount - commission, 2)
+
         c = TutorCommission(
-            session_id=session.id,
-            tutor_id=session.tutor_id,
+            session_id=locked.id,
+            tutor_id=locked.tutor_id,
             session_amount=amount,
             commission_rate=COMMISSION_RATE,
             commission_amount=commission,
@@ -502,22 +512,32 @@ def create_commission_record(session: TutoringSession) -> TutorCommission | None
 
 
 def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, str | None]:
-    """طلب سحب أرباح — الحد الأدنى 200₪."""
+    """طلب سحب أرباح — الحد الأدنى 200₪.
+
+    P0-10: FOR UPDATE على العمولات المعلّقة لمنع سحب مزدوج تحت التزامن.
+    """
     if amount < 200:
         return None, _("الحد الأدنى للسحب 200₪.")
-    # Check withdrawable balance
-    pending = TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending").all()
-    withdrawable = sum(float(c.tutor_net) for c in pending)
-    if amount > withdrawable:
-        return None, _(
-            "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s).",
-            amount=amount,
-            balance=withdrawable,
-        )
 
     def _create():
+        # FOR UPDATE على العمولات المعلّقة لمنع السحب المتزامن
+        pending = (
+            TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending")
+            .with_for_update()
+            .all()
+        )
+        withdrawable = sum(float(c.tutor_net) for c in pending)
+        if amount > withdrawable:
+            raise TxError(_(
+                "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s).",
+                amount=amount,
+                balance=withdrawable,
+            ))
         p = TutorPayout(tutor_id=tutor_id, amount=amount)
         db.session.add(p)
         return p
 
-    return tx(_create), None
+    try:
+        return tx(_create), None
+    except TxError as exc:
+        return None, str(exc)

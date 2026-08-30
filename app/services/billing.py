@@ -69,8 +69,15 @@ def get_plan(plan_id: int) -> SubscriptionPlan | None:
 
 
 def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subscription | None, str | None]:
-    """يبدأ اشتراكاً بحالة pending — لا يُفعَّل إلا بعد اعتماد دفع يدوي."""
-    active = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").first()
+    """يبدأ اشتراكاً بحالة pending — لا يُفعَّل إلا بعد اعتماد دفع يدوي.
+
+    P0-10: FOR UPDATE على صف الاشتراك النشط لمنع اشتراك مزدوج تحت التزامن.
+    """
+    active = (
+        Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active")
+        .with_for_update()
+        .first()
+    )
     if active:
         return None, _("لديك اشتراك نشط في هذا الصف.")
 
@@ -163,30 +170,40 @@ def _activate(subscription: Subscription, duration_days: int | None = None, auto
 
 
 def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> Subscription:
-    """اعتماد الدفع اليدوي → تفعيل الاشتراك (ذرّية + حماية من الاعتماد المكرر)."""
+    """اعتماد الدفع اليدوي → تفعيل الاشتراك (ذرّية + حماية من الاعتماد المكرر).
+
+    P0-10: FOR UPDATE على صف الدفع لمنع اعتماد مزدوج تحت التزامن.
+    """
 
     def _approve():
         # P2-10: منع إعادة الاعتماد (توسيع الاشتراك مجاناً)
-        if payment.status != "pending":
+        locked = db.session.execute(
+            db.select(ManualPayment).where(ManualPayment.id == payment.id).with_for_update()
+        ).scalar_one()
+        if locked.status != "pending":
             raise TxError(_("تمت مراجعة هذا الدفع مسبقاً."))
-        payment.status = "approved"
-        payment.reviewed_by = reviewer_id
-        payment.reviewed_at = db.func.now()
-        sub = payment.subscription
+        locked.status = "approved"
+        locked.reviewed_by = reviewer_id
+        locked.reviewed_at = db.func.now()
+        sub = locked.subscription
         _activate(sub)
-        # إن كان لدى الطالب عضوية بالصف؟ لا نلزم؛ الاشتراك مكمل للعضوية.
         return sub
 
     return tx(_approve)
 
 
 def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> None:
+    """P0-10: FOR UPDATE على صف الدفع لمنع رفض مزدوج تحت التزامن."""
+
     def _reject():
-        if payment.status != "pending":
+        locked = db.session.execute(
+            db.select(ManualPayment).where(ManualPayment.id == payment.id).with_for_update()
+        ).scalar_one()
+        if locked.status != "pending":
             raise TxError(_("تمت مراجعة هذا الدفع مسبقاً."))
-        payment.status = "rejected"
-        payment.reviewed_by = reviewer_id
-        payment.reviewed_at = db.func.now()
+        locked.status = "rejected"
+        locked.reviewed_by = reviewer_id
+        locked.reviewed_at = db.func.now()
 
     tx(_reject)
 
