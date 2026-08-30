@@ -249,7 +249,15 @@ def shared_library():
 @login_required
 def lesson_import(lesson_id):
     from app.models.class_room import ClassRoom
-    from app.services.access import can_teach_class
+    from app.services.access import can_teach_class, can_view_class
+
+    # Verify source lesson is accessible to the user
+    source_lesson = get_lesson(lesson_id)
+    if not source_lesson:
+        abort(404)
+    source_class = _class_or_404(source_lesson.class_id)
+    if not can_view_class(source_class, current_user):
+        abort(403)
 
     target_class_id = request.args.get("target_class_id", type=int) or request.form.get("target_class_id", type=int)
     if not target_class_id:

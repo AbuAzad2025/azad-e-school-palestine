@@ -170,8 +170,15 @@ def api_lessons_get(lesson_id: int):
     if not lesson:
         return api_error(_("الدرس غير موجود"), 404, "NOT_FOUND")
 
-    # authorization: must be a member of the class or admin
-    if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+    # authorization: must be a member of the class, same-school admin, or super admin
+    if current_user.role == UserRole.super_admin:
+        pass
+    elif current_user.role == UserRole.school_admin:
+        from app.models.class_room import ClassRoom as _CR
+        _cls = _CR.query.filter_by(id=lesson.class_id).first()
+        if not _cls or _cls.school_id != getattr(current_user, "school_id", None):
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
+    else:
         is_member = (
             ClassMember.query.filter_by(class_id=lesson.class_id, user_id=current_user.id, status="active").first()
             is not None
@@ -373,8 +380,13 @@ def api_classes_get(class_id: int):
     if not class_room:
         return api_error(_("الصف غير موجود"), 404, "NOT_FOUND")
 
-    # authorization: school admin, member, or super admin
-    if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+    # authorization: school admin of same school, member, or super admin
+    if current_user.role == UserRole.super_admin:
+        pass
+    elif current_user.role == UserRole.school_admin:
+        if class_room.school_id != getattr(current_user, "school_id", None):
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
+    else:
         is_member = (
             ClassMember.query.filter_by(class_id=class_id, user_id=current_user.id, status="active").first() is not None
         )

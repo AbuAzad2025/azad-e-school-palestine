@@ -225,6 +225,9 @@ def session_pay(session_id):
     session_ = TutoringSession.query.get_or_404(session_id)
     if not can_access(current_user, session_):
         abort(403)
+    # Only the student (payer) can confirm payment
+    if current_user.id != session_.student_id:
+        abort(403)
     update_session(session_, payment_status="approved")
     audit(
         "tutoring.payment",

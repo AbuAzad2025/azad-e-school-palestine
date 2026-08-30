@@ -20,7 +20,11 @@ def badges():
 @login_required
 def check_badges():
     """فحص ومنح الشارات المستحقة (AJAX endpoint)."""
-    from flask import jsonify, request
+    from app.models.user import UserRole
+    from flask import abort, jsonify, request
+
+    if current_user.role not in (UserRole.student, UserRole.super_admin):
+        abort(403)
 
     event_type = request.json.get("event_type")
     event_data = request.json.get("event_data")

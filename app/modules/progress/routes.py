@@ -64,9 +64,16 @@ def student_detail(class_id, student_id):
 @role_required(UserRole.student)
 def lesson_heartbeat(lesson_id):
     """AJAX: تحديث وقت المشاهدة للدرس."""
+    from app.models.class_room import ClassMember
     from app.models.content import Lesson
 
     lesson = Lesson.query.get_or_404(lesson_id)
+    # Ensure student is a member of the lesson's class
+    _is_member = ClassMember.query.filter_by(
+        class_id=lesson.class_id, user_id=current_user.id, status="active"
+    ).first()
+    if not _is_member:
+        abort(403)
     seconds = request.get_json(silent=True) or {}
     additional = seconds.get("seconds", 30)
     progress = update_time_spent(current_user.id, lesson_id, additional)
@@ -84,9 +91,17 @@ def lesson_heartbeat(lesson_id):
 @role_required(UserRole.student)
 def video_update(attachment_id):
     """AJAX: تحديث تقدم الفيديو."""
+    from app.models.class_room import ClassMember
     from app.models.content import LessonAttachment
 
     attachment = LessonAttachment.query.get_or_404(attachment_id)
+    # Ensure student is a member of the lesson's class
+    _cls_id = attachment.lesson.class_id
+    _is_member = ClassMember.query.filter_by(
+        class_id=_cls_id, user_id=current_user.id, status="active"
+    ).first()
+    if not _is_member:
+        abort(403)
     data = request.get_json(silent=True) or {}
     seconds_watched = data.get("seconds_watched", 0)
     total_seconds = data.get("total_seconds", 0)
