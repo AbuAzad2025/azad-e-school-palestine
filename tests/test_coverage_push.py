@@ -886,7 +886,7 @@ class TestAssessment:
             _db.session.add(attempt)
             _db.session.flush()
 
-            answer = Answer(attempt_id=attempt.id, question_id=q.id, answer_text="مقالة")
+            answer = Answer(attempt_id=attempt.id, question_id=q.id, answer={"text": "مقالة"})
             _db.session.add(answer)
             _db.session.commit()
 
@@ -949,10 +949,17 @@ class TestCommunication:
         assert unread_count(uid) == 0
 
     def test_audit(self, app):
+        from unittest.mock import patch, PropertyMock
         from app.services.communication import audit
+        from flask_login import login_user
 
         uid = make_user(app, role="super_admin")
-        audit(user_id=uid, action="test_action", resource_type="test", resource_id=1, details="test details")
+        with app.test_request_context():
+            with app.app_context():
+                u = _db.session.get(User, uid)
+                login_user(u)
+            with patch("flask.request.remote_addr", "127.0.0.1"):
+                audit(action="test_action", entity="test", entity_id=1, detail={"details": "test details"})
         # Should not raise
 
 
@@ -970,7 +977,7 @@ class TestCalendar:
         from tests.conftest import make_school
 
         school_id = make_school(app)
-        event, err = create_event(school_id, "اختبارات نهائية", "exam", date.today(), date.today() + timedelta(days=5))
+        event, err = create_event(school_id, "اختبارات نهائية", "exam_period", date.today(), date.today() + timedelta(days=5))
         assert event is not None
         assert err is None
 
@@ -979,7 +986,7 @@ class TestCalendar:
         from tests.conftest import make_school
 
         school_id = make_school(app)
-        ev1, _ = create_event(school_id, "event1", "exam", date.today())
+        ev1, _ = create_event(school_id, "event1", "exam_period", date.today())
         ev2, _ = create_event(school_id, "event2", "holiday", date.today())
         events = list_events(school_id)
         assert len(events) >= 1
@@ -989,9 +996,9 @@ class TestCalendar:
         from tests.conftest import make_school
 
         school_id = make_school(app)
-        create_event(school_id, "exam1", "exam", date.today())
+        create_event(school_id, "exam1", "exam_period", date.today())
         create_event(school_id, "holiday1", "holiday", date.today())
-        exams = list_events(school_id, event_type="exam")
+        exams = list_events(school_id, event_type="exam_period")
         assert len(exams) >= 0
 
     def test_delete_event(self, app):
@@ -999,7 +1006,7 @@ class TestCalendar:
         from tests.conftest import make_school
 
         school_id = make_school(app)
-        event, _ = create_event(school_id, "delete me", "exam", date.today())
+        event, _ = create_event(school_id, "delete me", "exam_period", date.today())
         ok, err = delete_event(event.id)
         assert ok is True
 
@@ -1139,6 +1146,7 @@ class TestAccess:
 
     def test_can_view_class(self, app):
         from app.services.access import can_view_class
+        from flask_login import login_user
         from tests.conftest import make_school
 
         school_id = make_school(app)
@@ -1148,9 +1156,13 @@ class TestAccess:
         cls_id = make_class(app, school_id, grade_id, subject_id)
         make_class_member(app, cls_id, student_id)
 
-        cls = ClassRoom.query.get(cls_id)
-        u = User.query.get(student_id)
-        assert can_view_class(cls, u) is True
+        with app.test_request_context():
+            with app.app_context():
+                u = _db.session.get(User, student_id)
+                login_user(u)
+            cls = _db.session.get(ClassRoom, cls_id)
+            u = _db.session.get(User, student_id)
+            assert can_view_class(cls, u) is True
 
     def test_can_teach_class(self, app):
         from app.services.access import can_teach_class

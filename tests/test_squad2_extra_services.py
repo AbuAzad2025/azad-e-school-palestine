@@ -268,14 +268,17 @@ class TestSchoolApprovals:
 # ── Grade Appeals ──
 class TestGradeAppeals:
     def _setup_student(self, app):
-        from tests.conftest import make_school
+        from tests.conftest import make_class, make_grade, make_school, make_subject
 
         sid = make_school(app)
+        gid = make_grade(app, sid)
+        subjid = make_subject(app)
+        cid = make_class(app, sid, gid, subjid)
         student_uid = make_user(app, "student", school_id=sid)
-        return sid, student_uid
+        return sid, student_uid, cid
 
-    def _create_submission(self, app, student_uid):
-        a = Assignment(class_id=1, title="Test Assignment")
+    def _create_submission(self, app, student_uid, class_id):
+        a = Assignment(class_id=class_id, title="Test Assignment")
         db.session.add(a)
         db.session.flush()
         s = Submission(assignment_id=a.id, student_id=student_uid, body="answer")
@@ -285,48 +288,48 @@ class TestGradeAppeals:
 
     def test_submit_appeal(self, app):
         with app.app_context():
-            sid, student_uid = self._setup_student(app)
-            sub_id = self._create_submission(app, student_uid)
+            sid, student_uid, cid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid, cid)
             a = submit_appeal(sub_id, student_uid, "I think this is wrong")
             assert a is not None
 
     def test_submit_empty_reason(self, app):
         with app.app_context():
-            sid, student_uid = self._setup_student(app)
-            sub_id = self._create_submission(app, student_uid)
+            sid, student_uid, cid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid, cid)
             a = submit_appeal(sub_id, student_uid, "")
             assert a is None
 
     def test_submit_duplicate(self, app):
         with app.app_context():
-            sid, student_uid = self._setup_student(app)
-            sub_id = self._create_submission(app, student_uid)
+            sid, student_uid, cid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid, cid)
             submit_appeal(sub_id, student_uid, "First appeal")
             a = submit_appeal(sub_id, student_uid, "Second appeal")
             assert a is None
 
     def test_review_appeal(self, app):
         with app.app_context():
-            sid, student_uid = self._setup_student(app)
+            sid, student_uid, cid = self._setup_student(app)
             reviewer_uid = make_user(app, "teacher", school_id=sid)
-            sub_id = self._create_submission(app, student_uid)
+            sub_id = self._create_submission(app, student_uid, cid)
             a = submit_appeal(sub_id, student_uid, "Wrong grade")
             reviewed = review_appeal(a.id, "approved", "Fixed", reviewer_uid)
             assert reviewed.status == "approved"
 
     def test_review_invalid_status(self, app):
         with app.app_context():
-            sid, student_uid = self._setup_student(app)
+            sid, student_uid, cid = self._setup_student(app)
             reviewer_uid = make_user(app, "teacher", school_id=sid)
-            sub_id = self._create_submission(app, student_uid)
+            sub_id = self._create_submission(app, student_uid, cid)
             a = submit_appeal(sub_id, student_uid, "Wrong")
             reviewed = review_appeal(a.id, "invalid", None, reviewer_uid)
             assert reviewed is None
 
     def test_pending_appeals(self, app):
         with app.app_context():
-            sid, student_uid = self._setup_student(app)
-            sub_id = self._create_submission(app, student_uid)
+            sid, student_uid, cid = self._setup_student(app)
+            sub_id = self._create_submission(app, student_uid, cid)
             submit_appeal(sub_id, student_uid, "Fix this")
             pending = get_pending_appeals()
             assert len(pending) >= 1
@@ -369,13 +372,17 @@ class TestRubricServices:
     def test_grade_with_rubric(self, app):
         with app.app_context():
             from app.models.gradebook import Assignment, Submission
+            from tests.conftest import make_class, make_grade, make_subject
 
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
             student_uid = make_user(app, "student", school_id=sid)
+            gid = make_grade(app, sid)
+            subjid = make_subject(app)
+            cid = make_class(app, sid, gid, subjid, teacher_id=tid)
             t = create_rubric_template(tid, sid, "R", criteria=[{"title": "C1", "max_score": 10}])
             c = t.criteria[0]
-            a = Assignment(class_id=1, title="Test A")
+            a = Assignment(class_id=cid, title="Test A")
             db.session.add(a)
             db.session.flush()
             sub = Submission(assignment_id=a.id, student_id=student_uid, body="answer")
@@ -387,10 +394,14 @@ class TestRubricServices:
     def test_rubric_total_score(self, app):
         with app.app_context():
             from app.models.gradebook import Assignment, Submission
+            from tests.conftest import make_class, make_grade, make_subject
 
             sid = make_school(app)
             tid = make_user(app, "teacher", school_id=sid)
             student_uid = make_user(app, "student", school_id=sid)
+            gid = make_grade(app, sid)
+            subjid = make_subject(app)
+            cid = make_class(app, sid, gid, subjid, teacher_id=tid)
             t = create_rubric_template(
                 tid,
                 sid,
@@ -400,7 +411,7 @@ class TestRubricServices:
                     {"title": "C2", "max_score": 5},
                 ],
             )
-            a = Assignment(class_id=1, title="Test A")
+            a = Assignment(class_id=cid, title="Test A")
             db.session.add(a)
             db.session.flush()
             sub = Submission(assignment_id=a.id, student_id=student_uid, body="answer")

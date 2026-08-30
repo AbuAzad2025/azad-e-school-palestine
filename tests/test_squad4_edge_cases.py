@@ -61,8 +61,10 @@ class TestMockedExternalAPIs:
 
     @patch("app.services.billing.expire_subscriptions")
     def test_expire_mocked(self, mock_expire, app):
+        from app.services.billing import expire_subscriptions as _expire
+
         mock_expire.return_value = 5
-        count = expire_subscriptions()
+        count = _expire()
         assert count == 5
         mock_expire.assert_called_once()
 

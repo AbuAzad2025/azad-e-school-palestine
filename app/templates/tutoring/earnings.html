@@ -10,11 +10,11 @@
 </div>
 
 <div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-  {{ azad_stat_card('⁦' ~ earnings.total_earnings ~ '⁩  ~ session.currency, _('إجمالي الأرباح'), 'credit-card', 'var(--azad-green)') }}
-  {{ azad_stat_card('⁦' ~ earnings.commission_amount ~ '⁩  ~ session.currency, _('عمولة المنصة (20%%)'), 'percent', 'var(--azad-red)') }}
-  {{ azad_stat_card('⁦' ~ earnings.net_earnings ~ '⁩  ~ session.currency, _('صافي الأرباح'), 'credit-card', 'var(--azad-blue)') }}
-  {{ azad_stat_card('⁦' ~ earnings.withdrawable ~ '⁩  ~ session.currency, _('المتاح للسحب'), 'wallet', 'var(--azad-green)') }}
-  {{ azad_stat_card('⁦' ~ earnings.total_payouts ~ '⁩  ~ session.currency, _('إجمالي السحوبات'), 'arrow-up-circle', 'var(--azad-blue)') }}
+  {{ azad_stat_card(earnings.total_earnings, _('إجمالي الأرباح'), 'credit-card', 'var(--azad-green)') }}
+  {{ azad_stat_card(earnings.commission_amount, _('عمولة المنصة (20%%)'), 'percent', 'var(--azad-red)') }}
+  {{ azad_stat_card(earnings.net_earnings, _('صافي الأرباح'), 'credit-card', 'var(--azad-blue)') }}
+  {{ azad_stat_card(earnings.withdrawable, _('المتاح للسحب'), 'wallet', 'var(--azad-green)') }}
+  {{ azad_stat_card(earnings.total_payouts, _('إجمالي السحوبات'), 'arrow-up-circle', 'var(--azad-blue)') }}
   {{ azad_stat_card(earnings.avg_rating ~ '/5', _('متوسط التقييم'), 'star', 'var(--azad-indigo)') }}
   {{ azad_stat_card(earnings.review_count, _('عدد التقييمات'), 'message-square', 'var(--azad-purple)') }}
   {{ azad_stat_card(earnings.completed_sessions, _('جلسات مكتملة'), 'check-circle', 'var(--azad-blue)') }}

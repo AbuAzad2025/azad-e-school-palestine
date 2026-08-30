@@ -4,6 +4,7 @@ billing, content, AI, calendar, family, and export modules."""
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 
 import pytest
 from app import create_app
@@ -328,7 +329,7 @@ class TestGradesRoutes:
     def test_grade_item_create(self, app, client):
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         with app.app_context():
-            cat = GradeCategory(class_id=class_id, name="اختبارات", weight=60)
+            cat = GradeCategory(class_id=class_id, name="اختبارات", weight=Decimal("0.60"))
             _db.session.add(cat)
             _db.session.commit()
             cat_id = cat.id
@@ -344,7 +345,7 @@ class TestGradesRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         sid, _ = _setup_student_in_class(app, class_id)
         with app.app_context():
-            cat = GradeCategory(class_id=class_id, name="اختبارات", weight=60)
+            cat = GradeCategory(class_id=class_id, name="اختبارات", weight=Decimal("0.60"))
             _db.session.add(cat)
             _db.session.commit()
             item = GradeItem(class_id=class_id, category_id=cat.id, title="exam1", max_mark=50)
