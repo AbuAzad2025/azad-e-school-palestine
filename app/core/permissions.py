@@ -62,7 +62,7 @@ def class_access_required(fn):
         from app.models.class_room import ClassRoom
         from app.services.access import can_view_class
 
-        class_id = kwargs.get("class_id") or _req.view_args.get("class_id")
+        class_id = kwargs.get("class_id") or (_req.view_args or {}).get("class_id")
         if class_id is None:
             abort(400)
         class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
@@ -90,7 +90,7 @@ def class_teach_required(fn):
         from app.models.class_room import ClassRoom
         from app.services.access import can_teach_class
 
-        class_id = kwargs.get("class_id") or _req.view_args.get("class_id")
+        class_id = kwargs.get("class_id") or (_req.view_args or {}).get("class_id")
         if class_id is None:
             abort(400)
         class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
@@ -116,7 +116,7 @@ def parent_of_required(fn):
     def wrapper(*args, **kwargs):
         from app.services.family import is_parent_of
 
-        student_id = kwargs.get("student_id") or _req.view_args.get("student_id")
+        student_id = kwargs.get("student_id") or (_req.view_args or {}).get("student_id")
         if student_id is None:
             abort(400)
         if not is_parent_of(current_user.id, student_id):
