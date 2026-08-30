@@ -40,7 +40,7 @@ class AiUsageLog(PKMixin, db.Model):
 
     __tablename__ = "ai_usage_logs"
 
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     model: Mapped[str] = mapped_column(Text, nullable=False)
     prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

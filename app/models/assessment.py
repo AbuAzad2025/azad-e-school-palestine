@@ -26,7 +26,7 @@ class Quiz(PKMixin, db.Model):
     show_answers_after: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     total_mark: Mapped[float | None] = mapped_column(Numeric(6, 2))
     status: Mapped[str] = mapped_column(String(10), default="draft", nullable=False)
-    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     enable_proctoring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     max_tab_switches: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
     fullscreen_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

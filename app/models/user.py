@@ -130,7 +130,7 @@ class UserRoleLink(PKMixin, db.Model):
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
     role: Mapped[UserRole] = mapped_column(db.Enum(UserRole, name="user_role"), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    approved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    approved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     approved_at = db.Column(db.DateTime(timezone=True))
 
     user: Mapped[User] = relationship(back_populates="role_links", foreign_keys=[user_id])

@@ -53,7 +53,7 @@ class TutoringRequest(PKMixin, db.Model):
 class TutoringSession(PKMixin, db.Model):
     __tablename__ = "tutoring_sessions"
 
-    request_id: Mapped[int | None] = mapped_column(ForeignKey("tutoring_requests.id"))
+    request_id: Mapped[int | None] = mapped_column(ForeignKey("tutoring_requests.id", ondelete="SET NULL"))
     tutor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     subject: Mapped[str] = mapped_column(Text, nullable=False)
@@ -115,7 +115,7 @@ class TutorPayout(PKMixin, db.Model):
     tutor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/approved/rejected
-    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at = db.Column(db.DateTime(timezone=True))
     note: Mapped[str | None] = mapped_column(Text)
 

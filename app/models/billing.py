@@ -22,7 +22,10 @@ class SubscriptionPlan(PKMixin, db.Model):
     __tablename__ = "subscription_plans"
 
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
-    class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id"))  # NULL = خطة عامة للمدرسة
+    # NULL = خطة عامة للمدرسة
+    class_id: Mapped[int | None] = mapped_column(
+        ForeignKey("classes.id", ondelete="SET NULL")
+    )
     name: Mapped[str] = mapped_column(Text, nullable=False)  # فصل أول / فصل ثاني / سنوي
     plan: Mapped[str] = mapped_column(String(15), nullable=False)  # first_term/second_term/annual
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -73,7 +76,7 @@ class ManualPayment(PKMixin, db.Model):
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     note: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/approved/rejected
-    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at = db.Column(db.DateTime(timezone=True))
     gateway: Mapped[str | None] = mapped_column(String(20))  # stripe/paytabs/cashu/manual
 
@@ -132,6 +135,8 @@ class DiscountCode(PKMixin, db.Model):
     expiry_date: Mapped[date_ | None] = mapped_column(db.Date, nullable=True)
     applicable_plan_ids: Mapped[list[int] | None] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id"), nullable=True)
+    school_id: Mapped[int | None] = mapped_column(
+        ForeignKey("schools.id", ondelete="SET NULL"), nullable=True
+    )
 
     school: Mapped[School] = relationship()

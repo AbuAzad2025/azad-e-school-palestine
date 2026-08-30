@@ -19,7 +19,7 @@ class Assignment(PKMixin, db.Model):
     body: Mapped[str | None] = mapped_column(Text)
     due_at = db.Column(db.DateTime(timezone=True))
     max_mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
-    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     submissions: Mapped[list[Submission]] = relationship(back_populates="assignment", cascade="all, delete-orphan")
 
@@ -35,7 +35,7 @@ class Submission(PKMixin, db.Model):
     submitted_at = db.Column(db.DateTime(timezone=True))
     mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
     feedback: Mapped[str | None] = mapped_column(Text)
-    graded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    graded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     graded_at = db.Column(db.DateTime(timezone=True))
 
     assignment: Mapped[Assignment] = relationship(back_populates="submissions")
@@ -50,7 +50,7 @@ class GradeCategory(PKMixin, db.Model):
 
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
-    weight: Mapped[float | None] = mapped_column(Numeric(3, 2))  # نسبي
+    weight: Mapped[float | None] = mapped_column(Numeric(5, 2))  # نسبي (0–100% أو كسر)
 
     items: Mapped[list[GradeItem]] = relationship(back_populates="category", cascade="all, delete-orphan")
 
@@ -80,7 +80,7 @@ class GradeEntry(PKMixin, db.Model):
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     grade_item_id: Mapped[int] = mapped_column(ForeignKey("grade_items.id"), nullable=False)
     mark: Mapped[float | None] = mapped_column(Numeric(5, 2))
-    recorded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    recorded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     note: Mapped[str | None] = mapped_column(Text)
 
     item: Mapped[GradeItem] = relationship(back_populates="entries")
@@ -123,7 +123,7 @@ class RubricGrade(PKMixin, db.Model):
     criterion_id: Mapped[int] = mapped_column(ForeignKey("rubric_criteria.id"), nullable=False)
     score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)
-    graded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    graded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     submission: Mapped[Submission] = relationship("Submission")
     criterion: Mapped[RubricCriterion] = relationship("RubricCriterion")
@@ -138,7 +138,7 @@ class GradeAppeal(PKMixin, db.Model):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(15), default="pending", nullable=False)
     teacher_response: Mapped[str | None] = mapped_column(Text)
-    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at = db.Column(db.DateTime(timezone=True))
 
     submission: Mapped[Submission] = relationship("Submission")

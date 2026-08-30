@@ -22,7 +22,7 @@ class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
     subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"), nullable=False)
     grade_id: Mapped[int] = mapped_column(ForeignKey("grades.id"), nullable=False)
-    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     semester: Mapped[str | None] = mapped_column(String(10))  # first / second (السنوي من الفصلين)
     name: Mapped[str | None] = mapped_column(Text)
     join_code: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False)

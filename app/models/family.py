@@ -38,11 +38,8 @@ class FamilyLinkCode(PKMixin, db.Model):
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     code: Mapped[str] = mapped_column(CITEXT, unique=True, nullable=False)
     used: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
-    used_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    used_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     expires_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), server_default=db.func.now())
-    used: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
-    used_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), server_default=db.func.now())
 
     student: Mapped[User] = relationship("User", foreign_keys=[student_id])

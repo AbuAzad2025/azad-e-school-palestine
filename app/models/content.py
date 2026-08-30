@@ -28,9 +28,9 @@ class Lesson(PKMixin, SoftDeleteMixin, db.Model):
     status: Mapped[str] = mapped_column(String(10), default="draft", nullable=False)  # draft/published/archived
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     published_at = db.Column(db.DateTime(timezone=True))
-    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     is_shared: Mapped[bool] = mapped_column(default=False, nullable=False)
-    original_lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id"))
+    original_lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id", ondelete="SET NULL"))
     is_offline_available: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     attachments: Mapped[list["LessonAttachment"]] = relationship(back_populates="lesson", cascade="all, delete-orphan")

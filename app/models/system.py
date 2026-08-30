@@ -12,7 +12,7 @@ from .mixins import PKMixin
 class AuditLog(PKMixin, db.Model):
     __tablename__ = "audit_logs"
 
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     action: Mapped[str] = mapped_column(Text, nullable=False)
     entity: Mapped[str | None] = mapped_column(Text)
     entity_id: Mapped[int | None] = mapped_column(BigInteger)
@@ -53,7 +53,9 @@ class HealthCheck(PKMixin, db.Model):
 class CertificateTemplate(PKMixin, db.Model):
     __tablename__ = "certificate_templates"
 
-    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id"), nullable=True)
+    school_id: Mapped[int | None] = mapped_column(
+        ForeignKey("schools.id", ondelete="SET NULL"), nullable=True
+    )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     template_html: Mapped[str] = mapped_column(Text, nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

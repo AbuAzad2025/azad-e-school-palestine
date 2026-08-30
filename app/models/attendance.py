@@ -17,4 +17,4 @@ class Attendance(PKMixin, db.Model):
     date: Mapped[object] = mapped_column(Date, nullable=False)
     status: Mapped[str] = mapped_column(String(10), nullable=False)  # present/absent/late/excused
     note: Mapped[str | None] = mapped_column(Text)
-    recorded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+    recorded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
