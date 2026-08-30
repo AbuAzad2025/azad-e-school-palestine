@@ -3,15 +3,6 @@ name: E2E Tests
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "**.svg"
-      - "**.png"
-      - "**.jpg"
-      - ".gitignore"
-      - "LICENSE"
-      - ".github/workflows/*.yml"  # Avoid triggering on workflow changes
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +14,7 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.12"
-  NODE_VERSION: "22"
+  NODE_VERSION: "20"
 
 jobs:
   e2e:
@@ -45,9 +36,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -59,7 +50,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -112,7 +103,7 @@ jobs:
           EMAIL_ENABLED: "0"
         run: npx playwright test --reporter=list
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: e2e-traces
@@ -120,13 +111,12 @@ jobs:
           retention-days: 1
           compression-level: 6
 
-  # Post E2E results to PR (if applicable)
   report:
     name: Report E2E Results
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs: e2e
-    if: ${{ always() && !cancelled() }}
+    if: always()
     steps:
       - name: Generate E2E report
         run: |
@@ -135,8 +125,3 @@ jobs:
           echo "**Status:** ${{ needs.e2e.result == 'success' && '✅ Passed' || '❌ Failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Details" >> $GITHUB_STEP_SUMMARY
-          echo "- 🌐 Playwright tests executed on main branch" >> $GITHUB_STEP_SUMMARY
-          echo "- 🐘 PostgreSQL 16 service container used" >> $GITHUB_STEP_SUMMARY
-          echo "- ⏱️ Timeout: 20 minutes" >> $GITHUB_STEP_SUMMARY

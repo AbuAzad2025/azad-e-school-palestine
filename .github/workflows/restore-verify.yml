@@ -46,10 +46,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload verification report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: restore-verification-report
           path: |
@@ -124,30 +124,3 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
           compression-level: 6
-
-  # Optional: Test PITR (Point-in-Time Recovery) if WAL archiving enabled
-  pitr-test:
-    name: PITR Test (if WAL archiving)
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    if: false  # Enable when WAL archiving is configured
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: pip install psycopg2-binary pgbackrest
-
-      - name: Test PITR recovery
-        run: |
-          # This would test:
-          # 1. Take base backup
-          # 2. Generate some WAL
-          # 3. Restore to specific timestamp
-          echo "PITR test not yet implemented"

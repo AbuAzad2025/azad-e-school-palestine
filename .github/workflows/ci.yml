@@ -9,9 +9,6 @@ on:
       - "**.svg"
       - "**.png"
       - "**.jpg"
-      - ".gitignore"
-      - "LICENSE"
-      - ".github/workflows/*.yml"  # Avoid triggering on workflow changes
   pull_request:
     branches: [main]
     paths-ignore:
@@ -20,9 +17,6 @@ on:
       - "**.svg"
       - "**.png"
       - "**.jpg"
-      - ".gitignore"
-      - "LICENSE"
-      - ".github/workflows/*.yml"  # Avoid triggering on workflow changes
   workflow_dispatch:
 
 concurrency:
@@ -34,28 +28,26 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.12"
-  NODE_VERSION: "22"
-  # Cost optimization: skip heavy jobs for docs-only changes
+  NODE_VERSION: "20"
   SKIP_HEAVY_JOBS: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[skip ci]') }}
 
 jobs:
   # ════════════════════════════════════════════════════════════
-  # 1. Lint + Security (merged into one job)
+  # 1. Lint + Security
   # ════════════════════════════════════════════════════════════
-  # Cost optimization: lint job runs on all changes, but is lightweight
   lint-security:
     name: Lint & Security
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -67,7 +59,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -109,13 +101,13 @@ jobs:
       - name: Biome check
         run: npx biome check app/static/js
 
-      # ── i18n: تفشل عند سلاسل غير مترجمة أو fuzzy في الكتالوجات ──
+      # ── i18n ──
       - name: Translation catalogs check
         run: python scripts/dump_untranslated.py
 
       # ── Security ──
       - name: Gitleaks (secrets)
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -127,18 +119,17 @@ jobs:
 
       - name: Hadolint (Dockerfile)
         if: hashFiles('Dockerfile') != ''
-        uses: hadolint/hadolint-action@v3.5.0
+        uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
 
   # ════════════════════════════════════════════════════════════
-  # 2. Tests (PG 16) — with migrations before tests!
+  # 2. Tests (PG 16)
   # ════════════════════════════════════════════════════════════
-  # Cost optimization: skip tests for docs-only changes
   test:
     name: Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: lint-security
     if: ${{ !env.SKIP_HEAVY_JOBS }}
     services:
@@ -156,9 +147,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -212,7 +203,7 @@ jobs:
 
       - name: Upload test output on failure
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: pytest-output
           path: pytest-output.txt
@@ -221,7 +212,7 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: |
@@ -233,15 +224,14 @@ jobs:
   # ════════════════════════════════════════════════════════════
   # 3. JS Tests
   # ════════════════════════════════════════════════════════════
-  # Cost optimization: JS tests are lightweight, always run
   test-js:
     name: JS Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     needs: lint-security
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -258,7 +248,7 @@ jobs:
 
       - name: Upload JS coverage
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-js
           path: coverage/js/
@@ -266,13 +256,12 @@ jobs:
           compression-level: 6
 
   # ════════════════════════════════════════════════════════════
-  # 5. Docker Build + Boot + Migrations
+  # 4. Docker Build + Boot + Migrations
   # ════════════════════════════════════════════════════════════
-  # Cost optimization: Docker build is expensive, skip for draft PRs
   build-verify:
     name: Build & Verify
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     needs: lint-security
     if: ${{ !env.SKIP_HEAVY_JOBS && !github.event.pull_request.draft }}
     services:
@@ -290,8 +279,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -343,33 +332,33 @@ jobs:
           echo "Docker build OK"
 
   # ════════════════════════════════════════════════════════════
-  # 6. Unified Coverage Report
+  # 5. Unified Coverage Report
   # ════════════════════════════════════════════════════════════
   coverage:
     name: Coverage Report
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [test, test-js]
-    if: ${{ always() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    if: always()
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download backend coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: coverage
           path: coverage-backend
         continue-on-error: true
 
       - name: Download frontend coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: coverage-js
           path: coverage-frontend
@@ -415,7 +404,7 @@ jobs:
 
       - name: Post PR comment
         if: github.event_name == 'pull_request' && steps.merge.outcome == 'success'
-        uses: marocchino/sticky-pull-request-comment@v3
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: coverage-report
           path: /tmp/coverage-comment.md
@@ -424,14 +413,14 @@ jobs:
         continue-on-error: true
 
   # ════════════════════════════════════════════════════════════
-  # Cost Monitoring (runs after all jobs)
+  # 6. Cost Monitoring
   # ════════════════════════════════════════════════════════════
   cost-report:
     name: Cost Report
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs: [lint-security, test, test-js, build-verify, coverage]
-    if: ${{ always() && !cancelled() }}
+    if: always()
     steps:
       - name: Generate cost report
         run: |
@@ -447,21 +436,13 @@ jobs:
           echo "- JS Tests: ${{ needs.test-js.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build & Verify: ${{ needs.build-verify.result == 'success' && '✅' || needs.build-verify.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
           echo "- Coverage: ${{ needs.coverage.result == 'success' && '✅' || needs.coverage.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Cost Optimization Tips" >> $GITHUB_STEP_SUMMARY
-          echo "- ⏭️ Skipped jobs save ~\$0.01-0.05 per job" >> $GITHUB_STEP_SUMMARY
-          echo "- 📦 Artifact retention reduced to 1-3 days" >> $GITHUB_STEP_SUMMARY
-          echo "- 🔄 Concurrency cancellation saves ~30-50% on parallel runs" >> $GITHUB_STEP_SUMMARY
-          echo "- 🧪 E2E tests moved to separate workflow (e2e.yml)" >> $GITHUB_STEP_SUMMARY
 
   # ════════════════════════════════════════════════════════════
   # 7. Deploy (only on main, after all pass)
   # ════════════════════════════════════════════════════════════
-  # Cost optimization: deploy only on main push after all tests pass
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     needs: [test, test-js, build-verify, coverage]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -469,13 +450,13 @@ jobs:
       packages: write
     environment: production
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -483,7 +464,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}/azad-e-school
           tags: |
@@ -491,15 +472,15 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: deploy/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ github.ref_name }}
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Check deploy secrets
         id: check
@@ -515,7 +496,7 @@ jobs:
 
       - name: Deploy via SSH
         if: steps.check.outputs.has_secrets == 'true'
-        uses: appleboy/ssh-action@v1.2.5
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
