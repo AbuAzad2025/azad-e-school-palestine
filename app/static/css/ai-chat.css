@@ -47,7 +47,7 @@
   width: 280px;
   min-width: 280px;
   background: var(--surface);
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -85,7 +85,7 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: background 0.2s;
   position: relative;
@@ -144,13 +144,13 @@
 .delete-chat {
   position: absolute;
   top: 0.5rem;
-  right: 0.5rem;
+  inset-inline-end: 0.5rem;
   opacity: 0;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 0.25rem;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   transition: opacity 0.2s, background 0.2s;
 }
 
@@ -274,14 +274,14 @@
 .message.user .message-content {
   background: var(--azad-navy);
   color: var(--azad-white);
-  border-bottom-right-radius: 0.5rem;
+  border-end-end-radius: 0.5rem;
 }
 
 .message.assistant .message-content {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-bottom-left-radius: 0.5rem;
+  border-end-start-radius: 0.5rem;
   box-shadow: var(--shadow-sm);
 }
 
@@ -329,11 +329,11 @@
 
 .message.user .message-meta {
   justify-content: flex-end;
-  margin-right: 0.5rem;
+  margin-inline-end: 0.5rem;
 }
 
 .message.assistant .message-meta {
-  margin-left: 0.5rem;
+  margin-inline-start: 0.5rem;
 }
 
 .copy-btn {
@@ -372,7 +372,7 @@
   max-height: 200px;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 1rem;
   line-height: 1.5;
@@ -428,7 +428,7 @@
 .toast-container {
   position: fixed;
   bottom: 1.5rem;
-  right: 1.5rem;
+  inset-inline-end: 1.5rem;
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -437,7 +437,7 @@
 
 .toast {
   padding: 0.75rem 1.25rem;
-  border-radius: var(--radius);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--azad-white);
@@ -445,6 +445,10 @@
   opacity: 0;
   transform: translateX(100%);
   transition: opacity 0.3s, transform 0.3s;
+}
+
+[dir="rtl"] .toast {
+  transform: translateX(-100%);
 }
 
 .toast.show {
@@ -461,12 +465,16 @@
 @media (max-width: 992px) {
   .ai-chat-sidebar {
     position: fixed;
-    left: 0;
+    inset-inline-start: 0;
     top: var(--nav-height);
     bottom: 0;
     z-index: 50;
     transform: translateX(-100%);
     box-shadow: var(--shadow-md);
+  }
+
+  [dir="rtl"] .ai-chat-sidebar {
+    transform: translateX(100%);
   }
 
   body.sidebar-open .ai-chat-sidebar {
@@ -585,7 +593,7 @@
 .message-content ul,
 .message-content ol {
   margin: 0.75rem 0;
-  padding-right: 1.5rem;
+  padding-inline-start: 1.5rem;
 }
 
 .message-content li {
@@ -595,7 +603,7 @@
 .message-content blockquote {
   margin: 1rem 0;
   padding: 0.5rem 1rem;
-  border-right: 3px solid var(--azad-navy);
+  border-inline-start: 3px solid var(--azad-navy);
   background: var(--surface-2);
   border-radius: 0 0.5rem 0.5rem 0;
   color: var(--text);

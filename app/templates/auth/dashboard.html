@@ -12,7 +12,7 @@
   {# ═══ Super Admin Dashboard ═══ #}
   <div class="azad-section">
     <h2>{{ _('نظرة عامة على النظام') }}</h2>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <div class="azad-flex azad-gap-2 azad-flex-wrap">
       <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('schools.index') }}">{{ _('إدارة المدارس') }}</a>
       <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.users_list') }}">{{ _('إدارة المستخدمين') }}</a>
     </div>
@@ -141,13 +141,12 @@
   </div>
   {% if children_memberships %}
   <div class="azad-list">
-    {% for child_name, memberships in children_memberships.items() %}
-    <div class="azad-item" style="border-top:3px solid var(--azad-blue)">
-      <div>
-        <div class="item-title" style="font-size:1.05rem">{{ icon('user') }} {{ child_name }}</div>
+    {% for child_name, memberships in children_memberships.items() %}      <div class="azad-item azad-item--child-header">
+        <div>
+          <div class="item-title">{{ icon('user') }} {{ child_name }}</div>
+        </div>
       </div>
-    </div>
-    <div class="azad-list" style="margin-top:0">
+    <div class="azad-list azad-list--nested">
       {% for m in memberships %}
       <div class="azad-item">
         <div>

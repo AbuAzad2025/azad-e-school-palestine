@@ -102,9 +102,9 @@
   --border: #e2e8f0;
   --border-light: #f1f5f9;
   --text: #1e293b;
-  --text-muted: #64748b;
-  --text-secondary: #94a3b8;
-  --muted: #64748b;
+  --text-muted: #475569;
+  --text-secondary: #64748b;
+  --muted: #475569;
 
   --color-success: #009535;
   --color-success-light: #ecfdf5;
@@ -473,6 +473,10 @@ html[data-theme="dark"] .azad-btn-outline:hover { background: #34d399; color: #0
 }
 @keyframes azadToastIn {
   from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+[dir="rtl"] @keyframes azadToastIn {
+  from { opacity: 0; transform: translateX(-20px); }
   to { opacity: 1; transform: translateX(0); }
 }
 .azad-toast--success { border-inline-start: 4px solid var(--color-success); }

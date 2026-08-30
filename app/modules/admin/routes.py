@@ -566,8 +566,11 @@ def backup_create():
         flash(_("DATABASE_URL غير مضبوط"), "danger")
         return redirect(url_for("admin.backups_list"))
 
+    # pg_dump لا يفهم +psycopg2 فنحذفه
+    pg_url = db_url.replace("+psycopg2", "").replace("+psycopg", "")
+
     try:
-        result = subprocess.run([PG_DUMP, db_url, "-f", filepath], capture_output=True, text=True, timeout=300)
+        result = subprocess.run([PG_DUMP, pg_url, "-f", filepath], capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             flash(_("تم إنشاء النسخة الاحتياطية بنجاح"), "success")
         else:
@@ -602,8 +605,10 @@ def backup_restore(filename):
     if not db_url:
         flash(_("DATABASE_URL غير مضبوط"), "danger")
         return redirect(url_for("admin.backups_list"))
+
+    pg_url = db_url.replace("+psycopg2", "").replace("+psycopg", "")
     try:
-        result = subprocess.run([PSQL, db_url, "-f", filepath], capture_output=True, text=True, timeout=300)
+        result = subprocess.run([PSQL, pg_url, "-f", filepath], capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             flash(_("تمت الاستعادة بنجاح"), "success")
         else:

@@ -53,7 +53,10 @@ function updateProgress() {
     : `${answered} من ${total} تمت الإجابة عليه`;
 }
 
+let _quizTimerInterval = null;
+
 function initTimer() {
+  if (_quizTimerInterval) clearInterval(_quizTimerInterval);
   const timerEl = document.getElementById("quiz-timer");
   if (!timerEl) return;
   const durationMin = Number(timerEl.dataset.durationMin) || 0;
@@ -69,20 +72,21 @@ function initTimer() {
   const tick = () => {
     const m = String(Math.floor(remaining / 60)).padStart(2, "0");
     const s = String(remaining % 60).padStart(2, "0");
-    span.textContent = `${m}:${s}`;
+    if (span) span.textContent = `${m}:${s}`;
 
     timerEl.classList.toggle("quiz-timer--warning", remaining <= 300 && remaining > 60);
     timerEl.classList.toggle("quiz-timer--danger", remaining <= 60);
 
     if (remaining <= 0) {
-      clearInterval(interval);
+      clearInterval(_quizTimerInterval);
+      _quizTimerInterval = null;
       autoSubmit();
       return;
     }
     remaining -= 1;
   };
 
-  const interval = setInterval(tick, 1000);
+  _quizTimerInterval = setInterval(tick, 1000);
   tick();
 }
 
@@ -147,24 +151,37 @@ function initProctoring(attemptId) {
       headers: { "Content-Type": "application/json", "X-CSRFToken": token },
       body: JSON.stringify(payload),
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
-        if (data.auto_submit) {
+        if (data?.auto_submit) {
           autoSubmit();
         }
       })
-      .catch(() => {});
+      .catch((err) => console.warn("Proctor event failed:", err));
   }
 
-  document.addEventListener("visibilitychange", () => {
+  const onVisibilityChange = () => {
     if (document.hidden) postProctor("tab_switch");
-  });
-
-  document.addEventListener("fullscreenchange", () => {
+  };
+  const onFullscreenChange = () => {
     if (!document.fullscreenElement && document.fullscreenEnabled !== undefined) {
       postProctor("fullscreen_exit");
     }
-  });
+  };
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  document.addEventListener("fullscreenchange", onFullscreenChange);
+
+  // Store for cleanup
+  return {
+    destroy() {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+    },
+  };
 }
 
 function init() {

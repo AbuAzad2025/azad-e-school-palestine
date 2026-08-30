@@ -1,36 +1,36 @@
 {% extends "base.html" %}
 {% block title %}{{ _('الرسائل') }}{% endblock %}
 {% block content %}
-<div style="max-width:800px;margin:2rem auto">
+<div class="azad-card--medium">
   <h1 class="page-title azad-title">{{ _('الرسائل') }}</h1>
-  <div style="display:flex;gap:.5rem;margin-bottom:1.5rem">
+  <div class="azad-flex azad-gap-2 azad-mb-4">
     <a href="{{ url_for('messages.compose') }}" class="azad-btn">{{ icon('plus') }} {{ _('رسالة جديدة') }}</a>
     <a href="{{ url_for('messages.inbox_view') }}" class="azad-btn {{ 'azad-btn-primary' if not is_sent else '' }}">{{ icon('inbox') }} {{ _('وارد') }}</a>
     <a href="{{ url_for('messages.sent_view') }}" class="azad-btn {{ 'azad-btn-primary' if is_sent else '' }}">{{ icon('upload') }} {{ _('صادر') }}</a>
   </div>
 
   {% if not messages %}
-    <div class="azad-card" style="text-align:center;padding:3rem">
+    <div class="azad-msg-empty azad-card">
       {{ icon('envelope') }}
-      <p style="margin-top:1rem;color:var(--azad-muted)">{{ _('لا توجد رسائل.') }}</p>
+      <p class="azad-mt-2">{{ _('لا توجد رسائل.') }}</p>
     </div>
   {% else %}
     <div class="azad-card">
       {% for msg in messages %}
         <a href="{{ url_for('messages.thread_view', message_id=msg.id) }}"
-           style="display:flex;gap:1rem;align-items:center;padding:.75rem 1rem;border-bottom:1px solid var(--azad-border);text-decoration:none;color:inherit;{% if not msg.is_read and not is_sent %}font-weight:700;{% endif %}">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;gap:.5rem">
-              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+           class="azad-msg-item {% if not msg.is_read and not is_sent %}azad-msg-item--unread{% endif %}">
+          <div class="azad-msg-item__body">
+            <div class="azad-msg-item__header">
+              <span class="azad-msg-item__sender">
                 {% if is_sent %}
                   {{ _('إلى:') }} {{ msg.recipient.name_ar }}
                 {% else %}
                   {{ _('من:') }} {{ msg.sender.name_ar }}
                 {% endif %}
               </span>
-              <span style="color:var(--azad-muted);font-size:.8rem;white-space:nowrap">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+              <span class="azad-msg-item__date">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
             </div>
-            <div style="font-size:.9rem;color:var(--azad-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.25rem">
+            <div class="azad-msg-item__subject">
               {{ msg.subject }}
             </div>
           </div>

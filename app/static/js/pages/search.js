@@ -45,6 +45,9 @@ function closeModal() {
   const modal = document.getElementById("azad-search-modal");
   if (!modal) return;
   modal.classList.remove("is-open");
+  // Cancel any pending search
+  if (abortController) abortController.abort();
+  clearTimeout(debounceTimer);
   const input = modal.querySelector("#azad-search-input");
   if (input) {
     input.value = "";

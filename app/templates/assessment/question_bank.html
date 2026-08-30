@@ -92,7 +92,7 @@
             </div>
             <form method="post" action="{{ url_for('assessment.question_bank_delete', question_id=q.id) }}" style="flex-shrink:0" data-confirm="{{ _('هل أنت متأكد من الحذف؟') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="azad-btn-outline" style="color:var(--azad-danger,#dc3545)">{{ icon('trash') }}</button>
+              <button type="submit" class="azad-btn-outline" style="color:var(--azad-danger,#dc3545)" aria-label="{{ _('حذف السؤال') }}">{{ icon('trash') }}</button>
             </form>
           </div>
         </div>

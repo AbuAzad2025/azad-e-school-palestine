@@ -4,7 +4,7 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('أرباح المعلم') }}</h1>
+    <h1 class="page-title azad-title azad-mt-0">{{ _('أرباح المعلم') }}</h1>
     <p class="page-subtitle">{{ _('ملخص مالي وتقييمات') }}</p>
   </div>
 </div>
@@ -21,9 +21,9 @@
   {{ azad_stat_card(earnings.total_sessions, _('إجمالي الجلسات'), 'calendar', 'var(--azad-gray-500)') }}
 </div>
 
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section azad-mt-6">
   <h2 class="section-title">{{ _('طلب سحب أرباح') }}</h2>
-  <div class="card" style="max-width:500px">
+  <div class="azad-card azad-card--narrow">
     <form method="post" action="{{ url_for('tutoring.payout_request') }}" novalidate>
       {{ payout_form.hidden_tag() }}
       <div class="azad-field">
@@ -41,7 +41,7 @@
   </div>
 </div>
 
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section azad-mt-6">
   <h2 class="section-title">{{ _('سجل الجلسات') }}</h2>
   {% if sessions %}
   <div class="azad-table-container">

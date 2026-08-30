@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ _('رسالة جديدة') }}{% endblock %}
 {% block content %}
-<div style="max-width:640px;margin:2rem auto">
+<div class="azad-card--narrow">
   <h1 class="page-title azad-title">{{ _('رسالة جديدة') }}</h1>
 
   {% if parent %}
-    <div class="azad-card" style="margin-bottom:1rem;padding:1rem">
-      <p style="font-size:.85rem;color:var(--azad-muted)">{{ _('رد على:') }} {{ parent.subject }}</p>
-      <p style="margin-top:.5rem">{{ parent.body[:200] }}{% if parent.body|length > 200 %}...{% endif %}</p>
+    <div class="azad-card azad-p-4 azad-mb-4">
+      <p class="azad-text-sm azad-text-muted">{{ _('رد على:') }} {{ parent.subject }}</p>
+      <p class="azad-mt-2">{{ parent.body[:200] }}{% if parent.body|length > 200 %}...{% endif %}</p>
     </div>
   {% endif %}
 

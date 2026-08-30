@@ -51,7 +51,7 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="attachment_id" value="{{ att.id }}">
         <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
-        <button type="submit" class="azad-btn-outline" style="font-size:var(--text-sm)" title="{{ _('تحميل بدون إنترنت') }}">{{ icon('download') }}</button>
+        <button type="submit" class="azad-btn-outline" style="font-size:var(--text-sm)" aria-label="{{ _('تحميل بدون إنترنت') }}">{{ icon('download') }}</button>
       </form>
     </div>
     {% endif %}

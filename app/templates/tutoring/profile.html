@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ tutor.name_ar }} — {{ _('دروس خصوصية') }}{% endblock %}
 {% block content %}
-<div class="card" style="max-width:720px;margin:2rem auto">
-  <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:space-between">
+<div class="azad-card azad-card--narrow">
+  <div class="azad-flex azad-items-center azad-justify-between azad-gap-3 azad-flex-wrap">
     <div>
-      <h1 class="page-title azad-title" style="margin:0">{{ tutor.name_ar }}</h1>
+      <h1 class="page-title azad-title azad-mt-0">{{ tutor.name_ar }}</h1>
       <p class="page-subtitle">{{ _('معلم خصوصي') }} — {{ prof.subject }}</p>
     </div>
     {% if current_user.is_authenticated and current_user.id == tutor.id %}
@@ -23,7 +23,7 @@
 
   <div class="azad-field">
     <label>{{ _('رمز الدعوة المباشر') }}</label>
-    <code style="display:block;background:var(--azad-slate);padding:.6rem .8rem;border-radius:8px" dir="ltr">
+    <code class="azad-code-block" dir="ltr">
       {{ url_for('tutoring.invite', code=prof.invite_code, _external=True) }}
     </code>
   </div>

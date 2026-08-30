@@ -318,6 +318,12 @@ def report_card_pdf(class_id, student_id):
     class_room = _class_or_404(class_id)
     if not can_view_class(class_room, current_user):
         abort(403)
+    if current_user.role == UserRole.student and current_user.id != student_id:
+        abort(403)
+    if current_user.role == UserRole.parent:
+        from app.services.family import is_parent_of
+        if not is_parent_of(current_user.id, student_id):
+            abort(403)
     from app.services.report_card import render_report_card_pdf
     from flask import Response
 

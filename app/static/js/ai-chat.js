@@ -186,17 +186,24 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+let highlightDebounce = null;
 function highlightCodeBlocks() {
-  if (window.Prism) {
+  if (!window.Prism) return;
+  clearTimeout(highlightDebounce);
+  highlightDebounce = setTimeout(() => {
     document.querySelectorAll("pre code").forEach((block) => {
-      Prism.highlightElement(block);
+      if (!block.dataset.highlighted) {
+        Prism.highlightElement(block);
+      }
     });
-  }
+  }, 50);
 }
 
 function scrollToBottom() {
   const container = elements.messagesContainer;
-  container.scrollTop = container.scrollHeight;
+  if (container) {
+    container.scrollTop = container.scrollHeight;
+  }
 }
 
 // Event Binding
@@ -235,9 +242,11 @@ function bindEvents() {
       return;
     }
     if (e.target.classList.contains("prompt-chip")) {
-      elements.messageInput.value = e.target.dataset.prompt;
-      autoResizeTextarea();
-      elements.messageInput.focus();
+      if (elements.messageInput) {
+        elements.messageInput.value = e.target.dataset.prompt;
+        autoResizeTextarea();
+        elements.messageInput.focus();
+      }
       return;
     }
     const historyItem = e.target.closest(".chat-history-item");
@@ -245,11 +254,6 @@ function bindEvents() {
       loadSession(historyItem.dataset.sessionId);
       document.body.classList.remove("sidebar-open");
     }
-  });
-
-  elements.newChatBtn.addEventListener("click", () => {
-    startNewChat();
-    document.body.classList.remove("sidebar-open");
   });
 }
 
@@ -468,12 +472,18 @@ function copyToClipboard(text) {
 }
 
 function showToast(message, type = "info") {
+  // Reuse the centralized toast system if available
+  if (window.AzadToast && typeof window.AzadToast.show === "function") {
+    window.AzadToast.show({ type, message, duration: 3000 });
+    return;
+  }
   const container = elements.toastContainer;
+  if (!container) return;
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
   container.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 10);
+  requestAnimationFrame(() => toast.classList.add("show"));
   setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);

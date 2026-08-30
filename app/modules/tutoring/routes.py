@@ -246,6 +246,8 @@ def session_status(session_id, value):
     session_ = TutoringSession.query.get_or_404(session_id)
     if not can_access(current_user, session_):
         abort(403)
+    if current_user.id != session_.tutor_id:
+        abort(403)
     if value not in ("completed", "ended", "cancelled"):
         abort(404)
     update_session(session_, status=value)
