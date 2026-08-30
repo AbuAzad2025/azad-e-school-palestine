@@ -1,5 +1,7 @@
 """مسارات API للذكاء الاصطناعي — Streaming SSE endpoints"""
 
+from app.core.permissions import role_required
+from app.models.user import UserRole
 from app.services.ai import get_ai_service
 from flask import Response, jsonify, render_template, request, stream_with_context
 from flask_babel import _
@@ -109,6 +111,7 @@ def chat():
 
 @bp.post("/grade/suggest")
 @login_required
+@role_required(UserRole.teacher, UserRole.school_admin)
 def suggest_grade():
     """اقتراح درجة للواجب (للمعلمين)."""
     data = request.get_json() or {}
@@ -119,12 +122,6 @@ def suggest_grade():
 
     if not student_answer:
         return jsonify({"error": _("إجابة الطالب مطلوبة")}), 400
-
-    # Check permission - only teachers can grade
-    from app.models.user import UserRole
-
-    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
-        return jsonify({"error": _("غير مسموح")}), 403
 
     ai_service = get_ai_service()
     import asyncio
@@ -143,6 +140,7 @@ def suggest_grade():
 
 @bp.post("/questions/generate")
 @login_required
+@role_required(UserRole.teacher, UserRole.school_admin)
 def generate_questions():
     """توليد أسئلة امتحان (للمعلمين)."""
     data = request.get_json() or {}
@@ -153,12 +151,6 @@ def generate_questions():
 
     if not topic:
         return jsonify({"error": _("الموضوع مطلوب")}), 400
-
-    # Check permission - only teachers
-    from app.models.user import UserRole
-
-    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
-        return jsonify({"error": _("غير مسموح")}), 403
 
     ai_service = get_ai_service()
     import asyncio
@@ -173,13 +165,9 @@ def generate_questions():
 
 @bp.get("/usage/stats")
 @login_required
+@role_required(UserRole.school_admin)
 def usage_stats():
     """إحصائيات استخدام AI."""
-    from app.models.user import UserRole
-
-    if current_user.role not in (UserRole.school_admin, UserRole.super_admin):
-        return jsonify({"error": _("غير مسموح")}), 403
-
     ai_service = get_ai_service()
     days = request.args.get("days", 30, type=int)
     stats = ai_service.get_usage_stats(days=days)

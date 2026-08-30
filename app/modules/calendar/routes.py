@@ -3,9 +3,9 @@
 from app.core.permissions import role_required
 from app.models.user import UserRole
 from app.services.calendar import create_event, delete_event, list_events
-from flask import flash, redirect, render_template, url_for
+from flask import abort, flash, redirect, render_template, url_for
 from flask_babel import _
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from . import bp
 from .forms import EventForm
@@ -61,9 +61,14 @@ def event_create(school_id):
 @login_required
 @role_required(UserRole.school_admin, UserRole.super_admin)
 def event_delete(event_id):
+    from app.core.tenancy import current_school_id
     from app.models.calendar import AcademicEvent
 
     event = AcademicEvent.query.get_or_404(event_id)
+    # school_admin can only delete events in their own school
+    if current_user.role == UserRole.school_admin:
+        if event.school_id != current_school_id():
+            abort(403)
     ok, error = delete_event(event_id)
     if error:
         flash(_(error), "danger")

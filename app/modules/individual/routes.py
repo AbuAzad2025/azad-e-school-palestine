@@ -1,3 +1,4 @@
+from app.core.permissions import role_required
 from app.models.user import UserRole
 from app.services.individual import get_public_classes, get_student_classes, subscribe_to_class
 from flask import flash, redirect, render_template, request, url_for
@@ -9,10 +10,8 @@ from . import bp
 
 @bp.route("/courses")
 @login_required
+@role_required(UserRole.student)
 def my_courses():
-    if current_user.role not in (UserRole.student, UserRole.super_admin):
-        flash(_("هذه الصفحة للطلاب فقط."), "warning")
-        return redirect(url_for("auth.dashboard"))
     memberships = get_student_classes(current_user.id)
     return render_template("individual/dashboard.html", memberships=memberships)
 
@@ -37,10 +36,8 @@ def catalog():
 
 @bp.route("/catalog/<int:class_id>/subscribe", methods=["POST"])
 @login_required
+@role_required(UserRole.student)
 def subscribe(class_id):
-    if current_user.role not in (UserRole.student, UserRole.super_admin):
-        flash(_("هذه الصفحة للطلاب فقط."), "warning")
-        return redirect(url_for("auth.dashboard"))
     error = subscribe_to_class(current_user.id, class_id)
     if error:
         flash(_(error), "danger")
