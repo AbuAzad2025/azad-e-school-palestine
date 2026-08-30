@@ -15,34 +15,6 @@ branch_labels = None
 depends_on = None
 
 
-def _recreate_fk(table: str, column: str, ref_table: str) -> None:
-    """Drop existing FK and recreate with ON DELETE SET NULL."""
-    constraint_name = f"fk_{table}_{column}"
-    # Drop any existing FK on this column (try common naming patterns)
-    op.execute(f"""
-        DO $$
-        DECLARE
-            r RECORD;
-        BEGIN
-            FOR r IN
-                SELECT conname
-                FROM pg_constraint
-                WHERE conrelid = '{table}'::regclass
-                  AND contype = 'f'
-                  AND conkey = ARRAY[
-                    SELECT attnum FROM pg_attribute
-                    WHERE attname = '{column}' AND attrelid = '{table}'::regclass
-                  ]
-            LOOP
-                EXECUTE 'ALTER TABLE {table} DROP CONSTRAINT ' || r.conname;
-            END LOOP;
-        END $$;
-    """)
-    op.create_foreign_key(
-        constraint_name, table, ref_table, [column], ["id"], ondelete="SET NULL"
-    )
-
-
 def upgrade() -> None:
     # 1. GradeCategory.weight: Numeric(3,2) -> Numeric(5,2)
     op.alter_column(
@@ -53,8 +25,10 @@ def upgrade() -> None:
         existing_nullable=True,
     )
 
-    # 2. Add ON DELETE SET NULL to all nullable FKs
-    fk_set_null_updates = [
+    # 2. Add ON DELETE SET NULL to nullable FKs
+    #    Use op.alter_column with existing_foreign_keys to modify in place.
+    #    For tables where we can't easily alter, we drop and recreate.
+    fk_updates = [
         ("user_role_links", "approved_by", "users"),
         ("classes", "teacher_id", "users"),
         ("lessons", "created_by", "users"),
@@ -78,8 +52,20 @@ def upgrade() -> None:
         ("tutoring_sessions", "request_id", "tutoring_requests"),
     ]
 
-    for table, col, ref_table in fk_set_null_updates:
-        _recreate_fk(table, col, ref_table)
+    for table, col, ref_table in fk_updates:
+        fk_name = f"fk_{table}_{col}_ondelete_setnull"
+        # Drop any existing FK on this column using Alembic's inspector
+        bind = op.get_bind()
+        inspector = sa.inspect(bind)
+        fks = inspector.get_foreign_keys(table)
+        for fk in fks:
+            if col in fk["constrained_columns"]:
+                op.drop_constraint(fk["name"], table, type_="foreignkey")
+                break
+        # Recreate with ON DELETE SET NULL
+        op.create_foreign_key(
+            fk_name, table, ref_table, [col], ["id"], ondelete="SET NULL"
+        )
 
 
 def downgrade() -> None:
@@ -92,7 +78,7 @@ def downgrade() -> None:
         existing_nullable=True,
     )
 
-    # Drop the SET NULL FK constraints (DB will use default behavior)
+    # Drop the SET NULL FK constraints
     fk_tables = [
         ("user_role_links", "approved_by"),
         ("classes", "teacher_id"),
@@ -118,6 +104,5 @@ def downgrade() -> None:
     ]
 
     for table, col in fk_tables:
-        op.execute(f"""
-            ALTER TABLE {table} DROP CONSTRAINT IF EXISTS fk_{table}_{col}
-        """)
+        fk_name = f"fk_{table}_{col}_ondelete_setnull"
+        op.drop_constraint(fk_name, table, type_="foreignkey")
