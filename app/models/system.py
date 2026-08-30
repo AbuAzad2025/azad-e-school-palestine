@@ -53,9 +53,7 @@ class HealthCheck(PKMixin, db.Model):
 class CertificateTemplate(PKMixin, db.Model):
     __tablename__ = "certificate_templates"
 
-    school_id: Mapped[int | None] = mapped_column(
-        ForeignKey("schools.id", ondelete="SET NULL"), nullable=True
-    )
+    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     template_html: Mapped[str] = mapped_column(Text, nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

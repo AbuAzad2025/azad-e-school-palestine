@@ -119,11 +119,11 @@ def dashboard():
         months.append(d.strftime("%Y-%m"))
     signup_rows = (
         db.session.query(
-            func.to_char(User.created_at, 'YYYY-MM').label('month'),
-            func.count(User.id).label('count'),
+            func.to_char(User.created_at, "YYYY-MM").label("month"),
+            func.count(User.id).label("count"),
         )
         .filter(User.created_at >= now - timedelta(days=180))
-        .group_by(func.to_char(User.created_at, 'YYYY-MM'))
+        .group_by(func.to_char(User.created_at, "YYYY-MM"))
         .all()
     )
     signup_counts = {row.month: row.count for row in signup_rows}
@@ -142,11 +142,11 @@ def dashboard():
 
     revenue_rows = (
         db.session.query(
-            func.to_char(Subscription.created_at, 'YYYY-MM').label('month'),
-            func.sum(Subscription.price).label('total'),
+            func.to_char(Subscription.created_at, "YYYY-MM").label("month"),
+            func.sum(Subscription.price).label("total"),
         )
         .filter(Subscription.created_at >= now - timedelta(days=180))
-        .group_by(func.to_char(Subscription.created_at, 'YYYY-MM'))
+        .group_by(func.to_char(Subscription.created_at, "YYYY-MM"))
         .all()
     )
     revenue_by_month = {row.month: float(row.total or 0) for row in revenue_rows}
@@ -712,12 +712,12 @@ def school_admin_dashboard():
 
     revenue_rows = (
         db.session.query(
-            func.to_char(Subscription.created_at, 'YYYY-MM').label('month'),
-            func.sum(Subscription.price).label('total'),
+            func.to_char(Subscription.created_at, "YYYY-MM").label("month"),
+            func.sum(Subscription.price).label("total"),
         )
         .join(ClassRoom, Subscription.class_id == ClassRoom.id)
         .filter(ClassRoom.school_id == school_id, Subscription.created_at >= now - timedelta(days=180))
-        .group_by(func.to_char(Subscription.created_at, 'YYYY-MM'))
+        .group_by(func.to_char(Subscription.created_at, "YYYY-MM"))
         .all()
     )
     revenue_by_month = {row.month: float(row.total or 0) for row in revenue_rows}

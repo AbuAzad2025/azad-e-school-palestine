@@ -521,18 +521,16 @@ def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, st
 
     def _create():
         # FOR UPDATE على العمولات المعلّقة لمنع السحب المتزامن
-        pending = (
-            TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending")
-            .with_for_update()
-            .all()
-        )
+        pending = TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending").with_for_update().all()
         withdrawable = sum(float(c.tutor_net) for c in pending)
         if amount > withdrawable:
-            raise TxError(_(
-                "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s).",
-                amount=amount,
-                balance=withdrawable,
-            ))
+            raise TxError(
+                _(
+                    "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s).",
+                    amount=amount,
+                    balance=withdrawable,
+                )
+            )
         p = TutorPayout(tutor_id=tutor_id, amount=amount)
         db.session.add(p)
         return p

@@ -73,11 +73,7 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
 
     P0-10: FOR UPDATE على صف الاشتراك النشط لمنع اشتراك مزدوج تحت التزامن.
     """
-    active = (
-        Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active")
-        .with_for_update()
-        .first()
-    )
+    active = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").with_for_update().first()
     if active:
         return None, _("لديك اشتراك نشط في هذا الصف.")
 

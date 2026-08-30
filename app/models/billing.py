@@ -23,9 +23,7 @@ class SubscriptionPlan(PKMixin, db.Model):
 
     school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"), nullable=False)
     # NULL = خطة عامة للمدرسة
-    class_id: Mapped[int | None] = mapped_column(
-        ForeignKey("classes.id", ondelete="SET NULL"), index=True
-    )
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("classes.id", ondelete="SET NULL"), index=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)  # فصل أول / فصل ثاني / سنوي
     plan: Mapped[str] = mapped_column(String(15), nullable=False)  # first_term/second_term/annual
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -135,8 +133,6 @@ class DiscountCode(PKMixin, db.Model):
     expiry_date: Mapped[date_ | None] = mapped_column(db.Date, nullable=True)
     applicable_plan_ids: Mapped[list[int] | None] = mapped_column(JSONB, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    school_id: Mapped[int | None] = mapped_column(
-        ForeignKey("schools.id", ondelete="SET NULL"), nullable=True
-    )
+    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id", ondelete="SET NULL"), nullable=True)
 
     school: Mapped[School] = relationship()

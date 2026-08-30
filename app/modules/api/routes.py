@@ -175,6 +175,7 @@ def api_lessons_get(lesson_id: int):
         pass
     elif current_user.role == UserRole.school_admin:
         from app.models.class_room import ClassRoom as _CR
+
         _cls = _CR.query.filter_by(id=lesson.class_id).first()
         if not _cls or _cls.school_id != getattr(current_user, "school_id", None):
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")

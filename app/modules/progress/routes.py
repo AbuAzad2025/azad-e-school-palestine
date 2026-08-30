@@ -65,9 +65,7 @@ def lesson_heartbeat(lesson_id):
 
     lesson = Lesson.query.get_or_404(lesson_id)
     # Ensure student is a member of the lesson's class
-    _is_member = ClassMember.query.filter_by(
-        class_id=lesson.class_id, user_id=current_user.id, status="active"
-    ).first()
+    _is_member = ClassMember.query.filter_by(class_id=lesson.class_id, user_id=current_user.id, status="active").first()
     if not _is_member:
         abort(403)
     seconds = request.get_json(silent=True) or {}
@@ -93,9 +91,7 @@ def video_update(attachment_id):
     attachment = LessonAttachment.query.get_or_404(attachment_id)
     # Ensure student is a member of the lesson's class
     _cls_id = attachment.lesson.class_id
-    _is_member = ClassMember.query.filter_by(
-        class_id=_cls_id, user_id=current_user.id, status="active"
-    ).first()
+    _is_member = ClassMember.query.filter_by(class_id=_cls_id, user_id=current_user.id, status="active").first()
     if not _is_member:
         abort(403)
     data = request.get_json(silent=True) or {}
