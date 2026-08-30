@@ -1,6 +1,6 @@
 """مسارات الاشتراكات والدفع اليدوي"""
 
-from app.core import role_required
+from app.core import class_access_required, class_teach_required, role_required
 from app.core.db import TxError
 from app.extensions import db
 from app.models.billing import ManualPayment, Subscription
@@ -37,11 +37,8 @@ def _class_or_404(class_id):
 
 
 @bp.get("/<int:class_id>")
-@login_required
-def class_billing(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def class_billing(class_id, class_room=None):
     # P3-15: انتهاء الاشتراكات انتقل لمهمة CLI دورية (flask expire-subscriptions)
     plans = list_plans(class_id=class_id)
     my_sub = None
@@ -61,11 +58,8 @@ def class_billing(class_id):
 
 
 @bp.post("/<int:class_id>/plans")
-@login_required
-def plan_create(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def plan_create(class_id, class_room=None):
     form = PlanForm()
     if form.validate_on_submit():
         plan, error = create_plan(
@@ -86,11 +80,8 @@ def plan_create(class_id):
 
 
 @bp.post("/<int:class_id>/subscribe")
-@login_required
-def subscribe_route(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def subscribe_route(class_id, class_room=None):
     if current_user.role != UserRole.student:
         abort(403)
     form = SubscribeForm()

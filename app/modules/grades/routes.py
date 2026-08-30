@@ -317,11 +317,8 @@ def report_card_pdf(class_id, student_id):
 # معايير التقييم (Rubric)
 # ======================================================================
 @bp.get("/<int:class_id>/rubric/new")
-@login_required
-def rubric_new(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def rubric_new(class_id, class_room=None):
     from app.services.rubric import list_rubric_templates
 
     templates = list_rubric_templates(current_user.id)
@@ -329,11 +326,8 @@ def rubric_new(class_id):
 
 
 @bp.post("/<int:class_id>/rubric")
-@login_required
-def rubric_create(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def rubric_create(class_id, class_room=None):
     from app.services.rubric import create_rubric_template
 
     title = request.form.get("title", "").strip()
@@ -412,11 +406,8 @@ def rubric_grade_save(submission_id):
 # اعتراضات الدرجات
 # ======================================================================
 @bp.get("/<int:class_id>/appeals")
-@login_required
-def appeals_list(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def appeals_list(class_id, class_room=None):
     from app.services.grade_appeals import get_class_appeals
 
     appeals = get_class_appeals(class_id)

@@ -3,6 +3,7 @@
 from datetime import UTC
 from decimal import Decimal
 
+from app.core.permissions import role_required
 from app.models.tutoring import TutoringRequest, TutoringSession, TutorReview
 from app.models.user import User, UserRole
 from app.services.communication import audit, notify
@@ -364,9 +365,8 @@ def rate_session_view(session_id):
 
 @bp.get("/earnings")
 @login_required
+@role_required(UserRole.teacher)
 def tutor_earnings():
-    if current_user.role != UserRole.teacher:
-        abort(403)
     earnings = get_tutor_earnings(current_user.id)
     sessions = list_sessions_for(current_user.id, as_tutor=True)
     form = PayoutRequestForm()
@@ -380,9 +380,8 @@ def tutor_earnings():
 
 @bp.post("/payout-request")
 @login_required
+@role_required(UserRole.teacher)
 def payout_request():
-    if current_user.role != UserRole.teacher:
-        abort(403)
     form = PayoutRequestForm()
     if form.validate_on_submit():
         payout, error = request_payout(current_user.id, form.amount.data)

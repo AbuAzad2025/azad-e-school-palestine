@@ -1,7 +1,7 @@
 """مسارات التقييم: قائمة اختبارات، إنشاء، محاولة، نتائج، تصحيح مقالي."""
 
 from app.core.db import TxError, tx
-from app.core.permissions import role_required
+from app.core.permissions import class_access_required, class_teach_required, role_required
 from app.extensions import db
 from app.models.assessment import Answer, ProctoringLog, Question, Quiz, QuizAttempt
 from app.models.class_room import ClassRoom
@@ -44,11 +44,8 @@ def _class_or_404(class_id):
 
 
 @bp.get("/<int:class_id>/quizzes")
-@login_required
-def quiz_list(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_view_class(class_room, current_user):
-        abort(403)
+@class_access_required
+def quiz_list(class_id, class_room=None):
     quizzes = list_quizzes(class_id)
     attempts = {}
     if current_user.role == UserRole.student:
@@ -68,11 +65,8 @@ def quiz_list(class_id):
 
 
 @bp.route("/<int:class_id>/quizzes/new", methods=["GET", "POST"])
-@login_required
-def quiz_new(class_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def quiz_new(class_id, class_room=None):
     form = QuizForm()
     if form.validate_on_submit():
         quiz, error = create_quiz(
@@ -111,11 +105,8 @@ def ai_generate_questions():
 
 
 @bp.route("/<int:class_id>/quizzes/<int:quiz_id>", methods=["GET", "POST"])
-@login_required
-def quiz_manage(class_id, quiz_id):
-    class_room = _class_or_404(class_id)
-    if not can_teach_class(class_room, current_user):
-        abort(403)
+@class_teach_required
+def quiz_manage(class_id, quiz_id, class_room=None):
     quiz = Quiz.query.options(selectinload(Quiz.questions)).get_or_404(quiz_id)
     if quiz.class_id != class_id:
         abort(404)
@@ -339,9 +330,8 @@ def answer_grade(answer_id):
 
 @bp.get("/question-bank")
 @login_required
+@role_required(UserRole.teacher, UserRole.school_admin)
 def question_bank_list():
-    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
-        abort(403)
     from app.models.school import Subject
 
     subjects = Subject.query.order_by(Subject.name_ar).all()
@@ -360,9 +350,8 @@ def question_bank_list():
 
 @bp.post("/question-bank/new")
 @login_required
+@role_required(UserRole.teacher, UserRole.school_admin)
 def question_bank_create():
-    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
-        abort(403)
     question_text = request.form.get("question_text", "").strip()
     question_type = request.form.get("question_type", "mcq")
     subject_id = request.form.get("subject_id", type=int)
@@ -405,9 +394,8 @@ def question_bank_create():
 
 @bp.post("/question-bank/<int:question_id>/delete")
 @login_required
+@role_required(UserRole.teacher, UserRole.school_admin)
 def question_bank_delete(question_id):
-    if current_user.role not in (UserRole.teacher, UserRole.school_admin, UserRole.super_admin):
-        abort(403)
     ok, error = delete_bank_question(question_id, current_user.id)
     if error:
         flash(_(error), "danger")
