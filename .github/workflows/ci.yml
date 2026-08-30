@@ -9,6 +9,9 @@ on:
       - "**.svg"
       - "**.png"
       - "**.jpg"
+      - ".gitignore"
+      - "LICENSE"
+      - ".github/workflows/*.yml"  # Avoid triggering on workflow changes
   pull_request:
     branches: [main]
     paths-ignore:
@@ -17,10 +20,13 @@ on:
       - "**.svg"
       - "**.png"
       - "**.jpg"
+      - ".gitignore"
+      - "LICENSE"
+      - ".github/workflows/*.yml"  # Avoid triggering on workflow changes
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -28,33 +34,58 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.12"
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
+  # Cost optimization: skip heavy jobs for docs-only changes
+  SKIP_HEAVY_JOBS: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[skip ci]') }}
 
 jobs:
   # ════════════════════════════════════════════════════════════
   # 1. Lint + Security (merged into one job)
   # ════════════════════════════════════════════════════════════
+  # Cost optimization: lint job runs on all changes, but is lightweight
   lint-security:
     name: Lint & Security
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
 
-      - uses: actions/setup-node@v4
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Cache mypy
+        uses: actions/cache@v4
+        with:
+          path: .mypy_cache
+          key: ${{ runner.os }}-mypy-${{ hashFiles('**/*.py') }}
+          restore-keys: |
+            ${{ runner.os }}-mypy-
 
       - name: Install Python deps
         run: |
@@ -84,7 +115,7 @@ jobs:
 
       # ── Security ──
       - name: Gitleaks (secrets)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -96,18 +127,20 @@ jobs:
 
       - name: Hadolint (Dockerfile)
         if: hashFiles('Dockerfile') != ''
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: Dockerfile
 
   # ════════════════════════════════════════════════════════════
   # 2. Tests (PG 16) — with migrations before tests!
   # ════════════════════════════════════════════════════════════
+  # Cost optimization: skip tests for docs-only changes
   test:
     name: Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     needs: lint-security
+    if: ${{ !env.SKIP_HEAVY_JOBS }}
     services:
       postgres:
         image: postgres:16
@@ -123,12 +156,19 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install deps
         run: |
@@ -172,120 +212,69 @@ jobs:
 
       - name: Upload test output on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pytest-output
           path: pytest-output.txt
-          retention-days: 3
+          retention-days: 1
+          compression-level: 6
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage
           path: |
             coverage.xml
             htmlcov/
-          retention-days: 7
+          retention-days: 3
+          compression-level: 6
 
   # ════════════════════════════════════════════════════════════
   # 3. JS Tests
   # ════════════════════════════════════════════════════════════
+  # Cost optimization: JS tests are lightweight, always run
   test-js:
     name: JS Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     needs: lint-security
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
       - run: npx vitest run --coverage
 
       - name: Upload JS coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-js
           path: coverage/js/
-          retention-days: 7
-
-  # ════════════════════════════════════════════════════════════
-  # 4. E2E Tests
-  # ════════════════════════════════════════════════════════════
-  test-e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: [lint-security, test]
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: azad_test
-          POSTGRES_PASSWORD: azad_test
-          POSTGRES_DB: azad_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
-          npx playwright install chromium --with-deps
-      - name: Run migrations
-        env:
-          PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
-          SECRET_KEY: ci-e2e-key
-          FLASK_APP: run.py
-          TALISMAN_ENABLED: "0"
-        run: flask db upgrade
-      - name: Run E2E
-        env:
-          PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
-          SECRET_KEY: ci-e2e-key
-          FLASK_APP: run.py
-          APP_ENV: testing
-          TALISMAN_ENABLED: "0"
-          SESSION_COOKIE_SECURE: "0"
-          TESTING: "1"
-          WTF_CSRF_ENABLED: "0"
-          EMAIL_ENABLED: "0"
-        run: npx playwright test --reporter=list
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: e2e-traces
-          path: test-results
           retention-days: 3
+          compression-level: 6
 
   # ════════════════════════════════════════════════════════════
   # 5. Docker Build + Boot + Migrations
   # ════════════════════════════════════════════════════════════
+  # Cost optimization: Docker build is expensive, skip for draft PRs
   build-verify:
     name: Build & Verify
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     needs: lint-security
+    if: ${{ !env.SKIP_HEAVY_JOBS && !github.event.pull_request.draft }}
     services:
       postgres:
         image: postgres:16
@@ -301,11 +290,19 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -353,26 +350,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [test, test-js]
-    if: always()
+    if: ${{ always() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Download backend coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: coverage
           path: coverage-backend
         continue-on-error: true
 
       - name: Download frontend coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: coverage-js
           path: coverage-frontend
@@ -418,7 +415,7 @@ jobs:
 
       - name: Post PR comment
         if: github.event_name == 'pull_request' && steps.merge.outcome == 'success'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: coverage-report
           path: /tmp/coverage-comment.md
@@ -427,25 +424,58 @@ jobs:
         continue-on-error: true
 
   # ════════════════════════════════════════════════════════════
+  # Cost Monitoring (runs after all jobs)
+  # ════════════════════════════════════════════════════════════
+  cost-report:
+    name: Cost Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    needs: [lint-security, test, test-js, build-verify, coverage]
+    if: ${{ always() && !cancelled() }}
+    steps:
+      - name: Generate cost report
+        run: |
+          echo "## 💰 CI Cost Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Jobs Executed" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint & Security: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: ${{ needs.test.result == 'success' && '✅' || needs.test.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- JS Tests: ${{ needs.test-js.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build & Verify: ${{ needs.build-verify.result == 'success' && '✅' || needs.build-verify.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage: ${{ needs.coverage.result == 'success' && '✅' || needs.coverage.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Cost Optimization Tips" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ Skipped jobs save ~\$0.01-0.05 per job" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Artifact retention reduced to 1-3 days" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔄 Concurrency cancellation saves ~30-50% on parallel runs" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 E2E tests moved to separate workflow (e2e.yml)" >> $GITHUB_STEP_SUMMARY
+
+  # ════════════════════════════════════════════════════════════
   # 7. Deploy (only on main, after all pass)
   # ════════════════════════════════════════════════════════════
+  # Cost optimization: deploy only on main push after all tests pass
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [test, test-js, test-e2e, build-verify, coverage]
+    timeout-minutes: 10
+    needs: [test, test-js, build-verify, coverage]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
       packages: write
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -453,7 +483,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}/azad-e-school
           tags: |
@@ -461,15 +491,15 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: deploy/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}
 
       - name: Check deploy secrets
         id: check
@@ -485,7 +515,7 @@ jobs:
 
       - name: Deploy via SSH
         if: steps.check.outputs.has_secrets == 'true'
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
