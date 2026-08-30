@@ -1,26 +1,14 @@
-name: CI + Deploy
+name: CI
 
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "**.svg"
-      - "**.png"
-      - "**.jpg"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "**.svg"
-      - "**.png"
-      - "**.jpg"
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -29,13 +17,12 @@ permissions:
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
-  SKIP_HEAVY_JOBS: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.title, '[skip ci]') }}
 
 jobs:
   # ════════════════════════════════════════════════════════════
   # 1. Lint + Security
   # ════════════════════════════════════════════════════════════
-  lint-security:
+  lint:
     name: Lint & Security
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -51,43 +38,38 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Cache npm
         uses: actions/cache@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          restore-keys: ${{ runner.os }}-npm-
 
       - name: Cache mypy
         uses: actions/cache@v4
         with:
           path: .mypy_cache
           key: ${{ runner.os }}-mypy-${{ hashFiles('**/*.py') }}
-          restore-keys: |
-            ${{ runner.os }}-mypy-
+          restore-keys: ${{ runner.os }}-mypy-
 
-      - name: Install Python deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt ruff mypy bandit pip-audit
+          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
 
-      - name: Install Node deps
-        run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
-
-      # ── Python lint ──
+      # ── Python ──
       - name: Ruff check
         run: ruff check app config.py run.py --output-format github
 
@@ -97,7 +79,7 @@ jobs:
       - name: MyPy
         run: mypy app config.py run.py --ignore-missing-imports --no-error-summary
 
-      # ── JS lint ──
+      # ── JS ──
       - name: Biome check
         run: npx biome check app/static/js
 
@@ -106,32 +88,31 @@ jobs:
         run: python scripts/dump_untranslated.py
 
       # ── Security ──
-      - name: Gitleaks (secrets)
+      - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: pip-audit (vulns)
+      - name: pip-audit
         run: python -m pip_audit -r requirements.txt --desc on
 
       - name: Bandit
         run: bandit -r app -q -ll
 
-      - name: Hadolint (Dockerfile)
+      - name: Hadolint
         if: hashFiles('Dockerfile') != ''
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
 
   # ════════════════════════════════════════════════════════════
-  # 2. Tests (PG 16)
+  # 2. Python Tests
   # ════════════════════════════════════════════════════════════
   test:
     name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: lint-security
-    if: ${{ !env.SKIP_HEAVY_JOBS }}
+    needs: lint
     services:
       postgres:
         image: postgres:16
@@ -158,15 +139,13 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest-cov pytest-html
 
-      # ── CRITICAL: run migrations before tests ──
       - name: Run migrations
         env:
           PYTHONPATH: .
@@ -196,19 +175,7 @@ jobs:
             --deselect tests/test_js_modernization.py \
             --deselect tests/test_erp_ux_sprint4.py \
             --deselect tests/test_openapi.py \
-            --deselect tests/test_offline_client.py \
-            2>&1 | tee pytest-output.txt
-          echo "=== Coverage files ==="
-          ls -la coverage.xml htmlcov/ 2>/dev/null || echo "(no coverage files generated)"
-
-      - name: Upload test output on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pytest-output
-          path: pytest-output.txt
-          retention-days: 1
-          compression-level: 6
+            --deselect tests/test_offline_client.py
 
       - name: Upload coverage
         if: always()
@@ -218,8 +185,7 @@ jobs:
           path: |
             coverage.xml
             htmlcov/
-          retention-days: 3
-          compression-level: 6
+          retention-days: 7
 
   # ════════════════════════════════════════════════════════════
   # 3. JS Tests
@@ -228,9 +194,10 @@ jobs:
     name: JS Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: lint-security
+    needs: lint
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -240,8 +207,7 @@ jobs:
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          restore-keys: ${{ runner.os }}-npm-
 
       - run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
       - run: npx vitest run --coverage
@@ -252,18 +218,16 @@ jobs:
         with:
           name: coverage-js
           path: coverage/js/
-          retention-days: 3
-          compression-level: 6
+          retention-days: 7
 
   # ════════════════════════════════════════════════════════════
-  # 4. Docker Build + Boot + Migrations
+  # 4. E2E Tests
   # ════════════════════════════════════════════════════════════
-  build-verify:
-    name: Build & Verify
+  test-e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: lint-security
-    if: ${{ !env.SKIP_HEAVY_JOBS && !github.event.pull_request.draft }}
+    timeout-minutes: 20
+    needs: [lint, test]
     services:
       postgres:
         image: postgres:16
@@ -280,6 +244,102 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+
+      - name: Cache Playwright
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-playwright-
+
+      - name: Install Playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium --with-deps
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+
+      - name: Run migrations
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-e2e-key
+          FLASK_APP: run.py
+          TALISMAN_ENABLED: "0"
+        run: flask db upgrade
+
+      - name: Run E2E
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-e2e-key
+          FLASK_APP: run.py
+          APP_ENV: testing
+          TALISMAN_ENABLED: "0"
+          SESSION_COOKIE_SECURE: "0"
+          TESTING: "1"
+          WTF_CSRF_ENABLED: "0"
+          EMAIL_ENABLED: "0"
+        run: npx playwright test --reporter=list
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-traces
+          path: test-results
+          retention-days: 3
+
+  # ════════════════════════════════════════════════════════════
+  # 5. Docker Build + Verify
+  # ════════════════════════════════════════════════════════════
+  build:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: azad_test
+          POSTGRES_PASSWORD: azad_test
+          POSTGRES_DB: azad_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -289,13 +349,13 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
-      - run: |
+      - name: Install dependencies
+        run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      # Migrations
+
       - name: flask db upgrade
         env:
           PYTHONPATH: .
@@ -303,6 +363,7 @@ jobs:
           SECRET_KEY: ci-key
           FLASK_APP: run.py
         run: flask db upgrade
+
       - name: flask db downgrade
         env:
           PYTHONPATH: .
@@ -310,7 +371,7 @@ jobs:
           SECRET_KEY: ci-key
           FLASK_APP: run.py
         run: flask db downgrade -- -1
-      # Boot check
+
       - name: Verify app boot
         env:
           PYTHONPATH: .
@@ -325,14 +386,14 @@ jobs:
           print(f'Routes: {len([r for r in app.url_map.iter_rules() if r.endpoint != \"static\"])}')
           print('App boot OK')
           "
-      # Docker build
+
       - name: Docker build
         run: |
           docker build -t azad-e-school:test .
           echo "Docker build OK"
 
   # ════════════════════════════════════════════════════════════
-  # 5. Unified Coverage Report
+  # 6. Coverage Report
   # ════════════════════════════════════════════════════════════
   coverage:
     name: Coverage Report
@@ -364,38 +425,26 @@ jobs:
           path: coverage-frontend
         continue-on-error: true
 
-      - name: Merge & report coverage
+      - name: Merge & report
         id: merge
         env:
           COVERAGE_COMMENT_PATH: /tmp/coverage-comment.md
         run: |
-          echo "=== Debugging artifact structure ==="
-          echo "--- coverage-backend contents ---"
-          ls -laR coverage-backend/ 2>/dev/null || echo "(directory empty or missing)"
-          echo "--- coverage-frontend contents ---"
-          ls -laR coverage-frontend/ 2>/dev/null || echo "(directory empty or missing)"
-
-          # Find backend coverage XML (may be nested in artifact dir)
           BACKEND_XML=$(find coverage-backend -name 'coverage.xml' -type f 2>/dev/null | head -1)
           FRONTEND_XML=$(find coverage-frontend -name 'cobertura-coverage.xml' -type f 2>/dev/null | head -1)
           BACKEND_XML="${BACKEND_XML:-coverage-backend/coverage.xml}"
           FRONTEND_XML="${FRONTEND_XML:-coverage-frontend/cobertura-coverage.xml}"
-          echo "Backend XML: $BACKEND_XML"
-          echo "Frontend XML: $FRONTEND_XML"
 
-          # Create empty Cobertura XML if an artifact is missing
           EMPTY='<?xml version="1.0" ?>'
           EMPTY+='<coverage lines-valid="0" lines-covered="0" branches-valid="0" branches-covered="0" version="0.1">'
           EMPTY+='<packages></packages>'
           EMPTY+='</coverage>'
 
           if [ ! -f "$BACKEND_XML" ]; then
-            echo "⚠️  Backend coverage artifact not found — using empty report."
             mkdir -p "$(dirname "$BACKEND_XML")"
             echo "$EMPTY" > "$BACKEND_XML"
           fi
           if [ ! -f "$FRONTEND_XML" ]; then
-            echo "⚠️  Frontend coverage artifact not found — using empty report."
             mkdir -p "$(dirname "$FRONTEND_XML")"
             echo "$EMPTY" > "$FRONTEND_XML"
           fi
@@ -413,37 +462,12 @@ jobs:
         continue-on-error: true
 
   # ════════════════════════════════════════════════════════════
-  # 6. Cost Monitoring
-  # ════════════════════════════════════════════════════════════
-  cost-report:
-    name: Cost Report
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    needs: [lint-security, test, test-js, build-verify, coverage]
-    if: always()
-    steps:
-      - name: Generate cost report
-        run: |
-          echo "## 💰 CI Cost Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Jobs Executed" >> $GITHUB_STEP_SUMMARY
-          echo "- Lint & Security: ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- Tests: ${{ needs.test.result == 'success' && '✅' || needs.test.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- JS Tests: ${{ needs.test-js.result == 'success' && '✅' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Build & Verify: ${{ needs.build-verify.result == 'success' && '✅' || needs.build-verify.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Coverage: ${{ needs.coverage.result == 'success' && '✅' || needs.coverage.result == 'skipped' && '⏭️' || '❌' }}" >> $GITHUB_STEP_SUMMARY
-
-  # ════════════════════════════════════════════════════════════
-  # 7. Deploy (only on main, after all pass)
+  # 7. Deploy (main only)
   # ════════════════════════════════════════════════════════════
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    needs: [test, test-js, build-verify, coverage]
+    needs: [test, test-js, test-e2e, build, coverage]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
