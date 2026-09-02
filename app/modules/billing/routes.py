@@ -6,7 +6,7 @@ from app.extensions import db
 from app.models.billing import ManualPayment, Subscription
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
-from app.services.access import can_teach_class, can_view_class
+from app.services.access import can_teach_class
 from app.services.billing import (
     approve_payment,
     create_discount_code,
@@ -21,6 +21,7 @@ from app.services.billing import (
     validate_discount_code,
 )
 from app.services.communication import audit, notify
+from app.services.schools import is_member
 from flask import abort, flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
@@ -80,9 +81,12 @@ def plan_create(class_id, class_room=None):
 
 
 @bp.post("/<int:class_id>/subscribe")
-@class_access_required
+@login_required
 def subscribe_route(class_id, class_room=None):
+    class_room = _class_or_404(class_id)
     if current_user.role != UserRole.student:
+        abort(403)
+    if not is_member(class_room, current_user):
         abort(403)
     form = SubscribeForm()
     if form.validate_on_submit():
@@ -111,7 +115,7 @@ def subscribe_route(class_id, class_room=None):
 def payment_create(subscription_id):
     sub = Subscription.query.get_or_404(subscription_id)
     class_room = _class_or_404(sub.class_id)
-    if not can_view_class(class_room, current_user):
+    if not is_member(class_room, current_user):
         abort(403)
     if sub.user_id != current_user.id:
         abort(403)
@@ -263,7 +267,7 @@ def validate_code():
 def invoice_view(subscription_id):
     sub = Subscription.query.get_or_404(subscription_id)
     class_room = _class_or_404(sub.class_id)
-    if not can_view_class(class_room, current_user):
+    if not is_member(class_room, current_user):
         abort(403)
     from app.services.billing import subscription_payment_summary
     from app.services.invoice import generate_invoice_number
@@ -283,7 +287,7 @@ def invoice_view(subscription_id):
 def invoice_pdf(subscription_id):
     sub = Subscription.query.get_or_404(subscription_id)
     class_room = _class_or_404(sub.class_id)
-    if not can_view_class(class_room, current_user):
+    if not is_member(class_room, current_user):
         abort(403)
     from app.services.invoice import render_invoice_pdf
     from flask import Response
