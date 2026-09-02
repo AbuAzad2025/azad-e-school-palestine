@@ -1,7 +1,7 @@
 """Add RLS tenant isolation policies
 
 Revision ID: g1h2i3j4k5l6
-Revises: f4a5b6c7d8e9
+Revises: a7b8c9d0e1f2
 Create Date: 2026-09-01 00:00:00.000000
 
 P3-01: Row Level Security as secondary fail-safe behind scope_by_school().
@@ -10,10 +10,11 @@ P3-02: Session variables set via SET LOCAL in app/core/tenancy.py.
 
 import sqlalchemy as sa
 from alembic import op
+from alembic.operations import Operations
 
 # revision identifiers, used by Alembic.
 revision = "g1h2i3j4k5l6"
-down_revision = "f4a5b6c7d8e9"
+down_revision = "a7b8c9d0e1f2"
 branch_labels = None
 depends_on = None
 
@@ -82,8 +83,17 @@ _INDIRECT_TENANT_TABLES = {
 }
 
 
+def _table_exists(table_name: str) -> bool:
+    """Check if a table exists in the current database."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    return table_name in inspector.get_table_names()
+
+
 def _enable_rls_direct(table_name: str) -> None:
     """Enable RLS with direct school_id comparison."""
+    if not _table_exists(table_name):
+        return
     policy = f"tenant_isolation_{table_name}"
     op.execute(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY")
     op.execute(f"ALTER TABLE {table_name} FORCE ROW LEVEL SECURITY")
@@ -106,6 +116,8 @@ def _enable_rls_direct(table_name: str) -> None:
 
 def _enable_rls_indirect(table_name: str, subquery: str) -> None:
     """Enable RLS with indirect school_id via subquery."""
+    if not _table_exists(table_name):
+        return
     policy = f"tenant_isolation_{table_name}"
     op.execute(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY")
     op.execute(f"ALTER TABLE {table_name} FORCE ROW LEVEL SECURITY")
@@ -139,6 +151,8 @@ def upgrade() -> None:
 def downgrade() -> None:
     all_tables = _DIRECT_TENANT_TABLES + list(_INDIRECT_TENANT_TABLES.keys())
     for table in all_tables:
+        if not _table_exists(table):
+            continue
         policy = f"tenant_isolation_{table}"
         op.execute(f"DROP POLICY IF EXISTS {policy} ON {table}")
         op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
