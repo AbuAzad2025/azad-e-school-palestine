@@ -5,8 +5,9 @@ Revises: c1d2e3f4a5b6
 Create Date: 2026-08-30
 """
 
-import sqlalchemy as sa
 from alembic import op
+import sqlalchemy as sa
+
 
 revision = "d2e3f4a5b6c7"
 down_revision = "c1d2e3f4a5b6"
@@ -62,7 +63,9 @@ def upgrade() -> None:
                 op.drop_constraint(fk["name"], table, type_="foreignkey")
                 break
         # Recreate with ON DELETE SET NULL
-        op.create_foreign_key(fk_name, table, ref_table, [col], ["id"], ondelete="SET NULL")
+        op.create_foreign_key(
+            fk_name, table, ref_table, [col], ["id"], ondelete="SET NULL"
+        )
 
 
 def downgrade() -> None:
