@@ -26,9 +26,10 @@ T = TypeVar("T")
 # ─── Depth tracker: detects nested tx() calls ───────────────────────────
 _tx_depth: ContextVar[int] = ContextVar("_tx_depth", default=0)
 
-# ─── Post-commit hook registry ─────────────────────────────────────────
-# Hooks stored per-commit: list of callables to run AFTER the outermost tx() commits.
-_post_commit_hooks: ContextVar[list[Callable[[], None]] | None] = ContextVar("_post_commit_hooks", default=None)
+# ─── Current active _TxContext (used by tx_on_commit to append directly) ─
+_current_tx_ctx: ContextVar[_TxContext | None] = ContextVar(
+    "_current_tx_ctx", default=None
+)
 
 
 class TxError(Exception):
@@ -50,18 +51,28 @@ class _TxContext:
         self.is_outermost = current == 0
         self.hooks: list[Callable[[], None]] = []
         self._depth_token = _tx_depth.set(current + 1)
+        # Register as the current context so tx_on_commit() can append directly
+        _current_tx_ctx.set(self)
 
     def finalize(self, *, committed: bool) -> None:
         """Restore depth.  If this was the outermost tx and we committed,
         drain accumulated hooks.  Otherwise, propagate hooks upward."""
         _tx_depth.reset(self._depth_token)
+        # Clear current context reference
+        if not self.is_outermost:
+            _current_tx_ctx.set(None)
+        else:
+            _current_tx_ctx.set(None)
+
         if committed and self.is_outermost:
             # Fire hooks outside any transaction context
             _drain_post_commit_hooks(self.hooks)
         elif committed and not self.is_outermost:
-            # Inner tx committed (savepoint released) — merge hooks upward
-            parent = _post_commit_hooks.get(None) or []
-            parent.extend(self.hooks)
+            # Inner tx committed (savepoint released) — propagate hooks
+            # upward to the parent _TxContext (which is still active).
+            parent = _current_tx_ctx.get(None)
+            if parent is not None:
+                parent.hooks.extend(self.hooks)
 
 
 def _drain_post_commit_hooks(hooks: list[Callable[[], None]]) -> None:
@@ -78,11 +89,29 @@ def _drain_post_commit_hooks(hooks: list[Callable[[], None]]) -> None:
 
 
 def _add_post_commit_hook(fn: Callable[[], None]) -> None:
-    """Register a callable to run after the outermost transaction commits."""
-    hooks = _post_commit_hooks.get(None) or []
-    hooks.append(fn)
-    # Update the ContextVar with the same list (ContextVar requires re-set)
-    _post_commit_hooks.set(hooks)
+    """Register a callable to run after the outermost transaction commits.
+
+    If there is an active _TxContext (i.e., called inside a tx() closure),
+    the hook is appended directly to that context's hooks list so it will
+    be drained when the outermost tx() commits.
+
+    If no active context exists (called outside any tx()), the hook is
+    stored in the ContextVar and will be picked up by the next _TxContext.
+    """
+    ctx = _current_tx_ctx.get(None)
+    if ctx is not None:
+        ctx.hooks.append(fn)
+    else:
+        # Outside any tx() — store in ContextVar for next _TxContext to pick up
+        hooks = _post_commit_hooks.get(None) or []
+        hooks.append(fn)
+        _post_commit_hooks.set(hooks)
+
+
+# ─── Legacy ContextVar kept for edge cases outside any tx() ─────────────
+_post_commit_hooks: ContextVar[list[Callable[[], None]] | None] = ContextVar(
+    "_post_commit_hooks", default=None
+)
 
 
 # Public alias for clarity in service code

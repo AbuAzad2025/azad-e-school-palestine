@@ -12,7 +12,6 @@ import uuid
 from decimal import Decimal
 
 import pytest
-from app import create_app
 from app.extensions import db as _db
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -22,28 +21,10 @@ from app.extensions import db as _db
 # Module-level counter for unique subject codes across tests
 _subject_counter = 0
 
-
-@pytest.fixture(scope="session")
-def app():
-    """Create application for testing."""
-    a = create_app()
-    a.config["TESTING"] = True
-    a.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    a.config["WTF_CSRF_ENABLED"] = False
-    a.config["TALISMAN_ENABLED"] = False
-    a.config["RATELIMIT_ENABLED"] = False
-    a.config["SECRET_KEY"] = "test-secret-key-for-testing-only"
-    return a
-
-
-@pytest.fixture(autouse=True)
-def _setup_db(app):
-    """Create and tear down database for each test."""
-    with app.app_context():
-        _db.create_all()
-        yield
-        _db.session.rollback()
-        _db.drop_all()
+# Uses the session-scoped `app` fixture from conftest.py.
+# The conftest `_clean_db` autouse fixture handles per-test truncation.
+# Do NOT define a local `app` fixture — it would override conftest's and
+# calling `_db.drop_all()` would destroy all tables for subsequent tests.
 
 
 def _make_school(app, name="Test School"):
