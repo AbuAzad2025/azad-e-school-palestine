@@ -29,7 +29,8 @@ function createModal() {
         <span class="azad-search__icon">${window.AzadSearchLabels?.searchIcon || ""}</span>
         <input type="search" class="azad-search__input" id="azad-search-input" autocomplete="off"
                placeholder="${window.AzadSearchLabels?.placeholder || "ابحث عن مدارس، مستخدمين، صفوف..."}"
-               aria-controls="azad-search-results" aria-autocomplete="list">
+               role="combobox" aria-autocomplete="list" aria-expanded="true"
+               aria-controls="azad-search-results">
         <kbd class="azad-search__shortcut" aria-hidden="true">Esc</kbd>
       </div>
       <div class="azad-search-results" id="azad-search-results" role="listbox" aria-label="نتائج البحث">
@@ -45,6 +46,8 @@ function closeModal() {
   const modal = document.getElementById("azad-search-modal");
   if (!modal) return;
   modal.classList.remove("is-open");
+  const inputForExpanded = modal.querySelector("#azad-search-input");
+  if (inputForExpanded) inputForExpanded.setAttribute("aria-expanded", "false");
   // Cancel any pending search
   if (abortController) abortController.abort();
   clearTimeout(debounceTimer);
@@ -68,6 +71,8 @@ function closeModal() {
 function openModal() {
   const modal = createModal();
   modal.classList.add("is-open");
+  const inputForExpanded = modal.querySelector("#azad-search-input");
+  if (inputForExpanded) inputForExpanded.setAttribute("aria-expanded", "true");
   const input = modal.querySelector("#azad-search-input");
   if (input) {
     input.focus();

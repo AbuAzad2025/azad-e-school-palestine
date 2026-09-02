@@ -45,10 +45,16 @@ def get_student_appeals(student_id: int) -> list[GradeAppeal]:
 
 
 def get_class_appeals(class_id: int) -> list[GradeAppeal]:
+    from sqlalchemy.orm import joinedload
+
     from app.models.gradebook import Submission
 
     return (
         GradeAppeal.query.join(Submission, GradeAppeal.submission_id == Submission.id)
+        .options(
+            joinedload(GradeAppeal.student),
+            joinedload(GradeAppeal.submission),
+        )
         .filter(Submission.assignment.has(class_id=class_id))
         .order_by(GradeAppeal.created_at.desc())
         .all()

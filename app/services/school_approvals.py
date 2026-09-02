@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from app.core.db import tx
+from app.core.db import tx, tx_on_commit
 from app.core.i18n import _
 from app.extensions import db
 from app.models.user import User, UserApprovalStatus, UserRoleLink
@@ -71,16 +71,17 @@ def approve_user_role_link(link_id: int, approver_id: int) -> tuple[bool, str | 
         link.approved_by = approver_id
         link.approved_at = datetime.now(UTC)
         link.user.approval_status = UserApprovalStatus.approved
+        # P2-15: Schedule notification to fire ONLY after successful commit
+        tx_on_commit(
+            lambda: notify(
+                link.user_id,
+                "approval",
+                "تم قبول حسابك",
+                "تم قبول حسابك من قبل الإدارة. يمكنك الآن تسجيل الدخول.",
+            )
+        )
 
     tx(_approve)
-
-    # إشعار المستخدم بالموافقة
-    notify(
-        link.user_id,
-        "approval",
-        "تم قبول حسابك",
-        "تم قبول حسابك من قبل الإدارة. يمكنك الآن تسجيل الدخول.",
-    )
 
     return True, None
 
@@ -116,19 +117,17 @@ def reject_user_role_link(link_id: int, approver_id: int, reason: str | None = N
     def _reject():
         link.user.approval_status = UserApprovalStatus.rejected
         link.is_active = False
+        # P2-15: Schedule notification to fire ONLY after successful commit
+        _msg = "تم رفض حسابك."
+        if reason:
+            _msg += " السبب: " + reason
+
+        def _notify_rejection() -> None:
+            notify(link.user_id, "rejection", "تم رفض حسابك", _msg)
+
+        tx_on_commit(_notify_rejection)
 
     tx(_reject)
-
-    # إشعار المستخدم بالرفض
-    msg = "تم رفض حسابك."
-    if reason:
-        msg += " السبب: " + reason
-    notify(
-        link.user_id,
-        "rejection",
-        "تم رفض حسابك",
-        msg,
-    )
 
     return True, None
 

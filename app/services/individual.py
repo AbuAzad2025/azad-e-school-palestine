@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
+from app.core.i18n import _
 from app.extensions import db
 from app.models.billing import Subscription, SubscriptionPlan
 from app.models.class_room import ClassMember, ClassRoom
@@ -40,18 +41,26 @@ def get_student_classes(student_id):
 
 
 def subscribe_to_class(student_id: int, class_id: int) -> str | None:
+    """Individual student subscribes to a public class.
+
+    P-SEC-07: الاشتراك يبدأ بحالة pending — لا يُفعَّل إلا بعد الدفع.
+    P-SEC-08: لا تنشئ عضوية فعّالة حتى تتم الموافقة على الدفع.
+    P-SEC-09: الصفوف المجانية (بدون خطة أو سعر صفر) تنشئ اشتراكاً فورياً.
+    """
+    from decimal import Decimal
+
     cls = db.session.get(ClassRoom, class_id)
     if not cls or not cls.is_public:
-        return "هذا الكورس غير متاح."
+        return _("هذا الكورس غير متاح.")
     user = db.session.get(User, student_id)
     if not user:
-        return "المستخدم غير موجود."
+        return _("المستخدم غير موجود.")
     if is_member(cls, user):
-        return "أنت مشترك في هذا الكورس مسبقاً."
+        return _("أنت مشترك في هذا الكورس مسبقاً.")
     if cls.max_students:
         current_count = ClassMember.query.filter_by(class_id=cls.id, status="active").count()
         if current_count >= cls.max_students:
-            return "الكورس ممتلئ."
+            return _("الكورس ممتلئ.")
 
     plan = SubscriptionPlan.query.filter_by(class_id=cls.id, is_active=True).first()
     if not plan and cls.price:
@@ -66,9 +75,12 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
         db.session.add(plan)
         db.session.flush()
 
+    # P-SEC-09: حدد: مجاني أم مدفوع
+    is_paid = plan and Decimal(str(plan.price)) > 0
+
     def _subscribe():
-        db.session.add(ClassMember(class_id=cls.id, user_id=student_id, status="active", joined_at=db.func.now()))
-        if plan:
+        if is_paid:
+            # P-SEC-07: مدفوع — اشتراك pending فقط، لا عضوية فعّالة
             now = datetime.now(UTC)
             db.session.add(
                 Subscription(
@@ -77,12 +89,30 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
                     class_id=cls.id,
                     price=float(cls.price or 0),
                     currency=cls.currency,
-                    start_at=now,
-                    end_at=now + timedelta(days=cls.duration_days or 30),
-                    status="active",
+                    start_at=None,
+                    end_at=None,
+                    status="pending",
                     source="individual",
                 )
             )
+        else:
+            # P-SEC-09: مجاني — تفعيل فوري
+            db.session.add(ClassMember(class_id=cls.id, user_id=student_id, status="active", joined_at=db.func.now()))
+            if plan:
+                now = datetime.now(UTC)
+                db.session.add(
+                    Subscription(
+                        user_id=student_id,
+                        plan_id=plan.id,
+                        class_id=cls.id,
+                        price=0,
+                        currency=cls.currency,
+                        start_at=now,
+                        end_at=now + timedelta(days=cls.duration_days or 30),
+                        status="active",
+                        source="individual",
+                    )
+                )
 
     tx(_subscribe)
     return None

@@ -110,10 +110,25 @@ def create_app(config_class=Config):
     babel.init_app(app, locale_selector=_select_locale)
     mail.init_app(app)
 
+    # === Celery Background Tasks (optional — skips if celery not installed) ===
+    try:
+        from .tasks import init_celery
+
+        init_celery(app)
+    except ImportError:
+        pass
+
     if app.config.get("SENTRY_DSN"):
         from app.core.sentry import init_sentry, set_sentry_user
 
         init_sentry(app)
+
+    # P3-02: Set PostgreSQL session variables for RLS on every request
+    @app.before_request
+    def _set_tenant_rls_context():
+        from .core.tenancy import set_tenant_for_request
+
+        set_tenant_for_request()
 
     @app.before_request
     def _track_response_time():
@@ -171,9 +186,11 @@ def create_app(config_class=Config):
     from .modules.content import bp as content_bp
     from .modules.export import bp as export_bp
     from .modules.family import bp as family_bp
+    from .modules.gamification import bp as gamification_bp
     from .modules.grades import bp as grades_bp
     from .modules.individual import bp as individual_bp
     from .modules.main import bp as main_bp
+    from .modules.media import bp as media_bp
     from .modules.messages import bp as messages_bp
     from .modules.notifications import bp as notifications_bp
     from .modules.payments import bp as payments_bp
@@ -201,6 +218,8 @@ def create_app(config_class=Config):
     app.register_blueprint(progress_bp)
     app.register_blueprint(calendar_bp)
     app.register_blueprint(export_bp)
+    app.register_blueprint(gamification_bp)
+    app.register_blueprint(media_bp)
     app.register_blueprint(messages_bp)
     app.register_blueprint(school_approvals_bp)
     app.register_blueprint(individual_bp)

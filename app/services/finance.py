@@ -67,22 +67,41 @@ def student_balance(student_id: int, class_id: int) -> dict:
 
 
 def accounts_receivable(school_id: int) -> list[dict]:
-    """جميع الأرصدة المستحقة في المدرسة."""
+    """جميع الأرصدة المستحقة في المدرسة (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     subs = (
         Subscription.query.join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
         .filter(
             SubscriptionPlan.school_id == school_id,
             Subscription.status.in_(["pending", "active"]),
         )
+        .options(joinedload(Subscription.user))
         .all()
     )
 
+    sub_ids = [s.id for s in subs]
+    if not sub_ids:
+        return []
+
+    # Batch: مجموع الدفعات المعتمدة لكل اشتراك في استعلام واحد
+    paid_rows = (
+        db.session.query(
+            ManualPayment.subscription_id,
+            func.sum(ManualPayment.amount).label("total_paid"),
+        )
+        .filter(
+            ManualPayment.subscription_id.in_(sub_ids),
+            ManualPayment.status == "approved",
+        )
+        .group_by(ManualPayment.subscription_id)
+        .all()
+    )
+    paid_map = {row.subscription_id: row.total_paid for row in paid_rows}
+
     results = []
     for sub in subs:
-        paid = db.session.query(func.sum(ManualPayment.amount)).filter(
-            ManualPayment.subscription_id == sub.id,
-            ManualPayment.status == "approved",
-        ).scalar() or Decimal("0")
+        paid = paid_map.get(sub.id, Decimal("0"))
         balance = float(sub.price) - float(paid)
         if balance > 0:
             results.append(

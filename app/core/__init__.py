@@ -5,7 +5,7 @@
 """
 
 from .context import register as register_context
-from .db import TxError, tx
+from .db import TxError, tx, tx_on_commit
 from .i18n import _
 from .logging import get_correlation_id, get_logger
 from .permissions import (
@@ -16,7 +16,7 @@ from .permissions import (
     student_only,
 )
 from .security import hash_password, verify_password
-from .tenancy import get_school_or_404, scope_by_school, tenant_scope
+from .tenancy import get_school_or_404, scope_by_school, set_tenant_for_request, tenant_scope
 from .tokens import make_activation_token, make_reset_token, make_token, read_reset_token, read_token
 from .uploads import allowed_extension, save_upload
 
@@ -38,10 +38,12 @@ __all__ = [
     "class_teach_required",
     "parent_of_required",
     "role_required",
-    "student_only",
     "save_upload",
     "scope_by_school",
+    "student_only",
+    "set_tenant_for_request",
     "tenant_scope",
     "tx",
+    "tx_on_commit",
     "verify_password",
 ]

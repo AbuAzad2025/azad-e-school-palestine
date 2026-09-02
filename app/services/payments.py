@@ -539,11 +539,15 @@ class PaymentService:
                 school_id = plan.school_id
 
         if school_id and self._is_suspicious_amount(school_id, amount):
-            # وضع علامة للمراجعة اليدوية
-            subscription.status = "pending_review"
-            db.session.commit()
+            # وضع علامة للمراجعة اليدوية — via tx() for atomic safety
+            from app.core.db import tx
+
+            def _flag():
+                subscription.status = "pending_review"
+
+            tx(_flag)
             logger.warning(f"Subscription {subscription_id} flagged for review: amount {amount} suspicious")
-            # إشعار المشرفين
+            # إشعار المشرفين (post-commit side effect — ok to fire outside tx)
             from app.models.user import User, UserRole
 
             admins = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin])).all()
@@ -647,8 +651,8 @@ class PaymentService:
             return False
 
     def _create_ledger_entry(self, subscription: "Subscription", amount: Decimal, gateway: PaymentGateway):
-        """إنشاء إدخال دفتر محاسبي (ledger credit)"""
-        from app.extensions import db
+        """إنشاء إدخال دفتر محاسبي (ledger credit) — via tx() for atomic safety."""
+        from app.core.db import tx
         from app.models.billing import ManualPayment
 
         # البحث عن الدفع اليدوي المقابل أو إنشاء سجل جديد
@@ -662,9 +666,12 @@ class PaymentService:
         )
 
         if payment:
-            payment.gateway = gateway.value
-            payment.amount = float(amount)
-            db.session.commit()
+
+            def _update_ledger():
+                payment.gateway = gateway.value
+                payment.amount = float(amount)
+
+            tx(_update_ledger)
 
     def cleanup_expired_intents(self, max_age_hours: int = 24) -> int:
         """

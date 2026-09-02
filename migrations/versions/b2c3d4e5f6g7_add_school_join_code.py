@@ -7,8 +7,9 @@ Revision ID: b2c3d4e5f6g7
 Revises: a1b2c3d4e5f6
 Create Date: 2026-08-26
 """
-from alembic import op
+
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -18,14 +19,30 @@ branch_labels = None
 depends_on = None
 
 
+def _column_exists(table: str, column: str) -> bool:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    return column in {c["name"] for c in inspector.get_columns(table)}
+
+
+def _constraint_exists(table: str, name: str) -> bool:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    return name in {c["name"] for c in inspector.get_unique_constraints(table)}
+
+
 def upgrade():
-    op.add_column(
-        "schools",
-        sa.Column("join_code", postgresql.CITEXT(), nullable=True),
-    )
-    op.create_unique_constraint("uq_school_join_code", "schools", ["join_code"])
+    if not _column_exists("schools", "join_code"):
+        op.add_column(
+            "schools",
+            sa.Column("join_code", postgresql.CITEXT(), nullable=True),
+        )
+    if not _constraint_exists("schools", "uq_school_join_code"):
+        op.create_unique_constraint("uq_school_join_code", "schools", ["join_code"])
 
 
 def downgrade():
-    op.drop_constraint("uq_school_join_code", "schools", type_="unique")
-    op.drop_column("schools", "join_code")
+    if _constraint_exists("schools", "uq_school_join_code"):
+        op.drop_constraint("uq_school_join_code", "schools", type_="unique")
+    if _column_exists("schools", "join_code"):
+        op.drop_column("schools", "join_code")

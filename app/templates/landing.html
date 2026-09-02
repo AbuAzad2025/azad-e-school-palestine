@@ -16,6 +16,7 @@
 (function(){var t=localStorage.getItem("azad-theme")||"system";var dark=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light";})();
 </script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
+<link rel="canonical" href="{{ url_for('main.index', _external=True) }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 <style>
 .l-nav{position:fixed;top:0;inset-inline:0;z-index:var(--z-navbar);padding:var(--sp-3) 0;transition:background .3s;}
@@ -75,7 +76,7 @@
 .ft a:hover{text-decoration:underline;}
 .l-fade{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease;}
 .l-fade.vis{opacity:1;transform:translateY(0);}
-@media(max-width:640px){.hero{min-height:auto;padding-top:120px;padding-bottom:var(--sp-12);}.steps{flex-direction:column;align-items:center;}.step__arrow{transform:rotate(90deg);padding:0;}}
+@media(max-width:640px){.hero{min-height:auto;padding-top:120px;padding-bottom:var(--sp-12);}.steps{flex-direction:column;align-items:center;}.step__arrow{transform:rotate(90deg);padding:0;}.step__arrow svg{width:20px;height:20px;}}
 html[data-theme="dark"] .feat-card,html[data-theme="dark"] .price-card{background:var(--surface);}
 html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
 .l-body{margin:0;background:var(--bg);}
@@ -145,13 +146,13 @@ html[data-theme="dark"] .feat-card__ico{background:var(--surface-hover);}
           <h3 class="step__h">{{ _('سجّل') }}</h3>
           <p class="step__p">{{ _('أنشئ حسابك مجاناً في ثوانٍ') }}</p>
         </div>
-        <div class="step__arrow">←</div>
+        <div class="step__arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         <div class="step l-fade">
           <div class="step__num">2</div>
           <h3 class="step__h">{{ _('اشترك بالكورس') }}</h3>
           <p class="step__p">{{ _('اختر الكورس المناسب وابدأ الاشتراك') }}</p>
         </div>
-        <div class="step__arrow">←</div>
+        <div class="step__arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         <div class="step l-fade">
           <div class="step__num">3</div>
           <h3 class="step__h">{{ _('تعلّم') }}</h3>

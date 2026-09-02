@@ -136,6 +136,7 @@ a .icon, button .icon { pointer-events: none; }
 }
 .nav-links a:hover { background: rgba(255, 255, 255, .12); color: #fff; }
 .nav-links a:active { background: rgba(255, 255, 255, .18); }
+.nav-links a.active { background: rgba(255, 255, 255, .18); color: #fff; font-weight: 700; }
 .nav-links .nav-bell { padding: var(--sp-2); position: relative; }
 .nav-links form { display: inline; }
 
@@ -883,30 +884,12 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
 }
 
 /* ═══════════════════════════════════
-   QUICK ACTIONS GRID
+   EMPTY STATE — LEGACY ALIAS (.empty-state → .azad-empty)
    ═══════════════════════════════════ */
-.empty-state {
-  text-align: center;
-  padding: var(--sp-16) var(--sp-4);
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-}
+.empty-state { text-align: center; padding: var(--sp-16) var(--sp-4); color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
 .empty-state a { color: var(--azad-red); font-weight: 600; }
-.empty-state__title {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: var(--sp-2);
-}
-.empty-state__description {
-  color: var(--text-muted);
-  font-size: var(--text-base);
-  max-width: 400px;
-  margin: 0 auto var(--sp-4);
-}
+.empty-state__title { font-size: var(--text-xl); font-weight: 700; color: var(--text); margin-bottom: var(--sp-2); }
+.empty-state__description { color: var(--text-muted); font-size: var(--text-base); max-width: 400px; margin: 0 auto var(--sp-4); }
 
 
 /* ═══════════════════════════════════
@@ -1002,10 +985,6 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   color: var(--text);
   font-weight: 600;
 }
-
-/* ═══════════════════════════════════
-   PAGINATION
-   ═══════════════════════════════════ */
 
 /* ═══════════════════════════════════
    PAGINATION
@@ -1186,11 +1165,6 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   from { width: 100%; }
   to { width: 0%; }
 }
-
-
-/* ═══════════════════════════════════
-   SKELETON LOADING
-   ═══════════════════════════════════ */
 
 /* ═══════════════════════════════════
    SKELETON LOADING
@@ -1850,6 +1824,11 @@ html {
   .nav-links.open a:active {
     background: var(--surface-hover);
   }
+  .nav-links.open a.active {
+    background: var(--color-info-light);
+    color: var(--color-info-dark);
+    font-weight: 700;
+  }
   .nav-links.open .azad-btn,
   .nav-links.open .azad-btn-outline {
     color: #fff;
@@ -2233,14 +2212,6 @@ html {
 }
 @keyframes azadRipple {
   to { transform: scale(4); opacity: 0; }
-}
-
-/* ═══════════════════════════════════
-   FOCUS VISIBLE (global)
-   ═══════════════════════════════════ */
-:focus-visible {
-  outline: 2px solid var(--azad-blue);
-  outline-offset: 2px;
 }
 
 /* ════════════════════════════════════

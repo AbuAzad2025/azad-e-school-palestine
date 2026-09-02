@@ -115,14 +115,111 @@ def calculate_student_grade(student_id: int, class_id: int) -> dict:
     }
 
 
+def _calculate_grade_from_maps(
+    student_id: int,
+    categories: list,
+    items_by_category: dict,
+    entries_map: dict,
+) -> dict:
+    """حساب الدرجة من بيانات محمّلة مسبقاً (batch version)."""
+    result_categories = []
+    total_weighted = 0.0
+    total_weight = 0.0
+
+    for cat in categories:
+        cat_weight = float(cat.weight) if cat.weight else 0
+        cat_items = []
+        cat_total_marks = 0.0
+        cat_earned_marks = 0.0
+        cat_entries = entries_map.get(cat.id, {})
+
+        for item in items_by_category.get(cat.id, []):
+            entry = cat_entries.get(item.id)
+            max_mark = float(item.max_mark) if item.max_mark else 0
+            earned = float(entry.mark) if entry and entry.mark is not None else None
+            pct = round((earned / max_mark * 100), 1) if max_mark > 0 and earned is not None else None
+
+            cat_items.append(
+                {
+                    "id": item.id,
+                    "title": item.title,
+                    "max_mark": max_mark,
+                    "earned": earned,
+                    "pct": pct,
+                }
+            )
+
+            if earned is not None and max_mark > 0:
+                cat_total_marks += max_mark
+                cat_earned_marks += earned
+
+        category_pct = round((cat_earned_marks / cat_total_marks * 100), 1) if cat_total_marks > 0 else 0
+        weighted_score = round(category_pct * cat_weight, 2)
+
+        result_categories.append(
+            {
+                "id": cat.id,
+                "name": cat.name,
+                "weight": cat_weight,
+                "items": cat_items,
+                "category_pct": category_pct,
+                "weighted_score": weighted_score,
+            }
+        )
+
+        total_weighted += weighted_score
+        total_weight += cat_weight
+
+    final_grade = round(total_weighted / total_weight, 1) if total_weight > 0 else 0
+    return {
+        "categories": result_categories,
+        "total_weighted_score": round(total_weighted, 2),
+        "total_weight": total_weight,
+        "final_grade": final_grade,
+        "letter_grade": _letter_grade(final_grade),
+    }
+
+
 def class_grades_summary(class_id: int) -> list[dict]:
-    """ملخص درجات جميع الطلاب في صف معين."""
+    """ملخص درجات جميع الطلاب في صف معين (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     from app.models.class_room import ClassMember
 
-    members = ClassMember.query.filter_by(class_id=class_id, status="active").all()
+    # استعلام واحد للبنود مع الأقسام
+    categories = (
+        GradeCategory.query.filter_by(class_id=class_id)
+        .options(selectinload(GradeCategory.items))
+        .order_by(GradeCategory.id.asc())
+        .all()
+    )
+    items_by_category: dict[int, list] = {cat.id: list(cat.items) for cat in categories}
+
+    # جلب جميع البنود لاستخراج الـ ids
+    all_items = GradeItem.query.filter_by(class_id=class_id).all()
+    item_ids = [i.id for i in all_items]
+
+    # جلب جميع الدرجات لكل الطلاب في استعلام واحد
+    all_entries = GradeEntry.query.filter(GradeEntry.grade_item_id.in_(item_ids or [0])).all() if item_ids else []
+    # تجميع الدرجات: {category_id: {item_id: entry}}
+    item_to_cat = {i.id: i.category_id for i in all_items}
+    entries_by_cat: dict[int, dict[int, GradeEntry]] = {}
+    for e in all_entries:
+        cat_id = item_to_cat.get(e.grade_item_id)
+        if cat_id is not None:
+            entries_by_cat.setdefault(cat_id, {})[e.grade_item_id] = e
+
+    # جلب الأعضاء مع المستخدم في استعلام واحد
+    members = (
+        ClassMember.query.filter_by(class_id=class_id, status="active")
+        .options(joinedload(ClassMember.user))
+        .order_by(ClassMember.joined_at)
+        .all()
+    )
+
     results = []
     for member in members:
-        grade_data = calculate_student_grade(member.user_id, class_id)
+        grade_data = _calculate_grade_from_maps(member.user_id, categories, items_by_category, entries_by_cat)
         results.append(
             {
                 "student_id": member.user_id,

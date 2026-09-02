@@ -10,24 +10,26 @@
     <button class="admin-sidebar-close" type="button" data-admin-nav-close aria-label="{{ _('إغلاق القائمة') }}">{{ icon('x') }}</button>
     <nav class="admin-nav">
       <div class="admin-nav-section">{{ _('الرئيسية') }}</div>
-      <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
+      <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" {% if request.endpoint == 'admin.dashboard' %}aria-current="page"{% endif %}>{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
 
       <div class="admin-nav-section">{{ _('الإدارة') }}</div>
-      <a href="{{ url_for('admin.users_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}">{{ icon('users') }} {{ _('المستخدمون') }}{% if pagination and pagination.total > 0 %}<span class="badge badge-primary">{{ pagination.total }}</span>{% endif %}</a>
-      <a href="{{ url_for('admin.pending_registrations') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_registrations' %}active{% endif %}">{{ icon('user-plus') }} {{ _('التسجيلات المعلقة') }}{% if pending_reg_count > 0 %}<span class="badge badge-warn">{{ pending_reg_count }}</span>{% endif %}</a>
-      <a href="{{ url_for('admin.schools_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.schools_list' or request.endpoint == 'admin.school_detail' %}active{% endif %}">{{ icon('school') }} {{ _('المدارس') }}</a>
+      <a href="{{ url_for('admin.users_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}" {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}aria-current="page"{% endif %}>{{ icon('users') }} {{ _('المستخدمون') }}{% if pagination and pagination.total > 0 %}<span class="badge badge-primary">{{ pagination.total }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.pending_registrations') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_registrations' %}active{% endif %}" {% if request.endpoint == 'admin.pending_registrations' %}aria-current="page"{% endif %}>{{ icon('user-plus') }} {{ _('التسجيلات المعلقة') }}{% if pending_reg_count > 0 %}<span class="badge badge-warn">{{ pending_reg_count }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.schools_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.schools_list' or request.endpoint == 'admin.school_detail' %}active{% endif %}" {% if request.endpoint == 'admin.schools_list' or request.endpoint == 'admin.school_detail' %}aria-current="page"{% endif %}>{{ icon('school') }} {{ _('المدارس') }}</a>
 
       <div class="admin-nav-section">{{ _('الاشتراكات والفوترة') }}</div>
-      <a href="{{ url_for('admin.subscriptions_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.subscriptions_list' %}active{% endif %}">{{ icon('card') }} {{ _('الاشتراكات') }} <span class="badge badge-{{ 'ok' if subs_pending == 0 else 'warn' }}">{{ subs_pending }}</span></a>
-      <a href="{{ url_for('admin.pending_payments') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_payments' %}active{% endif %}">{{ icon('cash') }} {{ _('مدفوعات معلقة') }} {% if pending_payments > 0 %}<span class="badge badge-warn">{{ pending_payments }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.subscriptions_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.subscriptions_list' %}active{% endif %}" {% if request.endpoint == 'admin.subscriptions_list' %}aria-current="page"{% endif %}>{{ icon('card') }} {{ _('الاشتراكات') }} <span class="badge badge-{{ 'ok' if subs_pending == 0 else 'warn' }}">{{ subs_pending }}</span></a>
+      <a href="{{ url_for('admin.pending_payments') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_payments' %}active{% endif %}" {% if request.endpoint == 'admin.pending_payments' %}aria-current="page"{% endif %}>{{ icon('cash') }} {{ _('مدفوعات معلقة') }} {% if pending_payments > 0 %}<span class="badge badge-warn">{{ pending_payments }}</span>{% endif %}</a>
 
       <div class="admin-nav-section">{{ _('الذكاء الاصطناعي') }}</div>
-      <a href="{{ url_for('admin.ai_usage') }}" class="admin-nav-item {% if request.endpoint == 'admin.ai_usage' %}active{% endif %}">{{ icon('sparkles') }} {{ _('إحصائيات AI') }}</a>
+      <a href="{{ url_for('admin.ai_usage') }}" class="admin-nav-item {% if request.endpoint == 'admin.ai_usage' %}active{% endif %}" {% if request.endpoint == 'admin.ai_usage' %}aria-current="page"{% endif %}>{{ icon('sparkles') }} {{ _('إحصائيات AI') }}</a>
 
+      {% if is_super_admin() %}
       <div class="admin-nav-section">{{ _('النظام') }}</div>
-      <a href="{{ url_for('admin.audit_logs') }}" class="admin-nav-item {% if request.endpoint == 'admin.audit_logs' %}active{% endif %}">{{ icon('clipboard-list') }} {{ _('سجل التدقيق') }}</a>
-      <a href="{{ url_for('admin.backups_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.backups_list' %}active{% endif %}">{{ icon('refresh') }} {{ _('النسخ الاحتياطي') }}</a>
-      <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {% if request.endpoint == 'admin.settings' %}active{% endif %}">{{ icon('settings') }} {{ _('الإعدادات') }}</a>
+      <a href="{{ url_for('admin.audit_logs') }}" class="admin-nav-item {% if request.endpoint == 'admin.audit_logs' %}active{% endif %}" {% if request.endpoint == 'admin.audit_logs' %}aria-current="page"{% endif %}>{{ icon('clipboard-list') }} {{ _('سجل التدقيق') }}</a>
+      <a href="{{ url_for('admin.backups_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.backups_list' %}active{% endif %}" {% if request.endpoint == 'admin.backups_list' %}aria-current="page"{% endif %}>{{ icon('refresh') }} {{ _('النسخ الاحتياطي') }}</a>
+      <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {% if request.endpoint == 'admin.settings' %}active{% endif %}" {% if request.endpoint == 'admin.settings' %}aria-current="page"{% endif %}>{{ icon('settings') }} {{ _('الإعدادات') }}</a>
+      {% endif %}
     </nav>
     <div class="admin-sidebar__footer">
       <button type="button" class="admin-theme-toggle" data-theme-toggle aria-label="{{ _('تبديل المظهر') }}">

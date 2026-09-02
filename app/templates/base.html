@@ -7,6 +7,14 @@
 <meta name="theme-color" content="#014e7c">
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="{{ _('منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
+<meta property="og:title" content="{{ _('منصة مدرسة أزاد الإلكترونية') }}">
+<meta property="og:description" content="{{ _('تعليم إلكتروني متكامل للمناهج الفلسطينية — دروس مسجلة، اختبارات تفاعلية، دروس خصوصية') }}">
+<meta property="og:image" content="{{ url_for('static', filename='img/azad-mark.svg', _external=True) }}">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ar_AR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ _('منصة مدرسة أزاد الإلكترونية') }}">
+<meta name="twitter:description" content="{{ _('تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}{{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}</title>
 <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/azad-mark.svg') }}">
@@ -42,13 +50,6 @@
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-<style>
-  .impersonate-banner { background: #7c2d12; color: #fff; padding: .5rem 0; font-size: .9rem; }
-  .impersonate-banner .container { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-  .impersonate-banner strong { display: inline-flex; align-items: center; gap: .5rem; color: #fed7aa; margin-inline-end: .25rem; }
-  .impersonate-banner form { margin-inline-start: auto; }
-  .impersonate-banner .icon { width: 1.15em; height: 1.15em; }
-</style>
 {% block head %}{% endblock %}
   {% if config.PLAUSIBLE_SCRIPT_URL %}
   <script defer data-domain="{{ config.PLAUSIBLE_SCRIPT_URL }}" src="https://plausible.io/js/script.js"></script>

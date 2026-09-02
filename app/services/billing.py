@@ -72,12 +72,16 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
     """يبدأ اشتراكاً بحالة pending — لا يُفعَّل إلا بعد اعتماد دفع يدوي.
 
     P0-10: FOR UPDATE على صف الاشتراك النشط لمنع اشتراك مزدوج تحت التزامن.
+    P2-14: FOR UPDATE moved INSIDE tx() to prevent lock leaking outside the transaction.
     """
-    active = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").with_for_update().first()
-    if active:
-        return None, _("لديك اشتراك نشط في هذا الصف.")
 
     def _create():
+        # P2-14: Lock acquired inside tx() — released on commit/rollback
+        active = (
+            Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").with_for_update().first()
+        )
+        if active:
+            raise TxError(_("لديك اشتراك نشط في هذا الصف."))
         sub = Subscription(
             user_id=user_id,
             plan_id=plan.id,
@@ -90,11 +94,18 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
         db.session.add(sub)
         return sub
 
-    return tx(_create), None
+    try:
+        return tx(_create), None
+    except TxError as exc:
+        return None, str(exc)
 
 
 def list_subscriptions(user_id: int | None = None, class_id: int | None = None, status: str | None = None):
-    query = Subscription.query
+    query = Subscription.query.options(
+        joinedload(Subscription.user),
+        joinedload(Subscription.plan),
+        joinedload(Subscription.class_room),
+    )
     if user_id:
         query = query.filter_by(user_id=user_id)
     if class_id:
@@ -166,9 +177,10 @@ def _activate(subscription: Subscription, duration_days: int | None = None, auto
 
 
 def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> Subscription:
-    """اعتماد الدفع اليدوي → تفعيل الاشتراك (ذرّية + حماية من الاعتماد المكرر).
+    """اعتماد الدفع اليدوي → تفعيل الاشتراك + إنشاء عضوية الصف.
 
     P0-10: FOR UPDATE على صف الدفع لمنع اعتماد مزدوج تحت التزامن.
+    P-SEC-18: إنشاء ClassMember تلقائياً عند الاعتماد لضمان وصول الطالب.
     """
 
     def _approve():
@@ -183,13 +195,34 @@ def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> S
         locked.reviewed_at = db.func.now()
         sub = locked.subscription
         _activate(sub)
+
+        # P-SEC-18: إنشاء عضوية الصف إن لم تكن موجودة
+        from app.models.class_room import ClassMember
+
+        existing_member = ClassMember.query.filter_by(class_id=sub.class_id, user_id=sub.user_id).first()
+        if not existing_member:
+            db.session.add(
+                ClassMember(
+                    class_id=sub.class_id,
+                    user_id=sub.user_id,
+                    status="active",
+                    joined_at=db.func.now(),
+                )
+            )
+        elif existing_member.status != "active":
+            existing_member.status = "active"
+
         return sub
 
     return tx(_approve)
 
 
 def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> None:
-    """P0-10: FOR UPDATE على صف الدفع لمنع رفض مزدوج تحت التزامن."""
+    """رفض الدفع وإلغاء الاشتراك.
+
+    P0-10: FOR UPDATE على صف الدفع لمنع رفض مزدوج تحت التزامن.
+    P-SEC-19: إلغاء الاشتراك المرتبط عند رفض الدفع.
+    """
 
     def _reject():
         locked = db.session.execute(
@@ -200,6 +233,11 @@ def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> No
         locked.status = "rejected"
         locked.reviewed_by = reviewer_id
         locked.reviewed_at = db.func.now()
+
+        # P-SEC-19: إلغاء الاشتراك المرتبط
+        sub = locked.subscription
+        if sub and sub.status == "pending":
+            sub.status = "cancelled"
 
     tx(_reject)
 

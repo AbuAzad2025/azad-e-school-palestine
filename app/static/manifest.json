@@ -2,7 +2,7 @@
   "name": "مدرسة أزاد الإلكترونية",
   "short_name": "أزاد",
   "description": "تعليم إلكتروني متكامل للمناهج الفلسطينية",
-  "start_url": "/my/courses",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#014e7c",
@@ -16,7 +16,7 @@
     {"src": "/static/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
     {"src": "/static/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ],
-  "screenshots": [],
+  "screenshots": [{"src": "/static/img/screenshot-wide.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "لوحة التحكم"}, {"src": "/static/img/screenshot-narrow.png", "sizes": "720x1280", "type": "image/png", "form_factor": "narrow", "label": "التطبيق على الهاتف"}],
   "shortcuts": [
     {
       "name": "لوحتي",

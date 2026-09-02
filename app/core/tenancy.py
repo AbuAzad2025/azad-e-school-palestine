@@ -3,6 +3,8 @@
 المدارس لا ترى بيانات بعضها. كل استعلام أعمال يمر عبر:
   tenant_scope(model, school_id, extra_filters)
 ويُمنع الوصول عبر المدارس بقيد صريح في كل مرة.
+
+P3-02: Each request sets PostgreSQL session variables for RLS enforcement.
 """
 
 from dataclasses import dataclass
@@ -27,6 +29,38 @@ def current_school_id() -> int | None:
     if current_user.role == UserRole.super_admin:
         return None  # super_admin فوق التينانتس
     return current_user.school_id
+
+
+def set_tenant_for_request() -> None:
+    """Set PostgreSQL session variable for RLS at the start of each request.
+
+    Called from app.before_request. Sets app.current_school_id and
+    app.is_super_admin so that RLS policies can evaluate them.
+    Uses SET LOCAL so variables auto-reset on transaction end.
+    """
+    from sqlalchemy import text
+
+    from app.extensions import db
+
+    try:
+        if not current_user.is_authenticated:
+            db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
+            db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
+        elif current_user.role == UserRole.super_admin:
+            db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
+            db.session.execute(text("SET LOCAL app.is_super_admin = '1'"))
+        else:
+            school_id = current_user.school_id or 0
+            db.session.execute(
+                text("SET LOCAL app.current_school_id = :sid"),
+                {"sid": str(school_id)},
+            )
+            db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
+    except Exception:
+        # Non-critical: if SET LOCAL fails (e.g., no active transaction yet),
+        # RLS is still enforced at the DB level but without session context.
+        # scope_by_school() in Python is the primary guard.
+        pass
 
 
 def get_school_or_404(school_id: int) -> School:

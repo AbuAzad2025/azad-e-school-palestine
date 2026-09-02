@@ -11,13 +11,15 @@ from app.models.progress import StudentProgress
 
 
 def export_students_excel(class_id: int) -> bytes:
-    """تصدير قائمة الطلاب إلى Excel."""
+    """تصدير قائمة الطلاب إلى Excel (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     wb = Workbook()
     ws = wb.active
     ws.title = _("الطلاب")
     ws.append([_("الاسم"), _("البريد الإلكتروني"), _("تاريخ الانضمام"), _("الحالة")])
 
-    members = ClassMember.query.filter_by(class_id=class_id).all()
+    members = ClassMember.query.filter_by(class_id=class_id).options(joinedload(ClassMember.user)).all()
     for m in members:
         ws.append(
             [
@@ -35,7 +37,9 @@ def export_students_excel(class_id: int) -> bytes:
 
 
 def export_grades_excel(class_id: int) -> bytes:
-    """تصدير درجات الصف إلى Excel."""
+    """تصدير درجات الصف إلى Excel (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     wb = Workbook()
     ws = wb.active
     ws.title = "الدرجات"
@@ -46,7 +50,9 @@ def export_grades_excel(class_id: int) -> bytes:
         header.append(f"{item.title} (/{item.max_mark or '?'})")
     ws.append(header)
 
-    members = ClassMember.query.filter_by(class_id=class_id, status="active").all()
+    members = (
+        ClassMember.query.filter_by(class_id=class_id, status="active").options(joinedload(ClassMember.user)).all()
+    )
     entries = {}
     if items:
         rows = GradeEntry.query.filter(GradeEntry.grade_item_id.in_([i.id for i in items])).all()
@@ -66,10 +72,11 @@ def export_grades_excel(class_id: int) -> bytes:
 
 
 def export_moe_format(school_id=None, academic_year=None, term=None):
-    from app.extensions import db
+    """تصدير بيانات الوزارة (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     from app.models.class_room import ClassMember, ClassRoom
     from app.models.gradebook import GradeEntry, GradeItem
-    from app.models.school import Grade, School
 
     wb = Workbook()
     ws = wb.active
@@ -86,10 +93,15 @@ def export_moe_format(school_id=None, academic_year=None, term=None):
         ]
     )
 
-    query = ClassRoom.query.filter_by(is_active=True)
+    query = ClassRoom.query.filter_by(is_active=True).options(
+        joinedload(ClassRoom.subject),
+        joinedload(ClassRoom.grade),
+        joinedload(ClassRoom.school),
+    )
     if school_id:
         query = query.filter_by(school_id=school_id)
     classes = query.all()
+
     for cls in classes:
         items = GradeItem.query.filter_by(class_id=cls.id).all()
         item_ids = [i.id for i in items]
@@ -102,21 +114,21 @@ def export_moe_format(school_id=None, academic_year=None, term=None):
                 student_marks[e.student_id] = []
             if e.mark is not None:
                 student_marks[e.student_id].append(float(e.mark))
-        members = ClassMember.query.filter_by(class_id=cls.id, status="active").all()
+        members = (
+            ClassMember.query.filter_by(class_id=cls.id, status="active").options(joinedload(ClassMember.user)).all()
+        )
         for m in members:
             marks = student_marks.get(m.user_id, [])
             avg_score = round(sum(marks) / len(marks), 2) if marks else 0
-            grade_obj = db.session.get(Grade, cls.grade_id) if cls.grade_id else None
-            school_obj = db.session.get(School, cls.school_id) if cls.school_id else None
             ws.append(
                 [
                     m.user_id,
                     m.user.name_ar or m.user.email,
-                    grade_obj.grade_level if grade_obj else "",
+                    cls.grade.grade_level if cls.grade else "",
                     cls.subject.name_ar if cls.subject else "",
                     avg_score,
                     academic_year or "",
-                    school_obj.name_ar if school_obj else "",
+                    cls.school.name_ar if cls.school else "",
                 ]
             )
     buf = io.BytesIO()
@@ -126,13 +138,19 @@ def export_moe_format(school_id=None, academic_year=None, term=None):
 
 
 def export_progress_excel(class_id: int) -> bytes:
-    """تصدير تقدم الطلاب إلى Excel."""
+    """تصدير تقدم الطلاب إلى Excel (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     wb = Workbook()
     ws = wb.active
     ws.title = "التقدم"
     ws.append(["الاسم", "البريد الإلكتروني", "الدرس", "الحالة", "الوقت (دقيقة)", "النسبة %"])
 
-    progress = StudentProgress.query.filter_by(class_id=class_id).all()
+    progress = (
+        StudentProgress.query.filter_by(class_id=class_id)
+        .options(joinedload(StudentProgress.student), joinedload(StudentProgress.lesson))
+        .all()
+    )
     for p in progress:
         ws.append(
             [

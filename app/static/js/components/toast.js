@@ -36,7 +36,8 @@ function announce(message) {
 
 function removeToast(toast) {
   toast.style.opacity = "0";
-  toast.style.transform = "translateX(100%)";
+  const isRtl = document.documentElement.dir === "rtl";
+  toast.style.transform = isRtl ? "translateX(-100%)" : "translateX(100%)";
   toast.style.transition = "all .3s";
   setTimeout(() => toast.remove(), 300);
 }

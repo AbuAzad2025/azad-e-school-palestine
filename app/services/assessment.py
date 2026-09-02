@@ -210,11 +210,8 @@ def submit_attempt(attempt: QuizAttempt, *, allow_after_deadline: bool = False) 
         locked.submitted_at = db.func.now()
         locked.score = float(total.quantize(Decimal("0.01")))
 
-    try:
-        tx(_submit)
-    except TxError:
-        db.session.rollback()
-        raise
+    # tx() already handles rollback on TxError — no manual rollback needed
+    tx(_submit)
     return float(total.quantize(Decimal("0.01")))
 
 

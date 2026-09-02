@@ -11,7 +11,7 @@ from typing import Any, Generic, TypeVar
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Query
 
-from app.core.db import TxError, tx
+from app.core.db import TxError, tx, tx_on_commit
 from app.extensions import db
 
 T = TypeVar("T")
@@ -166,4 +166,4 @@ class BaseService(Generic[T]):
 
 
 # إعادة التصدير للتوافق مع الملفات القديمة
-__all__ = ["BaseService", "PaginatedResult", "PaginationMeta", "TxError", "tx"]
+__all__ = ["BaseService", "PaginatedResult", "PaginationMeta", "TxError", "tx", "tx_on_commit"]

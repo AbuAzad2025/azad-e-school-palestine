@@ -114,34 +114,39 @@ def student_class_progress(student_id: int, class_id: int) -> list[dict]:
 
 
 def class_progress_overview(class_id: int) -> list[dict]:
-    """نظرة عامة على تقدم جميع الطلاب في صف معين."""
+    """نظرة عامة على تقدم جميع الطلاب في صف معين (batch — لا N+1)."""
+    from sqlalchemy.orm import joinedload
+
     from app.models.class_room import ClassMember
-    from app.models.user import User
 
     members = (
-        ClassMember.query.filter_by(class_id=class_id, status="active").join(User, ClassMember.user_id == User.id).all()
+        ClassMember.query.filter_by(class_id=class_id, status="active").options(joinedload(ClassMember.user)).all()
     )
     total_lessons = Lesson.query.filter_by(class_id=class_id, status="published").count()
     if total_lessons == 0:
         return []
 
+    # Batch: جلب كل سجلات التقدم لهذا الصف في استعلام واحد
+    all_progress = StudentProgress.query.filter_by(class_id=class_id).all()
+    # تجميع حسب الطالب: {student_id: {completed: int, total_pct: float, count: int}}
+    stats: dict[int, dict] = {}
+    for p in all_progress:
+        s = stats.setdefault(p.student_id, {"completed": 0, "total_pct": 0, "count": 0})
+        if p.status == "completed":
+            s["completed"] += 1
+        s["total_pct"] += p.progress_pct
+        s["count"] += 1
+
     result = []
     for member in members:
-        completed = StudentProgress.query.filter_by(
-            student_id=member.user_id, class_id=class_id, status="completed"
-        ).count()
-        avg_progress = (
-            db.session.query(func.avg(StudentProgress.progress_pct))
-            .filter(StudentProgress.student_id == member.user_id, StudentProgress.class_id == class_id)
-            .scalar()
-            or 0
-        )
+        s = stats.get(member.user_id, {})
+        avg = round(float(s["total_pct"] / s["count"]), 1) if s.get("count") else 0.0
         result.append(
             {
                 "student": member.user,
-                "completed_lessons": completed,
+                "completed_lessons": s.get("completed", 0),
                 "total_lessons": total_lessons,
-                "avg_progress": round(float(avg_progress), 1),
+                "avg_progress": avg,
             }
         )
     return result

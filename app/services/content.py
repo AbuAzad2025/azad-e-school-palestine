@@ -236,12 +236,18 @@ def import_lesson(lesson_id: int, target_class_id: int, user_id: int) -> tuple[L
 
 def shared_lessons(school_id: int, subject_id: int | None = None) -> list[Lesson]:
     """جلب الدروس المشتركة في المدرسة."""
+    from sqlalchemy.orm import joinedload
+
     from app.models.class_room import ClassRoom
 
-    query = Lesson.query.join(ClassRoom, Lesson.class_id == ClassRoom.id).filter(
-        ClassRoom.school_id == school_id,
-        Lesson.is_shared.is_(True),
-        Lesson.deleted_at.is_(None),
+    query = (
+        Lesson.query.join(ClassRoom, Lesson.class_id == ClassRoom.id)
+        .options(joinedload(Lesson.class_room))
+        .filter(
+            ClassRoom.school_id == school_id,
+            Lesson.is_shared.is_(True),
+            Lesson.deleted_at.is_(None),
+        )
     )
     if subject_id is not None:
         query = query.filter(ClassRoom.subject_id == subject_id)

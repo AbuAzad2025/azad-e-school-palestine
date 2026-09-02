@@ -34,6 +34,7 @@ from .system import AuditLog, CertificateTemplate, HealthCheck, OnboardingProgre
 from .tenant import TenantQuota
 from .tutoring import TutorCommission, TutoringRequest, TutoringSession, TutorPayout, TutorProfile, TutorReview
 from .user import User, UserRole, UserRoleLink
+from .wallet import Wallet, WalletTransaction
 
 __all__ = [
     "AcademicEvent",
@@ -99,5 +100,7 @@ __all__ = [
     "UserRole",
     "UserRoleLink",
     "VideoProgress",
+    "Wallet",
+    "WalletTransaction",
     "Announcement",
 ]

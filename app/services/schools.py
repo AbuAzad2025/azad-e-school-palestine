@@ -112,16 +112,34 @@ def get_class_members(class_room: ClassRoom):
 
 
 def join_class(class_room: ClassRoom, user: User) -> str | None:
-    """انضمام طالب/ولي أمر لصف برمز. يعيد رسالة خطأ أو None عند النجاح."""
+    """انضمام طالب/ولي أمر لصف برمز.
+
+    P-SEC-01: لا يُسمح بالانضمام المباشر لصف مدفوع بدون اشتراك نشط.
+    P-SEC-02: الصفوف المجانية (بدون خطة أو سعر صفر) تسمح بالانضمام الفوري.
+    P-SEC-03: الصفوف المدفوعة تتطلب اشتراكاً نشطاً عبر billing.subscribe().
+    """
+    from decimal import Decimal
+
+    from app.models.billing import SubscriptionPlan
+
     if user.role not in (UserRole.student, UserRole.parent):
-        return "الحساب الحالي لا يمكنه الانضمام كطالب."
+        return _("الحساب الحالي لا يمكنه الانضمام كطالب.")
     existing = ClassMember.query.filter_by(class_id=class_room.id, user_id=user.id).first()
     if existing:
-        return "أنت عضو في هذا الصف مسبقاً."
+        return _("أنت عضو في هذا الصف مسبقاً.")
     if class_room.max_students:
         current_count = ClassMember.query.filter_by(class_id=class_room.id, status="active").count()
         if current_count >= class_room.max_students:
-            return "الصف ممتلئ. لا يمكن الانضمام."
+            return _("الصف ممتلئ. لا يمكن الانضمام.")
+
+    # P-SEC-01: فحص: هل الصف يتطلب اشتراكاً مدفوعاً؟
+    plan = SubscriptionPlan.query.filter_by(class_id=class_room.id, is_active=True).first()
+    if plan and Decimal(str(plan.price)) > 0:
+        return _(
+            "هذا الصف مدفوع (%(price)s %(currency)s). يجب الاشتراك والدفع أولاً عبر صفحة الاشتراك.",
+            price=plan.price,
+            currency=plan.currency,
+        )
 
     def _join():
         db.session.add(ClassMember(class_id=class_room.id, user_id=user.id, status="active", joined_at=db.func.now()))
@@ -213,7 +231,16 @@ def has_active_subscription(student_id: int, class_id: int) -> bool:
 
 
 def join_class_individual(student_id: int, class_id: int) -> tuple[ClassMember | None, str | None]:
-    """Individual student joins a public class. Returns (member_or_none, error_or_none)."""
+    """Individual student joins a public class.
+
+    P-SEC-04: لا يُسمح بالانضمام المباشر لصف مدفوع بدون اشتراك نشط.
+    P-SEC-05: الصفوف المجانية تسمح بالانضمام الفوري.
+    P-SEC-06: الصفوف المدفوعة تتطلب اشتراكاً نشطاً عبر billing.subscribe().
+    """
+    from decimal import Decimal
+
+    from app.models.billing import SubscriptionPlan
+
     user = db.session.get(User, student_id)
     cls = db.session.get(ClassRoom, class_id)
     if not user or not cls:
@@ -226,6 +253,15 @@ def join_class_individual(student_id: int, class_id: int) -> tuple[ClassMember |
         current_count = ClassMember.query.filter_by(class_id=cls.id, status="active").count()
         if current_count >= cls.max_students:
             return None, _("الصف ممتلئ.")
+
+    # P-SEC-04: فحص: هل الصف يتطلب اشتراكاً مدفوعاً؟
+    plan = SubscriptionPlan.query.filter_by(class_id=cls.id, is_active=True).first()
+    if plan and Decimal(str(plan.price)) > 0:
+        return None, _(
+            "هذا الصف مدفوع (%(price)s %(currency)s). يجب الاشتراك والدفع أولاً عبر صفحة الاشتراك.",
+            price=plan.price,
+            currency=plan.currency,
+        )
 
     def _join():
         db.session.add(ClassMember(class_id=cls.id, user_id=user.id, status="active", joined_at=db.func.now()))

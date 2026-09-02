@@ -46,20 +46,37 @@ def send_message(
 
 def inbox(user_id: int) -> list[Message]:
     """الرسائل الواردة (أقدم خيط فقط)."""
+    from sqlalchemy.orm import joinedload
+
     return (
         Message.query.filter_by(recipient_id=user_id, parent_message_id=None)
+        .options(joinedload(Message.sender))
         .order_by(Message.is_read.asc(), Message.created_at.desc())
         .all()
     )
 
 
 def sent(user_id: int) -> list[Message]:
-    return Message.query.filter_by(sender_id=user_id, parent_message_id=None).order_by(Message.created_at.desc()).all()
+    from sqlalchemy.orm import joinedload
+
+    return (
+        Message.query.filter_by(sender_id=user_id, parent_message_id=None)
+        .options(joinedload(Message.recipient))
+        .order_by(Message.created_at.desc())
+        .all()
+    )
 
 
 def get_thread(message_id: int) -> Message | None:
     """جلب رسالة + ردودها مرتبة."""
-    return db.session.get(Message, message_id)
+    from sqlalchemy.orm import joinedload
+
+    return (
+        db.session.query(Message)
+        .options(joinedload(Message.sender), joinedload(Message.recipient))
+        .filter(Message.id == message_id)
+        .first()
+    )
 
 
 def mark_read(message_id: int, user_id: int) -> None:

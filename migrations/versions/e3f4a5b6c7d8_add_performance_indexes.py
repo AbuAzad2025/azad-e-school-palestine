@@ -5,9 +5,8 @@ Revises: d2e3f4a5b6c7
 Create Date: 2026-08-30
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 revision = "e3f4a5b6c7d8"
 down_revision = "d2e3f4a5b6c7"
@@ -36,7 +35,8 @@ def upgrade() -> None:
 
     # Composite: quiz results by score
     _create_index_if_not_exists(
-        "ix_quiz_attempts_quiz_score", "quiz_attempts",
+        "ix_quiz_attempts_quiz_score",
+        "quiz_attempts",
         [sa.text("quiz_id"), sa.text("score DESC")],
     )
 
@@ -154,6 +154,13 @@ def upgrade() -> None:
     _create_index_if_not_exists("ix_offline_downloads_lesson_id", "offline_downloads", ["lesson_id"])
 
 
+def _index_exists(table: str, name: str) -> bool:
+    """Check if an index exists before dropping it (safe downgrade)."""
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    return name in {idx["name"] for idx in inspector.get_indexes(table)}
+
+
 def downgrade() -> None:
     indexes = [
         ("questions", "ix_questions_quiz_id"),
@@ -206,7 +213,6 @@ def downgrade() -> None:
         ("ai_usage_logs", "ix_ai_usage_logs_user_id"),
         ("announcements", "ix_announcements_class_id"),
         ("announcements", "ix_announcements_author_id"),
-        ("notification_preferences", "ix_notification_preferences_user_id"),
         ("family_link_codes", "ix_family_link_codes_used_by"),
         ("student_badges", "ix_student_badges_badge_id"),
         ("audit_logs", "ix_audit_logs_action"),
@@ -218,4 +224,5 @@ def downgrade() -> None:
         ("offline_downloads", "ix_offline_downloads_lesson_id"),
     ]
     for table, index_name in indexes:
-        op.drop_index(index_name, table_name=table)
+        if _index_exists(table, index_name):
+            op.drop_index(index_name, table_name=table)

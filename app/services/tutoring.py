@@ -360,6 +360,7 @@ def get_active_sessions_for_student(student_id: int) -> list[TutoringSession]:
     """يحصل على الجلسات النشطة للطالب."""
     return (
         TutoringSession.query.filter_by(student_id=student_id, status="active")
+        .options(joinedload(TutoringSession.tutor))
         .order_by(TutoringSession.scheduled_at.desc())
         .all()
     )
@@ -369,6 +370,7 @@ def get_active_sessions_for_tutor(tutor_id: int) -> list[TutoringSession]:
     """يحصل على الجلسات النشطة للمعلم."""
     return (
         TutoringSession.query.filter_by(tutor_id=tutor_id, status="active")
+        .options(joinedload(TutoringSession.student))
         .order_by(TutoringSession.scheduled_at.desc())
         .all()
     )
@@ -427,32 +429,78 @@ COMMISSION_RATE = 20.0  # 20% platform fee
 
 
 def get_tutor_earnings(tutor_id: int) -> dict:
-    """ملخص أرباح المعلم."""
-    sessions = (
-        db.session.execute(db.select(TutoringSession).where(TutoringSession.tutor_id == tutor_id)).scalars().all()
-    )
-    completed = [s for s in sessions if s.status in ("completed", "ended")]
-    total_earnings = sum(float(s.price or 0) for s in completed)
-    pending = sum(
-        float(s.price or 0) for s in sessions if s.payment_status == "pending" and s.status not in ("cancelled",)
+    """ملخص أرباح المعلم (batch — استخدام SQL aggregation بدلاً من تحميل كامل)."""
+    # Aggregate sessions in one query
+    session_agg = (
+        db.session.query(
+            func.count(TutoringSession.id).label("total_sessions"),
+            func.sum(
+                func.cast(
+                    db.case(
+                        (TutoringSession.status.in_(["completed", "ended"]), TutoringSession.price),
+                        else_=0,
+                    ),
+                    db.Numeric,
+                )
+            ).label("total_earnings"),
+            func.sum(
+                func.cast(
+                    db.case(
+                        (
+                            db.and_(
+                                TutoringSession.payment_status == "pending",
+                                TutoringSession.status.notin_(["cancelled"]),
+                            ),
+                            TutoringSession.price,
+                        ),
+                        else_=0,
+                    ),
+                    db.Numeric,
+                )
+            ).label("pending_payouts"),
+            func.count(
+                db.case(
+                    (TutoringSession.status.in_(["completed", "ended"]), 1),
+                    else_=None,
+                )
+            ).label("completed_sessions"),
+        )
+        .filter(TutoringSession.tutor_id == tutor_id)
+        .one()
     )
 
-    reviews = (
-        db.session.execute(db.select(TutorReview).join(TutoringSession).where(TutoringSession.tutor_id == tutor_id))
-        .scalars()
-        .all()
+    total_earnings = float(session_agg.total_earnings or 0)
+    pending = float(session_agg.pending_payouts or 0)
+    completed_count = session_agg.completed_sessions or 0
+    total_sessions = session_agg.total_sessions or 0
+
+    # Aggregate reviews in one query
+    review_agg = (
+        db.session.query(
+            func.avg(TutorReview.rating).label("avg_rating"),
+            func.count(TutorReview.id).label("review_count"),
+        )
+        .join(TutoringSession)
+        .filter(TutoringSession.tutor_id == tutor_id)
+        .one()
     )
-    avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else 0.0
+
+    avg_rating = round(float(review_agg.avg_rating or 0), 1)
+    review_count = review_agg.review_count or 0
 
     # Commission calculations
     commission_amount = round(total_earnings * COMMISSION_RATE / 100, 2)
     net_earnings = round(total_earnings - commission_amount, 2)
 
-    # Withdrawable (from TutorCommission where status == "pending")
-    pending_commissions = TutorCommission.query.filter_by(tutor_id=tutor_id, status="pending").all()
-    withdrawable = sum(float(c.tutor_net) for c in pending_commissions)
+    # Withdrawable — batch aggregation
+    withdrawable = float(
+        db.session.query(func.sum(TutorCommission.tutor_net))
+        .filter(TutorCommission.tutor_id == tutor_id, TutorCommission.status == "pending")
+        .scalar()
+        or 0
+    )
 
-    total_payouts = (
+    total_payouts = float(
         db.session.query(func.sum(TutorPayout.amount))
         .filter(TutorPayout.tutor_id == tutor_id, TutorPayout.status == "approved")
         .scalar()
@@ -463,9 +511,9 @@ def get_tutor_earnings(tutor_id: int) -> dict:
         "total_earnings": round(total_earnings, 2),
         "pending_payouts": round(pending, 2),
         "avg_rating": avg_rating,
-        "review_count": len(reviews),
-        "completed_sessions": len(completed),
-        "total_sessions": len(sessions),
+        "review_count": review_count,
+        "completed_sessions": completed_count,
+        "total_sessions": total_sessions,
         "commission_amount": commission_amount,
         "net_earnings": net_earnings,
         "withdrawable": round(withdrawable, 2),

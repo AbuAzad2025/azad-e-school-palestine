@@ -60,5 +60,12 @@
   .admin-sidebar-close { min-width: 44px; min-height: 44px; }
 }
 @media (max-width: 767px) {
-  .admin-table { display: block; overflow-x: auto; white-space: nowrap; }
+  .admin-table { display: block; overflow: visible; white-space: normal; border: none; box-shadow: none; background: transparent; }
+  .admin-table thead { display: none; }
+  .admin-table tbody { display: grid; gap: var(--sp-3); }
+  .admin-table tr { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--sp-4); box-shadow: var(--shadow-sm); gap: var(--sp-2) var(--sp-4); }
+  .admin-table tr > *:first-child { grid-column: 1 / -1; font-weight: 700; font-size: var(--text-base); padding-bottom: var(--sp-2); border-bottom: 1px solid var(--border); }
+  .admin-table td { display: flex; flex-direction: column; justify-content: center; padding: var(--sp-2) 0; border-bottom: none; white-space: normal; font-size: var(--text-sm); gap: 2px; }
+  .admin-table td::before { content: attr(data-label); font-weight: 600; color: var(--text-muted); font-size: var(--text-xs); text-transform: uppercase; }
+  .admin-table td:not([data-label]):empty { display: none; }
 }

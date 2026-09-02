@@ -120,6 +120,36 @@ export function initConfirmDialogs() {
   });
 }
 
+/**
+ * Trap focus inside a modal/dialog element.
+ * @param {HTMLElement} modal
+ * @returns {Function} cleanup function to remove the trap
+ */
+export function trapFocus(modal) {
+  const focusableSelectors =
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function handler(e) {
+    if (e.key !== "Tab") return;
+    const focusable = Array.from(modal.querySelectorAll(focusableSelectors));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+  modal.addEventListener("keydown", handler);
+  return () => modal.removeEventListener("keydown", handler);
+}
+
 export function initHelpTooltips() {
   const hideAll = () => {
     document.querySelectorAll(".azad-field__help-popover").forEach((popover) => {

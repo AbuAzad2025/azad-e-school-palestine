@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions import db
-from app.models.school import Grade, Subject
+from app.models.school import Grade, School, Subject
 from app.models.user import User
 
 from .mixins import PKMixin, SoftDeleteMixin
@@ -40,6 +40,7 @@ class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
     subject: Mapped[Subject] = relationship("Subject")
     grade: Mapped[Grade] = relationship("Grade")
     teacher: Mapped[User] = relationship("User")
+    school: Mapped[School] = relationship("School")
 
 
 class ClassMember(PKMixin, db.Model):

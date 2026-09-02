@@ -115,17 +115,56 @@ def video_update(attachment_id):
 @login_required
 @role_required(UserRole.student)
 def my_progress():
-    """تقدمي في جميع صفوفي."""
+    """تقدمي في جميع صفوفي (batch — لا N+1)."""
     from app.models.class_room import ClassMember
+    from app.models.content import Lesson
+    from app.models.progress import StudentProgress
+    from sqlalchemy.orm import selectinload
 
-    memberships = ClassMember.query.filter_by(user_id=current_user.id, status="active").all()
+    memberships = (
+        ClassMember.query.filter_by(user_id=current_user.id, status="active")
+        .options(selectinload(ClassMember.class_room))
+        .all()
+    )
+    class_ids = [m.class_id for m in memberships]
+    if not class_ids:
+        return render_template("progress/my_progress.html", classes_progress=[])
+
+    # Batch: جلب كل الدروس المنشورة لجميع الصفوف في استعلام واحد
+    all_lessons = (
+        Lesson.query.filter(Lesson.class_id.in_(class_ids), Lesson.status == "published")
+        .order_by(Lesson.class_id, Lesson.sort_order)
+        .all()
+    )
+    lessons_by_class: dict[int, list] = {}
+    for lesson in all_lessons:
+        lessons_by_class.setdefault(lesson.class_id, []).append(lesson)
+
+    # Batch: جلب كل سجلات التقدم للطالب في جميع صفوفه
+    all_progress = StudentProgress.query.filter(
+        StudentProgress.student_id == current_user.id,
+        StudentProgress.class_id.in_(class_ids),
+    ).all()
+    progress_map: dict[tuple[int, int], StudentProgress] = {(p.lesson_id, p.class_id): p for p in all_progress}
+
     classes_progress = []
     for m in memberships:
-        progress = student_class_progress(current_user.id, m.class_id)
+        lessons = lessons_by_class.get(m.class_id, [])
+        lessons_data = []
+        for lesson in lessons:
+            prog = progress_map.get((lesson.id, m.class_id))
+            lessons_data.append(
+                {
+                    "lesson": lesson,
+                    "status": prog.status if prog else "not_started",
+                    "seconds_spent": prog.seconds_spent if prog else 0,
+                    "progress_pct": prog.progress_pct if prog else 0,
+                }
+            )
         classes_progress.append(
             {
                 "class_room": m.class_room,
-                "lessons": progress,
+                "lessons": lessons_data,
             }
         )
     return render_template("progress/my_progress.html", classes_progress=classes_progress)

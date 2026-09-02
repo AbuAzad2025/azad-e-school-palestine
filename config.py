@@ -147,6 +147,11 @@ class _BaseConfig:
     SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "0") == "1"
     SWAGGER_HOST = os.getenv("SWAGGER_HOST", "")
 
+    # === Celery / Redis ===
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
 
 class DevelopmentConfig(_BaseConfig):
     """بيئة التطوير — مريحة للمطوّر، أقل حماية."""

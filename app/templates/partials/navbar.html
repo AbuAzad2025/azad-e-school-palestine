@@ -70,8 +70,8 @@
 {% if current_user.is_authenticated %}
 <div class="nav-links" id="nav-menu" data-nav-links>
   <div class="nav-links__section">{{ _('القائمة الرئيسية') }}</div>
-  <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
-  <a href="{{ url_for('auth.dashboard') }}">{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
+  <a href="{{ url_for('main.index') }}" {% if request.endpoint == 'main.index' %}class="active" aria-current="page"{% endif %}>{{ icon('home') }} {{ _('الرئيسية') }}</a>
+  <a href="{{ url_for('auth.dashboard') }}" {% if request.endpoint == 'auth.dashboard' %}class="active" aria-current="page"{% endif %}>{{ icon('dashboard') }} {{ _('لوحتي') }}</a>
 
   {% if is_student() %}
     {% if is_individual() %}

@@ -77,6 +77,7 @@ def require_admin():
 
 @bp.get("/")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def dashboard():
     """لوحة المشرف الرئيسية — إحصائيات شاملة"""
     # إحصائيات عامة
@@ -175,6 +176,7 @@ def dashboard():
 # ======================================================================
 @bp.get("/users")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def users_list():
     page = request.args.get("page", 1, type=int)
     role_filter = request.args.get("role", "")
@@ -200,6 +202,7 @@ def users_list():
 
 @bp.get("/users/<int:user_id>")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def user_detail(user_id):
     user = User.query.options(selectinload(User.role_links).joinedload(UserRoleLink.school)).get_or_404(user_id)
     memberships = user.role_links
@@ -208,6 +211,7 @@ def user_detail(user_id):
 
 @bp.post("/users/<int:user_id>/toggle")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def user_toggle(user_id):
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
@@ -224,6 +228,7 @@ def user_toggle(user_id):
 
 @bp.post("/bulk-action")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def bulk_action():
     """تنفيذ إجراء جماعي على الكيانات المختارة."""
     data = request.get_json(silent=True) or {}
@@ -243,8 +248,10 @@ def bulk_action():
 
     def _apply():
         if entity == "users":
+            # Batch: جلب كل المستخدمين في استعلام واحد بدلاً من N استعلام
+            users = {u.id: u for u in User.query.filter(User.id.in_(ids)).all()}
             for user_id in ids:
-                user = User.query.get(user_id)
+                user = users.get(user_id)
                 if not user or user.id == current_user.id:
                     continue
                 if action == "activate":
@@ -256,8 +263,10 @@ def bulk_action():
                     user.deleted_at = datetime.now(UTC)
 
         elif entity == "schools":
+            # Batch: جلب كل المدارس في استعلام واحد
+            schools = {s.id: s for s in School.query.filter(School.id.in_(ids)).all()}
             for school_id in ids:
-                school = School.query.get(school_id)
+                school = schools.get(school_id)
                 if not school:
                     continue
                 if action == "delete":
@@ -272,6 +281,7 @@ def bulk_action():
 # ======================================================================
 @bp.post("/users/<int:user_id>/impersonate")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def user_impersonate(user_id):
     from app.services.impersonation import start_impersonation
 
@@ -292,6 +302,7 @@ def user_impersonate(user_id):
 
 @bp.post("/impersonate/exit")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def impersonate_exit():
     from app.services.impersonation import stop_impersonation
 
@@ -308,6 +319,7 @@ def impersonate_exit():
 # ======================================================================
 @bp.get("/schools")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def schools_list():
     page = request.args.get("page", 1, type=int)
     search = request.args.get("search", "")
@@ -323,6 +335,7 @@ def schools_list():
 
 @bp.get("/schools/<int:school_id>")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def school_detail(school_id):
     school = School.query.get_or_404(school_id)
     classes = (
@@ -345,6 +358,7 @@ def school_detail(school_id):
 # ======================================================================
 @bp.get("/subscriptions")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def subscriptions_list():
     page = request.args.get("page", 1, type=int)
     status_filter = request.args.get("status", "")
@@ -371,6 +385,7 @@ def subscriptions_list():
 
 @bp.post("/subscriptions/<int:sub_id>/cancel")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def subscription_cancel(sub_id):
     sub = Subscription.query.get_or_404(sub_id)
 
@@ -384,6 +399,7 @@ def subscription_cancel(sub_id):
 
 @bp.get("/subscriptions/<int:sub_id>")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def subscription_detail(sub_id):
     sub = Subscription.query.options(
         joinedload(Subscription.user),
@@ -487,6 +503,7 @@ def subscription_detail(sub_id):
 
 @bp.get("/payments/pending")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def pending_payments():
     payments = (
         ManualPayment.query.filter_by(status="pending")
@@ -503,28 +520,84 @@ def pending_payments():
 
 @bp.post("/payments/<int:payment_id>/approve")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def payment_approve(payment_id):
+    """اعتماد الدفع اليدوي وتفعيل الاشتراك + إنشاء عضوية الصف."""
     payment = ManualPayment.query.get_or_404(payment_id)
+    from app.core.db import tx_on_commit
     from app.services.billing import approve_payment
 
     approve_payment(payment, reviewer_id=current_user.id)
-    from app.services.email import send_payment_approved_email
 
-    send_payment_approved_email(payment)
+    # P-SEC-14: تسجيل المراجعة في AuditLog
+    from app.models.system import AuditLog
+
+    audit_entry = AuditLog(
+        user_id=current_user.id,
+        action="payment.approve",
+        entity="manual_payment",
+        entity_id=payment.id,
+        detail={
+            "subscription_id": payment.subscription_id,
+            "amount": str(payment.amount),
+            "student_id": payment.subscription.user_id,
+            "class_id": payment.subscription.class_id,
+            "reviewer_id": current_user.id,
+        },
+    )
+    db.session.add(audit_entry)
+    db.session.commit()
+
+    # P-SEC-15: إشعار بعد الالتزام الناجح فقط
+    def _notify():
+        from app.services.email import send_payment_approved_email
+
+        send_payment_approved_email(payment)
+
+    tx_on_commit(_notify)
+
     flash(_("تم اعتماد الدفع وتفعيل الاشتراك"), "success")
     return redirect(url_for("admin.pending_payments"))
 
 
 @bp.post("/payments/<int:payment_id>/reject")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def payment_reject(payment_id):
+    """رفض الدفع وإلغاء الاشتراك."""
     payment = ManualPayment.query.get_or_404(payment_id)
+    from app.core.db import tx_on_commit
     from app.services.billing import reject_payment
 
     reject_payment(payment, reviewer_id=current_user.id)
-    from app.services.email import send_payment_rejected_email
 
-    send_payment_rejected_email(payment)
+    # P-SEC-16: تسجيل الرفض في AuditLog
+    from app.models.system import AuditLog
+
+    audit_entry = AuditLog(
+        user_id=current_user.id,
+        action="payment.reject",
+        entity="manual_payment",
+        entity_id=payment.id,
+        detail={
+            "subscription_id": payment.subscription_id,
+            "amount": str(payment.amount),
+            "student_id": payment.subscription.user_id,
+            "class_id": payment.subscription.class_id,
+            "reviewer_id": current_user.id,
+        },
+    )
+    db.session.add(audit_entry)
+    db.session.commit()
+
+    # P-SEC-17: إشعار الرفض بعد الالتزام
+    def _notify():
+        from app.services.email import send_payment_rejected_email
+
+        send_payment_rejected_email(payment)
+
+    tx_on_commit(_notify)
+
     flash(_("تم رفض الدفع"), "warning")
     return redirect(url_for("admin.pending_payments"))
 
@@ -534,6 +607,7 @@ def payment_reject(payment_id):
 # ======================================================================
 @bp.get("/ai/usage")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def ai_usage():
     days = request.args.get("days", 30, type=int)
     from app.services.ai import get_ai_service
@@ -548,6 +622,7 @@ def ai_usage():
 # ======================================================================
 @bp.get("/backups")
 @login_required
+@role_required(UserRole.super_admin)
 def backups_list():
     backup_dir = os.getenv("BACKUP_DIR", "backups")
     backups = []
@@ -568,6 +643,7 @@ def backups_list():
 
 @bp.post("/backups/create")
 @login_required
+@role_required(UserRole.super_admin)
 def backup_create():
     """إنشاء نسخة احتياطية يدوية"""
     import subprocess
@@ -602,6 +678,7 @@ def backup_create():
 
 @bp.post("/backups/<path:filename>/restore")
 @login_required
+@role_required(UserRole.super_admin)
 def backup_restore(filename):
     """استعادة نسخة احتياطية — يتطلب تأكيد"""
     import subprocess
@@ -643,6 +720,7 @@ def backup_restore(filename):
 # ======================================================================
 @bp.get("/settings")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def settings():
     from app.models.system import Setting
 
@@ -655,6 +733,7 @@ def settings():
 # ======================================================================
 @bp.get("/school-admin")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def school_admin_dashboard():
     from app.core.tenancy import current_school_id
     from app.models.class_room import ClassMember, ClassRoom
@@ -753,6 +832,7 @@ def school_admin_dashboard():
 
 @bp.post("/settings")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def settings_save():
     from app.models.system import Setting
 
@@ -777,6 +857,7 @@ def settings_save():
 # ======================================================================
 @bp.get("/registrations/pending")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def pending_registrations():
     """عرض قائمة التسجيلات المعلقة موافقة السوبر أدمن"""
     page = request.args.get("page", 1, type=int)
@@ -797,6 +878,7 @@ def pending_registrations():
 
 @bp.post("/registrations/<int:user_id>/approve")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def registration_approve(user_id):
     """قبول تسجيل مستخدم"""
     user = User.query.get_or_404(user_id)
@@ -817,6 +899,7 @@ def registration_approve(user_id):
 
 @bp.post("/registrations/<int:user_id>/reject")
 @login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
 def registration_reject(user_id):
     """رفض تسجيل مستخدم"""
     user = User.query.get_or_404(user_id)
@@ -915,8 +998,11 @@ def moe_export_download():
 def certificates_list():
     from app.models.system import CertificateTemplate
 
-    templates = CertificateTemplate.query.order_by(CertificateTemplate.id.desc()).all()
-    return render_template("admin/certificates.html", templates=templates)
+    page = request.args.get("page", 1, type=int)
+    pagination = CertificateTemplate.query.order_by(CertificateTemplate.id.desc()).paginate(
+        page=page, per_page=50, error_out=False
+    )
+    return render_template("admin/certificates.html", templates=pagination.items, pagination=pagination)
 
 
 # ======================================================================
@@ -935,7 +1021,7 @@ def audit_logs():
     entity_filter = request.args.get("entity", "")
     search = request.args.get("search", "")
 
-    query = AuditLog.query.options(joinedload("user"))  # type: ignore[arg-type]
+    query = AuditLog.query.options(joinedload(AuditLog.user))  # type: ignore[arg-type]
 
     if user_filter:
         query = query.filter_by(user_id=int(user_filter))
@@ -973,11 +1059,14 @@ def audit_logs():
 @login_required
 @role_required(UserRole.super_admin)
 def contact_inbox():
-    """صندوق وارد رسائل التواصل"""
+    """صندوق وارد رسائل التواصل (with pagination)."""
     from app.models.communication import ContactMessage
 
-    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
-    return render_template("admin/contact_inbox.html", messages=messages)
+    page = request.args.get("page", 1, type=int)
+    pagination = ContactMessage.query.order_by(ContactMessage.created_at.desc()).paginate(
+        page=page, per_page=50, error_out=False
+    )
+    return render_template("admin/contact_inbox.html", pagination=pagination, messages=pagination.items)
 
 
 @bp.post("/contact/<int:message_id>/read")

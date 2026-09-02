@@ -15,21 +15,71 @@ def calculate_gpa(student_id: int, school_id: int) -> dict:
         )
         .all()
     )
-    # بسيط: نجمع درجات جميع الصفوف ونحسب المتوسط
+
+    # Batch: جلب جميع البنود لكل الصفوف في استعلام واحد
+    class_ids = [m.class_id for m in memberships]
+
+    from sqlalchemy.orm import selectinload
+
+    from app.models.gradebook import GradeCategory, GradeEntry, GradeItem
+
+    all_categories = (
+        GradeCategory.query.filter(GradeCategory.class_id.in_(class_ids or [0]))
+        .options(selectinload(GradeCategory.items))
+        .order_by(GradeCategory.id.asc())
+        .all()
+    )
+    categories_by_class: dict[int, list] = {}
+    for cat in all_categories:
+        categories_by_class.setdefault(cat.class_id, []).append(cat)
+
+    # Batch: جلب جميع الدرجات للطالب في كل الصفوف
+    all_items = GradeItem.query.filter(GradeItem.class_id.in_(class_ids or [0])).all()
+    item_ids = [i.id for i in all_items]
+    entries = {}
+    if item_ids:
+        rows = GradeEntry.query.filter(
+            GradeEntry.grade_item_id.in_(item_ids),
+            GradeEntry.student_id == student_id,
+        ).all()
+        entries = {r.grade_item_id: r for r in rows}
+
+    # حساب الدرجة لكل صف من البيانات المحمّلة
     total_weighted = 0.0
     total_weight = 0.0
     class_grades = []
+
     for m in memberships:
-        grade_data = calculate_student_grade(student_id, m.class_id)
-        cat_data = grade_data["categories"]
-        for cat in cat_data:
-            total_weighted += cat["weighted_score"]
-            total_weight += cat["weight"]
+        class_cats = categories_by_class.get(m.class_id, [])
+        cat_total_weighted = 0.0
+        cat_total_weight = 0.0
+
+        for cat in class_cats:
+            cat_weight = float(cat.weight) if cat.weight else 0
+            cat_total_marks = 0.0
+            cat_earned_marks = 0.0
+
+            for item in cat.items:
+                entry = entries.get(item.id)
+                max_mark = float(item.max_mark) if item.max_mark else 0
+                earned = float(entry.mark) if entry and entry.mark is not None else None
+                if earned is not None and max_mark > 0:
+                    cat_total_marks += max_mark
+                    cat_earned_marks += earned
+
+            category_pct = round((cat_earned_marks / cat_total_marks * 100), 1) if cat_total_marks > 0 else 0
+            weighted_score = round(category_pct * cat_weight, 2)
+            cat_total_weighted += weighted_score
+            cat_total_weight += cat_weight
+
+        final = round(cat_total_weighted / cat_total_weight, 1) if cat_total_weight > 0 else 0
+        total_weighted += cat_total_weighted
+        total_weight += cat_total_weight
         class_grades.append(
             {
                 "class_id": m.class_id,
-                "final_grade": grade_data["final_grade"],
-                "letter_grade": grade_data["letter_grade"],
+                "final_grade": final,
+                "letter_grade": _letter_grade(final),
             }
         )
 

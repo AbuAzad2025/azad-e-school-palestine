@@ -395,7 +395,7 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
                 lesson_id=lesson_id,
             )
             db.session.add(session)
-            db.session.commit()
+            db.session.flush()  # Get ID without committing — caller manages tx
         return session
 
     def _build_chat_messages(self, session_id: int, question: str, context: str | None) -> list[dict]:
@@ -459,7 +459,7 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
         if full_answer:
             ai_msg = AiMessage(session_id=session_id, role="assistant", content=full_answer)
             db.session.add(ai_msg)
-            db.session.commit()
+            db.session.flush()  # Persist without committing — async generators cannot manage tx lifecycle
 
         if completion_tokens > 0:
             self._record_usage(prompt_tokens or 100, completion_tokens, 0, "chat")
@@ -479,7 +479,7 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
 
         user_msg = AiMessage(session_id=session.id, role="user", content=question)
         db.session.add(user_msg)
-        db.session.commit()
+        db.session.flush()  # Persist without committing — async generators cannot manage tx lifecycle
 
         messages = self._build_chat_messages(session.id, question, context)
 
@@ -567,7 +567,6 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
         def _log():
             msg = AiMessage(session_id=session_id, role=role, content=content)
             db.session.add(msg)
-            db.session.commit()
             return msg
 
         return tx(_log)
