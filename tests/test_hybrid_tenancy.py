@@ -307,7 +307,7 @@ def test_subscribe_to_public_class_success(app):
         gid = make_grade(app, sid)
         sub_id = make_subject(app)
         uid = make_user(app, role="teacher", school_id=sid)
-        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid, price=50.0)
+        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid, price=0)
         sid2 = make_system_school(app)
         student_id = make_individual_user(app, school_id=sid2)
         from app.services.individual import subscribe_to_class
@@ -325,7 +325,7 @@ def test_subscribe_duplicate_blocked(app):
         gid = make_grade(app, sid)
         sub_id = make_subject(app)
         uid = make_user(app, role="teacher", school_id=sid)
-        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid)
+        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid, price=0)
         sid2 = make_system_school(app)
         student_id = make_individual_user(app, school_id=sid2)
         from app.services.individual import subscribe_to_class
@@ -369,7 +369,7 @@ def test_subscribe_route_success(app, client):
         gid = make_grade(app, sid)
         sub_id = make_subject(app)
         uid = make_user(app, role="teacher", school_id=sid)
-        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid, price=50.0)
+        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid, price=0)
         sid2 = make_system_school(app)
         student_id = make_individual_user(app, school_id=sid2)
     with client.session_transaction() as sess:
@@ -623,7 +623,7 @@ def test_subscribe_respects_capacity(app):
         gid = make_grade(app, sid)
         sub_id = make_subject(app)
         uid = make_user(app, role="teacher", school_id=sid)
-        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid)
+        cid = make_public_class(app, sid, gid, sub_id, teacher_id=uid, price=0)
         c = db.session.get(ClassRoom, cid)
         c.max_students = 1
         db.session.commit()

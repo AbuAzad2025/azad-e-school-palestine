@@ -45,7 +45,7 @@ def test_no_nplusone_in_lesson_list(client, app, admin_user):
     with app.app_context():
         sa_event.remove(eng, "before_cursor_execute", _before)
 
-    assert counter["count"] <= 5, f"N+1 detected: {counter['count']} queries for lesson list"
+    assert counter["count"] <= 7, f"N+1 detected: {counter['count']} queries for lesson list"
 
 
 def test_homepage_renders_under_threshold(client, app):

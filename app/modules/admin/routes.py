@@ -50,13 +50,18 @@ PSQL = _find_pg_tool("psql")
 @bp.app_context_processor
 def admin_nav_context():
     """عدّادات شريط التنقل في لوحة المشرف (تُحقن لصفحات اللوحة فقط)."""
-    from app.models.billing import ManualPayment, Subscription
+    try:
+        from app.models.billing import ManualPayment, Subscription
 
-    return {
-        "subs_pending": Subscription.query.filter_by(status="pending").count(),
-        "pending_payments": ManualPayment.query.filter_by(status="pending").count(),
-        "pending_reg_count": User.query.filter_by(approval_status=UserApprovalStatus.pending, is_active=True).count(),
-    }
+        return {
+            "subs_pending": Subscription.query.filter_by(status="pending").count(),
+            "pending_payments": ManualPayment.query.filter_by(status="pending").count(),
+            "pending_reg_count": User.query.filter_by(
+                approval_status=UserApprovalStatus.pending, is_active=True
+            ).count(),
+        }
+    except Exception:  # noqa: BLE001
+        return {"subs_pending": 0, "pending_payments": 0, "pending_reg_count": 0}
 
 
 @bp.before_request

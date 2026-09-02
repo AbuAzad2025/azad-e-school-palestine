@@ -98,6 +98,11 @@ def verify_stream_token(
             return False, "Invalid token format"
 
         t_user_id_s, t_school_id_s, t_lesson_id_s, t_expires_at_s, t_signature = parts
+
+        # Strict: signature must be exactly 64 hex chars (SHA-256 hex digest)
+        if len(t_signature) != 64:
+            return False, "Invalid token format"
+
         tok_user_id = int(t_user_id_s)
         tok_school_id = int(t_school_id_s)
         tok_lesson_id = int(t_lesson_id_s)
