@@ -27,9 +27,7 @@ T = TypeVar("T")
 _tx_depth: ContextVar[int] = ContextVar("_tx_depth", default=0)
 
 # ─── Current active _TxContext (used by tx_on_commit to append directly) ─
-_current_tx_ctx: ContextVar[_TxContext | None] = ContextVar(
-    "_current_tx_ctx", default=None
-)
+_current_tx_ctx: ContextVar[_TxContext | None] = ContextVar("_current_tx_ctx", default=None)
 
 
 class TxError(Exception):
@@ -109,9 +107,7 @@ def _add_post_commit_hook(fn: Callable[[], None]) -> None:
 
 
 # ─── Legacy ContextVar kept for edge cases outside any tx() ─────────────
-_post_commit_hooks: ContextVar[list[Callable[[], None]] | None] = ContextVar(
-    "_post_commit_hooks", default=None
-)
+_post_commit_hooks: ContextVar[list[Callable[[], None]] | None] = ContextVar("_post_commit_hooks", default=None)
 
 
 # Public alias for clarity in service code
