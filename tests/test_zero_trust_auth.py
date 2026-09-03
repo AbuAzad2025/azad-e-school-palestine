@@ -214,7 +214,7 @@ class TestTutoringIsolation:
                 tutor_id=tutor,
                 student_id=student,
                 subject="Math",
-                status="pending",
+                status="requested",
             )
             db.session.add(session)
             db.session.commit()

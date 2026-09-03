@@ -163,14 +163,21 @@ class TestVideoTokenGeneration:
 
     def test_tampered_token_fails(self, app):
         with app.app_context():
+            from base64 import urlsafe_b64decode, urlsafe_b64encode
+
             from app.services.video_service import (
                 generate_stream_token,
                 verify_stream_token,
             )
 
             token = generate_stream_token(user_id=42, school_id=5, lesson_id=20)
-            # Tamper by appending extra characters
-            tampered = token + "TAMPERED"
+            # Decode, modify the payload (change user_id), re-encode.
+            # The HMAC signature will no longer match.
+            token_data = urlsafe_b64decode(token.encode()).decode()
+            # Original: "user_id:school_id:lesson_id:expires_at:signature"
+            parts = token_data.split(":")
+            parts[0] = "999"  # tamper with user_id
+            tampered = urlsafe_b64encode(":".join(parts).encode()).decode()
             valid, error = verify_stream_token(tampered, user_id=42, school_id=5, lesson_id=20)
             assert valid is False
 
