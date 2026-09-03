@@ -7,13 +7,19 @@ sentry, tasks/__init__, and media routes helper logic.
 from __future__ import annotations
 
 import json
-import math
-import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _clean_chunk_store():
+    """Ensure _chunk_store is cleaned after all RAG tests in this module."""
+    from app.services.rag_service import _chunk_store
+    yield
+    _chunk_store.clear()
 
 
 # ─── RAG Service Tests ───────────────────────────────────────────────────────
@@ -525,7 +531,6 @@ class TestRLSModule:
         from app.core.rls import set_tenant_context
 
         with app.app_context():
-            from app.extensions import db as _db
 
             # This will fail on SQLite (no SET LOCAL) but won't crash
             try:

@@ -13,11 +13,21 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _cleanup_ai_singletons():
+    """Reset AiService class-level singletons after tests to prevent leakage."""
+    from app.services.ai import AiService
+    yield
+    AiService._rate_limiter = None
+    AiService._budget_tracker = None
+    AiService._client = None
 
 
 # ─── Payments Module Tests ──────────────────────────────────────────────────
@@ -164,7 +174,7 @@ class TestPayTabsGateway:
         assert gw.server_key == "key123"
 
     def test_paytabs_verify_no_secret(self):
-        from app.services.payments import PayTabsGateway, PaymentGateway, PaymentIntent, PaymentStatus
+        from app.services.payments import PaymentGateway, PaymentIntent, PaymentStatus, PayTabsGateway
 
         gw = PayTabsGateway({})
         intent = PaymentIntent(
@@ -176,7 +186,7 @@ class TestPayTabsGateway:
         assert result is False
 
     def test_paytabs_verify_bad_signature(self):
-        from app.services.payments import PayTabsGateway, PaymentGateway, PaymentIntent, PaymentStatus
+        from app.services.payments import PaymentGateway, PaymentIntent, PaymentStatus, PayTabsGateway
 
         gw = PayTabsGateway({"webhook_secret": "my_secret"})
         intent = PaymentIntent(
@@ -191,7 +201,7 @@ class TestPayTabsGateway:
         assert result is False
 
     def test_paytabs_verify_correct_signature(self):
-        from app.services.payments import PayTabsGateway, PaymentGateway, PaymentIntent, PaymentStatus
+        from app.services.payments import PaymentGateway, PaymentIntent, PaymentStatus, PayTabsGateway
 
         gw = PayTabsGateway({"webhook_secret": "my_secret"})
         intent = PaymentIntent(
@@ -448,7 +458,7 @@ class TestAiService:
         assert isinstance(cost, float)
 
     def test_estimate_cost_different_models(self):
-        from app.services.ai import AiConfig, MODEL_PRICING
+        from app.services.ai import MODEL_PRICING, AiConfig
 
         for model_name, pricing in MODEL_PRICING.items():
             config = AiConfig(model=model_name)
@@ -463,8 +473,8 @@ class TestAiService:
         assert can is True
 
     def test_verify_permission_authenticated(self):
-        from app.services.ai import AiService
         from app.models.user import UserRole
+        from app.services.ai import AiService
 
         svc = AiService()
         user = MagicMock()
@@ -481,8 +491,8 @@ class TestAiService:
         assert svc._verify_permission(user) is False
 
     def test_verify_permission_super_admin(self):
-        from app.services.ai import AiService
         from app.models.user import UserRole
+        from app.services.ai import AiService
 
         svc = AiService()
         user = MagicMock()
@@ -491,8 +501,8 @@ class TestAiService:
         assert svc._verify_permission(user, required_role=UserRole.teacher) is True
 
     def test_verify_permission_correct_role(self):
-        from app.services.ai import AiService
         from app.models.user import UserRole
+        from app.services.ai import AiService
 
         svc = AiService()
         user = MagicMock()
@@ -501,8 +511,8 @@ class TestAiService:
         assert svc._verify_permission(user, required_role=UserRole.teacher) is True
 
     def test_verify_permission_wrong_role(self):
-        from app.services.ai import AiService
         from app.models.user import UserRole
+        from app.services.ai import AiService
 
         svc = AiService()
         user = MagicMock()
@@ -511,8 +521,8 @@ class TestAiService:
         assert svc._verify_permission(user, required_role=UserRole.teacher) is False
 
     def test_verify_permission_set_of_roles(self):
-        from app.services.ai import AiService
         from app.models.user import UserRole
+        from app.services.ai import AiService
 
         svc = AiService()
         user = MagicMock()
