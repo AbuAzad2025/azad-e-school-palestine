@@ -17,6 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tests.conftest import (
+    make_attachment,
     make_class,
     make_class_member,
     make_grade,
