@@ -201,6 +201,7 @@ class TestPayTabsGateway:
         assert result is False
 
     def test_paytabs_verify_correct_signature(self):
+        pytest.importorskip("requests")
         from app.services.payments import PaymentGateway, PaymentIntent, PaymentStatus, PayTabsGateway
 
         gw = PayTabsGateway({"webhook_secret": "my_secret"})
