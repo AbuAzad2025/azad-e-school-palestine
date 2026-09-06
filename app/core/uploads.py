@@ -134,7 +134,8 @@ def save_upload(file: FileStorage, subfolder: str = "") -> str:
         raise TxError("محتوى الملف لا يتطابق مع الامتداد المُصرَّح.")
 
     stored = f"{uuid.uuid4().hex}{ext}"
-    base: Path = current_app.config["UPLOAD_FOLDER"]
+    # UPLOAD_FOLDER قد يكون str (من متغير بيئة) أو Path (من config.py) — نوحّده دائماً
+    base = Path(current_app.config["UPLOAD_FOLDER"])
     folder = base / subfolder if subfolder else base
     folder.mkdir(parents=True, exist_ok=True)
     file.save(folder / stored)

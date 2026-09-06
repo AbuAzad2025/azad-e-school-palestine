@@ -101,9 +101,9 @@ class TestHealth:
         data = resp.get_json()
         assert data["checks"]["database"]["status"] == "ok"
 
-    def test_version_configurable(self, app):
+    def test_version_configurable(self, app, monkeypatch):
         """APP_VERSION config is reflected in health response."""
-        app.config["APP_VERSION"] = "2.1.0"
+        monkeypatch.setitem(app.config, "APP_VERSION", "2.1.0")
         resp = app.test_client().get("/health")
         data = resp.get_json()
         assert data["version"] == "2.1.0"
@@ -145,12 +145,12 @@ class TestHealth:
         assert data["checks"]["performance"]["avg_response_ms"] == 0
         assert data["checks"]["performance"]["sample_count"] == 0
 
-    def test_backup_exists(self, app, tmp_path):
+    def test_backup_exists(self, app, tmp_path, monkeypatch):
         """Backup check passes when backup dir has files."""
         bd = tmp_path / "backups"
         bd.mkdir()
         (bd / "backup_20260901.tar.gz").touch()
-        app.config["BACKUP_DIR"] = str(bd)
+        monkeypatch.setitem(app.config, "BACKUP_DIR", str(bd))
         data = app.test_client().get("/health").get_json()
         assert data["checks"]["backup"]["status"] == "ok"
         assert data["checks"]["backup"]["last_backup"] is not None
@@ -161,7 +161,7 @@ class TestHealth:
             "app.extensions.db.session.execute",
             MagicMock(side_effect=Exception("boom")),
         )
-        app.config["ALERT_EMAIL"] = "admin@test.com"
+        monkeypatch.setitem(app.config, "ALERT_EMAIL", "admin@test.com")
         import shutil as _sh
 
         def mu(path):
@@ -189,7 +189,7 @@ class TestHealth:
             "app.extensions.db.session.execute",
             MagicMock(side_effect=Exception("boom")),
         )
-        app.config["ALERT_EMAIL"] = None
+        monkeypatch.setitem(app.config, "ALERT_EMAIL", None)
         import shutil as _sh
 
         def mu(path):
@@ -212,7 +212,7 @@ class TestHealth:
             assert not ms.called
 
     def test_version(self, app, monkeypatch):
-        app.config["APP_VERSION"] = "2.1.0"
+        monkeypatch.setitem(app.config, "APP_VERSION", "2.1.0")
         import shutil as _sh
 
         def mu(path):
@@ -401,8 +401,8 @@ class TestExpireSubscriptionsCLI:
 
 
 class TestSecurityHeadersFallback:
-    def test_headers_added(self, app):
-        app.config["TALISMAN_ENABLED"] = False
+    def test_headers_added(self, app, monkeypatch):
+        monkeypatch.setitem(app.config, "TALISMAN_ENABLED", False)
         c = app.test_client()
         resp = c.get("/auth/login")
         # The after_request handler adds these headers when Talisman is off
@@ -566,19 +566,19 @@ class TestVideoAttachmentTx:
 
 
 class TestReportHelpers:
-    def test_get_output_dir(self, app, tmp_path):
+    def test_get_output_dir(self, app, tmp_path, monkeypatch):
         from app.tasks import reports as r
 
-        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         with app.app_context():
             path = r._get_output_dir(1, "reports")
         assert os.path.isdir(path)
         assert "1" in path
 
-    def test_write_report_pdf(self, app, tmp_path):
+    def test_write_report_pdf(self, app, tmp_path, monkeypatch):
         from app.tasks import reports as r
 
-        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         sid = _make_school(app)
         with app.app_context():
             sub = get_or_create_subject("Math")
@@ -597,10 +597,10 @@ class TestReportHelpers:
         assert d["student_id"] == u.id
         assert d["grade_data"] == {"total": 85.5, "gpa": 3.7}
 
-    def test_write_class_report_pdf(self, app, tmp_path):
+    def test_write_class_report_pdf(self, app, tmp_path, monkeypatch):
         from app.tasks import reports as r
 
-        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         sid = _make_school(app)
         with app.app_context():
             sub = get_or_create_subject("Math")
@@ -623,10 +623,10 @@ class TestReportHelpers:
         assert d["class_id"] == cr.id
         assert d["student_count"] == 2
 
-    def test_write_invoice_pdf(self, app, tmp_path):
+    def test_write_invoice_pdf(self, app, tmp_path, monkeypatch):
         from app.tasks import reports as r
 
-        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         sid = _make_school(app)
         with app.app_context():
             sub = get_or_create_subject("Math")
