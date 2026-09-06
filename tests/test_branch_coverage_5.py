@@ -12,55 +12,31 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
-import sys
-import tempfile
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
+from app.core.db import tx
+from app.extensions import db
+from app.models.billing import ManualPayment, Subscription, SubscriptionPlan
+from app.models.communication import Notification
+from app.models.content import Lesson, LessonAttachment
+from app.models.gradebook import GradeCategory, GradeEntry, GradeItem
+from app.models.user import User, UserRoleLink
+from app.services.schools import (
+    add_grade,
+    create_class,
+    get_or_create_subject,
+)
 
 # Import real fixtures from conftest
 from tests.conftest import (
     make_school as _make_school,
+)
+from tests.conftest import (
     make_user as _make_user,
-    make_class as _make_class,
-    make_class_member as _make_class_member,
-    make_grade_category as _make_grade_category,
-    make_grade_item as _make_grade_item,
-    make_grade_entry as _make_grade_entry,
-    make_lesson as _make_lesson,
-    make_attachment as _make_attachment,
-    make_subject as _make_subject,
-    make_grade as _make_grade,
-    make_subscription as _make_subscription,
-    make_payment as _make_payment,
-    make_student_progress as _make_student_progress,
-    make_video_progress as _make_video_progress,
-    make_tutor_profile as _make_tutor_profile,
-    make_tutoring_session as _make_tutoring_session,
-    make_tutor_review as _make_tutor_review,
-    make_reminder_log as _make_reminder_log,
-    make_user_role_link as _make_user_role_link,
-    make_system_school as _make_system_school,
-    make_individual_user as _make_individual_user,
-    make_public_class as _make_public_class,
 )
-
-from app.core.db import tx
-from app.extensions import db
-from app.models.class_room import ClassRoom
-from app.models.communication import Notification
-from app.models.gradebook import GradeCategory, GradeEntry, GradeItem
-from app.models.user import User, UserRoleLink
-from app.services.schools import (
-    create_class,
-    get_or_create_subject,
-    add_grade,
-)
-from app.models.billing import Subscription, ManualPayment
-from app.models.content import Lesson, LessonAttachment
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -70,12 +46,15 @@ def _patch_celery_guard():
         mock_celery = MagicMock()
         mock_celery.task.return_value = lambda *a, **kw: lambda f: f
         with patch("app.tasks.celery_app", mock_celery):
-            from app.tasks import video, reports, grading, notifications  # noqa: F401
+            from app.tasks import grading, notifications, reports, video  # noqa: F401
+
             yield
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Helper: create users with school role links
 # ═══════════════════════════════════════════════════════════════════
+
 
 def _student(app, school_id):
     u_id = _make_user(app, role="student", school_id=school_id, approved=True)
@@ -101,9 +80,8 @@ def _login(client, user):
 # app/__init__.py — /health
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestHealth:
-
-
     def test_healthy(self, app):
         """Health endpoint returns 200 with structured JSON."""
         resp = app.test_client().get("/health")
@@ -141,6 +119,7 @@ class TestHealth:
         """Performance shows 0 when no response times recorded."""
         with app.app_context():
             from app import _response_times as rt
+
             rt.clear()
         data = app.test_client().get("/health").get_json()
         assert data["checks"]["performance"]["avg_response_ms"] == 0
@@ -153,12 +132,14 @@ class TestHealth:
         )
         with app.app_context():
             from app import _response_times as rt
+
             rt.append(50)
         data = app.test_client().get("/health").get_json()
         assert data["status"] in ("down", "degraded")
         assert data["checks"]["database"]["status"] == "error"
         with app.app_context():
             from app import _response_times as rt
+
             rt.clear()
         data = app.test_client().get("/health").get_json()
         assert data["checks"]["performance"]["avg_response_ms"] == 0
@@ -182,15 +163,22 @@ class TestHealth:
         )
         app.config["ALERT_EMAIL"] = "admin@test.com"
         import shutil as _sh
+
         def mu(path):
             class U:
-                total=10*1024**3; used=1*1024**3; free=9*1024**3
+                total = 10 * 1024**3
+                used = 1 * 1024**3
+                free = 9 * 1024**3
+
             return U()
+
         monkeypatch.setattr(_sh, "disk_usage", mu)
         with app.app_context():
             from app import _response_times as rt
+
             rt.append(50)
         from flask_mail import Mail
+
         with patch.object(Mail, "send") as ms:
             app.test_client().get("/health")
             assert ms.called
@@ -203,15 +191,22 @@ class TestHealth:
         )
         app.config["ALERT_EMAIL"] = None
         import shutil as _sh
+
         def mu(path):
             class U:
-                total=10*1024**3; used=1*1024**3; free=9*1024**3
+                total = 10 * 1024**3
+                used = 1 * 1024**3
+                free = 9 * 1024**3
+
             return U()
+
         monkeypatch.setattr(_sh, "disk_usage", mu)
         with app.app_context():
             from app import _response_times as rt
+
             rt.append(50)
         from flask_mail import Mail
+
         with patch.object(Mail, "send") as ms:
             app.test_client().get("/health")
             assert not ms.called
@@ -219,13 +214,19 @@ class TestHealth:
     def test_version(self, app, monkeypatch):
         app.config["APP_VERSION"] = "2.1.0"
         import shutil as _sh
+
         def mu(path):
             class U:
-                total=10*1024**3; used=1*1024**3; free=9*1024**3
+                total = 10 * 1024**3
+                used = 1 * 1024**3
+                free = 9 * 1024**3
+
             return U()
+
         monkeypatch.setattr(_sh, "disk_usage", mu)
         with app.app_context():
             from app import _response_times as rt
+
             rt.append(50)
         assert app.test_client().get("/health").get_json()["version"] == "2.1.0"
 
@@ -233,6 +234,7 @@ class TestHealth:
 # ═══════════════════════════════════════════════════════════════════
 # app/__init__.py — /health/deep
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestHealthDeep:
     def test_anon_401(self, app):
@@ -257,6 +259,7 @@ class TestHealthDeep:
             sa_id = sa.id
             c = app.test_client()
             from app import _response_times as rt
+
             rt.extend([50, 100, 200])
             with c.session_transaction() as sess:
                 sess["_user_id"] = str(sa_id)
@@ -283,6 +286,7 @@ class TestHealthDeep:
 # ═══════════════════════════════════════════════════════════════════
 # app/__init__.py — error handlers (tested via HTTP requests)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestErrorHandlers:
     def test_404_page(self, app):
@@ -311,7 +315,6 @@ class TestErrorHandlers:
 
     def test_500_template(self, app):
         """500 error renders error template."""
-        from werkzeug.exceptions import InternalServerError
         # Trigger 500 via direct URL that doesn't exist
         resp = app.test_client().get("/nonexistent-500-test-xyz")
         # 404 is expected for unknown route, but if it renders error page, good
@@ -322,22 +325,19 @@ class TestErrorHandlers:
 # app/__init__.py — _format_currency (via filter + request context)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestCurrencyFormat:
     def test_none(self, app):
         """None → '—'."""
         with app.app_context():
-            with app.test_request_context(
-                "/test", headers={"Accept-Language": "ar"}
-            ):
+            with app.test_request_context("/test", headers={"Accept-Language": "ar"}):
                 f = app.jinja_env.filters["currencyformat"]
                 assert f(None) == "—"
 
     def test_zero_ils(self, app):
         with app.app_context():
             f = app.jinja_env.filters["currencyformat"]
-            with app.test_request_context(
-                "/test", headers={"Accept-Language": "ar"}
-            ):
+            with app.test_request_context("/test", headers={"Accept-Language": "ar"}):
                 result = f(0, "ILS")
             assert isinstance(result, str)
             assert len(result) > 0
@@ -345,18 +345,14 @@ class TestCurrencyFormat:
     def test_value_ils(self, app):
         with app.app_context():
             f = app.jinja_env.filters["currencyformat"]
-            with app.test_request_context(
-                "/test", headers={"Accept-Language": "ar"}
-            ):
+            with app.test_request_context("/test", headers={"Accept-Language": "ar"}):
                 result = f(Decimal("150.50"), "ILS")
             assert isinstance(result, str)
 
     def test_bad_currency_fallback(self, app):
         with app.app_context():
             f = app.jinja_env.filters["currencyformat"]
-            with app.test_request_context(
-                "/test", headers={"Accept-Language": "ar"}
-            ):
+            with app.test_request_context("/test", headers={"Accept-Language": "ar"}):
                 result = f(100, "XYZCUR")
             assert isinstance(result, str)
             assert "100" in result
@@ -365,6 +361,7 @@ class TestCurrencyFormat:
 # ═══════════════════════════════════════════════════════════════════
 # app/__init__.py — URL aliases
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestAliases:
     def test_content(self, app):
@@ -388,9 +385,11 @@ class TestAliases:
 # app/__init__.py — expire-subscriptions CLI
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestExpireSubscriptionsCLI:
     def test_runs(self, app):
         from click.testing import CliRunner
+
         runner = CliRunner()
         result = runner.invoke(app.cli, ["expire-subscriptions"])
         assert result.exit_code in (0, 1)
@@ -399,6 +398,7 @@ class TestExpireSubscriptionsCLI:
 # ═══════════════════════════════════════════════════════════════════
 # app/__init__.py — _security_headers_fallback (via Talisman disabled)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestSecurityHeadersFallback:
     def test_headers_added(self, app):
@@ -416,9 +416,11 @@ class TestSecurityHeadersFallback:
 # app/tasks/video.py — helper functions (imported after Celery patch)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestVideoHelpers:
     def test_get_output_dir(self, app):
         from app.tasks import video as v
+
         with app.app_context():
             path = v._get_output_dir(42, 100)
         assert "42" in path
@@ -427,11 +429,13 @@ class TestVideoHelpers:
 
     def test_probe_file_not_found(self, app):
         from app.tasks import video as v
+
         with app.app_context():
             assert v._probe_video("/nonexistent/video.mp4") is None
 
     def test_probe_invalid_video(self, app, tmp_path):
         from app.tasks import video as v
+
         p = tmp_path / "not_video.txt"
         p.write_text("hello")
         with app.app_context():
@@ -439,6 +443,7 @@ class TestVideoHelpers:
 
     def test_generate_encryption_key(self, app, tmp_path):
         from app.tasks import video as v
+
         kp = str(tmp_path / "key.bin")
         ip = str(tmp_path / "key_info.txt")
         with app.app_context():
@@ -450,6 +455,7 @@ class TestVideoHelpers:
 
     def test_create_master_playlist(self, app, tmp_path):
         from app.tasks import video as v
+
         variants = [
             {"name": "720p", "playlist": "720p.m3u8"},
             {"name": "1080p", "playlist": "1080p.m3u8"},
@@ -465,6 +471,7 @@ class TestVideoHelpers:
 
     def test_master_playlist_source(self, app, tmp_path):
         from app.tasks import video as v
+
         variants = [{"name": "source", "playlist": "source.m3u8"}]
         with app.app_context():
             mp = v._create_master_playlist(str(tmp_path), variants)
@@ -473,18 +480,21 @@ class TestVideoHelpers:
 
     def test_transcode_variant_ffmpeg_missing(self, app, tmp_path):
         from app.tasks import video as v
+
         with app.app_context():
             r = v._transcode_variant(
-                "/nonexistent.mp4", str(tmp_path),
-                {"name": "720p", "height": 720, "bitrate": "2800k",
-                 "maxrate": "2996k", "bufsize": "4200k"},
+                "/nonexistent.mp4",
+                str(tmp_path),
+                {"name": "720p", "height": 720, "bitrate": "2800k", "maxrate": "2996k", "bufsize": "4200k"},
                 str(tmp_path / "key_info.txt"),
             )
         assert r is None
 
+
 # ═══════════════════════════════════════════════════════════════════
 # app/tasks/video.py — pipeline error branches
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestVideoPipeline:
     def test_source_not_found(self, app):
@@ -509,28 +519,29 @@ class TestVideoPipeline:
         assert result["status"] == "failed"
         assert "No variants" in result["error"]
 
+
 # ═══════════════════════════════════════════════════════════════════
 # app/tasks/video.py — tx() attachment update
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestVideoAttachmentTx:
     def test_update_via_tx(self, app):
         sid = _make_school(app)
         with app.app_context():
-            cr = ClassRoom(
-                school_id=sid, subject_id=1, grade_id=1,
-                name="Test", join_code="TX", is_public=True,
-            )
-            db.session.add(cr)
+            sub = get_or_create_subject("Math")
+            g = add_grade(sid, 10)
+            cr = create_class(sid, sub.id, g.id)[0]
             db.session.flush()
-
-            lesson = Lesson(class_room_id=cr.id, title="L1", school_id=sid)
+            lesson = Lesson(class_id=cr.id, title="L1")
             db.session.add(lesson)
             db.session.flush()
 
             att = LessonAttachment(
-                lesson_id=lesson.id, kind="video",
-                stored_name="uploads/v.mp4", size_bytes=1024,
+                lesson_id=lesson.id,
+                kind="video",
+                stored_name="uploads/v.mp4",
+                size_bytes=1024,
                 mime="video/mp4",
             )
             db.session.add(att)
@@ -548,13 +559,16 @@ class TestVideoAttachmentTx:
             assert a.kind == "video"
             assert "protected_media" in a.stored_name
 
+
 # ═══════════════════════════════════════════════════════════════════
 # app/tasks/reports.py — helpers (imported after Celery patch)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestReportHelpers:
     def test_get_output_dir(self, app, tmp_path):
         from app.tasks import reports as r
+
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
         with app.app_context():
             path = r._get_output_dir(1, "reports")
@@ -563,15 +577,18 @@ class TestReportHelpers:
 
     def test_write_report_pdf(self, app, tmp_path):
         from app.tasks import reports as r
+
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
         sid = _make_school(app)
-        sub = get_or_create_subject("Math")
-        g = add_grade(sid, 10)
-        cr = create_class(sid, sub.id, g.id)[0]
-        u = _student(app, sid)
         with app.app_context():
+            sub = get_or_create_subject("Math")
+            g = add_grade(sid, 10)
+            cr = create_class(sid, sub.id, g.id)[0]
+            u = _student(app, sid)
             path = r._write_report_pdf(
-                student_id=u.id, class_id=cr.id, school_id=sid,
+                student_id=u.id,
+                class_id=cr.id,
+                school_id=sid,
                 grade_data={"total": 85.5, "gpa": 3.7},
             )
         assert os.path.isfile(path)
@@ -582,20 +599,23 @@ class TestReportHelpers:
 
     def test_write_class_report_pdf(self, app, tmp_path):
         from app.tasks import reports as r
+
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
         sid = _make_school(app)
-        sub = get_or_create_subject("Math")
-        g = add_grade(sid, 10)
-        cr = create_class(sid, sub.id, g.id)[0]
-        u = _student(app, sid)
-        u2 = _student(app, sid)
         with app.app_context():
+            sub = get_or_create_subject("Math")
+            g = add_grade(sid, 10)
+            cr = create_class(sid, sub.id, g.id)[0]
+            u = _student(app, sid)
+            u2 = _student(app, sid)
             grades = [
                 {"student_id": u.id, "total": 90.0},
                 {"student_id": u2.id, "total": 75.0},
             ]
             path = r._write_class_report_pdf(
-                class_id=cr.id, school_id=sid, grades_summary=grades,
+                class_id=cr.id,
+                school_id=sid,
+                grades_summary=grades,
             )
         assert os.path.isfile(path)
         with open(path) as f:
@@ -605,33 +625,50 @@ class TestReportHelpers:
 
     def test_write_invoice_pdf(self, app, tmp_path):
         from app.tasks import reports as r
+
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
         sid = _make_school(app)
-        sub = get_or_create_subject("Math")
-        g = add_grade(sid, 10)
-        cr = create_class(sid, sub.id, g.id)[0]
-        u = _student(app, sid)
         with app.app_context():
+            sub = get_or_create_subject("Math")
+            g = add_grade(sid, 10)
+            cr = create_class(sid, sub.id, g.id)[0]
+            u = _student(app, sid)
+            plan = SubscriptionPlan(
+                school_id=sid,
+                class_id=cr.id,
+                name="Annual",
+                plan="annual",
+                price=Decimal("250.00"),
+            )
+            db.session.add(plan)
+            db.session.flush()
             sub_obj = Subscription(
-                user_id=u.id, class_id=cr.id, plan_id=1,
-                price=Decimal("250.00"), currency="ILS",
+                user_id=u.id,
+                class_id=cr.id,
+                plan_id=plan.id,
+                price=Decimal("250.00"),
+                currency="ILS",
                 start_at=datetime.now(UTC),
                 end_at=datetime.now(UTC) + timedelta(days=30),
-                status="active", source="manual",
+                status="active",
+                source="manual",
             )
             db.session.add(sub_obj)
             db.session.flush()
             payments = [
                 ManualPayment(
                     subscription_id=sub_obj.id,
+                    reference=f"TRX-{sub_obj.id}-001",
                     amount=Decimal("250.00"),
-                    currency="ILS", status="paid",
+                    status="approved",
                 ),
             ]
             db.session.add_all(payments)
             db.session.commit()
             path = r._write_invoice_pdf(
-                subscription=sub_obj, payments=payments, school_id=sid,
+                subscription=sub_obj,
+                payments=payments,
+                school_id=sid,
             )
         assert os.path.isfile(path)
         with open(path) as f:
@@ -644,69 +681,94 @@ class TestReportHelpers:
 # app/tasks/notifications.py — Notification creation (direct, no Celery)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestNotificationLogic:
-    def test_create(self, app, _make_school):
+    def test_create(self, app):
         sid = _make_school(app)
         with app.app_context():
             u = _student(app, sid)
             n = Notification(
-                user_id=u.id, type="grade",
-                title="New Grade", body="90%",
-                link="/grades", is_read=False,
+                user_id=u.id,
+                type="grade",
+                title="New Grade",
+                body="90%",
+                link="/grades",
+                is_read=False,
             )
             db.session.add(n)
             db.session.commit()
             assert n.id is not None
 
-    def test_bulk_no_role_filter(self, app, _make_school):
+    def test_bulk_no_role_filter(self, app):
         sid = _make_school(app)
         with app.app_context():
             _student(app, sid)
             _teacher(app, sid)
-            users = User.query.join(UserRoleLink).filter(
-                UserRoleLink.school_id == sid,
-                UserRoleLink.is_active == True,
-            ).all()
+            users = (
+                User.query.join(UserRoleLink, User.id == UserRoleLink.user_id)
+                .filter(
+                    UserRoleLink.school_id == sid,
+                    UserRoleLink.is_active.is_(True),
+                )
+                .all()
+            )
             sent = 0
             for u in users:
-                db.session.add(Notification(
-                    user_id=u.id, type="announcement",
-                    title="News", body="Updated",
-                    link="/a", is_read=False,
-                ))
+                db.session.add(
+                    Notification(
+                        user_id=u.id,
+                        type="announcement",
+                        title="News",
+                        body="Updated",
+                        link="/a",
+                        is_read=False,
+                    )
+                )
                 sent += 1
             db.session.commit()
             assert sent == len(users)
 
-    def test_bulk_role_filter(self, app, _make_school):
+    def test_bulk_role_filter(self, app):
         sid = _make_school(app)
         with app.app_context():
             _student(app, sid)
-            t = _teacher(app, sid)
-            users = User.query.join(UserRoleLink).filter(
-                UserRoleLink.school_id == sid,
-                UserRoleLink.is_active == True,
-                UserRoleLink.role == "teacher",
-            ).all()
+            _teacher(app, sid)
+            users = (
+                User.query.join(UserRoleLink, User.id == UserRoleLink.user_id)
+                .filter(
+                    UserRoleLink.school_id == sid,
+                    UserRoleLink.is_active.is_(True),
+                    UserRoleLink.role == "teacher",
+                )
+                .all()
+            )
             sent = 0
             for u in users:
-                db.session.add(Notification(
-                    user_id=u.id, type="announcement",
-                    title="Staff", body="Meeting",
-                    link="/s", is_read=False,
-                ))
+                db.session.add(
+                    Notification(
+                        user_id=u.id,
+                        type="announcement",
+                        title="Staff",
+                        body="Meeting",
+                        link="/s",
+                        is_read=False,
+                    )
+                )
                 sent += 1
             db.session.commit()
             assert sent == 1
             assert Notification.query.filter_by(type="announcement").count() == 1
 
-    def test_read_flag(self, app, _make_school):
+    def test_read_flag(self, app):
         sid = _make_school(app)
         with app.app_context():
             u = _student(app, sid)
             n = Notification(
-                user_id=u.id, type="message",
-                title="Msg", body="Hi", is_read=False,
+                user_id=u.id,
+                type="message",
+                title="Msg",
+                body="Hi",
+                is_read=False,
             )
             db.session.add(n)
             db.session.commit()
@@ -718,6 +780,7 @@ class TestNotificationLogic:
 # ═══════════════════════════════════════════════════════════════════
 # app/tasks/grading.py — tx() batch gradebook operations
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestGradingTx:
     def test_upsert_grade_entries(self, app):
@@ -733,8 +796,10 @@ class TestGradingTx:
             db.session.flush()
 
             gi = GradeItem(
-                class_id=cr.id, category_id=cat.id,
-                title="HW1", max_mark=100,
+                class_id=cr.id,
+                category_id=cat.id,
+                title="HW1",
+                max_mark=100,
                 due_at=datetime.now(UTC) + timedelta(days=7),
                 kind="assignment",
             )
@@ -750,23 +815,29 @@ class TestGradingTx:
                 updated = 0
                 for ed in entries:
                     ex = GradeEntry.query.filter_by(
-                        grade_item_id=gi.id, student_id=ed["student_id"],
+                        grade_item_id=gi.id,
+                        student_id=ed["student_id"],
                     ).first()
                     if ex:
                         ex.mark = ed["mark"]
                         ex.note = ed.get("note")
                     else:
-                        db.session.add(GradeEntry(
-                            grade_item_id=gi.id, student_id=ed["student_id"],
-                            mark=ed["mark"], note=ed.get("note"),
-                        ))
+                        db.session.add(
+                            GradeEntry(
+                                grade_item_id=gi.id,
+                                student_id=ed["student_id"],
+                                mark=ed["mark"],
+                                note=ed.get("note"),
+                            )
+                        )
                     updated += 1
                 return updated
 
             n = tx(_batch)
             assert n == 1
             e = GradeEntry.query.filter_by(
-                grade_item_id=gi.id, student_id=u.id,
+                grade_item_id=gi.id,
+                student_id=u.id,
             ).first()
             assert e is not None and e.mark == 80.0
 
@@ -783,8 +854,10 @@ class TestGradingTx:
             db.session.add(cat)
             db.session.flush()
             gi = GradeItem(
-                class_id=cr1.id, category_id=cat.id,
-                title="HW", max_mark=100,
+                class_id=cr1.id,
+                category_id=cat.id,
+                title="HW",
+                max_mark=100,
                 due_at=datetime.now(UTC),
                 kind="assignment",
             )
@@ -798,12 +871,15 @@ class TestGradingTx:
 # app/tasks/__init__.py — celery init
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestTasksInit:
     def test_has_celery_bool(self, app):
         from app.tasks import _HAS_CELERY
+
         assert isinstance(_HAS_CELERY, bool)
 
     def test_init_celery_no_raise(self, app):
         with app.app_context():
             from app.tasks import init_celery
+
             init_celery(app)
