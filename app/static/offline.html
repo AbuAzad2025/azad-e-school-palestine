@@ -5,24 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#014e7c">
 <title>أنت غير متصل — أزاد</title>
-<link rel="stylesheet" href="/static/css/brand.css">
 <style>
-body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:"Cairo",sans-serif;background:var(--bg);color:var(--text);text-align:center;padding:2rem;}
-.box{max-width:400px;}
-h1{font-size:2rem;margin-bottom:1rem;background:var(--azad-gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-p{color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
-.icon-big{font-size:4rem;margin-bottom:1rem;}
-.btn{display:inline-block;padding:.7rem 1.5rem;background:var(--azad-gradient);color:#fff;border-radius:var(--radius-full);text-decoration:none;font-weight:600;border:none;cursor:pointer;font-size:1rem;font-family:inherit;}
-.btn:hover{filter:brightness(1.1);}
+  /* pure-CSS offline fallback — no external asset deps, no url_for */
+  :root{
+    --bg:#f1f5f9;--text:#1e293b;--muted:#64748b;
+    --azad-navy:#014e7c;--azad-green:#009535;
+    --azad-gradient:linear-gradient(135deg,#009535 0%,#014e7c 100%);
+    --radius-full:9999px;
+  }
+  html[data-theme="dark"]{
+    --bg:#0b1220;--text:#e2e8f0;--muted:#94a3b8;
+  }
+  body{
+    margin:0;display:flex;align-items:center;justify-content:center;
+    min-height:100vh;font-family:"Cairo","Tajawal",sans-serif;
+    background:var(--bg);color:var(--text);text-align:center;padding:2rem;
+  }
+  .box{max-width:400px;}
+  h1{
+    font-size:2rem;margin-bottom:1rem;font-weight:800;
+    background:var(--azad-gradient);-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  p{color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
+  .icon-big{font-size:4rem;margin-bottom:1rem;}
+  .btn{
+    display:inline-block;padding:.7rem 1.5rem;
+    background:var(--azad-gradient);color:#fff;border-radius:var(--radius-full);
+    text-decoration:none;font-weight:600;border:none;cursor:pointer;
+    font-size:1rem;font-family:inherit;transition:filter .2s;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .hint{margin-top:2rem;font-size:.8rem;color:var(--muted);}
 </style>
 </head>
 <body>
 <div class="box">
-<div class="icon-big">📡</div>
-<h1>أنت غير متصل بالإنترنت</h1>
-<p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
-<button class="btn" onclick="location.reload()">إعادة المحاولة</button>
-<p style="margin-top:2rem;font-size:.8rem;color:var(--text-muted)">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
+  <div class="icon-big">📡</div>
+  <h1>أنت غير متصل بالإنترنت</h1>
+  <p>يرجى التحقق من اتصالك بالشبكة والمحاولة مرة أخرى.</p>
+  <button class="btn" onclick="location.reload()" aria-label="إعادة المحاولة">إعادة المحاولة</button>
+  <p class="hint">يمكنك مشاهدة المحتوى المخزّن مسبقاً بدون إنترنت.</p>
 </div>
 </body>
 </html>
