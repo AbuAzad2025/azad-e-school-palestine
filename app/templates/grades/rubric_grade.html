@@ -2,7 +2,7 @@
 {% from "macros/ui.html" import azad_card, azad_breadcrumb %}
 {% block title %}{{ _('تقييم بالمعايير') }} — {{ _('دفتر الدرجات') }}{% endblock %}
 {% block content %}
-{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('تقييم بالمعايير')}] }}
+{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('تقييم بالمعايير')}]) }}
 
 <h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ _('تقييم بالمعايير') }}</h1>
 

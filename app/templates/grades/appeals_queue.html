@@ -2,7 +2,7 @@
 {% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state %}
 {% block title %}{{ _('اعتراضات الدرجات') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
-{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_room.id)}, {'label': _('اعتراضات الدرجات')}] }}
+{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_room.id)}, {'label': _('اعتراضات الدرجات')}]) }}
 
 <h1 class="page-title azad-mb-4">{{ icon('alert-triangle') }} {{ _('اعتراضات الدرجات') }}</h1>
 

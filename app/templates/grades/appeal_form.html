@@ -3,7 +3,7 @@
 {% from "macros/forms.html" import azad_textarea, azad_form_actions %}
 {% block title %}{{ _('اعتراض على الدرجة') }}{% endblock %}
 {% block content %}
-{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('اعتراض على الدرجة')}] }}
+{{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('اعتراض على الدرجة')}]) }}
 
 <h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ _('اعتراض على الدرجة') }}</h1>
 

@@ -36,7 +36,8 @@
 <div class="azad-section" style="margin-top:2rem;">
   <h2 class="section-title">{{ _('شارات متاحة للكسب') }}</h2>
   <div class="azad-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
-    {% for badge in all_badges if badge.id not in (sb.badge.id for sb in badges) %}
+    {% set earned_ids = badges | map(attribute='badge.id') | list %}
+    {% for badge in all_badges if badge.id not in earned_ids %}
     <div class="azad-card badge-card locked">
       <div class="card-body" style="text-align:center; padding:1.5rem; opacity:0.6;">
         <div class="badge-icon" style="font-size:3rem; margin-bottom:0.5rem; color:var(--azad-gray-400);">{{ icon(badge.icon_name) }}</div>

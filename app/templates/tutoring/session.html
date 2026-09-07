@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_stat_card %}
 {% block title %}{{ _('تفاصيل الجلسة') }} — {{ _('دروس خصوصية') }}{% endblock %}
 {% block content %}
 <div class="azad-card azad-card--narrow">
@@ -12,7 +13,8 @@
     {{ azad_stat_card(session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—', _('الموعد'), 'calendar', 'var(--azad-blue)') }}
     {{ azad_stat_card(session_.mode, _('الطريقة'), 'settings', 'var(--azad-teal)') }}
     {{ azad_stat_card(session_.price or '—', _('السعر'), 'cash', 'var(--azad-gold)') }}
-    {{ azad_stat_card('<span class="badge-status badge-{{ 'ok' if session_.status == 'completed' else 'warn' }}">' ~ session_.status ~ '</span>', _('الحالة'), 'flag', 'var(--color-' ~ ('success' if session_.status == 'completed' else 'warning') ~ ')') }}
+{% set status_badge = '<span class="badge-status badge-' ~ ('ok' if session_.status == 'completed' else 'warn') ~ '">' ~ session_.status ~ '</span>' %}
+    {{ azad_stat_card(status_badge, _('الحالة'), 'flag', 'var(--color-' ~ ('success' if session_.status == 'completed' else 'warning') ~ ')') }}
     {{ azad_stat_card(session_.video_provider|capitalize if session_.video_provider else 'Jitsi', _('المنصة'), 'video', 'var(--azad-red)') }}
   </div>
 
