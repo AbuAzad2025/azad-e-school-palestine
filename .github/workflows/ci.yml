@@ -112,6 +112,20 @@ jobs:
     name: Frontend Asset Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: azad_test
+          POSTGRES_PASSWORD: azad_test
+          POSTGRES_DB: azad_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
 
@@ -138,6 +152,8 @@ jobs:
           PYTHONPATH: .
           SECRET_KEY: ci-asset-quality-key
           APP_ENV: testing
+          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          FLASK_APP: run.py
         run: |
           pytest tests/test_css_architecture.py tests/test_wcag_aa.py \
             tests/test_frontend_critical.py -v --tb=short
