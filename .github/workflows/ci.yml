@@ -134,6 +134,10 @@ jobs:
       # Pure filesystem/Jinja checks: asset existence, duplicate imports,
       # orphans, block integrity, WCAG static rules, JS patterns.
       - name: Run asset + template quality tests
+        env:
+          PYTHONPATH: .
+          SECRET_KEY: ci-asset-quality-key
+          APP_ENV: testing
         run: |
           pytest tests/test_css_architecture.py tests/test_wcag_aa.py \
             tests/test_frontend_critical.py -v --tb=short
