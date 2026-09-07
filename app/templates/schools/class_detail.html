@@ -1,23 +1,11 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_breadcrumb %}
 {% block title %}{{ class_room.name or class_room.subject.name_ar }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block breadcrumbs %}
-<nav class="breadcrumb" aria-label="{{ _('مسار التنقل') }}" style="margin-block: 1rem;">
-  <ol style="display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; font-size: .875rem; color: var(--text-muted);">
-    <li>
-      <a href="{{ url_for('main.index') }}" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: .3rem;">
-        {{ icon('home') }}
-      </a>
-    </li>
-    <li style="display: flex; align-items: center; gap: .3rem;">
-      <span aria-hidden="true" style="color: var(--text-muted);">{{ icon('chevron-right') }}</span>
-      <a href="{{ url_for('schools.my_classes') }}" style="color: var(--text-muted); text-decoration: none;">{{ _('صفوفي') }}</a>
-    </li>
-    <li style="display: flex; align-items: center; gap: .3rem;">
-      <span aria-hidden="true" style="color: var(--text-muted);">{{ icon('chevron-right') }}</span>
-      <span aria-current="page" style="color: var(--text); font-weight: 600;">{{ class_room.name or class_room.subject.name_ar }}</span>
-    </li>
-  </ol>
-</nav>
+{{ azad_breadcrumb([
+  {'label': _('صفوفي'), 'href': url_for('schools.my_classes')},
+  {'label': class_room.name or class_room.subject.name_ar}
+]) }}
 {% endblock %}
 {% block content %}
 <h1 class="page-title azad-title">{{ class_room.name or class_room.subject.name_ar }}</h1>

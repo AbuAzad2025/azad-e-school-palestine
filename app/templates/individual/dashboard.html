@@ -6,7 +6,7 @@
 <h1 class="page-title">{{ icon('book-open') }} {{ _('كورساتي') }}</h1>
 
 <div class="quick-actions">
-  <a href="{{ url_for('individual.catalog') }}" class="azad-btn azad-btn--primary">{{ icon('search') }} {{ _('استكشف كورسات جديدة') }}</a>
+  <a href="{{ url_for('individual.catalog') }}" class="azad-btn azad-btn-primary">{{ icon('search') }} {{ _('استكشف كورسات جديدة') }}</a>
   <a href="{{ url_for('tutoring.index') }}" class="azad-btn-outline">{{ icon('teacher') }} {{ _('دروس خصوصية') }}</a>
   <a href="{{ url_for('ai.chat') }}" class="azad-btn-outline">{{ icon('sparkles') }} {{ _('محادثة AI') }}</a>
 </div>
@@ -34,7 +34,7 @@
     'book-open'
 ) }}
 <div class="text-center mt-4">
-  <a href="{{ url_for('individual.catalog') }}" class="azad-btn azad-btn--primary">{{ icon('search') }} {{ _('استكشف الكورسات') }}</a>
+  <a href="{{ url_for('individual.catalog') }}" class="azad-btn azad-btn-primary">{{ icon('search') }} {{ _('استكشف الكورسات') }}</a>
 </div>
 {% endif %}
 {% endblock %}

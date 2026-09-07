@@ -1,5 +1,14 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_breadcrumb %}
 {% block title %}{{ lesson.title }} — {{ class_room.subject.name_ar }}{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([
+  {'label': _('صفوفي'), 'href': url_for('schools.my_classes')},
+  {'label': class_room.name or class_room.subject.name_ar},
+  {'label': _('الدروس')},
+  {'label': lesson.title}
+]) }}
+{% endblock %}
 {% block content %}
 <div class="azad-section">
   <div>

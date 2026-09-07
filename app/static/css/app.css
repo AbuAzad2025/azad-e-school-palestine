@@ -3924,3 +3924,132 @@ textarea:focus,
   padding: var(--sp-10);
   color: var(--text-muted);
 }
+
+/* ════════════════════════════════════════════════════════
+   MISSING COMPONENT CSS — added during nav audit (2026-09-07)
+   ════════════════════════════════════════════════════════ */
+
+/* cards-grid: course card grid (individual module) */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-4);
+  margin-block: var(--sp-4);
+}
+@media (max-width: 767px) {
+  .cards-grid { grid-template-columns: 1fr; }
+}
+
+/* quick-actions: button row for secondary actions */
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-block: var(--sp-4);
+  justify-content: flex-start;
+}
+@media (max-width: 767px) {
+  .quick-actions { flex-direction: column; }
+  .quick-actions .azad-btn,
+  .quick-actions .azad-btn-outline { width: 100%; }
+}
+
+/* azad-btn--full: full-width button */
+.azad-btn--full {
+  width: 100%;
+}
+.azad-btn--full.azad-btn,
+.azad-btn--full.azad-btn-primary,
+.azad-btn--full.azad-btn-outline,
+.azad-btn--full.azad-btn-accent,
+.azad-btn--full.azad-btn-ghost,
+.azad-btn--full.azad-btn-danger {
+  justify-content: center;
+}
+
+/* azad-btn--success: success green button (like outline but solid green) */
+.azad-btn--success {
+  background: var(--color-success);
+  color: #fff;
+  border-color: transparent;
+}
+.azad-btn--success:hover {
+  background: var(--color-success-dark);
+  box-shadow: var(--shadow-md);
+}
+
+/* azad-quick-actions: grid of stat cards (admin/content pages) */
+.azad-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--sp-3);
+  margin-block: var(--sp-4);
+}
+@media (max-width: 767px) {
+  .azad-quick-actions { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .azad-quick-actions { grid-template-columns: 1fr; }
+}
+
+/* azad-table-container: scrollable table wrapper */
+.azad-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* azad-pagination-wrapper: centered pagination wrapper */
+.azad-pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-5);
+}
+
+/* azad-grid: generic responsive grid (fallback to azad-grid-2) */
+.azad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-4);
+  margin-block: var(--sp-4);
+}
+@media (max-width: 767px) {
+  .azad-grid { grid-template-columns: 1fr; }
+}
+
+/* azad-form: form wrapper */
+.azad-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-width: 640px;
+}
+@media (max-width: 767px) {
+  .azad-form { max-width: 100%; }
+}
+
+/* l-nav-actions: landing page nav actions container */
+.l-nav-actions {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+.l-nav.scrolled .l-nav-actions {
+  background: transparent;
+}
+
+/* price-card--green: green border variant for pricing cards */
+.price-card--green {
+  border-color: var(--azad-green);
+  box-shadow: 0 0 0 1px var(--azad-green);
+}
+
+/* price-card__note: price card footnote */
+.price-card__note {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--sp-4);
+  text-align: center;
+}

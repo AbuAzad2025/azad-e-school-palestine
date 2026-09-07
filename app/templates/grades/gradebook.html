@@ -1,8 +1,16 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import azad_input, azad_select, azad_form_row, azad_form_actions %}
+{% from "macros/ui.html" import azad_breadcrumb %}
 {% block title %}{{ _('دفتر الدرجات') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/components/_gradebook.css') }}">
+{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([
+  {'label': _('صفوفي'), 'href': url_for('schools.my_classes')},
+  {'label': class_room.name or class_room.subject.name_ar},
+  {'label': _('دفتر الدرجات')}
+]) }}
 {% endblock %}
 {% block content %}
 <div class="azad-section">

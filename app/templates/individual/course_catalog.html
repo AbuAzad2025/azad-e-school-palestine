@@ -48,7 +48,7 @@
     {% endif %}
     <form method="post" action="{{ url_for('individual.subscribe', class_id=c.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="azad-btn azad-btn--primary azad-btn--full">{{ icon('credit-card') }} {{ _('اشترك الآن') }}</button>
+      <button type="submit" class="azad-btn azad-btn-primary azad-btn--full">{{ icon('credit-card') }} {{ _('اشترك الآن') }}</button>
     </form>
   {% endcall %}
   {% endfor %}

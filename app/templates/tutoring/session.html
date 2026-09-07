@@ -8,12 +8,12 @@
     {% if is_tutor %}{{ session_.student.name_ar }}{% else %}{{ session_.tutor.name_ar }}{% endif %}
   </p>
 
-  <div class="stat-grid">
-    <div class="azad-stat-card" style="--stat-accent: var(--azad-blue)"><div class="azad-stat-card__icon">{{ icon('calendar') }}</div><div><div class="azad-stat-card__value">{{ session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—' }}</div><div class="azad-stat-card__label">{{ _('الموعد') }}</div></div></div>
-    <div class="stat-card"><strong>{{ session_.mode }}</strong><small>{{ _('الطريقة') }}</small></div>
-    <div class="stat-card"><strong>{{ session_.price or '—' }}</strong><small>{{ _('السعر') }}</small></div>
-    <div class="stat-card"><strong><span class="badge-status badge-{{ 'ok' if session_.status == 'completed' else 'warn' }}">{{ session_.status }}</span></strong><small>{{ _('الحالة') }}</small></div>
-    <div class="stat-card"><strong>{{ session_.video_provider|capitalize if session_.video_provider else 'Jitsi' }}</strong><small>{{ _('المنصة') }}</small></div>
+  <div class="stats-grid">
+    {{ azad_stat_card(session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—', _('الموعد'), 'calendar', 'var(--azad-blue)') }}
+    {{ azad_stat_card(session_.mode, _('الطريقة'), 'settings', 'var(--azad-teal)') }}
+    {{ azad_stat_card(session_.price or '—', _('السعر'), 'cash', 'var(--azad-gold)') }}
+    {{ azad_stat_card('<span class="badge-status badge-{{ 'ok' if session_.status == 'completed' else 'warn' }}">' ~ session_.status ~ '</span>', _('الحالة'), 'flag', 'var(--color-' ~ ('success' if session_.status == 'completed' else 'warning') ~ ')') }}
+    {{ azad_stat_card(session_.video_provider|capitalize if session_.video_provider else 'Jitsi', _('المنصة'), 'video', 'var(--azad-red)') }}
   </div>
 
   {% if session_.online_link %}<p>{{ _('رابط الاجتماع:') }} <a href="{{ session_.online_link }}" dir="ltr">{{ session_.online_link }}</a></p>{% endif %}

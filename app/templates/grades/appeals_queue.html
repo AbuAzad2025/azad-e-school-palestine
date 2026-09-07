@@ -4,46 +4,40 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_room.id)}, {'label': _('اعتراضات الدرجات')}] }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('alert-triangle') }} {{ _('اعتراضات الدرجات') }}</h1>
+<h1 class="page-title azad-mb-4">{{ icon('alert-triangle') }} {{ _('اعتراضات الدرجات') }}</h1>
 
 {% if appeals %}
-<div style="display:grid;gap:var(--sp-4)">
+<div class="azad-table-container">
+<table class="azad-table">
+  <thead>
+    <tr>
+      <th>{{ _('الطالب') }}</th>
+      <th>{{ _('الواجب') }}</th>
+      <th>{{ _('الدرجة الحالية') }}</th>
+      <th>{{ _('سبب الاعتراض') }}</th>
+      <th>{{ _('الحالة') }}</th>
+      <th>{{ _('الإجراءات') }}</th>
+    </tr>
+  </thead>
+  <tbody>
   {% for appeal in appeals %}
-  {% call azad_card('', '', 'alert-triangle') %}
-  <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:var(--sp-3)">
-    <div style="flex:1;min-width:200px">
-      <div style="font-weight:700;margin-bottom:var(--sp-2)">{{ appeal.student.name_ar }}</div>
-      <div style="color:var(--muted);margin-bottom:var(--sp-2)">{{ _('الواجب') }}: {{ appeal.submission.assignment.title }}</div>
-      <div style="margin-bottom:var(--sp-2)">
-        <span style="color:var(--muted)">{{ _('الدرجة الحالية') }}:</span>
-        <strong>{{ appeal.submission.mark if appeal.submission.mark is not none else '—' }}</strong>
-      </div>
-      <div style="margin-bottom:var(--sp-2)">
-        <span style="color:var(--muted)">{{ _('سبب الاعتراض') }}:</span>
-        <p style="margin:var(--sp-1) 0;padding:var(--sp-3);background:var(--azad-slate);border-radius:var(--radius-md)">{{ appeal.reason }}</p>
-      </div>
-      <div>
-        {{ azad_badge(_('قيد المراجعة') if appeal.status == 'pending' else _('معتمدة') if appeal.status == 'approved' else _('مرفوضة'), 'warning' if appeal.status == 'pending' else 'success' if appeal.status == 'approved' else 'danger') }}
-      </div>
-    </div>
-    {% if appeal.status == 'pending' %}
-    <div style="min-width:240px">
-      <form method="post" style="display:flex;flex-direction:column;gap:var(--sp-3)">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="azad-field">
-          <label class="azad-field__label" for="response_{{ appeal.id }}">{{ _('رد المعلم') }}</label>
-          <textarea name="response" id="response_{{ appeal.id }}" class="azad-field__textarea" rows="3" placeholder="{{ _('اكتب ردك...') }}"></textarea>
-        </div>
-        <div style="display:flex;gap:var(--sp-2)">
-          <button type="submit" name="action" value="approved" formaction="{{ url_for('grades.appeal_review', appeal_id=appeal.id) }}" class="azad-btn" style="background:var(--azad-green);color:#fff;flex:1">{{ icon('check') }} {{ _('اعتماد') }}</button>
-          <button type="submit" name="action" value="rejected" formaction="{{ url_for('grades.appeal_review', appeal_id=appeal.id) }}" class="azad-btn" style="background:var(--azad-red);color:#fff;flex:1">{{ icon('x') }} {{ _('رفض') }}</button>
-        </div>
-      </form>
-    </div>
-    {% endif %}
-  </div>
-  {% endcall %}
+    <tr>
+      <td>{{ appeal.student.name_ar }}</td>
+      <td>{{ appeal.submission.assignment.title }}</td>
+      <td>{{ appeal.current_mark }}</td>
+      <td>{{ appeal.reason }}</td>
+      <td>
+        <span class="badge-status badge-{{ 'ok' if appeal.status == 'approved' else ('warn' if appeal.status == 'pending' else 'err') }}">
+          {{ appeal.status }}
+        </span>
+      </td>
+      <td class="azad-table__actions-cell">
+        <a href="{{ url_for('grades.appeal_detail', appeal_id=appeal.id) }}" class="azad-btn-outline azad-btn--sm">{{ _('تفاصيل') }}</a>
+      </td>
+    </tr>
   {% endfor %}
+  </tbody>
+</table>
 </div>
 {% else %}
 {{ azad_empty_state(_('لا اعتراضات'), _('لم يقدم الطلاب أي اعتراضات بعد.'), 'check-circle') }}
