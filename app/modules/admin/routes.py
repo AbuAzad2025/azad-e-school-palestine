@@ -314,7 +314,8 @@ def impersonate_exit():
     from app.services.impersonation import impersonator_user, stop_impersonation
 
     # الخروج من الانتحال مسموح فقط للمشرف الأصلي (وليس للشخصية المنتحلة)
-    if impersonator_user() is None or impersonator_user().role != UserRole.super_admin:
+    actor = impersonator_user()
+    if actor is None or actor.role != UserRole.super_admin:
         abort(403)
     error = stop_impersonation()
     if error:
