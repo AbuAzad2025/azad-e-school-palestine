@@ -106,6 +106,39 @@ jobs:
           dockerfile: Dockerfile
 
   # ════════════════════════════════════════════════════════════
+  # 1b. Frontend Asset Quality (templates + static, no DB needed)
+  # ════════════════════════════════════════════════════════════
+  frontend-asset-quality:
+    name: Frontend Asset Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+
+      # Pure filesystem/Jinja checks: asset existence, duplicate imports,
+      # orphans, block integrity, WCAG static rules, JS patterns.
+      - name: Run asset + template quality tests
+        run: |
+          pytest tests/test_css_architecture.py tests/test_wcag_aa.py \
+            tests/test_frontend_critical.py -v --tb=short
+
+  # ════════════════════════════════════════════════════════════
   # 2. Python Tests
   # ════════════════════════════════════════════════════════════
   test:
