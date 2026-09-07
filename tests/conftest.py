@@ -209,12 +209,14 @@ def _ensure_phase2_schema(db_engine):
         # Phase 9: Zoom + Production Hardening
         db_engine.session.execute(
             text(
-                "ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL"
+                "ALTER TABLE tutor_profiles ADD COLUMN IF NOT EXISTS "
+                "video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL"
             )
         )
         db_engine.session.execute(
             text(
-                "ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL"
+                "ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS "
+                "video_provider VARCHAR(10) DEFAULT 'jitsi' NOT NULL"
             )
         )
         db_engine.session.execute(
@@ -294,11 +296,49 @@ def app():
     with a.app_context():
         from sqlalchemy import text
 
+        _guard_dev_database()
         _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         _db.session.commit()
         _db.create_all()
         _ensure_phase2_schema(_db)
     yield a
+
+
+def _guard_dev_database() -> None:
+    """رفض تشغيل الاختبارات على قاعدة بيانات تحتوي بيانات حقيقية/بذور.
+
+    The autouse `_clean_db` fixture TRUNCATEs every table after each test.
+    If someone points DATABASE_URL at their dev database (with seeded
+    users/schools), the first test run would destroy it. This guard makes
+    that impossible: if the DB already contains users, pytest aborts
+    before any destructive action.
+
+    Escape hatch for throwaway environments: ALLOW_TEST_DB_WIPE=1
+    """
+    import os
+
+    if os.getenv("ALLOW_TEST_DB_WIPE") == "1":
+        return
+
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(_db.engine)
+    if not inspector.has_table("users"):
+        return  # fresh/empty database — safe
+    row_count = _db.session.execute(text("SELECT count(*) FROM users")).scalar()
+    if row_count:
+        db_url = _db.engine.url.render_as_string(hide_password=True)
+        raise RuntimeError(
+            "\n" + "=" * 72 + "\n🛑 رفض تشغيل الاختبارات: قاعدة البيانات تحتوي بيانات موجودّة!"
+            f"\n   DATABASE_URL points at a database with {row_count} users."
+            "\n   Running pytest will TRUNCATE all tables and destroy that data."
+            "\n"
+            "\n   الحل — استخدم قاعدة بيانات اختبار منفصلة:"
+            "\n     1. أنشئ قاعدة اختبار:  CREATE DATABASE azad_test;"
+            "\n     2. شغّل:  DATABASE_URL=postgresql://.../azad_test pytest tests"
+            "\n   أو للتجاوز الصريح (حذف مؤكد):  ALLOW_TEST_DB_WIPE=1 pytest tests"
+            f"\n\n   Target DB was: {db_url}" + "\n" + "=" * 72
+        )
 
 
 @pytest.fixture(scope="function")
@@ -425,10 +465,10 @@ def make_class_member(app, class_id, user_id, status="active"):
 
 def make_lesson(app, class_id, title=None, status="published"):
     with app.app_context():
-        l = Lesson(class_id=class_id, title=title or f"درس {_uid()}", status=status, sort_order=1)
-        _db.session.add(l)
+        lesson = Lesson(class_id=class_id, title=title or f"درس {_uid()}", status=status, sort_order=1)
+        _db.session.add(lesson)
         _db.session.commit()
-        return l.id
+        return lesson.id
 
 
 def make_attachment(app, lesson_id, kind="video", youtube_url=None):
