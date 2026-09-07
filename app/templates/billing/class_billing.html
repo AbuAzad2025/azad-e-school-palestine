@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/forms.html" import azad_input, azad_select, azad_form_row, azad_file_upload, azad_form_actions %}
-{% block title %}{{ _('الاشتراك') }} — {{ class_room.subject.name_ar }}
-{% block breadcrumb %}
-    { _('parent:billing') }
-
-    { _('page:class_billing.html') }
-{% endblock %}
-{% endblock %}
+{% block title %}{{ _('الاشتراك') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
 <div class="azad-section">
   <div>

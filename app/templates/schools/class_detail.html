@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/ui.html" import azad_breadcrumb %}
-{% block title %}{{ class_room.name or class_room.subject.name_ar }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}
-{% block breadcrumb %}
-    { _('parent:schools') }
-
-    { _('page:class_detail.html') }
-{% endblock %}
-{% endblock %}
+{% block title %}{{ class_room.name or class_room.subject.name_ar }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block breadcrumbs %}
 {{ azad_breadcrumb([
   {'label': _('صفوفي'), 'href': url_for('schools.my_classes')},
