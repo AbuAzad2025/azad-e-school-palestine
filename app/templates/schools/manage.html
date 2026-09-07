@@ -1,5 +1,20 @@
+{% from "macros/ui.html" import azad_breadcrumb %}
 {% extends "base.html" %}
-{% block title %}{{ school.display_name }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block title %}{{ school.display_name }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}
+{% block breadcrumb %}
+    { _('parent:schools') }
+
+    { _('page:manage.html') }
+{% endblock %}
+{% endblock %}
+{% block breadcrumbs %}
+{{ azad_breadcrumb([
+  {'label': {{ _('لوحتي') }}, 'href': url_for('auth.dashboard')},
+  {'label': {{ _('المدارس') }}},
+  {'label': {{ _('إدارة المدرسة') }}},
+]) }}
+{% endblock %}
+
 {% block content %}
 <h1 class="page-title azad-title">{{ school.display_name }}</h1>
 <p class="page-subtitle">{{ school.name_en or '' }} {% if school.domain %}<span class="meta-chip">{{ school.domain }}</span>{% endif %}</p>

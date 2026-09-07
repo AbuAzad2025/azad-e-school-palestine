@@ -1,5 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{{ _('الاعتمادات المعلّقة') }}{% endblock %}
+{% block title %}{{ _('الاعتمادات المعلّقة') }}
+{% block breadcrumb %}
+    { _('parent:billing') }
+
+    { _('page:admin.html') }
+{% endblock %}
+{% endblock %}
 {% block content %}
 <h1 class="page-title azad-title">{{ _('الاعتمادات المعلّقة') }}</h1>
 {% if payments %}
