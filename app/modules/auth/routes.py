@@ -177,9 +177,12 @@ def dashboard():
                 )
                 .count()
             )
-            my_school_subscription_count = Subscription.query.filter_by(
-                school_id=current_school_id(), status="active"
-            ).count()
+            # الاشتراكات لا تحمل school_id — تُربط عبر الصف التابع للمدرسة
+            my_school_subscription_count = (
+                Subscription.query.join(ClassRoom, Subscription.class_id == ClassRoom.id)
+                .filter(ClassRoom.school_id == current_school_id(), Subscription.status == "active")
+                .count()
+            )
 
     return render_template(
         "auth/dashboard.html",

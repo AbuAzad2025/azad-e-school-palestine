@@ -286,10 +286,13 @@ def bulk_action():
 # ======================================================================
 @bp.post("/users/<int:user_id>/impersonate")
 @login_required
-@role_required(UserRole.super_admin, UserRole.school_admin)
 def user_impersonate(user_id):
-    from app.services.impersonation import start_impersonation
+    from app.services.impersonation import impersonator_user, start_impersonation
 
+    # أثناء الانتحال، الصلاحية تُقاس على المشرف الأصلي لا على الشخصية المنتحلة
+    actor = impersonator_user() or current_user
+    if actor.role != UserRole.super_admin:
+        abort(403)
     target = User.query.get_or_404(user_id)
     error = start_impersonation(target)
     if error:
@@ -307,10 +310,12 @@ def user_impersonate(user_id):
 
 @bp.post("/impersonate/exit")
 @login_required
-@role_required(UserRole.super_admin, UserRole.school_admin)
 def impersonate_exit():
-    from app.services.impersonation import stop_impersonation
+    from app.services.impersonation import impersonator_user, stop_impersonation
 
+    # الخروج من الانتحال مسموح فقط للمشرف الأصلي (وليس للشخصية المنتحلة)
+    if impersonator_user() is None or impersonator_user().role != UserRole.super_admin:
+        abort(403)
     error = stop_impersonation()
     if error:
         flash(_(error), "danger")
