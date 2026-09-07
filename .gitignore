@@ -17,6 +17,8 @@ instance/
 # ===== قاعدة البيانات =====
 *.db
 *.sqlite3
+*.pyo
+*.pyd
 
 # ===== المرفوعات (D7): خارج مجلد عام، وأسماؤها عشوائية =====
 app/static/uploads/*
@@ -35,14 +37,25 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+*.swp
+*.swo
 
 # ===== Node / Biome =====
 node_modules/
+# npm/pnpm lockfiles — JS tooling artifacts; not committed for this project
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
 messages.pot
 .mypy_cache/
 
 # ===== Test Artifacts =====
 coverage/
+coverage-js/
+coverage.xml
+coverage.json
+coverage.zip
+.coverage
 test-results/
 pytest_out.txt
 fix_class_path.sql
