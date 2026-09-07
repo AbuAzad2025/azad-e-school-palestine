@@ -44,6 +44,20 @@ def can_view_class(class_room, user) -> bool:
     if current_school_id() == class_room.school_id and user.role in (UserRole.school_admin, UserRole.teacher):
         return True
 
+    # P-SEC-14: وليّ الأمر — إشراف قراءة فقط على صفوف أبنائه.
+    # نموذج الربط الفعلي: وليّ الأمر عضو نشط في صفّ ابنه، أو مرتبط عبر FamilyLink
+    # بطالب عضو نشط. الصلاحية مشتقة من عضوية الابن نفسه.
+    if user.role == UserRole.parent:
+        from app.models.class_room import ClassMember
+        from app.services.family import is_parent_of
+
+        if ClassMember.query.filter_by(user_id=user.id, class_id=class_room.id, status="active").first() is not None:
+            return True
+        member_student_ids = [
+            m.user_id for m in ClassMember.query.filter_by(class_id=class_room.id, status="active").all()
+        ]
+        return any(is_parent_of(user.id, sid) for sid in member_student_ids)
+
     # P-SEC-12: الصف مجاني — العضوية كافية
     if _is_class_free(class_room):
         return is_member(class_room, user)

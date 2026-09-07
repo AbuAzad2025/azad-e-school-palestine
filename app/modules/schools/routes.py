@@ -11,7 +11,6 @@ from app.services.schools import (
     create_school_with_defaults,
     get_class_members,
     get_or_create_subject,
-    is_member,
     join_class,
     list_classes,
     list_schools,
@@ -149,9 +148,9 @@ def my_classes():
     )
     class_ids = [m.class_room.id for m in memberships]
     counts = dict(
-        ClassMember.query.filter(ClassMember.class_room_id.in_(class_ids), ClassMember.status == "active")
-        .with_entities(ClassMember.class_room_id, func.count())
-        .group_by(ClassMember.class_room_id)
+        ClassMember.query.filter(ClassMember.class_id.in_(class_ids), ClassMember.status == "active")
+        .with_entities(ClassMember.class_id, func.count())
+        .group_by(ClassMember.class_id)
         .all()
     )
     for m in memberships:
@@ -174,9 +173,11 @@ def class_detail(class_id):
     class_room = db_get_class(class_id)
     if not class_room:
         abort(404)
-    # وصول: عضو الصف أو معلم/مشرف المدرسة أو super_admin
-    school_ok = current_school_id() == class_room.school_id if current_school_id() else False
-    if not (is_member(class_room, current_user) or school_ok or current_user.role == UserRole.super_admin):
+    # وصول موحّد عبر can_view_class: عضو الصف (مجاني) أو مشترك نشط (مدفوع)،
+    # معلم/مشرف نفس المدرسة، وليّ أمر طالب عضو، أو super_admin
+    from app.services.access import can_view_class
+
+    if not can_view_class(class_room, current_user):
         abort(403)
     return render_template(
         "schools/class_detail.html",
