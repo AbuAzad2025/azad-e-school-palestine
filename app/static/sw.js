@@ -4,10 +4,12 @@ var STATIC_ASSETS = [
   "/static/css/brand.css",
   "/static/css/app.css",
   "/static/js/index.js",
-  "/static/js/modules/api.js",
-  "/static/js/modules/theme.js",
-  "/static/js/modules/ui.js",
-  "/static/js/modules/toast.js",
+  "/static/js/ai-chat.js",
+  "/static/js/pages/quiz.js",
+  "/static/js/core/api.js",
+  "/static/js/core/theme.js",
+  "/static/js/components/ui.js",
+  "/static/js/components/toast.js",
   "/static/img/azad-mark.svg",
   "/static/manifest.json",
   "/offline"
@@ -27,7 +29,7 @@ self.addEventListener("activate", function(event) {
   event.waitUntil(
     caches.keys().then(function(names) {
       return Promise.all(
-        names.filter(function(name) { return name !== CACHE_NAME && name !== LESSON_CACHE; }).map(function(name) { return caches.delete(name); })
+        names.filter(function(name) { return name !== CACHE_NAME && name !== LESSON_CACHE; }).map(function(name) { return caches.delete(name);  })
       );
     })
   );
