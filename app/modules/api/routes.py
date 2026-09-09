@@ -512,9 +512,7 @@ def api_search():
     # Subscriptions
     # NOTE: explicit ON clause required — Subscription.class_id is nullable and
     # an implicit join(ClassRoom) resolves to a cartesian ON FALSE, matching zero rows.
-    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(
-        ClassRoom, Subscription.class_id == ClassRoom.id
-    )
+    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(ClassRoom, Subscription.class_id == ClassRoom.id)
     if role == UserRole.super_admin:
         pass
     elif role == UserRole.student:
