@@ -3,8 +3,19 @@ name: CI
 on:
   push:
     branches: [main]
+    # لا تعيد تشغيل الأنابيب الكاملة لتغييرات الوثائق/التقارير فقط
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "**.txt"
+      - ".gitignore"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "**.txt"
+      - ".gitignore"
   workflow_dispatch:
 
 concurrency:
