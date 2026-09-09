@@ -510,13 +510,20 @@ def api_search():
     ]
 
     # Subscriptions
-    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(ClassRoom)
+    # NOTE: explicit ON clause required — Subscription.class_id is nullable and
+    # an implicit join(ClassRoom) resolves to a cartesian ON FALSE, matching zero rows.
+    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(
+        ClassRoom, Subscription.class_id == ClassRoom.id
+    )
     if role == UserRole.super_admin:
         pass
+    elif role == UserRole.student:
+        # students see ONLY their own subscriptions (must be checked before the
+        # school_id branch — students have school_id and would otherwise see
+        # every subscription in their school)
+        sub_q = sub_q.filter(Subscription.user_id == current_user.id)
     elif school_id:
         sub_q = sub_q.filter(ClassRoom.school_id == school_id)
-    elif role == UserRole.student:
-        sub_q = sub_q.filter(Subscription.user_id == current_user.id)
     else:
         sub_q = sub_q.filter(False)
 
