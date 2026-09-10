@@ -556,6 +556,65 @@ def api_search():
 # ═══════════════════════════════════════════════════════════════════════════
 
 
+@bp.post("/auth/token")
+def api_auth_token():
+    """إصدار Personal Access Token لتطبيق الجوال (Bearer).
+    ---
+    tags: [Auth]
+    consumes:
+      - application/x-www-form-urlencoded
+      - application/json
+    parameters:
+      - name: email
+        in: formData
+        type: string
+        required: true
+        description: بريد المستخدم
+      - name: password
+        in: formData
+        type: string
+        required: true
+        description: كلمة المرور
+    responses:
+      200:
+        description: توكن صالح لـ 30 يوماً
+        schema:
+          type: object
+          properties:
+            data:
+              type: object
+              properties:
+                token: {type: string}
+                token_type: {type: string, example: Bearer}
+                expires_in: {type: integer, example: 2592000}
+      401:
+        description: بيانات دخول خاطئة
+    """
+    from app.core.api_auth import make_api_token
+    from app.services.auth import authenticate
+
+    if request.is_json:
+        body = request.get_json(silent=True) or {}
+        email = (body.get("email") or "").strip().lower()
+        password = body.get("password") or ""
+    else:
+        email = (request.form.get("email") or "").strip().lower()
+        password = request.form.get("password") or ""
+
+    if not email or not password:
+        return api_error(_("البريد وكلمة المرور مطلوبان"), 400, "VALIDATION_ERROR")
+
+    user, err = authenticate(email, password)
+    if user is None:
+        return api_error(err or _("بيانات الدخول غير صحيحة"), 401, "UNAUTHORIZED")
+
+    token = make_api_token(user.id)
+    logger.info("api_token_issued", user_id=user.id)
+    return api_response(
+        {"token": token, "token_type": "Bearer", "expires_in": 60 * 60 * 24 * 30}
+    )
+
+
 @bp.errorhandler(404)
 def api_404(e):
     return api_error(_("المورد غير موجود"), 404, "NOT_FOUND")

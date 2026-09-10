@@ -175,6 +175,17 @@ def create_app(config_class=Config):
             return None
         return db.session.get(User, uid)
 
+    @login_manager.request_loader
+    def load_user_from_request(request):
+        """P1-SEC-01: مصادقة Bearer (Personal Access Token) لتطبيق الجوال.
+
+        Flask-Login يستدعي هذا تلقائياً عند غياب جلسة صالحة، فيصبح
+        current_user صحيحاً لطلبات Bearer عبر كل الحارس (incl. role_required).
+        """
+        from app.core.api_auth import user_from_bearer
+
+        return user_from_bearer()
+
     from .modules.admin import bp as admin_bp
     from .modules.ai import bp as ai_bp
     from .modules.api import bp as api_bp
@@ -199,6 +210,7 @@ def create_app(config_class=Config):
     from .modules.school_approvals import bp as school_approvals_bp
     from .modules.schools import bp as schools_bp
     from .modules.tutoring import bp as tutoring_bp
+    from .modules.wallet_api import bp as wallet_api_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
@@ -224,6 +236,7 @@ def create_app(config_class=Config):
     app.register_blueprint(school_approvals_bp)
     app.register_blueprint(individual_bp)
     app.register_blueprint(contact_bp)
+    app.register_blueprint(wallet_api_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة
     with app.app_context():

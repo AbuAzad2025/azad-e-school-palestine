@@ -46,7 +46,8 @@ def create_api_blueprint(version: str = API_VERSION) -> Blueprint:
         from flask import request as req
         from flask_login import current_user
 
-        exempt_endpoints = {"api_health", "api_version"}
+        # api_auth_token مستثناة — هي نقطة إصدار التوكن نفسها (P1-SEC-01)
+        exempt_endpoints = {"api_health", "api_version", "api_auth_token"}
         if req.endpoint and any(req.endpoint.endswith(e) for e in exempt_endpoints):
             return None
         if not current_user.is_authenticated:

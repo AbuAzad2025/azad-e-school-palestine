@@ -293,6 +293,9 @@ def app():
     a.config["EMAIL_ENABLED"] = False
     a.config["TALISMAN_ENABLED"] = False
     a.config["SESSION_COOKIE_SECURE"] = False
+    # Production config has rate limiting on; tests do many logins per minute
+    # (auth.login is limited to 5/min) which would 429 and break auth flows.
+    a.config["RATELIMIT_ENABLED"] = False
     with a.app_context():
         from sqlalchemy import text
 

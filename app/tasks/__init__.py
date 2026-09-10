@@ -141,3 +141,61 @@ else:
 
     class ContextTask:  # type: ignore[no-redef]
         """Stub when celery is not installed."""
+
+
+# ─── P3-ASYNC-01: dispatch guardrail (يعمل في الوضعين) ───────────────
+
+# مهام سريعة تُنفَّذ inline عند غياب Celery (حدّها الأعلى 10 ثوانٍ)
+_SYNC_INLINE_MAX_SECONDS = 10.0
+
+
+def dispatch(task, *args: Any, inline_timeout: float | None = None, **kwargs: Any) -> dict[str, Any]:
+    """إرسال مهمة خلفية بأمان في الوضعين.
+
+    ملاحظة: يستخدم مسجّل خاص لأن إعدادات logging تُهيأ داخل app factory.
+
+    - Celery متوفر: يعيد deferred dict فوراً (لا حجب للـ HTTP worker).
+    - Celery غائب (sync fallback): ينفّذ المهمة في thread مع مهلة صريحة؛
+      عند تجاوز المهلة يُتخلى عن النتيجة (daemon thread) ويُسجّل خطأ —
+      يمنع تعليق اتصال HTTP حتى انتهاء مهلته (مثل ترميز FFmpeg الطويل).
+
+    Returns:
+        {"mode": "celery" | "inline" | "inline_timeout", ...}
+    """
+    import threading
+
+    from app.core.logging import get_logger as _get_logger
+
+    logger = _get_logger("celery.dispatch")
+
+    if _HAS_CELERY:
+        async_result = task.delay(*args, **kwargs)
+        return {"mode": "celery", "task_id": getattr(async_result, "id", None)}
+
+    timeout = _SYNC_INLINE_MAX_SECONDS if inline_timeout is None else inline_timeout
+    if timeout <= 0:
+        # مهلة صفر = لا تنفيذ inline إطلاقاً (مهمة طويلة جداً)
+        logger.warning("task_dispatch_skipped_no_celery", task=getattr(task, "__name__", str(task)))
+        return {"mode": "skipped", "reason": "long task without celery"}
+
+    result_holder: dict[str, Any] = {}
+
+    def _runner() -> None:
+        try:
+            result_holder["result"] = task(*args, **kwargs)
+        except Exception as exc:  # noqa: BLE001
+            result_holder["error"] = str(exc)
+
+    thread = threading.Thread(target=_runner, daemon=True)
+    thread.start()
+    thread.join(timeout=timeout)
+    if thread.is_alive():
+        logger.error(
+            "task_dispatch_inline_timeout",
+            task=getattr(task, "__name__", str(task)),
+            timeout=timeout,
+        )
+        return {"mode": "inline_timeout", "timeout": timeout}
+    if "error" in result_holder:
+        return {"mode": "inline_error", "error": result_holder["error"]}
+    return {"mode": "inline", "result": result_holder.get("result")}

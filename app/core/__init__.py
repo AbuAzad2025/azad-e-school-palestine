@@ -4,6 +4,10 @@
 للاستيراد في modules (وخدمات base تعيد تصدير tx لكل services).
 """
 
+from .cache import clear as cache_clear
+from .cache import delete as cache_delete
+from .cache import get as cache_get
+from .cache import set as cache_set
 from .context import register as register_context
 from .db import TxError, tx, tx_on_commit
 from .i18n import _
@@ -24,6 +28,10 @@ __all__ = [
     "_",
     "TxError",
     "allowed_extension",
+    "cache_clear",
+    "cache_delete",
+    "cache_get",
+    "cache_set",
     "get_correlation_id",
     "get_logger",
     "get_school_or_404",

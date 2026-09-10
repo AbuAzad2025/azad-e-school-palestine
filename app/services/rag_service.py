@@ -35,7 +35,7 @@ _CHUNK_OVERLAP = 50  # overlap between chunks
 class RAGChunk:
     """A text chunk with metadata for retrieval."""
 
-    __slots__ = ("text", "lesson_id", "school_id", "chunk_index", "source")
+    __slots__ = ("text", "lesson_id", "school_id", "chunk_index", "source", "embedding")
 
     def __init__(
         self,
@@ -44,16 +44,77 @@ class RAGChunk:
         school_id: int,
         chunk_index: int,
         source: str = "lesson",
+        embedding: list[float] | None = None,
     ):
         self.text = text
         self.lesson_id = lesson_id
         self.school_id = school_id
         self.chunk_index = chunk_index
         self.source = source
+        # P3-RAG-01: متجه كثيف اختياري — None يعني التراجع لـ TF-Cosine
+        self.embedding = embedding
 
 
 # In-memory chunk store (production: use pgvector or dedicated vector DB)
 _chunk_store: dict[int, list[RAGChunk]] = {}  # school_id -> [chunks]
+
+# ─── P3-RAG-01: Hybrid embeddings layer ──────────────────────────────
+# عند توفر مفتاح API نستخدم embeddings كثيفة (دلالية)؛ عند الفشل أو
+# غياب المفتاح يعمل المسترجع TF-Cosine القديم بدون أي تأثير وظيفي.
+_EMBED_DIM = 1536  # text-embedding-3-small / default OpenAI-compatible
+_embedder_cache: dict[str, object] = {}
+
+
+def _embeddings_enabled() -> bool:
+    """هل embeddings مفعّلة؟ (مفتاح + علم بيئي، تعطيل اختياري)."""
+    if os.getenv("RAG_DISABLE_EMBEDDINGS", "0") == "1":
+        return False
+    return bool(current_app.config.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", ""))
+
+
+def _get_embedding_client():
+    """عميل OpenAI-compatible واحد لكل عملية (يُخزّن لكل app)."""
+    api_key = str(current_app.config.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY", ""))
+    api_base = str(current_app.config.get("OPENAI_API_BASE") or "https://openrouter.ai/api/v1")
+    key_id = f"{api_base}:{api_key[:8]}"
+    if key_id in _embedder_cache:
+        return _embedder_cache[key_id]
+    try:
+        from openai import OpenAI
+
+        client: object = OpenAI(api_key=api_key, base_url=api_base, timeout=15)
+    except ImportError:
+        # openai غير مثبّت — استخدم requests مباشرة على /embeddings
+        client = ("requests", api_key, api_base)
+    _embedder_cache[key_id] = client
+    return client
+
+
+def _embed_texts_remote(texts: list[str]) -> list[list[float]] | None:
+    """حساب متجهات عبر API — يعيد None عند أي فشل (fallback تلقائي)."""
+    if not texts:
+        return []
+    model = os.getenv("RAG_EMBEDDING_MODEL", "text-embedding-3-small")
+    try:
+        client = _get_embedding_client()
+        if isinstance(client, tuple):  # requests path
+            import requests
+
+            _, api_key, api_base = client
+            resp = requests.post(
+                f"{api_base}/embeddings",
+                headers={"Authorization": f"Bearer {api_key}"},
+                json={"model": model, "input": texts},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = sorted(resp.json()["data"], key=lambda d: d["index"])
+            return [d["embedding"] for d in data]
+        result = client.embeddings.create(model=model, input=texts)
+        return [item.embedding for item in result.data]
+    except Exception as exc:  # noqa: BLE001 — أي فشل → TF-Cosine
+        logger.warning("rag_embeddings_failed_fallback_tf", error=str(exc)[:200])
+        return None
 
 
 def _tokenize(text: str) -> list[str]:
@@ -138,6 +199,16 @@ def ingest_lesson_for_rag(lesson_id: int, school_id: int) -> tuple[int, str | No
     # Chunk the text
     chunks = _chunk_text(full_text)
 
+    # P3-RAG-01: حاول حساب embeddings دلالية لكل القطع دفعة واحدة؛
+    # عند الفشل تبقى None فيعمل المسترجع TF-Cosine كالمعتاد.
+    embeddings: list[list[float]] | None = None
+    try:
+        with current_app.app_context():
+            if _embeddings_enabled():
+                embeddings = _embed_texts_remote(chunks)
+    except Exception:  # noqa: BLE001
+        embeddings = None
+
     # Store chunks
     rag_chunks = [
         RAGChunk(
@@ -146,6 +217,7 @@ def ingest_lesson_for_rag(lesson_id: int, school_id: int) -> tuple[int, str | No
             school_id=school_id,
             chunk_index=i,
             source="lesson",
+            embedding=embeddings[i] if embeddings and i < len(embeddings) else None,
         )
         for i, chunk in enumerate(chunks)
     ]
@@ -168,6 +240,18 @@ def ingest_lesson_for_rag(lesson_id: int, school_id: int) -> tuple[int, str | No
     return len(rag_chunks), None
 
 
+def _cosine_dense(vec_a: list[float], vec_b: list[float]) -> float:
+    """تشابه جيبي للمتجهات الكثيفة (embeddings)."""
+    if not vec_a or not vec_b or len(vec_a) != len(vec_b):
+        return 0.0
+    dot = sum(a * b for a, b in zip(vec_a, vec_b, strict=False))
+    na = math.sqrt(sum(a * a for a in vec_a))
+    nb = math.sqrt(sum(b * b for b in vec_b))
+    if na == 0 or nb == 0:
+        return 0.0
+    return dot / (na * nb)
+
+
 def retrieve_relevant_chunks(
     school_id: int,
     question: str,
@@ -175,7 +259,9 @@ def retrieve_relevant_chunks(
 ) -> list[RAGChunk]:
     """Retrieve the most relevant chunks for a question.
 
-    Uses TF-IDF + cosine similarity, scoped to school_id.
+    P3-RAG-01: هجين — إن وُجدت embeddings مخزّنة للقطع تُستخدم (دلالية)،
+    مع دمج درجة TF-Cosine كمرجح ثانوي؛ وإن لا فتُنفّذ TF-Cosine وحدها.
+    كلا المسارين مقيّد بـ school_id (لا تسريب بين المستأجرين).
 
     Args:
         school_id: School (tenancy filter).
@@ -189,16 +275,35 @@ def retrieve_relevant_chunks(
     if not school_chunks:
         return []
 
-    # Tokenize the question
+    # Tokenize the question (TF path)
     question_tokens = _tokenize(question)
     question_tf = _compute_tf(question_tokens)
+
+    # P3-RAG-01: dense path — إن كانت كل القطع تحمل embeddings نحسب
+    # متجه السؤال مرة واحدة ونستخدم التشابه الكثيف.
+    dense_available = all(c.embedding for c in school_chunks)
+    question_vec: list[float] | None = None
+    if dense_available:
+        try:
+            with current_app.app_context():
+                if _embeddings_enabled():
+                    vecs = _embed_texts_remote([question])
+                    question_vec = vecs[0] if vecs else None
+        except Exception:  # noqa: BLE001
+            question_vec = None
 
     # Score each chunk
     scored = []
     for chunk in school_chunks:
-        chunk_tokens = _tokenize(chunk.text)
-        chunk_tf = _compute_tf(chunk_tokens)
-        similarity = _cosine_similarity(question_tf, chunk_tf)
+        if dense_available and question_vec is not None and chunk.embedding:
+            similarity = _cosine_dense(question_vec, chunk.embedding)
+            # مرجّح ثانوي معجمي لتحسين الاسترجاع للمصطلحات الدقيقة
+            chunk_tf = _compute_tf(_tokenize(chunk.text))
+            lexical = _cosine_similarity(question_tf, chunk_tf)
+            similarity = (0.7 * similarity) + (0.3 * lexical)
+        else:
+            chunk_tf = _compute_tf(_tokenize(chunk.text))
+            similarity = _cosine_similarity(question_tf, chunk_tf)
         if similarity > 0.01:  # Minimum threshold
             scored.append((similarity, chunk))
 

@@ -299,6 +299,77 @@ def process_tutor_commission(
     return tx_result, error
 
 
+def admin_credit(
+    school_id: int,
+    target_user_id: int,
+    amount: Decimal,
+    idempotency_key: str,
+    description: str,
+    operator_id: int | None = None,
+) -> tuple[Any, str | None]:
+    """Credit a wallet without debiting another (admin adjustment / deposit).
+
+    Double-entry note: external inflows are represented with source_wallet_id
+    = NULL (money entering the system), which the model already permits.
+    """
+    from app.models.wallet import Wallet, WalletTransaction
+
+    amount_dec = _money(amount)
+    if amount_dec <= 0:
+        return None, _("المبلغ يجب أن يكون أكبر من صفر.")
+
+    existing_tx = WalletTransaction.query.filter_by(idempotency_key=idempotency_key).first()
+    if existing_tx:
+        logger.info("admin_credit_idempotent_hit", idempotency_key=idempotency_key, tx_id=existing_tx.id)
+        return existing_tx, None
+
+    def _credit():
+        wallet = (
+            db.session.query(Wallet)
+            .filter_by(school_id=school_id, user_id=target_user_id)
+            .with_for_update()
+            .first()
+        )
+        if not wallet:
+            raise TxError(_("المحفظة غير موجودة."))
+        if wallet.status != "active":
+            raise TxError(_("المحفظة غير نشطة."))
+
+        wallet.balance = _money(_money(wallet.balance) + amount_dec)
+        tx_hash = _generate_tx_hash(school_id, None, wallet.id, amount_dec, TX_ADMIN_ADJUSTMENT)
+        ledger_tx = WalletTransaction(
+            school_id=school_id,
+            source_wallet_id=None,
+            destination_wallet_id=wallet.id,
+            amount=amount_dec,
+            currency=wallet.currency,
+            transaction_type=TX_ADMIN_ADJUSTMENT,
+            transaction_hash=tx_hash,
+            idempotency_key=idempotency_key,
+            description=description,
+            reference_type="admin",
+            reference_id=operator_id,
+            status="completed",
+        )
+        db.session.add(ledger_tx)
+        return ledger_tx
+
+    try:
+        result = tx(_credit)
+    except TxError as exc:
+        return None, str(exc)
+
+    logger.info(
+        "admin_credit_completed",
+        tx_id=result.id,
+        school_id=school_id,
+        target_user=target_user_id,
+        amount=str(amount_dec),
+        operator=operator_id,
+    )
+    return result, None
+
+
 def get_transaction_history(
     school_id: int,
     user_id: int,

@@ -49,19 +49,38 @@ PSQL = _find_pg_tool("psql")
 
 @bp.app_context_processor
 def admin_nav_context():
-    """عدّادات شريط التنقل في لوحة المشرف (تُحقن لصفحات اللوحة فقط)."""
+    """عدّادات شريط التنقل في لوحة المشرف (تُحقن لصفحات اللوحة فقط).
+
+    P2-PERF-01: عدادات الكاش لمدة 60 ثانية — كانت تُنفَّذ 3 COUNT على كل
+    طلب عرض. الإبطال الفوري يتم عبر ``_invalidate_admin_nav_cache()``
+    عند تغيّر الحالات (موافقة/رفض/اعتماد تسجيل).
+    """
+    from app.core import cache
+
+    cached = cache.get("admin_nav_counters")
+    if cached is not None:
+        return cached
     try:
         from app.models.billing import ManualPayment, Subscription
 
-        return {
+        data = {
             "subs_pending": Subscription.query.filter_by(status="pending").count(),
             "pending_payments": ManualPayment.query.filter_by(status="pending").count(),
             "pending_reg_count": User.query.filter_by(
                 approval_status=UserApprovalStatus.pending, is_active=True
             ).count(),
         }
+        cache.set("admin_nav_counters", data, ttl=60)
+        return data
     except Exception:  # noqa: BLE001
         return {"subs_pending": 0, "pending_payments": 0, "pending_reg_count": 0}
+
+
+def _invalidate_admin_nav_cache() -> None:
+    """إبطال عدادات شريط الإدارة فوراً (يُستدعى بعد أي تغيير حالة)."""
+    from app.core import cache
+
+    cache.delete("admin_nav_counters")
 
 
 @bp.before_request
@@ -539,6 +558,7 @@ def payment_approve(payment_id):
     from app.services.billing import approve_payment
 
     approve_payment(payment, reviewer_id=current_user.id)
+    _invalidate_admin_nav_cache()
 
     # P-SEC-14: تسجيل المراجعة في AuditLog
     from app.models.system import AuditLog
@@ -581,6 +601,7 @@ def payment_reject(payment_id):
     from app.services.billing import reject_payment
 
     reject_payment(payment, reviewer_id=current_user.id)
+    _invalidate_admin_nav_cache()
 
     # P-SEC-16: تسجيل الرفض في AuditLog
     from app.models.system import AuditLog
@@ -901,6 +922,7 @@ def registration_approve(user_id):
         user.approval_status = UserApprovalStatus.approved
 
     tx(_approve)
+    _invalidate_admin_nav_cache()
     from app.services.email import send_welcome_email
 
     send_welcome_email(user)
@@ -922,6 +944,7 @@ def registration_reject(user_id):
         user.approval_status = UserApprovalStatus.rejected
 
     tx(_reject)
+    _invalidate_admin_nav_cache()
     flash(_("تم رفض تسجيل المستخدم."), "warning")
     return redirect(url_for("admin.pending_registrations"))
 
