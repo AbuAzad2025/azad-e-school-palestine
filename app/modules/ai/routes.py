@@ -1,6 +1,7 @@
 """مسارات API للذكاء الاصطناعي — Streaming SSE endpoints"""
 
-from app.core.permissions import role_required
+from app.core.permissions import require_ai_quota, role_required
+from app.extensions import db
 from app.models.user import UserRole
 from app.services.ai import get_ai_service
 from flask import Response, jsonify, render_template, request, stream_with_context
@@ -40,6 +41,7 @@ def chat_page():
 
 @bp.post("/chat/stream")
 @login_required
+@require_ai_quota
 def chat_stream():
     """SSE endpoint for streaming AI chat responses."""
     data = request.get_json() or {}
@@ -87,6 +89,7 @@ def chat_stream():
 
 @bp.post("/chat")
 @login_required
+@require_ai_quota
 def chat():
     """Non-streaming chat endpoint."""
     data = request.get_json() or {}
@@ -111,6 +114,7 @@ def chat():
 
 @bp.post("/grade/suggest")
 @login_required
+@require_ai_quota
 @role_required(UserRole.teacher, UserRole.school_admin)
 def suggest_grade():
     """اقتراح درجة للواجب (للمعلمين)."""
@@ -140,6 +144,7 @@ def suggest_grade():
 
 @bp.post("/questions/generate")
 @login_required
+@require_ai_quota
 @role_required(UserRole.teacher, UserRole.school_admin)
 def generate_questions():
     """توليد أسئلة امتحان (للمعلمين)."""
@@ -167,6 +172,111 @@ def generate_questions():
 @login_required
 @role_required(UserRole.school_admin)
 def usage_stats():
+    """إحصائيات استخدام AI."""
+    ai_service = get_ai_service()
+    days = request.args.get("days", 30, type=int)
+    stats = ai_service.get_usage_stats(days=days)
+    return jsonify(stats)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# RAG Tutor — استرجاع مقيّد بالمدرسة مع اقتباسات موثوقة (P2-RAG-HTTP)
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@bp.post("/rag/query")
+@login_required
+@require_ai_quota
+def rag_query():
+    """استعلام المعلم الافتراضي المقيّد بمحتوى مدرسة المستخدم.
+
+    Body: {"question": string}
+    Returns 200: {answer, sources[], confidence, method}
+            400: سؤال فارغ · 403: حصة AI (AI_QUOTA_EXCEEDED / AI_DISABLED_FOR_TENANT)
+    """
+    from app.core.tenancy import current_school_id
+    from app.services.rag_service import query_school_rag_tutor
+
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()
+    if not question:
+        return jsonify({"error": {"message": _("السؤال مطلوب"), "code": "VALIDATION_ERROR"}}), 400
+
+    school_id = current_school_id()
+    if school_id is None:
+        # super_admin أو مستخدم فردي — بلا نطاق مدرسة لا يوجد محتوى RAG
+        return jsonify(
+            {
+                "error": {
+                    "message": _("لا تنتمي لمدرسة؛ استعلام RAG يتطلب نطاق مدرسة."),
+                    "code": "AI_DISABLED_FOR_TENANT",
+                }
+            }
+        ), 403
+
+    result, err = query_school_rag_tutor(school_id, current_user.id, question)
+    if err or result is None:
+        return jsonify({"error": {"message": err or _("فشل الاستعلام"), "code": "RAG_QUERY_FAILED"}}), 502
+    return jsonify(result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Quiz Generation from Lesson — مسودة دائماً، موافقة بشرية قبل النشر
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+@bp.post("/quiz/generate")
+@login_required
+@require_ai_quota
+@role_required(UserRole.teacher, UserRole.school_admin)
+def generate_quiz():
+    """توليد اختبار من درس عبر AI — يُحفظ كمسودة (status=draft).
+
+    Body: {"lesson_id": int, "question_count": 1-20, "difficulty": easy|medium|hard}
+    Returns 201: {quiz_id, title, question_count, status: "draft"}
+            400/403/404/502 per pipeline error.
+    """
+    from app.services.quiz_ai_service import generate_quiz_from_lesson
+
+    data = request.get_json(silent=True) or {}
+    lesson_id = data.get("lesson_id")
+    if not lesson_id:
+        return jsonify({"error": {"message": _("معرّف الدرس مطلوب"), "code": "VALIDATION_ERROR"}}), 400
+
+    question_count = min(max(int(data.get("question_count", 5) or 5), 1), 20)
+    difficulty = data.get("difficulty", "medium")
+    if difficulty not in ("easy", "medium", "hard"):
+        difficulty = "medium"
+
+    # تحقق ملكية الدرس: يجب أن يقع داخل نطاق مدرسة المستخدم (لا عزل = لا مساس)
+    from app.core.tenancy import current_school_id
+    from app.models.content import Lesson
+
+    school_id = current_school_id()
+    lesson = db.session.get(Lesson, lesson_id)
+    if lesson is None:
+        return jsonify({"error": {"message": _("الدرس غير موجود"), "code": "NOT_FOUND"}}), 404
+    lesson_class = lesson.class_room
+    if lesson_class is None or school_id is None or lesson_class.school_id != school_id:
+        return jsonify({"error": {"message": _("الدرس خارج نطاق مدرستك"), "code": "FORBIDDEN"}}), 403
+
+    quiz, err = generate_quiz_from_lesson(
+        lesson_id=lesson_id,
+        question_count=question_count,
+        difficulty=difficulty,
+        created_by=current_user.id,
+    )
+    if quiz is None:
+        return jsonify({"error": {"message": err or _("فشل التوليد"), "code": "QUIZ_GENERATION_FAILED"}}), 502
+
+    return jsonify(
+        {
+            "quiz_id": quiz.id,
+            "title": quiz.title,
+            "question_count": len(quiz.questions),
+            "status": quiz.status,
+        }
+    ), 201
     """إحصائيات استخدام AI."""
     ai_service = get_ai_service()
     days = request.args.get("days", 30, type=int)

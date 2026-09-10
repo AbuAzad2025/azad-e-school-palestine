@@ -86,6 +86,7 @@ SWAGGER_TEMPLATE: dict = {
         {"name": "Tutoring", "description": "الدروس الخصوصية"},
         {"name": "Assessment", "description": "التقييم والاختبارات"},
         {"name": "Grades", "description": "الدرجات والتقارير"},
+        {"name": "AI", "description": "المعلم الافتراضي (RAG) وتوليد الاختبارات"},
     ],
     "definitions": {
         "Error": {
@@ -171,6 +172,49 @@ SWAGGER_TEMPLATE: dict = {
                 "per_page": {"type": "integer"},
                 "total": {"type": "integer"},
                 "pages": {"type": "integer"},
+            },
+        },
+        "AiQuotaError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "object",
+                    "properties": {
+                        "message": {"type": "string"},
+                        "code": {
+                            "type": "string",
+                            "enum": ["AI_QUOTA_EXCEEDED", "AI_DISABLED_FOR_TENANT", "VALIDATION_ERROR"],
+                        },
+                    },
+                },
+            },
+        },
+        "RagQueryResponse": {
+            "type": "object",
+            "properties": {
+                "answer": {"type": "string"},
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "lesson_id": {"type": "integer"},
+                            "chunk_index": {"type": "integer"},
+                            "preview": {"type": "string"},
+                        },
+                    },
+                },
+                "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+                "method": {"type": "string", "enum": ["rag", "direct_llm"]},
+            },
+        },
+        "QuizGenerateResponse": {
+            "type": "object",
+            "properties": {
+                "quiz_id": {"type": "integer"},
+                "title": {"type": "string"},
+                "question_count": {"type": "integer"},
+                "status": {"type": "string", "enum": ["draft"]},
             },
         },
     },

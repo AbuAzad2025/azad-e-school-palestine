@@ -8,6 +8,7 @@ from functools import wraps
 from flask import abort
 from flask_login import current_user
 
+from app.core.i18n import _
 from app.models.user import UserRole
 
 SUPER_ROLE = UserRole.super_admin
@@ -136,5 +137,93 @@ def student_only(fn):
         if current_user.role != UserRole.student:
             abort(403)
         return fn(*args, **kwargs)
+
+    return wrapper
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AI Quota Guard — tenant_ai_quota() + require_ai_quota decorator
+# يمنع تنفيذ أي طلب AI قبل التحقق من باقة المدرسة (ai_enabled + الحد الشهري).
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def tenant_ai_quota() -> tuple[bool, str, str]:
+    """فحص حصة AI للمدرسة الحالية.
+
+    Sequence:
+        1. super_admin بلا مدرسة → مسموح (فوق التينانتس).
+        2. بلا مدرسة (فردي/غير منتمٍ) → AI_DISABLED_FOR_TENANT.
+        3. tenant_quotas.ai_enabled == False → AI_DISABLED_FOR_TENANT.
+        4. استهلاك الشهر الحالي ≥ max_ai_tokens_monthly → AI_QUOTA_EXCEEDED.
+
+    Returns:
+        (allowed, sub_code, message) — sub_code "" عندما allowed.
+    """
+    from app.core.cache import get as cache_get
+    from app.core.cache import set as cache_set
+    from app.core.tenancy import current_school_id
+
+    if current_user.role == UserRole.super_admin:
+        return True, "", ""
+
+    school_id = current_school_id()
+    if school_id is None:
+        return False, "AI_DISABLED_FOR_TENANT", _("خدمة الذكاء الاصطناعي متاحة للمدارس المسجلة فقط.")
+
+    # الحصة مخزّنة مؤقتاً 30 ثانية لتقليل استعلامات كل طلب AI
+    cache_key = f"ai_quota:{school_id}"
+    cached = cache_get(cache_key)
+    if cached is not None:
+        allowed, sub_code = bool(cached["allowed"]), str(cached["sub_code"])
+        return allowed, sub_code, ("" if allowed else _("تم استهلاك حصة الذكاء الاصطناعي."))
+
+    from app.services.ai_usage import monthly_tokens_used
+    from app.services.tenant import get_quota
+
+    quota = get_quota(school_id)
+    if not quota.ai_enabled:
+        result = (False, "AI_DISABLED_FOR_TENANT")
+    elif monthly_tokens_used(school_id) >= quota.max_ai_tokens_monthly:
+        result = (False, "AI_QUOTA_EXCEEDED")
+    else:
+        result = (True, "")
+
+    cache_set(cache_key, {"allowed": result[0], "sub_code": result[1]}, ttl=30)
+    allowed, sub_code = result
+    return allowed, sub_code, ("" if allowed else _("تم استهلاك حصة الذكاء الاصطناعي."))
+
+
+def invalidate_ai_quota_cache(school_id: int) -> None:
+    """إبطال كاش الحصة (بعد تغيير الباقة أو الترقية)."""
+    from app.core.cache import delete as cache_delete
+
+    cache_delete(f"ai_quota:{school_id}")
+
+
+def require_ai_quota(fn):
+    """@login_required + tenant_ai_quota() gate.
+
+    JSON routes (Accept: application/json or /api/ path) get a structured
+    error body with sub-code; web routes abort with 403.
+    """
+    from flask import jsonify, request
+    from flask_login import login_required
+
+    @login_required
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        allowed, sub_code, message = tenant_ai_quota()
+        if allowed:
+            return fn(*args, **kwargs)
+        wants_json = (
+            request.path.startswith("/api/")
+            or request.is_json
+            or request.accept_mimetypes.best == "application/json"
+        )
+        if wants_json:
+            resp = jsonify({"error": {"message": message, "code": sub_code}})
+            resp.status_code = 403
+            return resp
+        abort(403, description=message)
 
     return wrapper

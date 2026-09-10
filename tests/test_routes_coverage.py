@@ -228,14 +228,26 @@ def _setup_class_with_teacher(app):
     school_id = _create_school(app)
     grade_id = _create_grade(app, school_id)
     subject_id = _create_subject(app)
-    teacher_id = _create_user(app, role="teacher")
+    teacher_id = _create_user(app, role="teacher", school_id=school_id)
     class_id = _create_class(app, school_id, grade_id, subject_id, teacher_id)
     email = f"t-{_uid()}@test.com"
     with app.app_context():
+        from app.models.user import UserRoleLink
+
         u = _db.session.get(User, teacher_id)
         u.email = email
+        _db.session.add(UserRoleLink(user_id=teacher_id, school_id=school_id, role=UserRole.teacher))
         _db.session.commit()
     _create_member(app, class_id, teacher_id)
+    # AI quota guard (require_ai_quota) needs an AI-enabled tenant tier,
+    # otherwise /ai/* routes 403 before reaching their own validation.
+    from app.extensions import db as _db2
+    from app.models.tenant import TenantQuota
+
+    with app.app_context():
+        q = TenantQuota(school_id=school_id, tier="pro", ai_enabled=True, max_ai_tokens_monthly=100000)
+        _db2.session.add(q)
+        _db2.session.commit()
     return school_id, class_id, email
 
 

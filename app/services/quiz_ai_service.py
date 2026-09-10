@@ -132,16 +132,7 @@ def generate_quiz_from_lesson(
             db.session.flush()  # Get quiz.id
 
             for q_data in questions_data:
-                question = Question(
-                    quiz_id=quiz.id,
-                    question_text=q_data.get("question_text", ""),
-                    question_type=q_data.get("question_type", "mcq"),
-                    options=q_data.get("options", []),
-                    correct_answer=q_data.get("correct_answer", ""),
-                    marks=q_data.get("marks", 1),
-                    explanation=q_data.get("explanation", ""),
-                    difficulty=_map_difficulty(difficulty),
-                )
+                question = Question(quiz_id=quiz.id, **_normalize_question(q_data))
                 db.session.add(question)
 
             return quiz
@@ -162,6 +153,56 @@ def generate_quiz_from_lesson(
     except Exception as exc:
         logger.exception("quiz_generation_db_error", lesson_id=lesson_id)
         return None, f"Database error: {exc}"
+
+
+def _normalize_question(q: dict) -> dict:
+    """تحويل مخرجات LLM إلى حقول نموذج Question الحقيقية.
+
+    مخطط LLM:  question_text / question_type / options / correct_answer / marks / explanation
+    مخطط DB:   prompt / type / options (MCQ فقط) / correct_answer JSONB / mark
+
+    الالتزام: صيغة correct_answer = {"value": ..., "explanation": ...} (JSONB
+    مرن كما في add_question). أي سؤال بنص فارغ يُستبدل بنص آمن بدل الفشل.
+    """
+    qtype = q.get("question_type") or q.get("type") or "mcq"
+    if qtype not in ("mcq", "true_false", "essay", "matching", "fill_blank"):
+        qtype = "mcq"
+
+    prompt = (q.get("question_text") or q.get("prompt") or "").strip() if isinstance(
+        q.get("question_text") or q.get("prompt"), str
+    ) else "سؤال"
+    if not prompt:
+        prompt = "سؤال"
+
+    options = q.get("options")
+    if isinstance(options, dict):  # {"A": ..., "B": ...} → قائمة مرتبة
+        options = [options[k] for k in sorted(options)]
+    if qtype == "true_false" and not (isinstance(options, list) and set(map(str, options)) <= {"True", "False"}):
+        options = ["True", "False"]
+    if qtype != "mcq":
+        options = None  # عمود options مخصص للـ MCQ
+
+    correct = q.get("correct_answer")
+    if isinstance(correct, dict):
+        correct_val: Any = correct.get("value", correct)
+    elif correct is None:
+        correct_val = ""
+    else:
+        correct_val = correct
+    correct_payload = {"value": correct_val, "explanation": q.get("explanation") or ""}
+
+    try:
+        mark = float(q.get("marks", q.get("mark", 1)))
+    except (TypeError, ValueError):
+        mark = 1.0
+
+    return {
+        "type": qtype,
+        "prompt": prompt,
+        "options": options,
+        "correct_answer": correct_payload,
+        "mark": mark,
+    }
 
 
 def _extract_lesson_text(lesson: Any) -> str:

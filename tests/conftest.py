@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import UTC
+
+# 🔒 وضع عدم الاتصال الإلزامي للاختبارات — أي مفتاح AI حقيقي في البيئة
+# (AI_API_KEY / OPENAI_API_KEY) سيجعل اختبارات AI تُجري نداءات HTTP حقيقية
+# (مهلة SDK 600 ثانية ⇒ تعليق). المفاتيح تُمسح هنا قبل استيراد التطبيق.
+os.environ.pop("AI_API_KEY", None)
+os.environ.pop("OPENAI_API_KEY", None)
+os.environ["RAG_DISABLE_EMBEDDINGS"] = "1"
 
 import pytest
 from app import create_app
