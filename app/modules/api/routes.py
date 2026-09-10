@@ -610,9 +610,7 @@ def api_auth_token():
 
     token = make_api_token(user.id)
     logger.info("api_token_issued", user_id=user.id)
-    return api_response(
-        {"token": token, "token_type": "Bearer", "expires_in": 60 * 60 * 24 * 30}
-    )
+    return api_response({"token": token, "token_type": "Bearer", "expires_in": 60 * 60 * 24 * 30})
 
 
 @bp.errorhandler(404)

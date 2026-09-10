@@ -168,9 +168,11 @@ def _normalize_question(q: dict) -> dict:
     if qtype not in ("mcq", "true_false", "essay", "matching", "fill_blank"):
         qtype = "mcq"
 
-    prompt = (q.get("question_text") or q.get("prompt") or "").strip() if isinstance(
-        q.get("question_text") or q.get("prompt"), str
-    ) else "سؤال"
+    prompt = (
+        (q.get("question_text") or q.get("prompt") or "").strip()
+        if isinstance(q.get("question_text") or q.get("prompt"), str)
+        else "سؤال"
+    )
     if not prompt:
         prompt = "سؤال"
 

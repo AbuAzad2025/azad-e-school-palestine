@@ -216,9 +216,7 @@ def require_ai_quota(fn):
         if allowed:
             return fn(*args, **kwargs)
         wants_json = (
-            request.path.startswith("/api/")
-            or request.is_json
-            or request.accept_mimetypes.best == "application/json"
+            request.path.startswith("/api/") or request.is_json or request.accept_mimetypes.best == "application/json"
         )
         if wants_json:
             resp = jsonify({"error": {"message": message, "code": sub_code}})

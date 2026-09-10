@@ -325,10 +325,7 @@ def admin_credit(
 
     def _credit():
         wallet = (
-            db.session.query(Wallet)
-            .filter_by(school_id=school_id, user_id=target_user_id)
-            .with_for_update()
-            .first()
+            db.session.query(Wallet).filter_by(school_id=school_id, user_id=target_user_id).with_for_update().first()
         )
         if not wallet:
             raise TxError(_("المحفظة غير موجودة."))
