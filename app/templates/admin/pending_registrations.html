@@ -1,4 +1,4 @@
-{% from "macros/ui.html" import azad_pagination %}
+{% from "macros/ui.html" import azad_pagination, azad_table %}
 {% extends "admin/base.html" %}
 {% block title %}{{ _('التسجيلات المعلقة') }} — {{ _('لوحة التحكم') }}{% endblock %}
 {% block content %}
@@ -13,47 +13,40 @@
 </div>
 
 {% if pagination.items %}
+{% set headers = [
+  {'key': 'user', 'label': _('المستخدم')},
+  {'key': 'email', 'label': _('البريد الإلكتروني')},
+  {'key': 'role', 'label': _('الدور')},
+  {'key': 'registered', 'label': _('تاريخ التسجيل')},
+  {'key': 'status', 'label': _('الحالة')},
+] %}
+{% set rows = [] %}
+{% for user in pagination.items %}
+  {% set user_cell %}<div class="u-bold">{{ user.name_ar or user.email }}</div><div class="meta-chip">{{ user.role.value }}</div>{% endset %}
+  {% set role_cell %}<span class="meta-chip">{{ user.role.value }}</span>{% endset %}
+  {% set status_cell %}<span class="azad-badge-variant azad-badge-variant--warning">{{ _('بانتظار الموافقة') }}</span>{% endset %}
+  {% set actions_html %}
+    <div class="item-actions">
+      <form class="u-inline" method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="azad-btn-outline azad-btn-success">{{ icon('check') }} {{ _('قبول') }}</button>
+      </form>
+      <form class="u-inline" method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="azad-btn-outline azad-btn-danger">{{ icon('x') }} {{ _('رفض') }}</button>
+      </form>
+    </div>
+  {% endset %}
+  {% set _ = rows.append({'id': user.id, 'cells': {
+    'user': user_cell,
+    'email': user.email,
+    'role': role_cell,
+    'registered': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '—',
+    'status': status_cell
+  }, 'actions': actions_html}) %}
+{% endfor %}
 <div class="table-scroll">
-  <table class="azad-table">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('المستخدم') }}</th>
-        <th scope="col">{{ _('البريد الإلكتروني') }}</th>
-        <th scope="col">{{ _('الدور') }}</th>
-        <th scope="col">{{ _('تاريخ التسجيل') }}</th>
-        <th scope="col">{{ _('الحالة') }}</th>
-        <th scope="col">{{ _('الإجراءات') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for user in pagination.items %}
-      <tr>
-        <td>
-          <div class="u-bold">{{ user.name_ar or user.email }}</div>
-          <div class="meta-chip">{{ user.role.value }}</div>
-        </td>
-        <td>{{ user.email }}</td>
-        <td><span class="meta-chip">{{ user.role.value }}</span></td>
-        <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '—' }}</td>
-        <td>
-          <span class="azad-badge-variant azad-badge-variant--warning">{{ _('بانتظار الموافقة') }}</span>
-        </td>
-        <td>
-          <div class="item-actions">
-            <form class="u-inline" method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="azad-btn-outline azad-btn-success">{{ icon('check') }} {{ _('قبول') }}</button>
-            </form>
-            <form class="u-inline" method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="azad-btn-outline azad-btn-danger">{{ icon('x') }} {{ _('رفض') }}</button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile', actions=True) }}
 </div>
 
 <div class="azad-pagination-wrapper u-mt-1-5">

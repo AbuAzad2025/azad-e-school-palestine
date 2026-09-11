@@ -1,5 +1,5 @@
 {% extends "admin/base.html" %}
-{% from "macros/ui.html" import azad_pagination %}
+{% from "macros/ui.html" import azad_pagination, azad_table %}
 {% block title %}{{ _('سجل التدقيق') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
 <div class="azad-section">
@@ -33,48 +33,32 @@
 </form>
 
 {% if pagination.items %}
+{% set headers = [
+  {'key': 'time', 'label': _('الوقت')},
+  {'key': 'user', 'label': _('المستخدم')},
+  {'key': 'action', 'label': _('الإجراء')},
+  {'key': 'entity', 'label': _('الكيان')},
+  {'key': 'entity_id', 'label': _('المعرف')},
+  {'key': 'ip', 'label': _('IP')},
+  {'key': 'detail', 'label': _('التفاصيل')},
+] %}
+{% set rows = [] %}
+{% for log in pagination.items %}
+  {% set user_cell %}{% if log.user %}<a href="{{ url_for('admin.user_detail', user_id=log.user.id) }}">{{ log.user.name_ar or log.user.email }}</a>{% else %}<span class="text-muted">{{ _('نظام / زائر') }}</span>{% endif %}{% endset %}
+  {% set action_cell %}<span class="meta-chip">{{ log.action }}</span>{% endset %}
+  {% set detail_cell %}{% if log.detail %}<details class="audit-detail"><summary class="azad-btn-outline azad-btn-sm">{{ _('عرض') }}</summary><pre class="audit-json">{{ log.detail | tojson(indent=2) }}</pre></details>{% else %}-{% endif %}{% endset %}
+  {% set _ = rows.append({'id': log.id, 'cells': {
+    'time': log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-',
+    'user': user_cell,
+    'action': action_cell,
+    'entity': log.entity or '-',
+    'entity_id': log.entity_id or '-',
+    'ip': log.ip or '-',
+    'detail': detail_cell
+  }}) %}
+{% endfor %}
 <div class="azad-table-container">
-  <table class="azad-table azad-table--striped azad-table--hover">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('الوقت') }}</th>
-        <th scope="col">{{ _('المستخدم') }}</th>
-        <th scope="col">{{ _('الإجراء') }}</th>
-        <th scope="col">{{ _('الكيان') }}</th>
-        <th scope="col">{{ _('المعرف') }}</th>
-        <th scope="col">{{ _('IP') }}</th>
-        <th scope="col">{{ _('التفاصيل') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for log in pagination.items %}
-      <tr>
-        <td dir="ltr">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
-        <td>
-          {% if log.user %}
-            <a href="{{ url_for('admin.user_detail', user_id=log.user.id) }}">{{ log.user.name_ar or log.user.email }}</a>
-          {% else %}
-            <span class="text-muted">{{ _('نظام / زائر') }}</span>
-          {% endif %}
-        </td>
-        <td><span class="meta-chip">{{ log.action }}</span></td>
-        <td>{{ log.entity or '-' }}</td>
-        <td dir="ltr">{{ log.entity_id or '-' }}</td>
-        <td dir="ltr">{{ log.ip or '-' }}</td>
-        <td>
-          {% if log.detail %}
-            <details class="audit-detail">
-              <summary class="azad-btn-outline azad-btn-sm">{{ _('عرض') }}</summary>
-              <pre class="audit-json">{{ log.detail | tojson(indent=2) }}</pre>
-            </details>
-          {% else %}
-            -
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
 </div>
 
 {{ azad_pagination(pagination, 'admin.audit_logs', {'search': search, 'action': action_filter, 'entity': entity_filter, 'user_id': user_filter}) }}
