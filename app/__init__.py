@@ -206,6 +206,7 @@ def create_app(config_class=Config):
     from .modules.notifications import bp as notifications_bp
     from .modules.payments import bp as payments_bp
     from .modules.payments import payments_ui_bp
+    from .modules.payments.routes import bp as payments_webhook_bp
     from .modules.progress import bp as progress_bp
     from .modules.school_approvals import bp as school_approvals_bp
     from .modules.schools import bp as schools_bp
@@ -224,6 +225,7 @@ def create_app(config_class=Config):
     app.register_blueprint(billing_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(payments_webhook_bp)
     app.register_blueprint(payments_bp)
     app.register_blueprint(payments_ui_bp)
     app.register_blueprint(family_bp)

@@ -55,7 +55,14 @@ def audit(
         changes = {"field_name": {"old": old_value, "new": new_value}}
     """
     uid = current_user.id if current_user.is_authenticated else None
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "") if request else None
+    ip = None
+    if request:
+        forwarded = request.headers.get("X-Forwarded-For")
+        remote = request.remote_addr
+        if forwarded:
+            ip = forwarded.split(",")[0].strip()
+        elif remote and remote != "":
+            ip = remote
 
     # دمج التفاصيل المالية في detail
     financial_detail: dict[str, Any] = {}

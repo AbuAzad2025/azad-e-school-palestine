@@ -155,7 +155,7 @@ class StripeGateway(PaymentGatewayBase):
             pi_id = payment_intent.id.replace("stripe_", "")
             self.stripe.Refund.create(
                 payment_intent=pi_id,
-                amount=int((amount or payment_intent.amount) * 100) if amount else None,
+                amount=int((amount or payment_intent.amount) * 100),
             )
             return True
         except Exception:

@@ -42,7 +42,9 @@ def render_invoice_pdf(subscription_id: int) -> bytes | None:
     try:
         from xhtml2pdf import pisa
 
-        pdf_bytes = pisa.CreatePDF(html).dest
-        return pdf_bytes
+        result = pisa.CreatePDF(html)
+        if result.err:
+            return None
+        return result.dest.getvalue()
     except ImportError:
         return None

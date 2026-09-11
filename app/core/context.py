@@ -201,7 +201,7 @@ def register(app):
         unread = 0
         msg_unread = 0
         impersonator = None
-        if current_user.is_authenticated:
+        if current_user and current_user.is_authenticated:
             from app.services.communication import unread_count
 
             unread = unread_count(current_user.id)
@@ -214,7 +214,8 @@ def register(app):
         return {
             "now": datetime.now(),
             "app_name": "مدرسة أزاد الإلكترونية",
-            "is_admin": current_user.is_authenticated
+            "is_admin": current_user
+            and current_user.is_authenticated
             and current_user.role in (UserRole.super_admin, UserRole.school_admin),
             "is_impersonating": impersonator is not None,
             "impersonator": impersonator,
