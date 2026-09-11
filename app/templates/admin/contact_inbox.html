@@ -1,55 +1,54 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('رسائل التواصل') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block content %}
 <div class="azad-section">
   <h2 class="azad-section__title">{{ icon('mail') }} {{ _('صندوق وارد رسائل التواصل') }}</h2>
 </div>
 
-{% if messages %}
-<div class="azad-table-container">
-  <table class="azad-table">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('الاسم') }}</th>
-        <th scope="col">{{ _('البريد') }}</th>
-        <th scope="col">{{ _('الموضوع') }}</th>
-        <th scope="col">{{ _('الحالة') }}</th>
-        <th scope="col">{{ _('التاريخ') }}</th>
-        <th scope="col">{{ _('الإجراءات') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for msg in messages %}
-      <tr>
-        <td>{{ msg.name }}</td>
-        <td>{{ msg.email }}</td>
-        <td>{{ msg.subject }}</td>
-        <td>
-          <span class="azad-badge azad-badge--{{ {'new': 'danger', 'read': 'info', 'replied': 'success'}.get(msg.status, 'muted') }}">
-            {{ _('جديدة') if msg.status == 'new' else (_('مقروءة') if msg.status == 'read' else _('تم الرد')) }}
-          </span>
-        </td>
-        <td>{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td>
-          {% if msg.status == 'new' %}
-          <form class="u-inline" method="post" action="{{ url_for('admin.contact_mark_read', message_id=msg.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="azad-btn-outline azad-btn-sm">{{ icon('check') }} {{ _('تعليم كمقروء') }}</button>
-          </form>
-          {% endif %}
-          <button type="button" class="azad-btn-outline azad-btn-sm"
-                  data-reply-open data-msg-id="{{ msg.id }}" data-email="{{ msg.email }}" data-subject="{{ msg.subject }}">
-            {{ icon('reply') }} {{ _('رد') }}
-          </button>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% else %}
-<div class="empty-state">{{ _('لا توجد رسائل تواصل بعد.') }}</div>
-{% endif %}
+{% set headers = [
+  {'key': 'name', 'label': _('الاسم')},
+  {'key': 'email', 'label': _('البريد')},
+  {'key': 'subject', 'label': _('الموضوع')},
+  {'key': 'status', 'label': _('الحالة')},
+  {'key': 'created', 'label': _('التاريخ')},
+] %}
+{% set rows = [] %}
+{% for msg in messages %}
+  {% set status_badge %}<span class="azad-badge azad-badge--{{ {'new': 'danger', 'read': 'info', 'replied': 'success'}.get(msg.status, 'muted') }}">{{ _('جديدة') if msg.status == 'new' else (_('مقروءة') if msg.status == 'read' else _('تم الرد')) }}</span>{% endset %}
+  {% set actions_html %}
+    {% if msg.status == 'new' %}
+    <form class="u-inline" method="post" action="{{ url_for('admin.contact_mark_read', message_id=msg.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="azad-btn-outline azad-btn-sm">{{ icon('check') }} {{ _('تعليم كمقروء') }}</button>
+    </form>
+    {% endif %}
+    <button type="button" class="azad-btn-outline azad-btn-sm"
+            data-reply-open data-msg-id="{{ msg.id }}" data-email="{{ msg.email }}" data-subject="{{ msg.subject }}">
+      {{ icon('reply') }} {{ _('رد') }}
+    </button>
+  {% endset %}
+  {% set _ = rows.append({
+    'id': msg.id,
+    'cells': {
+      'name': msg.name,
+      'email': msg.email,
+      'subject': msg.subject,
+      'status': status_badge,
+      'created': msg.created_at.strftime('%Y-%m-%d %H:%M')
+    },
+    'actions': actions_html
+  }) %}
+{% endfor %}
+
+{{ azad_table(
+  headers=headers,
+  rows=rows,
+  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
+  actions=True,
+  empty_title=_('لا توجد رسائل تواصل بعد.'),
+  empty_icon='envelope'
+) }}
 
 {# Reply Modal #}
 <div id="reply-modal" class="modal-overlay u-none" role="dialog" aria-modal="true" aria-labelledby="reply-modal-title">

@@ -1,5 +1,5 @@
 # Auto-generated CSS manifest — do not edit manually
 
 brand.min.css: a5980a896601
-app.min.css: d0429e277064
+app.min.css: 78f53a0d098c
 ai-chat.min.css: a71e6741dba9

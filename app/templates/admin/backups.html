@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('النسخ الاحتياطي') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
 <div class="azad-section">
@@ -9,37 +10,42 @@
   </form>
 </div>
 
-{% if backups %}
-<table class="admin-table">
-  <thead>
-    <tr>
-      <th scope="col">{{ _('اسم الملف') }}</th>
-      <th scope="col">{{ _('الحجم') }}</th>
-      <th scope="col">{{ _('تاريخ الإنشاء') }}</th>
-      <th scope="col">{{ _('الإجراءات') }}</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for b in backups %}
-    <tr>
-      <td>{{ b.name }}</td>
-      <td>{{ (b.size / 1024 / 1024)|round(2) }} MB</td>
-      <td>{{ b.created.strftime('%Y-%m-%d %H:%M') }}</td>
-      <td>
-        <form class="u-inline" method="post" action="{{ url_for('admin.backup_restore', filename=b.name) }}" data-confirm="{{ _('تحذير: سيؤدي هذا لمسح البيانات الحالية واستبدالها بالنسخة الاحتياطية. هل أنت متأكد؟') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="confirm" value="yes">
-          <button class="azad-btn-outline action-btn" type="submit">{{ _('استعادة') }}</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<div class="empty-state">
-  {{ _('لا توجد نسخ احتياطية') }}
-  <form class="u-mt-1 u-inline" method="post" action="{{ url_for('admin.backup_create') }}">
+{% set headers = [
+  {'key': 'name', 'label': _('اسم الملف')},
+  {'key': 'size', 'label': _('الحجم')},
+  {'key': 'created', 'label': _('تاريخ الإنشاء')},
+] %}
+{% set rows = [] %}
+{% for b in backups %}
+  {% set restore_form %}
+    <form class="u-inline" method="post" action="{{ url_for('admin.backup_restore', filename=b.name) }}" data-confirm="{{ _('تحذير: سيؤدي هذا لمسح البيانات الحالية واستبدالها بالنسخة الاحتياطية. هل أنت متأكد؟') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="confirm" value="yes">
+      <button class="azad-btn-outline action-btn" type="submit">{{ _('استعادة') }}</button>
+    </form>
+  {% endset %}
+  {% set _ = rows.append({
+    'id': loop.index,
+    'cells': {
+      'name': b.name,
+      'size': (b.size / 1024 / 1024)|round(2) ~ ' MB',
+      'created': b.created.strftime('%Y-%m-%d %H:%M')
+    },
+    'actions': restore_form
+  }) %}
+{% endfor %}
+
+{{ azad_table(
+  headers=headers,
+  rows=rows,
+  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
+  actions=True,
+  empty_title=_('لا توجد نسخ احتياطية'),
+  empty_icon='archive'
+) }}
+{% if not backups %}
+<div class="u-center-row">
+  <form class="u-inline" method="post" action="{{ url_for('admin.backup_create') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button class="azad-btn" type="submit">{{ _('إنشاء أول نسخة احتياطية') }}</button>
   </form>

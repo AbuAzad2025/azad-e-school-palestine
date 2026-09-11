@@ -1,52 +1,51 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('طلبات سحب أرباح المعلمين') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block content %}
 <div class="azad-section">
   <h2 class="azad-section__title">{{ icon('credit-card') }} {{ _('طلبات سحب أرباح المعلمين') }}</h2>
 </div>
 
-{% if payouts %}
-<div class="azad-table-container">
-  <table class="azad-table">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('المعلم') }}</th>
-        <th scope="col">{{ _('المبلغ') }}</th>
-        <th scope="col">{{ _('الحالة') }}</th>
-        <th scope="col">{{ _('تاريخ الطلب') }}</th>
-        <th scope="col">{{ _('الإجراءات') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in payouts %}
-      <tr>
-        <td>{{ p.tutor.name_ar }} ({{ p.tutor.email }})</td>
-        <td>{{ p.amount }} ₪</td>
-        <td>
-          <span class="azad-badge-variant azad-badge-variant--{{ 'warning' if p.status == 'pending' else ('success' if p.status == 'approved' else 'danger') }}">
-            {{ _('معلق') if p.status == 'pending' else (_('مقبول') if p.status == 'approved' else _('مرفوض')) }}
-          </span>
-        </td>
-        <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td>
-          {% if p.status == 'pending' %}
-          <form class="u-inline" method="post" action="{{ url_for('admin.review_payout', payout_id=p.id, result='approve') }}" data-confirm="{{ _('تأكيد اعتماد طلب السحب؟') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="azad-btn-outline azad-btn-sm u-m-2px">{{ icon('check') }} {{ _('اعتماد') }}</button>
-          </form>
-          <button type="button" class="azad-btn-outline azad-btn-sm azad-btn-danger u-m-2px" data-reject-open="{{ p.id }}">
-            {{ icon('x') }} {{ _('رفض') }}
-          </button>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% else %}
-<div class="empty-state">{{ _('لا توجد طلبات سحب معلقة.') }}</div>
-{% endif %}
+{% set headers = [
+  {'key': 'tutor', 'label': _('المعلم')},
+  {'key': 'amount', 'label': _('المبلغ')},
+  {'key': 'status', 'label': _('الحالة')},
+  {'key': 'created', 'label': _('تاريخ الطلب')},
+] %}
+{% set rows = [] %}
+{% for p in payouts %}
+  {% set status_badge %}<span class="azad-badge-variant azad-badge-variant--{{ 'warning' if p.status == 'pending' else ('success' if p.status == 'approved' else 'danger') }}">{{ _('معلق') if p.status == 'pending' else (_('مقبول') if p.status == 'approved' else _('مرفوض')) }}</span>{% endset %}
+  {% set actions_html %}
+    {% if p.status == 'pending' %}
+    <form class="u-inline" method="post" action="{{ url_for('admin.review_payout', payout_id=p.id, result='approve') }}" data-confirm="{{ _('تأكيد اعتماد طلب السحب؟') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="azad-btn-outline azad-btn-sm u-m-2px">{{ icon('check') }} {{ _('اعتماد') }}</button>
+    </form>
+    <button type="button" class="azad-btn-outline azad-btn-sm azad-btn-danger u-m-2px" data-reject-open="{{ p.id }}">
+      {{ icon('x') }} {{ _('رفض') }}
+    </button>
+    {% endif %}
+  {% endset %}
+  {% set _ = rows.append({
+    'id': p.id,
+    'cells': {
+      'tutor': p.tutor.name_ar ~ ' (' ~ p.tutor.email ~ ')',
+      'amount': p.amount ~ ' ₪',
+      'status': status_badge,
+      'created': p.created_at.strftime('%Y-%m-%d %H:%M')
+    },
+    'actions': actions_html
+  }) %}
+{% endfor %}
+
+{{ azad_table(
+  headers=headers,
+  rows=rows,
+  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
+  actions=True,
+  empty_title=_('لا توجد طلبات سحب معلقة.'),
+  empty_icon='credit-card'
+) }}
 
 {# Reject Modal #}
 <div id="reject-modal" class="modal-overlay u-none" role="dialog" aria-modal="true" aria-labelledby="reject-modal-title">
