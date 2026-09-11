@@ -59,7 +59,12 @@ def test_form_row_macro_renders_grid_layout(app):
         )
     assert "azad-form-row" in html
     assert "my-row" in html
-    assert "grid-template-columns" in html
+    # التخطيط الشبكي أصبح عبر الصنف (لا أنماط مضمّنة): صنف المتغيّر في HTML
+    # وقاعدة grid-template-columns في app.css.
+    assert "azad-form-row--3" in html
+    css = open("app/static/css/app.css", encoding="utf-8").read()
+    assert ".azad-form-row--3" in css
+    assert "grid-template-columns: repeat(3, 1fr)" in css
 
 
 def test_inline_validation_shows_error_on_blur(app):
