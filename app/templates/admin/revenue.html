@@ -40,28 +40,25 @@
   <canvas id="trendChart" height="300"></canvas>
 </div>
 
+{% from "macros/ui.html" import azad_table %}
 {% if data.by_school %}
 <div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('تفاصيل الإيرادات حسب المدرسة') }}</h2>
   <div class="azad-table-container">
-    <table class="azad-table">
-      <thead>
-        <tr>
-          <th scope="col">{{ _('المدرسة') }}</th>
-          <th scope="col">{{ _('عدد المعاملات') }}</th>
-          <th scope="col">{{ _('إجمالي الإيرادات') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for school in data.by_school %}
-        <tr>
-          <td>{{ school.school_name }}</th>
-          <td>{{ school.count }}</td>
-          <td>{{ school.total }} {{ s.currency }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    {% set rev_headers = [
+      {'key': 'school', 'label': _('المدرسة')},
+      {'key': 'count', 'label': _('عدد المعاملات')},
+      {'key': 'total', 'label': _('إجمالي الإيرادات')},
+    ] %}
+    {% set rev_rows = [] %}
+    {% for school in data.by_school %}
+      {% set _ = rev_rows.append({'id': loop.index, 'cells': {
+        'school': school.school_name,
+        'count': school.count,
+        'total': school.total ~ ' ' ~ s.currency
+      }}) %}
+    {% endfor %}
+    {{ azad_table(headers=rev_headers, rows=rev_rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
   </div>
 {% endif %}
 {% endblock %}

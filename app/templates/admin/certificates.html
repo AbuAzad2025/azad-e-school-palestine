@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state, azad_table %}
 {% block title %}{{ _('قوالب الشهادات') }} — {{ _('لوحة التحكم') }}{% endblock %}
 {% block content %}
 {{ azad_breadcrumb([{'label': _('لوحة التحكم'), 'href': url_for('admin.dashboard')}, {'label': _('قوالب الشهادات')}]) }}
@@ -12,31 +12,30 @@
   {{ azad_badge(_('قريباً'), 'warning') }}
 </div>
 
-{% if templates %}
-<div class="u-overflow-x-auto">
-<table class="azad-table">
-  <thead>
-    <tr>
-      <th scope="col">{{ _('الاسم') }}</th>
-      <th scope="col">{{ _('المدرسة') }}</th>
-      <th scope="col">{{ _('الحالة') }}</th>
-      <th scope="col">{{ _('الإجراءات') }}</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for t in templates %}
-    <tr>
-      <td class="u-bold">{{ t.name }}</td>
-      <td>{{ t.school.name_ar if t.school else _('عام') }}</td>
-      <td>{{ azad_badge(_('نشط') if t.is_active else _('معطّل'), 'success' if t.is_active else 'muted') }}</td>
-      <td><span class="u-muted u-text-sm-t">{{ _('قريباً') }}</span></td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-</div>
-{% else %}
-{{ azad_empty_state(_('لا توجد قوالب بعد'), _('ستتمكن من إنشاء قوالب شهادات قريباً.'), 'award') }}
-{% endif %}
+{% set headers = [
+  {'key': 'name', 'label': _('الاسم')},
+  {'key': 'school', 'label': _('المدرسة')},
+  {'key': 'status', 'label': _('الحالة')},
+  {'key': 'soon', 'label': _('الإجراءات')},
+] %}
+{% set rows = [] %}
+{% for t in templates %}
+  {% set status_badge %}{{ azad_badge(_('نشط') if t.is_active else _('معطّل'), 'success' if t.is_active else 'muted') }}{% endset %}
+  {% set soon_cell %}<span class="u-muted u-text-sm-t">{{ _('قريباً') }}</span>{% endset %}
+  {% set _ = rows.append({'id': loop.index, 'cells': {
+    'name': t.name,
+    'school': t.school.name_ar if t.school else _('عام'),
+    'status': status_badge,
+    'soon': soon_cell
+  }}) %}
+{% endfor %}
+{{ azad_table(
+  headers=headers,
+  rows=rows,
+  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
+  empty_title=_('لا توجد قوالب بعد'),
+  empty_description=_('ستتمكن من إنشاء قوالب شهادات قريباً.'),
+  empty_icon='award'
+) }}
 {% endcall %}
 {% endblock %}

@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('إحصائيات AI') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
 <div class="azad-section">
@@ -45,21 +46,12 @@
     </div>
   </div>
   <div class="azad-card__body">
-    {% if stats.by_action %}
-    <table class="azad-table">
-      <thead><tr><th scope="col">{{ _('النوع') }}</th><th scope="col">{{ _('عدد الطلبات') }}</th></tr></thead>
-      <tbody>
-        {% for action, count in stats.by_action.items() %}
-        <tr><td>{{ action }}</td><td>{{ count }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="azad-empty">
-      <div class="azad-empty__icon">{{ icon('inbox') }}</div>
-      <div class="azad-empty__title">{{ _('لا توجد بيانات') }}</div>
-    </div>
-    {% endif %}
+    {% set action_headers = [{'key': 'action', 'label': _('النوع')}, {'key': 'count', 'label': _('عدد الطلبات')}] %}
+    {% set action_rows = [] %}
+    {% for action, count in stats.by_action.items() %}
+      {% set _ = action_rows.append({'id': loop.index, 'cells': {'action': action, 'count': count}}) %}
+    {% endfor %}
+    {{ azad_table(headers=action_headers, rows=action_rows, empty_title=_('لا توجد بيانات'), empty_icon='inbox') }}
   </div>
 </div>
 
@@ -73,21 +65,12 @@
     </div>
   </div>
   <div class="azad-card__body">
-    {% if stats.by_model %}
-    <table class="azad-table">
-      <thead><tr><th scope="col">{{ _('النموذج') }}</th><th scope="col">{{ _('عدد الطلبات') }}</th></tr></thead>
-      <tbody>
-        {% for model, count in stats.by_model.items() %}
-        <tr><td>{{ model }}</td><td>{{ count }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="azad-empty">
-      <div class="azad-empty__icon">{{ icon('inbox') }}</div>
-      <div class="azad-empty__title">{{ _('لا توجد بيانات') }}</div>
-    </div>
-    {% endif %}
+    {% set model_headers = [{'key': 'model', 'label': _('النموذج')}, {'key': 'count', 'label': _('عدد الطلبات')}] %}
+    {% set model_rows = [] %}
+    {% for model, count in stats.by_model.items() %}
+      {% set _ = model_rows.append({'id': loop.index, 'cells': {'model': model, 'count': count}}) %}
+    {% endfor %}
+    {{ azad_table(headers=model_headers, rows=model_rows, empty_title=_('لا توجد بيانات'), empty_icon='inbox') }}
   </div>
 </div>
 
