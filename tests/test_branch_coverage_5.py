@@ -41,10 +41,20 @@ from tests.conftest import (
 
 @pytest.fixture(scope="session", autouse=True)
 def _patch_celery_guard():
-    """Allow task modules to be imported by patching the Celery guard."""
+    """Allow task modules to be imported by patching the Celery guard.
+    
+    Handles both @celery_app.task (bare) and @celery_app.task(...) (factory) forms.
+    """
     with patch("app.tasks._HAS_CELERY", True):
         mock_celery = MagicMock()
-        mock_celery.task.return_value = lambda *a, **kw: lambda f: f
+
+        def _task_dec(*a, **kw):
+            """Handle both @task and @task(...) — always preserve the function."""
+            if a:  # bare @celery_app.task — a[0] is the function
+                return a[0]
+            return lambda f: f  # @celery_app.task(**kwargs) factory form
+
+        mock_celery.task.side_effect = _task_dec
         with patch("app.tasks.celery_app", mock_celery):
             from app.tasks import grading, notifications, reports, video  # noqa: F401
 
