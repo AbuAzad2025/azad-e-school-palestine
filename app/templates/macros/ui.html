@@ -136,15 +136,18 @@
 {% endmacro %}
 
 {# ─── Pagination ─── #}
-{% macro azad_pagination(pagination) %}
+{# pagination: كائن Flask-SQLAlchemy؛ endpoint+filters اختياريان للحفاظ على فلاتر
+   البحث/الحالة عبر الصفحات (بلا endpoint يُستخدم ?page= كما هو). #}
+{% macro azad_pagination(pagination, endpoint='', filters={}) %}
 {% if pagination.pages > 1 %}
+{% macro _pag_url(p) %}{% if endpoint %}{{ url_for(endpoint, page=p, **filters) }}{% else %}?page={{ p }}{% endif %}{% endmacro %}
 <nav class="azad-pagination" aria-label="{{ _('التنقل بين الصفحات') }}">
   <div class="azad-pagination__info">
     {{ _('عرض %(start)s–%(end)s من %(total)s', start=pagination.page_start, end=pagination.page_end, total=pagination.total) }}
   </div>
   <div class="azad-pagination__links">
     {% if pagination.has_prev %}
-    <a href="?page={{ pagination.prev_num }}" class="azad-pagination__link" rel="prev">
+    <a href="{{ _pag_url(pagination.prev_num) }}" class="azad-pagination__link" rel="prev">
       {{ icon('arrow-left') }} {{ _('السابق') }}
     </a>
     {% endif %}
@@ -153,14 +156,14 @@
         {% if page_num == pagination.page %}
         <span class="azad-pagination__link azad-pagination__link--active">{{ page_num }}</span>
         {% else %}
-        <a href="?page={{ page_num }}" class="azad-pagination__link">{{ page_num }}</a>
+        <a href="{{ _pag_url(page_num) }}" class="azad-pagination__link">{{ page_num }}</a>
         {% endif %}
       {% else %}
       <span class="azad-pagination__ellipsis">...</span>
       {% endif %}
     {% endfor %}
     {% if pagination.has_next %}
-    <a href="?page={{ pagination.next_num }}" class="azad-pagination__link" rel="next">
+    <a href="{{ _pag_url(pagination.next_num) }}" class="azad-pagination__link" rel="next">
       {{ _('التالي') }} {{ icon('arrow-right') }}
     </a>
     {% endif %}

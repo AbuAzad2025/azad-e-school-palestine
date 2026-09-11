@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_pagination %}
 {% block title %}{{ _('سجل التدقيق') }} — {{ _('لوحة المشرف') }}{% endblock %}
 {% block admin_content %}
 <div class="azad-section">
@@ -76,27 +77,7 @@
   </table>
 </div>
 
-{% if pagination.pages > 1 %}
-<div class="azad-pagination">
-  {% if pagination.has_prev %}
-  <a href="{{ url_for('admin.audit_logs', page=pagination.page-1, search=search, action=action_filter, entity=entity_filter, user_id=user_filter) }}">&laquo; {{ _('السابق') }}</a>
-  {% endif %}
-  {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-    {% if p %}
-      {% if p == pagination.page %}
-      <span class="azad-pagination__link azad-pagination__link--active">{{ p }}</span>
-      {% else %}
-      <a href="{{ url_for('admin.audit_logs', page=p, search=search, action=action_filter, entity=entity_filter, user_id=user_filter) }}">{{ p }}</a>
-      {% endif %}
-    {% else %}
-    <span>…</span>
-    {% endif %}
-  {% endfor %}
-  {% if pagination.has_next %}
-  <a href="{{ url_for('admin.audit_logs', page=pagination.page+1, search=search, action=action_filter, entity=entity_filter, user_id=user_filter) }}">{{ _('التالي') }} &raquo;</a>
-  {% endif %}
-</div>
-{% endif %}
+{{ azad_pagination(pagination, 'admin.audit_logs', {'search': search, 'action': action_filter, 'entity': entity_filter, 'user_id': user_filter}) }}
 
 {% else %}
 <div class="azad-empty">
