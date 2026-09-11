@@ -8,47 +8,42 @@
   </div>
 </div>
 
+{% from "macros/ui.html" import azad_table %}
 {% if links %}
+{% set headers = [
+  {'key': 'user', 'label': _('المستخدم')},
+  {'key': 'email', 'label': _('البريد الإلكتروني')},
+  {'key': 'role', 'label': _('الدور')},
+  {'key': 'school', 'label': _('المدرسة')},
+  {'key': 'requested', 'label': _('تاريخ الطلب')},
+] %}
+{% set rows = [] %}
+{% for link in links %}
+  {% set role_cell %}<span class="meta-chip">{{ link.role.value }}</span>{% endset %}
+  {% set actions_html %}
+    <form class="u-inline" method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn azad-btn-success" type="submit" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
+        {{ _('قبول') }}
+      </button>
+    </form>
+    <form class="u-inline u-me-0-5" method="post" action="{{ url_for('school_approvals.reject', link_id=link.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="azad-btn azad-btn-danger" type="submit" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
+        {{ _('رفض') }}
+      </button>
+    </form>
+  {% endset %}
+  {% set _ = rows.append({'id': link.id, 'cells': {
+    'user': link.user.name_ar or link.user.email,
+    'email': link.user.email,
+    'role': role_cell,
+    'school': link.school.name_ar,
+    'requested': link.created_at.strftime('%Y-%m-%d %H:%M') if link.created_at else '—'
+  }, 'actions': actions_html}) %}
+{% endfor %}
 <div class="azad-table-container">
-  <table class="azad-table">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('المستخدم') }}</th>
-        <th scope="col">{{ _('البريد الإلكتروني') }}</th>
-        <th scope="col">{{ _('الدور') }}</th>
-        <th scope="col">{{ _('المدرسة') }}</th>
-        <th scope="col">{{ _('تاريخ الطلب') }}</th>
-        <th scope="col">{{ _('الإجراءات') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for link in links %}
-      <tr>
-        <td>{{ link.user.name_ar or link.user.email }}</td>
-        <td>{{ link.user.email }}</td>
-        <td>
-          <span class="meta-chip">{{ link.role.value }}</span>
-        </td>
-        <td>{{ link.school.name_ar }}</td>
-        <td>{{ link.created_at.strftime('%Y-%m-%d %H:%M') if link.created_at else '—' }}</td>
-        <td>
-          <form class="u-inline" method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="azad-btn azad-btn-success" type="submit" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
-              {{ _('قبول') }}
-            </button>
-          </form>
-          <form class="u-inline u-me-0-5" method="post" action="{{ url_for('school_approvals.reject', link_id=link.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="azad-btn azad-btn-danger" type="submit" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
-              {{ _('رفض') }}
-            </button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile', actions=True, empty_title=_('لا توجد طلبات معلقة حالياً.'), empty_icon='users') }}
 </div>
 {% else %}
 <div class="empty-state">

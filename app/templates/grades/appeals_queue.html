@@ -1,45 +1,31 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_empty_state, azad_table %}
 {% block title %}{{ _('اعتراضات الدرجات') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
 {{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_room.id)}, {'label': _('اعتراضات الدرجات')}]) }}
 
 <h1 class="page-title azad-mb-4">{{ icon('alert-triangle') }} {{ _('اعتراضات الدرجات') }}</h1>
 
-{% if appeals %}
+{% set headers = [
+  {'key': 'student', 'label': _('الطالب')},
+  {'key': 'assignment', 'label': _('الواجب')},
+  {'key': 'mark', 'label': _('الدرجة الحالية')},
+  {'key': 'reason', 'label': _('سبب الاعتراض')},
+  {'key': 'status', 'label': _('الحالة')},
+] %}
+{% set rows = [] %}
+{% for appeal in appeals %}
+  {% set status_cell %}<span class="badge-status badge-{{ 'ok' if appeal.status == 'approved' else ('warn' if appeal.status == 'pending' else 'err') }}">{{ appeal.status }}</span>{% endset %}
+  {% set actions_html %}<a href="{{ url_for('grades.appeal_detail', appeal_id=appeal.id) }}" class="azad-btn-outline azad-btn-sm">{{ _('تفاصيل') }}</a>{% endset %}
+  {% set _ = rows.append({'id': appeal.id, 'cells': {
+    'student': appeal.student.name_ar,
+    'assignment': appeal.submission.assignment.title,
+    'mark': appeal.current_mark,
+    'reason': appeal.reason,
+    'status': status_cell
+  }, 'actions': actions_html}) %}
+{% endfor %}
 <div class="azad-table-container">
-<table class="azad-table">
-  <thead>
-    <tr>
-      <th>{{ _('الطالب') }}</th>
-      <th>{{ _('الواجب') }}</th>
-      <th>{{ _('الدرجة الحالية') }}</th>
-      <th>{{ _('سبب الاعتراض') }}</th>
-      <th>{{ _('الحالة') }}</th>
-      <th>{{ _('الإجراءات') }}</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for appeal in appeals %}
-    <tr>
-      <td>{{ appeal.student.name_ar }}</td>
-      <td>{{ appeal.submission.assignment.title }}</td>
-      <td>{{ appeal.current_mark }}</td>
-      <td>{{ appeal.reason }}</td>
-      <td>
-        <span class="badge-status badge-{{ 'ok' if appeal.status == 'approved' else ('warn' if appeal.status == 'pending' else 'err') }}">
-          {{ appeal.status }}
-        </span>
-      </td>
-      <td class="azad-table__actions-cell">
-        <a href="{{ url_for('grades.appeal_detail', appeal_id=appeal.id) }}" class="azad-btn-outline azad-btn--sm">{{ _('تفاصيل') }}</a>
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile', actions=True, empty_title=_('لا اعتراضات'), empty_description=_('لم يقدم الطلاب أي اعتراضات بعد.'), empty_icon='check-circle') }}
 </div>
-{% else %}
-{{ azad_empty_state(_('لا اعتراضات'), _('لم يقدم الطلاب أي اعتراضات بعد.'), 'check-circle') }}
-{% endif %}
 {% endblock %}

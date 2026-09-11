@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge, azad_table %}
 {% block title %}{{ _('تفضيلات الإشعارات') }}{% endblock %}
 {% block content %}
 {{ azad_breadcrumb([{'label': _('إشعاراتي'), 'href': url_for('notifications.index')}, {'label': _('التفضيلات')}]) }}
@@ -9,36 +9,20 @@
 {% call azad_card(_('اختر أنواع الإشعارات التي تريد تلقيها'), '', 'settings') %}
 <form method="post" action="{{ url_for('notifications.preferences_save') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% set headers = [
+    {'key': 'type', 'label': _('نوع الإشعار')},
+    {'key': 'in_app', 'label': icon('smartphone') ~ ' ' ~ _('في التطبيق'), 'class': 'u-text-center'},
+    {'key': 'email', 'label': icon('mail') ~ ' ' ~ _('البريد الإلكتروني'), 'class': 'u-text-center'},
+  ] %}
+  {% set rows = [] %}
+  {% for ntype, label in notif_types %}
+    {% set pref = prefs_map.get(ntype, {}) %}
+    {% set in_app_cell %}<label class="azad-toggle"><input type="checkbox" name="in_app_{{ ntype }}" {{ 'checked' if pref.get('in_app_enabled', true) }} class="azad-toggle__input"><span class="azad-toggle__track"></span></label>{% endset %}
+    {% set email_cell %}<label class="azad-toggle"><input type="checkbox" name="email_{{ ntype }}" {{ 'checked' if pref.get('email_enabled', true) }} class="azad-toggle__input"><span class="azad-toggle__track"></span></label>{% endset %}
+    {% set _ = rows.append({'id': loop.index, 'cells': {'type': label, 'in_app': in_app_cell, 'email': email_cell}}) %}
+  {% endfor %}
   <div class="u-overflow-x-auto">
-  <table class="azad-table">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('نوع الإشعار') }}</th>
-        <th class="u-text-center" scope="col">{{ icon('smartphone') }} {{ _('في التطبيق') }}</th>
-        <th class="u-text-center" scope="col">{{ icon('mail') }} {{ _('البريد الإلكتروني') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for ntype, label in notif_types %}
-      {% set pref = prefs_map.get(ntype, {}) %}
-      <tr>
-        <td class="u-bold">{{ label }}</td>
-        <td class="u-text-center">
-          <label class="azad-toggle">
-            <input type="checkbox" name="in_app_{{ ntype }}" {{ 'checked' if pref.get('in_app_enabled', true) }} class="azad-toggle__input">
-            <span class="azad-toggle__track"></span>
-          </label>
-        </td>
-        <td class="u-text-center">
-          <label class="azad-toggle">
-            <input type="checkbox" name="email_{{ ntype }}" {{ 'checked' if pref.get('email_enabled', true) }} class="azad-toggle__input">
-            <span class="azad-toggle__track"></span>
-          </label>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {{ azad_table(headers=headers, rows=rows, modifiers='azad-table--card-view-mobile', empty_title=_('لا توجد أنواع إشعارات'), empty_icon='bell') }}
   </div>
   <div class="azad-form-actions">
     <button type="submit" class="azad-btn">{{ icon('save') }} {{ _('حفظ التفضيلات') }}</button>

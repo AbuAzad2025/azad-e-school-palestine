@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('الحضور') }} — {{ class_room.subject.name_ar }}{% endblock %}
 {% block content %}
 <div class="azad-section">
@@ -23,28 +24,14 @@
 
 <form method="post" action="{{ url_for('grades.attendance_save', class_id=class_room.id, date=day.isoformat()) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <table class="azad-table">
-    <thead><tr><th scope="col">{{ _('الطالب') }}</th><th scope="col">{{ _('الحالة') }}</th></tr></thead>
-    <tbody>
-    {% for m in members %}
-      {% set rec = records.get(m.user_id) %}
-      <tr>
-        <td>{{ m.user.name_ar }}</td>
-        <td>
-          {% if can_teach %}
-          <select name="status_{{ m.user_id }}" aria-label="{{ _('حالة حضور') }} {{ m.user.name_ar }}">
-            {% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}
-              <option value="{{ value }}" {% if rec and rec.status == value %}selected{% endif %}>{{ _(label) }}</option>
-            {% endfor %}
-          </select>
-          {% else %}
-            <span class="badge-status badge-{{ 'ok' if rec and rec.status == 'present' else 'warn' }}">{{ rec.status if rec else '—' }}</span>
-          {% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  {% set headers = [{'key': 'student', 'label': _('الطالب')}, {'key': 'status', 'label': _('الحالة')}] %}
+  {% set rows = [] %}
+  {% for m in members %}
+    {% set rec = records.get(m.user_id) %}
+    {% set status_cell %}{% if can_teach %}<select name="status_{{ m.user_id }}" aria-label="{{ _('حالة حضور') }} {{ m.user.name_ar }}">{% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}<option value="{{ value }}" {% if rec and rec.status == value %}selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select>{% else %}<span class="badge-status badge-{{ 'ok' if rec and rec.status == 'present' else 'warn' }}">{{ rec.status if rec else '—' }}</span>{% endif %}{% endset %}
+    {% set _ = rows.append({'id': m.user_id, 'cells': {'student': m.user.name_ar, 'status': status_cell}}) %}
+  {% endfor %}
+  {{ azad_table(headers=headers, rows=rows, modifiers='azad-table--card-view-mobile', empty_title=_('لا يوجد طلاب'), empty_icon='users') }}
   {% if can_teach and members %}
     <div class="form-actions u-flex-row"><button class="azad-btn" type="submit">{{ _('حفظ الحضور') }}</button></div>
   {% endif %}
