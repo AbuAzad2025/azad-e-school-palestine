@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_breadcrumb %}
+{% from "macros/ui.html" import azad_breadcrumb, azad_table %}
 {% block title %}{{ class_room.name or class_room.subject.name_ar }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block breadcrumbs %}
 {{ azad_breadcrumb([
@@ -36,12 +36,10 @@
 {% endif %}
 
 <div class="azad-section"><h2>{{ _('الأعضاء') }}</h2></div>
-<table class="azad-table">
-  <thead><tr><th scope="col">{{ _('الاسم') }}</th><th scope="col">{{ _('الدور') }}</th></tr></thead>
-  <tbody>
-  {% for m in members %}
-    <tr><td>{{ m.user.name_ar }}</td><td>{{ m.user.role }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+{% set member_headers = [{'key': 'name', 'label': _('الاسم')}, {'key': 'role', 'label': _('الدور')}] %}
+{% set member_rows = [] %}
+{% for m in members %}
+  {% set _ = member_rows.append({'id': loop.index, 'cells': {'name': m.user.name_ar, 'role': m.user.role}}) %}
+{% endfor %}
+{{ azad_table(headers=member_headers, rows=member_rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile', empty_title=_('لا يوجد أعضاء'), empty_icon='users') }}
 {% endblock %}

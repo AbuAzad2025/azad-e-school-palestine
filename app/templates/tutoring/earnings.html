@@ -43,46 +43,32 @@
 
 <div class="azad-section azad-mt-6">
   <h2 class="section-title">{{ _('سجل الجلسات') }}</h2>
-  {% if sessions %}
+  {% set headers = [
+    {'key': 'date', 'label': _('التاريخ')},
+    {'key': 'student', 'label': _('الطالب')},
+    {'key': 'subject', 'label': _('المادة')},
+    {'key': 'duration', 'label': _('المدة')},
+    {'key': 'price', 'label': _('السعر')},
+    {'key': 'status', 'label': _('الحالة')},
+    {'key': 'review', 'label': _('التقييم')},
+  ] %}
+  {% set rows = [] %}
+  {% for s in sessions %}
+    {% set status_cell %}<span class="azad-badge azad-badge--{{ {'completed': 'success', 'ended': 'success', 'active': 'info', 'requested': 'warning', 'cancelled': 'danger'}.get(s.status, 'muted') }}">{{ s.status }}</span>{% endset %}
+    {% set price_cell %}<bdi>{{ s.price or 0 }}</bdi> <bdi>{{ s.currency }}</bdi>{% endset %}
+    {% set review_cell %}{% set review = s.reviews|first if s.reviews else none %}{% if review %}<span class="u-text-amber">{{ '★' * review.rating }}</span> ({{ review.rating }}/5){% else %}<span class="text-muted">—</span>{% endif %}{% endset %}
+    {% set _ = rows.append({'id': s.id, 'cells': {
+      'date': s.scheduled_at|azad_datetime if s.scheduled_at else '—',
+      'student': s.student.name_ar,
+      'subject': s.subject,
+      'duration': (s.duration_min or 0) ~ ' ' ~ _('دقيقة'),
+      'price': price_cell,
+      'status': status_cell,
+      'review': review_cell
+    }}) %}
+  {% endfor %}
   <div class="azad-table-container">
-    <table class="azad-table">
-      <thead>
-        <tr>
-          <th scope="col">{{ _('التاريخ') }}</th>
-          <th scope="col">{{ _('الطالب') }}</th>
-          <th scope="col">{{ _('المادة') }}</th>
-          <th scope="col">{{ _('المدة') }}</th>
-          <th scope="col">{{ _('السعر') }}</th>
-          <th scope="col">{{ _('الحالة') }}</th>
-          <th scope="col">{{ _('التقييم') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for s in sessions %}
-        <tr>
-          <td>{{ s.scheduled_at|azad_datetime if s.scheduled_at else '—' }}</td>
-          <td>{{ s.student.name_ar }}</td>
-          <td>{{ s.subject }}</td>
-          <td>{{ s.duration_min or 0 }} {{ _('دقيقة') }}</td>
-          <td><bdi>{{ s.price or 0 }}</bdi> <bdi>{{ s.currency }}</bdi></td>
-          <td>
-            <span class="azad-badge azad-badge--{{ {'completed': 'success', 'ended': 'success', 'active': 'info', 'requested': 'warning', 'cancelled': 'danger'}.get(s.status, 'muted') }}">{{ s.status }}</span>
-          </td>
-          <td>
-            {% set review = s.reviews|first if s.reviews else none %}
-            {% if review %}
-              <span class="u-text-amber">{{ '★' * review.rating }}</span> ({{ review.rating }}/5)
-            {% else %}
-              <span class="text-muted">—</span>
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+  {{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile', empty_title=_('لا توجد جلسات بعد.'), empty_icon='calendar') }}
   </div>
-  {% else %}
-  <div class="empty-state">{{ _('لا توجد جلسات بعد.') }}</div>
-  {% endif %}
 </div>
 {% endblock %}

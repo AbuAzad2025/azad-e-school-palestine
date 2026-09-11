@@ -20,22 +20,23 @@
 {% endif %}
 
 <div class="azad-section"><h2>{{ _('كل المحاولات') }}</h2></div>
-{% if attempts %}
-<table class="azad-table">
-  <thead><tr><th scope="col">{{ _('الطالب') }}</th><th scope="col">{{ _('محاولة') }}</th><th scope="col">{{ _('الدرجة') }}</th><th scope="col">{{ _('الحالة') }}</th><th scope="col"></th></tr></thead>
-  <tbody>
-  {% for a in attempts %}
-    <tr>
-      <td>{{ a.student.name_ar }}</td>
-      <td>{{ a.attempt_no }}</td>
-      <td>{{ a.score or '—' }}</td>
-      <td><span class="badge-status badge-{{ 'ok' if a.status == 'submitted' else 'warn' }}">{{ a.status }}</span></td>
-      <td><a class="azad-btn-outline" href="{{ url_for('assessment.attempt_result', attempt_id=a.id) }}">{{ _('عرض') }}</a></td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<div class="empty-state">{{ _('لا محاولات بعد.') }}</div>
-{% endif %}
+{% from "macros/ui.html" import azad_table %}
+{% set headers = [
+  {'key': 'student', 'label': _('الطالب')},
+  {'key': 'attempt', 'label': _('محاولة')},
+  {'key': 'score', 'label': _('الدرجة')},
+  {'key': 'status', 'label': _('الحالة')},
+] %}
+{% set rows = [] %}
+{% for a in attempts %}
+  {% set status_cell %}<span class="badge-status badge-{{ 'ok' if a.status == 'submitted' else 'warn' }}">{{ a.status }}</span>{% endset %}
+  {% set actions_html %}<a class="azad-btn-outline" href="{{ url_for('assessment.attempt_result', attempt_id=a.id) }}">{{ _('عرض') }}</a>{% endset %}
+  {% set _ = rows.append({'id': a.id, 'cells': {
+    'student': a.student.name_ar,
+    'attempt': a.attempt_no,
+    'score': a.score or '—',
+    'status': status_cell
+  }, 'actions': actions_html}) %}
+{% endfor %}
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile', actions=True, empty_title=_('لا محاولات بعد.'), empty_icon='quiz') }}
 {% endblock %}

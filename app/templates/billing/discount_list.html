@@ -10,48 +10,39 @@
   </div>
 </div>
 
+{% from "macros/ui.html" import azad_table %}
 {% if discounts %}
+{% set headers = [
+  {'key': 'code', 'label': _('الكود')},
+  {'key': 'name', 'label': _('الاسم')},
+  {'key': 'type', 'label': _('النوع')},
+  {'key': 'value', 'label': _('القيمة')},
+  {'key': 'max_uses', 'label': _('الحد الأقصى')},
+  {'key': 'uses', 'label': _('الاستخدامات')},
+  {'key': 'expiry', 'label': _('الانتهاء')},
+  {'key': 'status', 'label': _('الحالة')},
+  {'key': 'created', 'label': _('تاريخ الإنشاء')},
+] %}
+{% set rows = [] %}
+{% for d in discounts %}
+  {% set code_cell %}<code>{{ d.code }}</code>{% endset %}
+  {% set type_cell %}<span class="azad-badge-variant azad-badge-variant--{{ 'info' if d.type == 'percentage' else 'success' }}">{{ _('نسبة') if d.type == 'percentage' else _('مبلغ ثابت') }}</span>{% endset %}
+  {% set value_cell %}{% if d.type == 'percentage' %}{{ d.value }}%{% else %}{{ d.value }} ₪{% endif %}{% endset %}
+  {% set status_cell %}<span class="azad-badge-variant azad-badge-variant--{{ 'success' if d.is_active else 'danger' }}">{{ _('نشط') if d.is_active else _('غير نشط') }}</span>{% endset %}
+  {% set _ = rows.append({'id': d.id, 'cells': {
+    'code': code_cell,
+    'name': d.name,
+    'type': type_cell,
+    'value': value_cell,
+    'max_uses': d.max_uses,
+    'uses': d.used_count ~ ' / ' ~ d.max_uses,
+    'expiry': d.expiry_date.strftime('%Y-%m-%d') if d.expiry_date else '—',
+    'status': status_cell,
+    'created': d.created_at.strftime('%Y-%m-%d %H:%M')
+  }}) %}
+{% endfor %}
 <div class="azad-table-container">
-  <table class="azad-table">
-    <thead>
-      <tr>
-        <th scope="col">{{ _('الكود') }}</th>
-        <th scope="col">{{ _('الاسم') }}</th>
-        <th scope="col">{{ _('النوع') }}</th>
-        <th scope="col">{{ _('القيمة') }}</th>
-        <th scope="col">{{ _('الحد الأقصى') }}</th>
-        <th scope="col">{{ _('الاستخدامات') }}</th>
-        <th scope="col">{{ _('الانتهاء') }}</th>
-        <th scope="col">{{ _('الحالة') }}</th>
-        <th scope="col">{{ _('تاريخ الإنشاء') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for d in discounts %}
-      <tr>
-        <td><code>{{ d.code }}</code></td>
-        <td>{{ d.name }}</td>
-        <td>
-          <span class="azad-badge-variant azad-badge-variant--{{ 'info' if d.type == 'percentage' else 'success' }}">
-            {{ _('نسبة') if d.type == 'percentage' else _('مبلغ ثابت') }}
-          </span>
-        </td>
-        <td>
-          {% if d.type == 'percentage' %}{{ d.value }}%{% else %}{{ d.value }} ₪{% endif %}
-        </td>
-        <td>{{ d.max_uses }}</td>
-        <td>{{ d.used_count }} / {{ d.max_uses }}</td>
-        <td>{{ d.expiry_date.strftime('%Y-%m-%d') if d.expiry_date else '—' }}</td>
-        <td>
-          <span class="azad-badge-variant azad-badge-variant--{{ 'success' if d.is_active else 'danger' }}">
-            {{ _('نشط') if d.is_active else _('غير نشط') }}
-          </span>
-        </td>
-        <td>{{ d.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
 </div>
 {% else %}
 <div class="empty-state">{{ _('لا توجد أكواد خصم بعد.') }} <a href="{{ url_for('billing.discount_create') }}">{{ _('أضف كود خصم جديد') }}</a></div>

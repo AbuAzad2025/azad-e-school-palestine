@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "macros/ui.html" import azad_table %}
 {% block title %}{{ _('إحصائيات الاختبار') }} — {{ quiz.title }}{% endblock %}
 {% block content %}
 <div class="azad-section">
@@ -34,44 +35,35 @@
 <div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('تفاصيل كل سؤال') }}</h2>
   <div class="azad-table-container">
-    <table class="azad-table">
-      <thead>
-        <tr>
-          <th scope="col">{{ _('السؤال') }}</th>
-          <th scope="col">{{ _('نوع') }}</th>
-          <th scope="col">{{ _('الدرجة') }}</th>
-          <th scope="col">{{ _('إجابات') }}</th>
-          <th scope="col">{{ _('صحيحة') }}</th>
-          <th scope="col">{{ _('خاطئة') }}</th>
-          <th scope="col">{{ _('مؤشر الصعوبة') }}</th>
-          <th scope="col">{{ _('مؤشر التمييز') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for qs in stats.question_stats %}
-        <tr>
-          <td>{{ qs.prompt[:80] }}{% if qs.prompt|length > 80 %}...{% endif %}</td>
-          <td><span class="azad-badge">{{ qs.question_id }}</span></td>
-          <td>{{ (quiz.questions | selectattr('id', 'equalto', qs.question_id) | first).mark if (quiz.questions | selectattr('id', 'equalto', qs.question_id) | first) else 0 }}</td>
-          <td>{{ qs.total_answers }}</td>
-          <td class="u-text-green">{{ qs.correct_count }}</td>
-          <td class="u-text-red">{{ qs.wrong_count }}</td>
-          <td>
-            {% set difficulty_cls = 'u-text-green' if qs.difficulty_index > 0.7 else 'u-text-amber' if qs.difficulty_index > 0.3 else 'u-text-red' %}
-            <span class="{{ difficulty_cls }}">{{ (qs.difficulty_index * 100)|round(1) }}%</span>
-          </td>
-          <td>
-            {% if qs.discrimination_index is not none %}
-              {% set discrim_cls = 'u-text-green' if qs.discrimination_index > 0.3 else 'u-text-amber' if qs.discrimination_index > 0 else 'u-text-red' %}
-              <span class="{{ discrim_cls }}">{{ qs.discrimination_index }}</span>
-            {% else %}
-              <span class="text-muted">—</span>
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    {% set headers = [
+      {'key': 'prompt', 'label': _('السؤال')},
+      {'key': 'qid', 'label': _('نوع')},
+      {'key': 'mark', 'label': _('الدرجة')},
+      {'key': 'answers', 'label': _('إجابات')},
+      {'key': 'correct', 'label': _('صحيحة')},
+      {'key': 'wrong', 'label': _('خاطئة')},
+      {'key': 'difficulty', 'label': _('مؤشر الصعوبة')},
+      {'key': 'discrimination', 'label': _('مؤشر التمييز')},
+    ] %}
+    {% set rows = [] %}
+    {% for qs in stats.question_stats %}
+      {% set qid_cell %}<span class="azad-badge">{{ qs.question_id }}</span>{% endset %}
+      {% set correct_cell %}<span class="u-text-green">{{ qs.correct_count }}</span>{% endset %}
+      {% set wrong_cell %}<span class="u-text-red">{{ qs.wrong_count }}</span>{% endset %}
+      {% set difficulty_cell %}{% set difficulty_cls = 'u-text-green' if qs.difficulty_index > 0.7 else 'u-text-amber' if qs.difficulty_index > 0.3 else 'u-text-red' %}<span class="{{ difficulty_cls }}">{{ (qs.difficulty_index * 100)|round(1) }}%</span>{% endset %}
+      {% set discrimination_cell %}{% if qs.discrimination_index is not none %}{% set discrim_cls = 'u-text-green' if qs.discrimination_index > 0.3 else 'u-text-amber' if qs.discrimination_index > 0 else 'u-text-red' %}<span class="{{ discrim_cls }}">{{ qs.discrimination_index }}</span>{% else %}<span class="text-muted">—</span>{% endif %}{% endset %}
+      {% set _ = rows.append({'id': qs.question_id, 'cells': {
+        'prompt': qs.prompt[:80] ~ ('...' if qs.prompt|length > 80 else ''),
+        'qid': qid_cell,
+        'mark': (quiz.questions | selectattr('id', 'equalto', qs.question_id) | first).mark if (quiz.questions | selectattr('id', 'equalto', qs.question_id) | first) else 0,
+        'answers': qs.total_answers,
+        'correct': correct_cell,
+        'wrong': wrong_cell,
+        'difficulty': difficulty_cell,
+        'discrimination': discrimination_cell
+      }}) %}
+    {% endfor %}
+    {{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
   </div>
 </div>
 {% endif %}
