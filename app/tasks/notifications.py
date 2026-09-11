@@ -37,7 +37,7 @@ def dispatch_notification(
     """
     from app.core.logging import get_logger
     from app.extensions import db
-    from app.models.notification import Notification
+    from app.models.communication import Notification
     from app.models.user import User
 
     logger = get_logger("celery.notifications")
@@ -90,7 +90,7 @@ def bulk_dispatch_school_announcement(
     """
     from app.core.logging import get_logger
     from app.extensions import db
-    from app.models.notification import Notification
+    from app.models.communication import Notification
     from app.models.user import User, UserRoleLink
 
     logger = get_logger("celery.notifications")
@@ -98,7 +98,8 @@ def bulk_dispatch_school_announcement(
 
     try:
         # Query users in this school
-        query = User.query.join(UserRoleLink).filter(
+        # explicit onclause — users↔user_role_links have two FKs (user_id, approved_by)
+        query = User.query.join(UserRoleLink, UserRoleLink.user_id == User.id).filter(
             UserRoleLink.school_id == school_id,
             UserRoleLink.is_active == True,  # noqa: E712
         )

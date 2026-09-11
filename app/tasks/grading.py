@@ -22,10 +22,12 @@ def auto_grade_quiz_attempt(
     self,
     attempt_id: int,
 ) -> dict:
-    """Auto-grade a quiz attempt (MCQ + fill-in-the-blank).
+    """Auto-grade a quiz attempt (MCQ + true/false via the shared grader).
 
     Processes all answers in the attempt, calculates the score,
-    and updates the attempt status atomically.
+    and updates the attempt status atomically. Essay/matching questions
+    are left for manual grading (is_correct=None) — same contract as
+    app.services.assessment._grade_answer.
 
     Args:
         attempt_id: The QuizAttempt ID to grade.
@@ -37,6 +39,7 @@ def auto_grade_quiz_attempt(
     from app.core.logging import get_logger
     from app.extensions import db
     from app.models.assessment import Answer, QuizAttempt
+    from app.services.assessment import _grade_answer
 
     logger = get_logger(__name__)
     logger.info("auto_grading_started", attempt_id=attempt_id)
@@ -62,28 +65,12 @@ def auto_grade_quiz_attempt(
                 if question is None or answer.answer is None:
                     continue
 
-                # Grade MCQ
-                if question.question_type in ("mcq", "true_false"):
-                    correct = str(question.correct_answer).strip().lower()
-                    given = str(answer.answer).strip().lower()
-                    answer.is_correct = correct == given
-                    answer.awarded_mark = float(question.marks) if answer.is_correct else 0
-                    if answer.is_correct:
-                        total_score += Decimal(str(question.marks))
-
-                # Grade fill-in-the-blank (exact match, case-insensitive)
-                elif question.question_type == "fill_blank":
-                    correct = str(question.correct_answer).strip().lower()
-                    given = str(answer.answer).strip().lower()
-                    answer.is_correct = correct == given
-                    answer.awarded_mark = float(question.marks) if answer.is_correct else 0
-                    if answer.is_correct:
-                        total_score += Decimal(str(question.marks))
-
-                # Essay — left for manual grading
-                elif question.question_type == "essay":
-                    answer.is_correct = None  # Pending manual grade
-                    answer.awarded_mark = None
+                # تصحيح موحّد مع الخدمة: mcq/true_false آلي، essay/matching يدوي (None)
+                is_correct, awarded = _grade_answer(question, answer.answer)
+                answer.is_correct = is_correct
+                answer.awarded_mark = awarded
+                if awarded:
+                    total_score += Decimal(str(awarded))
 
             # Update attempt score and status
             attempt.score = float(total_score.quantize(Decimal("0.01")))
