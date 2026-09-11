@@ -14,7 +14,7 @@
     {{ azad_stat_card(session_.mode, _('الطريقة'), 'settings', 'var(--azad-teal)') }}
     {{ azad_stat_card(session_.price or '—', _('السعر'), 'cash', 'var(--azad-gold)') }}
 {% set status_badge = '<span class="badge-status badge-' ~ ('ok' if session_.status == 'completed' else 'warn') ~ '">' ~ session_.status ~ '</span>' %}
-    {{ azad_stat_card(status_badge, _('الحالة'), 'flag', 'var(--color-' ~ ('success' if session_.status == 'completed' else 'warning') ~ ')') }}
+    {{ azad_stat_card(status_badge, _('الحالة'), 'flag', 'green' if session_.status == 'completed' else 'gold') }}
     {{ azad_stat_card(session_.video_provider|capitalize if session_.video_provider else 'Jitsi', _('المنصة'), 'video', 'var(--azad-red)') }}
   </div>
 
@@ -52,7 +52,7 @@
     <div class="azad-section"><h2>{{ _('الإجراءات') }}</h2></div>
     <div class="item-actions">
       {% if session_.payment_status != 'approved' %}
-      <form method="post" action="{{ url_for('tutoring.session_pay', session_id=session_.id) }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('tutoring.session_pay', session_id=session_.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn" type="submit">{{ _('تأكيد استلام الدفع (يدوي)') }}</button>
       </form>

@@ -2,7 +2,7 @@
 {% block title %}{{ _('صفوفي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
 <div class="azad-section">
-  <h1 class="page-title azad-title" style="margin:0">{{ _('صفوفي') }}</h1>
+  <h1 class="page-title azad-title u-m-0">{{ _('صفوفي') }}</h1>
   <a class="azad-btn" href="{{ url_for('schools.class_join') }}">+ {{ _('انضمام برمز') }}</a>
 </div>
 {% if memberships %}
@@ -15,7 +15,7 @@
         <span>{{ m.class_room.subject.name_ar }}</span>
         <span>{{ _('الصف') }} {{ m.class_room.grade.grade_level }}</span>
         {% if m.class_room.max_students %}
-        <span class="meta-chip" style="background:{{ 'var(--azad-green)' if m.member_count < m.class_room.max_students else 'var(--azad-red)' }};color:#fff">
+        <span class="meta-chip {{ 'u-bg-green-solid' if m.member_count < m.class_room.max_students else 'u-bg-red-solid' }} u-text-white">
           {{ m.member_count }}/{{ m.class_room.max_students }} {{ _('مقعد') }}
         </span>
         {% endif %}

@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ _('خطط الأسعار') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section u-mt-2">
   <h2 class="azad-section__title">{{ _('خطط الأسعار') }}</h2>
-  <p style="color:var(--muted);text-align:center;max-width:700px;margin:0 auto">
+  <p class="u-center-700-nm u-muted u-text-center">
     {{ _('اختر الخطة التي تناسب احتياجاتك — لا توجد رسوم مخفية') }}
   </p>
 </div>
 
-<div class="pricing" style="margin-top:2rem">
+<div class="pricing u-mt-2">
   {% for plan in plans %}
   <div class="price-card {{ 'price-card--popular' if plan.popular else '' }} l-fade">
     {% if plan.popular %}
@@ -25,16 +25,16 @@
       <li>{{ icon('check') }} {{ feature }}</li>
       {% endfor %}
     </ul>
-    <a href="{{ plan.cta_url }}" class="azad-btn {{ 'azad-btn-primary' if plan.popular else 'azad-btn-outline' }}" style="width:100%;margin-top:1rem">
+    <a href="{{ plan.cta_url }}" class="azad-btn {{ 'azad-btn-primary' if plan.popular else 'azad-btn-outline' }} u-mt-1-w100">
       {{ plan.cta_text }}
     </a>
   </div>
   {% endfor %}
 </div>
 
-<div class="azad-section" style="margin-top:4rem">
+<div class="azad-section u-mt-4">
   <h2 class="azad-section__title">{{ _('الأسئلة الشائعة') }}</h2>
-  <div class="azad-list" style="max-width:800px;margin:0 auto">
+  <div class="azad-list u-center-800-nm">
     <div class="azad-item">
       <div class="item-title">{{ _('هل يمكنني تغيير خطتي لاحقاً؟') }}</div>
       <div class="item-meta">{{ _('نعم، يمكنك الترقية أو خفض الخطة في أي وقت من إعدادات حسابك.') }}</div>
@@ -54,9 +54,9 @@
   </div>
 </div>
 
-<div class="cta l-fade" style="margin-top:4rem">
+<div class="cta l-fade u-mt-4">
   <h2 class="cta__h">{{ _('مستعد للبدء؟') }}</h2>
-  <p style="margin-bottom:1.5rem;opacity:0.9">{{ _('انضم لآلاف الطلاب والمدارس الذين يثقون بأزاد') }}</p>
-  <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg" style="background:#fff;color:var(--azad-navy)">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+  <p class="u-mb-15-op90">{{ _('انضم لآلاف الطلاب والمدارس الذين يثقون بأزاد') }}</p>
+  <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg u-bg-navy-inverse">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
 </div>
 {% endblock %}

@@ -4,8 +4,8 @@
 <div class="azad-section">
   <h1 class="page-title azad-title">{{ _('التسجيلات المعلقة موافقة') }}</h1>
   <div>
-    <form method="get" style="display:inline-flex; gap:.5rem;">
-      <input type="search" name="search" value="{{ search or '' }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" style="width:240px;">
+    <form class="u-inline-flex-gap-05" method="get">
+      <input class="u-w-240" type="search" name="search" value="{{ search or '' }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}">
       <button type="submit" class="azad-btn-outline">{{ icon('search') }} {{ _('بحث') }}</button>
     </form>
   </div>
@@ -28,7 +28,7 @@
       {% for user in pagination.items %}
       <tr>
         <td>
-          <div style="font-weight:600;">{{ user.name_ar or user.email }}</div>
+          <div class="u-bold">{{ user.name_ar or user.email }}</div>
           <div class="meta-chip">{{ user.role.value }}</div>
         </td>
         <td>{{ user.email }}</td>
@@ -39,11 +39,11 @@
         </td>
         <td>
           <div class="item-actions">
-            <form method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" style="display:inline" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
+            <form class="u-inline" method="post" action="{{ url_for('admin.registration_approve', user_id=user.id) }}" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="azad-btn-outline azad-btn-success">{{ icon('check') }} {{ _('قبول') }}</button>
             </form>
-            <form method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" style="display:inline" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
+            <form class="u-inline" method="post" action="{{ url_for('admin.registration_reject', user_id=user.id) }}" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit" class="azad-btn-outline azad-btn-danger">{{ icon('x') }} {{ _('رفض') }}</button>
             </form>
@@ -55,7 +55,7 @@
   </table>
 </div>
 
-<div class="azad-pagination-wrapper" style="margin-top:1.5rem;">
+<div class="azad-pagination-wrapper u-mt-1-5">
   {% if pagination.pages > 1 %}
   <nav class="azad-pagination" aria-label="{{ _('تنقل الصفحات') }}">
     {% if pagination.has_prev %}

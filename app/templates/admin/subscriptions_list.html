@@ -4,7 +4,7 @@
 <div class="azad-section">
   <h1 class="page-title azad-title">{{ _('الاشتراكات') }}</h1>
   <form method="get" class="form-inline">
-    <select name="status" class="azad-field" style="min-width:160px" aria-label="{{ _('تصفية حسب الحالة') }}">
+    <select name="status" class="azad-field u-minw-160" aria-label="{{ _('تصفية حسب الحالة') }}">
       <option value="">{{ _('كل الحالات') }}</option>
       <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>{{ _('معلقة') }}</option>
       <option value="active" {% if status_filter == 'active' %}selected{% endif %}>{{ _('نشطة') }}</option>
@@ -34,7 +34,7 @@
     <div class="item-actions">
       <a class="azad-btn-outline" href="{{ url_for('admin.subscription_detail', sub_id=sub.id) }}">{{ _('تفاصيل') }}</a>
       {% if sub.status == 'active' %}
-      <form method="post" action="{{ url_for('admin.subscription_cancel', sub_id=sub.id) }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('admin.subscription_cancel', sub_id=sub.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn-outline" type="submit" data-confirm="{{ _('هل أنت متأكد من إلغاء الاشتراك؟') }}">{{ _('إلغاء') }}</button>
       </form>

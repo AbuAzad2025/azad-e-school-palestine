@@ -9,12 +9,12 @@
 <p class="page-subtitle">{{ _('أرسل هذا الرمز لولي أمرك لربط حسابك بحسابه') }}</p>
 
 {% call azad_section(_('رمز الربط الخاص بك')) %}
-<div style="text-align:center; padding:2rem; background:var(--bg-secondary); border-radius:var(--radius-lg); margin:1rem 0;">
-    <p style="font-size:0.9em; color:var(--text-muted); margin-bottom:0.5rem;">{{ _('شارك هذا الرمز فقط مع ولي أمرك') }}</p>
-    <div style="font-size:2rem; font-weight:700; letter-spacing:0.3em; color:var(--azad-navy); font-family:monospace;">{{ code }}</div>
-    <p style="font-size:0.8em; color:var(--text-muted); margin-top:0.5rem;">{{ _('الرمز صالح لاستخدام واحد فقط') }}</p>
+<div class="u-empty-box">
+    <p class="u-text-09em u-muted u-mb-0-5">{{ _('شارك هذا الرمز فقط مع ولي أمرك') }}</p>
+    <div class="u-heading-navy">{{ code }}</div>
+    <p class="u-text-08em u-muted u-mt-0-5">{{ _('الرمز صالح لاستخدام واحد فقط') }}</p>
 </div>
-<div style="text-align:center; margin-top:1rem;">
+<div class="u-text-center u-mt-1">
     <a class="azad-btn azad-btn-sm" href="{{ url_for('auth.dashboard') }}">{{ _('العودة للوحة التحكم') }}</a>
     <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.generate_code') }}">{{ _('إنشاء رمز جديد') }}</a>
 </div>

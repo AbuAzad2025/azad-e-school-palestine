@@ -4,9 +4,9 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('لوحة المشرف'), 'href': url_for('admin.dashboard')}, {'label': _('صحة النظام')}]) }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('heart') }} {{ _('صحة النظام') }}</h1>
+<h1 class="page-title u-mb-0sp4">{{ icon('heart') }} {{ _('صحة النظام') }}</h1>
 
-<div class="azad-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:var(--sp-6)">
+<div class="azad-grid u-grid-cards u-mb-sp6">
   {{ azad_stat_card(status.overall|capitalize, _('الحالة العامة'), 'heart', 'var(--azad-green)' if status.overall == 'healthy' else 'var(--azad-gold)' if status.overall == 'degraded' else 'var(--azad-red)') }}
   {% for component, comp_status in status.components.items() %}
   {{ azad_stat_card(comp_status|capitalize, component, 'server', 'var(--azad-green)' if comp_status == 'healthy' else 'var(--azad-red)') }}
@@ -15,7 +15,7 @@
 
 {% if checks %}
 {% call azad_card(_('سجل الفحوصات الأخيرة'), '', 'list') %}
-<div style="overflow-x:auto">
+<div class="u-overflow-x-auto">
 <table class="azad-table">
   <thead>
     <tr>
@@ -32,8 +32,8 @@
       <td>{{ check.component }}</td>
       <td>{{ azad_badge(check.status, 'success' if check.status == 'healthy' else 'danger') }}</td>
       <td>{{ check.checked_at.strftime('%Y-%m-%d %H:%M') if check.checked_at else '—' }}</td>
-      <td style="text-align:center">{{ check.latency_ms or '—' }}</td>
-      <td style="color:var(--muted);font-size:var(--text-sm)">{{ check.message or '—' }}</td>
+      <td class="u-text-center">{{ check.latency_ms or '—' }}</td>
+      <td class="u-muted u-text-sm-t">{{ check.message or '—' }}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -42,7 +42,7 @@
 {% endcall %}
 {% endif %}
 
-<div style="text-align:center;margin-top:var(--sp-4);color:var(--muted);font-size:var(--text-sm)">
+<div class="u-text-center u-mt-sp4 u-muted u-text-sm-t">
   {{ _('يتم التحديث تلقائياً كل 30 ثانية') }}
 </div>
 {% endblock %}

@@ -3,9 +3,9 @@
 {% block content %}
 <h1 class="page-title azad-title">{{ quiz.title }}</h1>
 <div class="stat-grid">
-  <div class="azad-stat-card" style="--stat-accent: var(--azad-blue)"><div class="azad-stat-card__icon">{{ icon('award') }}</div><div><div class="azad-stat-card__value">{{ attempt.score or 0 }}</div><div class="azad-stat-card__label">{{ _('درجتك') }}</div></div></div>
-  <div class="azad-stat-card" style="--stat-accent: var(--azad-teal)"><div class="azad-stat-card__icon">{{ icon('hash') }}</div><div><div class="azad-stat-card__value">{{ attempt.attempt_no }}</div><div class="azad-stat-card__label">{{ _('المحاولة') }}</div></div></div>
-  <div class="azad-stat-card" style="--stat-accent: var(--azad-green)"><div class="azad-stat-card__icon">{{ icon('check') }}</div><div><div class="azad-stat-card__value">{{ _('سُلّم') }}</div><div class="azad-stat-card__label">{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M') if attempt.submitted_at else '—' }}</div></div></div>
+  <div class="azad-stat-card azad-stat-card--blue"><div class="azad-stat-card__icon">{{ icon('award') }}</div><div><div class="azad-stat-card__value">{{ attempt.score or 0 }}</div><div class="azad-stat-card__label">{{ _('درجتك') }}</div></div></div>
+  <div class="azad-stat-card azad-stat-card--teal"><div class="azad-stat-card__icon">{{ icon('hash') }}</div><div><div class="azad-stat-card__value">{{ attempt.attempt_no }}</div><div class="azad-stat-card__label">{{ _('المحاولة') }}</div></div></div>
+  <div class="azad-stat-card azad-stat-card--green"><div class="azad-stat-card__icon">{{ icon('check') }}</div><div><div class="azad-stat-card__value">{{ _('سُلّم') }}</div><div class="azad-stat-card__label">{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M') if attempt.submitted_at else '—' }}</div></div></div>
 </div>
 
 {% if quiz.show_answers_after or is_teacher %}
@@ -13,24 +13,24 @@
   {% for q in quiz.questions %}
   {% set a = answers.get(q.id) %}
   <div class="azad-item">
-    <div style="width:100%">
+    <div class="u-w-full">
       <div class="item-title">{{ loop.index }}. {{ q.prompt }}
         {% if a and a.is_correct is not none %}<span class="badge-status badge-{{ 'ok' if a.is_correct else 'err' }}">{{ _('صحيح') if a.is_correct else _('خطأ') }}</span>{% endif %}
         {% if a and a.is_correct is none and a.answer %}<span class="azad-badge-variant azad-badge-variant--warning">{{ _('بانتظار التصحيح') }}</span>{% endif %}
       </div>
-      <div class="item-meta" style="margin-top:.5rem">
+      <div class="item-meta u-mt-0-5">
         <span>{{ _('درجتك:') }} {{ a.awarded_mark if a and a.awarded_mark is not none else '—' }}/{{ q.mark or 0 }}</span>
         {% if q.type == 'mcq' and q.options %}
           <span>{{ _('الصحيح:') }} {{ q.correct_answer.index|int + 1 }}</span>
         {% endif %}
       </div>
       {% if q.type == 'essay' and a and a.answer %}
-        <div class="card" style="margin-top:.6rem;padding:.8rem"><strong>{{ _('إجابتك:') }}</strong> {{ a.answer.text }}</div>
+        <div class="card u-mt-0-6 u-p-08"><strong>{{ _('إجابتك:') }}</strong> {{ a.answer.text }}</div>
       {% endif %}
       {% if is_teacher and q.type == 'essay' and a and a.answer and a.is_correct is none %}
-        <form method="post" action="{{ url_for('assessment.answer_grade', answer_id=a.id) }}" style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+        <form method="post" action="{{ url_for('assessment.answer_grade', answer_id=a.id) }}" class="u-form-actions">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="number" step="0.5" name="mark" min="0" max="{{ q.mark or 100 }}" placeholder="{{ _('الدرجة') }}" aria-label="{{ _('درجة الإجابة') }}" required style="max-width:120px">
+          <input class="u-maxw-120" type="number" step="0.5" name="mark" min="0" max="{{ q.mark or 100 }}" placeholder="{{ _('الدرجة') }}" aria-label="{{ _('درجة الإجابة') }}" required>
           <button class="azad-btn" type="submit">{{ _('تصحيح') }}</button>
         </form>
       {% endif %}

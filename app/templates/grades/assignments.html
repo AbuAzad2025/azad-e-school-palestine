@@ -3,13 +3,13 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('الواجبات') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('الواجبات') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
   </div>
 </div>
 
 {% if can_teach %}
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form method="post" action="{{ url_for('grades.assignment_create', class_id=class_room.id) }}" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">{{ form.title.label }}{{ form.title() }}{% for e in form.title.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>

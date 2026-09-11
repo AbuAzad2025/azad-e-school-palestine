@@ -3,7 +3,7 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('الدروس') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('الدروس') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }} — {{ class_room.subject.name_ar }}</p>
   </div>
   {% if can_teach %}
@@ -12,11 +12,11 @@
 </div>
 
 {% if can_teach %}
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form method="post" action="{{ url_for('content.unit_create', class_id=class_room.id) }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-      <input type="text" name="title" placeholder="{{ _('عنوان وحدة جديدة...') }}" aria-label="{{ _('عنوان وحدة جديدة') }}" style="flex:1;min-width:200px" required>
+    <div class="u-wrap-gap-075">
+      <input class="u-flex-1-min" type="text" name="title" placeholder="{{ _('عنوان وحدة جديدة...') }}" aria-label="{{ _('عنوان وحدة جديدة') }}" required>
       <button class="azad-btn-outline" type="submit">{{ _('إضافة وحدة') }}</button>
     </div>
   </form>

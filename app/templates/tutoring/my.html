@@ -15,15 +15,15 @@
         <span>{{ r.mode }}</span>
         <span class="badge-status badge-{{ 'ok' if r.status == 'accepted' else ('warn' if r.status == 'pending' else 'err') }}">{{ r.status }}</span>
       </div>
-      {% if r.note %}<p style="font-size:.85rem;color:var(--muted);margin-top:.4rem">{{ r.note }}</p>{% endif %}
+      {% if r.note %}<p class="u-text-sm u-muted u-mt-0-4">{{ r.note }}</p>{% endif %}
     </div>
     {% if r.status == 'pending' %}
     <div class="item-actions">
-      <form method="post" action="{{ url_for('tutoring.respond', req_id=r.id, result='accept') }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('tutoring.respond', req_id=r.id, result='accept') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn" type="submit">{{ _('قبول') }}</button>
       </form>
-      <form method="post" action="{{ url_for('tutoring.respond', req_id=r.id, result='reject') }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('tutoring.respond', req_id=r.id, result='reject') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn-outline" type="submit">{{ _('رفض') }}</button>
       </form>

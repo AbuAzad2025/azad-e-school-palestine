@@ -9,7 +9,7 @@
   </div>
 </div>
 
-<div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="azad-quick-actions u-grid-cards--fit">
   {{ azad_stat_card(earnings.total_earnings, _('إجمالي الأرباح'), 'credit-card', 'var(--azad-green)') }}
   {{ azad_stat_card(earnings.commission_amount, _('عمولة المنصة (20%%)'), 'percent', 'var(--azad-red)') }}
   {{ azad_stat_card(earnings.net_earnings, _('صافي الأرباح'), 'credit-card', 'var(--azad-blue)') }}
@@ -35,7 +35,7 @@
         <small class="azad-field__help">{{ _('الحد الأدنى للسحب: 200₪. المتاح: ') ~ (earnings.withdrawable if earnings.withdrawable else 0) ~ ' ' ~ (session.currency if session else '₪') }}</small>
       </div>
       <div class="form-actions">
-        {{ payout_form.submit(class="azad-btn", style="width:100%") }}
+        {{ payout_form.submit(class="azad-btn u-w100") }}
       </div>
     </form>
   </div>
@@ -66,19 +66,12 @@
           <td>{{ s.duration_min or 0 }} {{ _('دقيقة') }}</td>
           <td><bdi>{{ s.price or 0 }}</bdi> <bdi>{{ s.currency }}</bdi></td>
           <td>
-            {% set status_color = {
-              'completed': 'var(--azad-green)',
-              'ended': 'var(--azad-green)',
-              'active': 'var(--azad-blue)',
-              'requested': 'var(--azad-amber)',
-              'cancelled': 'var(--azad-red)',
-            } %}
-            <span class="azad-badge" style="background:{{ status_color }}">{{ s.status }}</span>
+            <span class="azad-badge azad-badge--{{ {'completed': 'success', 'ended': 'success', 'active': 'info', 'requested': 'warning', 'cancelled': 'danger'}.get(s.status, 'muted') }}">{{ s.status }}</span>
           </td>
           <td>
             {% set review = s.reviews|first if s.reviews else none %}
             {% if review %}
-              <span style="color:var(--azad-amber)">{{ '★' * review.rating }}</span> ({{ review.rating }}/5)
+              <span class="u-text-amber">{{ '★' * review.rating }}</span> ({{ review.rating }}/5)
             {% else %}
               <span class="text-muted">—</span>
             {% endif %}

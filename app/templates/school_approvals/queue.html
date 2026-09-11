@@ -3,7 +3,7 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('قائمة انتظار الموافقة') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('قائمة انتظار الموافقة') }}</h1>
     <p class="page-subtitle">{{ _('طلبات الانضمام المعلقة للمدرسة') }}</p>
   </div>
 </div>
@@ -32,13 +32,13 @@
         <td>{{ link.school.name_ar }}</td>
         <td>{{ link.created_at.strftime('%Y-%m-%d %H:%M') if link.created_at else '—' }}</td>
         <td>
-          <form method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}" style="display:inline">
+          <form class="u-inline" method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="azad-btn azad-btn-success" type="submit" data-confirm="{{ _('هل أنت متأكد من قبول هذا المستخدم؟') }}">
               {{ _('قبول') }}
             </button>
           </form>
-          <form method="post" action="{{ url_for('school_approvals.reject', link_id=link.id) }}" style="display:inline; margin-right:.5rem">
+          <form class="u-inline u-me-0-5" method="post" action="{{ url_for('school_approvals.reject', link_id=link.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="azad-btn azad-btn-danger" type="submit" data-confirm="{{ _('هل أنت متأكد من رفض هذا المستخدم؟') }}">
               {{ _('رفض') }}

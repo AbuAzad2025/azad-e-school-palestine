@@ -3,24 +3,24 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('طرق الدفع المتاحة') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('طرق الدفع المتاحة') }}</h1>
     <p class="page-subtitle">{{ _('اختر طريقة الدفع المناسبة لك') }}</p>
   </div>
 </div>
 
-<div class="azad-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="azad-grid u-grid-cards-300">
   {% for method in methods %}
   <div class="azad-card">
     <div class="card-body">
       <h3 class="card-title">{{ method.name }}</h3>
       <p class="card-text text-muted">{{ _('العملات المدعومة:') }} {{ method.currencies|join(', ') }}</p>
       {% if method.enabled %}
-      <span class="azad-badge" style="background:var(--azad-green)">{{ _('مفعل') }}</span>
+      <span class="azad-badge u-bg-green">{{ _('مفعل') }}</span>
       {% else %}
-      <span class="azad-badge" style="background:var(--azad-gray-500)">{{ _('معطل') }}</span>
+      <span class="azad-badge u-bg-gray-500">{{ _('معطل') }}</span>
       {% endif %}
     </div>
-    <div class="card-footer" style="border-top:1px solid var(--azad-border);padding:1rem;display:flex;gap:.5rem;justify-content:flex-end">
+    <div class="card-footer u-panel-foot">
       <button class="azad-btn" data-select-method="{{ method.id }}">{{ _('اختيار') }}</button>
     </div>
   </div>

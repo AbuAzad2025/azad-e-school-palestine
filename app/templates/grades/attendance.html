@@ -3,18 +3,18 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('الحضور') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('الحضور') }}</h1>
     <p class="page-subtitle">{{ class_room.name or class_room.subject.name_ar }}</p>
   </div>
 </div>
 
-<form method="get" class="card" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
-  <input type="date" name="date" value="{{ day.isoformat() }}" aria-label="{{ _('تاريخ الحضور') }}" style="flex:1;min-width:160px">
+<form method="get" class="card u-wrap-gap-075 u-mb-1">
+  <input class="u-flex-1-160" type="date" name="date" value="{{ day.isoformat() }}" aria-label="{{ _('تاريخ الحضور') }}">
   <button class="azad-btn-outline" type="submit">{{ _('عرض') }}</button>
 </form>
 
 {% if days %}
-<div class="item-meta" style="gap:.5rem;margin-bottom:1rem">
+<div class="item-meta u-gap-0-5 u-mb-1">
   {% for d in days %}
     <a class="meta-chip" href="{{ url_for('grades.attendance', class_id=class_room.id, date=d.isoformat()) }}">{{ d.isoformat() }}</a>
   {% endfor %}
@@ -46,7 +46,7 @@
     </tbody>
   </table>
   {% if can_teach and members %}
-    <div class="form-actions" style="flex-direction:row"><button class="azad-btn" type="submit">{{ _('حفظ الحضور') }}</button></div>
+    <div class="form-actions u-flex-row"><button class="azad-btn" type="submit">{{ _('حفظ الحضور') }}</button></div>
   {% endif %}
 </form>
 {% endblock %}

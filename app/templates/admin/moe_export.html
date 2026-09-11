@@ -4,13 +4,13 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('لوحة التحكم'), 'href': url_for('admin.dashboard')}, {'label': _('تصدير بيانات الوزارة')}]) }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('download') }} {{ _('تصدير بيانات وزارة التربية والتعليم') }}</h1>
+<h1 class="page-title u-mb-0sp4">{{ icon('download') }} {{ _('تصدير بيانات وزارة التربية والتعليم') }}</h1>
 
 {% call azad_card('', '', 'download') %}
-<p style="color:var(--muted);margin-bottom:var(--sp-6)">{{ _('تصدير بيانات الطلاب والدرجات بصيغة متوافقة مع وزارة التربية والتعليم الفلسطينية.') }}</p>
+<p class="u-muted u-mb-sp6">{{ _('تصدير بيانات الطلاب والدرجات بصيغة متوافقة مع وزارة التربية والتعليم الفلسطينية.') }}</p>
 <form method="post" action="{{ url_for('admin.moe_export_download') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div style="display:grid;gap:var(--sp-4);grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:var(--sp-6)">
+  <div class="u-grid-200">
     <div class="azad-field">
       <label class="azad-field__label" for="school_id">{{ _('المدرسة') }}</label>
       <select name="school_id" id="school_id" class="azad-field__input">

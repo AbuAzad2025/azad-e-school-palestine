@@ -4,32 +4,32 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('إشعاراتي'), 'href': url_for('notifications.index')}, {'label': _('التفضيلات')}]) }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('bell') }} {{ _('تفضيلات الإشعارات') }}</h1>
+<h1 class="page-title u-mb-0sp4">{{ icon('bell') }} {{ _('تفضيلات الإشعارات') }}</h1>
 
 {% call azad_card(_('اختر أنواع الإشعارات التي تريد تلقيها'), '', 'settings') %}
 <form method="post" action="{{ url_for('notifications.preferences_save') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div style="overflow-x:auto">
+  <div class="u-overflow-x-auto">
   <table class="azad-table">
     <thead>
       <tr>
         <th scope="col">{{ _('نوع الإشعار') }}</th>
-        <th scope="col" style="text-align:center">{{ icon('smartphone') }} {{ _('في التطبيق') }}</th>
-        <th scope="col" style="text-align:center">{{ icon('mail') }} {{ _('البريد الإلكتروني') }}</th>
+        <th class="u-text-center" scope="col">{{ icon('smartphone') }} {{ _('في التطبيق') }}</th>
+        <th class="u-text-center" scope="col">{{ icon('mail') }} {{ _('البريد الإلكتروني') }}</th>
       </tr>
     </thead>
     <tbody>
       {% for ntype, label in notif_types %}
       {% set pref = prefs_map.get(ntype, {}) %}
       <tr>
-        <td style="font-weight:600">{{ label }}</td>
-        <td style="text-align:center">
+        <td class="u-bold">{{ label }}</td>
+        <td class="u-text-center">
           <label class="azad-toggle">
             <input type="checkbox" name="in_app_{{ ntype }}" {{ 'checked' if pref.get('in_app_enabled', true) }} class="azad-toggle__input">
             <span class="azad-toggle__track"></span>
           </label>
         </td>
-        <td style="text-align:center">
+        <td class="u-text-center">
           <label class="azad-toggle">
             <input type="checkbox" name="email_{{ ntype }}" {{ 'checked' if pref.get('email_enabled', true) }} class="azad-toggle__input">
             <span class="azad-toggle__track"></span>

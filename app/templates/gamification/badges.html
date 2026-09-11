@@ -3,7 +3,7 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('شاراتي وإنجازاتي') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('شاراتي وإنجازاتي') }}</h1>
     <p class="page-subtitle">{{ _('اجمع الشارات بإكمال الأنشطة والتحديات') }}</p>
   </div>
 </div>
@@ -11,15 +11,15 @@
 {% if badges %}
 <div class="azad-section">
   <h2 class="section-title">{{ _('الشارات المكتسبة') }} ({{ badges|length }})</h2>
-  <div class="azad-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+  <div class="azad-grid u-grid-cards">
     {% for sb in badges %}
     <div class="azad-card badge-card">
-      <div class="card-body" style="text-align:center; padding:1.5rem;">
-        <div class="badge-icon" style="font-size:3rem; margin-bottom:0.5rem; color:var(--azad-amber);">{{ icon(sb.badge.icon_name) }}</div>
-        <h3 class="card-title" style="margin:0.5rem 0;">{{ sb.badge.name }}</h3>
-        <p class="card-text text-muted" style="font-size:0.85rem;">{{ sb.badge.description }}</p>
-        <div class="item-meta" style="margin-top:0.5rem;">
-          <span class="azad-badge" style="background:var(--azad-amber);">{{ sb.earned_at.strftime('%Y-%m-%d') }}</span>
+      <div class="card-body u-text-center u-p-15">
+        <div class="badge-icon u-display-3 u-mb-0-5 u-text-amber">{{ icon(sb.badge.icon_name) }}</div>
+        <h3 class="card-title u-my-0-5">{{ sb.badge.name }}</h3>
+        <p class="card-text text-muted u-text-sm">{{ sb.badge.description }}</p>
+        <div class="item-meta u-mt-0-5">
+          <span class="azad-badge u-bg-amber">{{ sb.earned_at.strftime('%Y-%m-%d') }}</span>
         </div>
       </div>
     </div>
@@ -33,18 +33,18 @@
 </div>
 {% endif %}
 
-<div class="azad-section" style="margin-top:2rem;">
+<div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('شارات متاحة للكسب') }}</h2>
-  <div class="azad-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+  <div class="azad-grid u-grid-cards">
     {% set earned_ids = badges | map(attribute='badge.id') | list %}
     {% for badge in all_badges if badge.id not in earned_ids %}
     <div class="azad-card badge-card locked">
-      <div class="card-body" style="text-align:center; padding:1.5rem; opacity:0.6;">
-        <div class="badge-icon" style="font-size:3rem; margin-bottom:0.5rem; color:var(--azad-gray-400);">{{ icon(badge.icon_name) }}</div>
-        <h3 class="card-title" style="margin:0.5rem 0;">{{ badge.name }}</h3>
-        <p class="card-text text-muted" style="font-size:0.85rem;">{{ badge.description }}</p>
-        <div class="item-meta" style="margin-top:0.5rem;">
-          <span class="azad-badge" style="background:var(--azad-gray-400);">{{ _('مقفل') }}</span>
+      <div class="card-body u-text-center u-p-15 u-op-60">
+        <div class="badge-icon u-display-3 u-mb-0-5 u-text-gray-400">{{ icon(badge.icon_name) }}</div>
+        <h3 class="card-title u-my-0-5">{{ badge.name }}</h3>
+        <p class="card-text text-muted u-text-sm">{{ badge.description }}</p>
+        <div class="item-meta u-mt-0-5">
+          <span class="azad-badge u-bg-gray-400">{{ _('مقفل') }}</span>
         </div>
       </div>
     </div>

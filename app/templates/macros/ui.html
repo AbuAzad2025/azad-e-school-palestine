@@ -4,11 +4,22 @@
 ═══════════════════════════════════════════ #}
 
 {# ─── Stat Card ─── #}
+{# Map any legacy token / semantic token / raw name to a variant class so HTML stays free of style attributes. #}
+{% set _stat_variant_map = {
+  'var(--azad-navy)': 'navy', 'var(--azad-blue)': 'blue', 'var(--azad-green)': 'green',
+  'var(--azad-gold)': 'gold', 'var(--azad-red)': 'red', 'var(--azad-teal)': 'teal',
+  'var(--color-info)': 'blue', 'var(--color-success)': 'green',
+  'var(--color-warning)': 'gold', 'var(--color-danger)': 'red',
+  'var(--azad-amber)': 'gold', 'var(--azad-purple)': 'teal', 'var(--azad-indigo)': 'blue',
+  'var(--text-muted)': 'navy', 'var(--muted)': 'navy',
+} %}
+{% macro _stat_variant(color) %}{{ _stat_variant_map.get(color, color if color in ('navy', 'blue', 'green', 'gold', 'red', 'teal') else 'blue') }}{% endmacro %}
 {% macro azad_stat_card(value, label, icon_name='', color='var(--azad-blue)', href='', sparkline='') %}
+{% set _v = _stat_variant(color) %}
 {% if href %}
-<a href="{{ href }}" class="azad-stat-card azad-stat-card--link" style="--stat-accent: {{ color }}">
+<a href="{{ href }}" class="azad-stat-card azad-stat-card--link azad-stat-card--{{ _v }}">
 {% else %}
-<div class="azad-stat-card" style="--stat-accent: {{ color }}">
+<div class="azad-stat-card azad-stat-card--{{ _v }}">
 {% endif %}
   <div class="azad-stat-card__icon">
     {% if icon_name %}{{ icon(icon_name) }}{% endif %}
@@ -92,7 +103,7 @@
 {% macro azad_quick_actions(actions) %}
 <div class="azad-actions-grid">
   {% for action in actions %}
-  <a href="{{ action.href }}" class="azad-action-card" style="--action-color: {{ action.color|default('var(--azad-blue)') }}">
+  <a href="{{ action.href }}" class="azad-action-card azad-action-card--{{ action.variant | default('blue') }}">
     <div class="azad-action-card__icon">{{ icon(action.icon) }}</div>
     <div class="azad-action-card__label">{{ action.label }}</div>
     {% if action.count is defined %}

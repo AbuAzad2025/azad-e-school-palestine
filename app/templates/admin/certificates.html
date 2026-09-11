@@ -4,16 +4,16 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('لوحة التحكم'), 'href': url_for('admin.dashboard')}, {'label': _('قوالب الشهادات')}]) }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('award') }} {{ _('قوالب الشهادات') }}</h1>
+<h1 class="page-title u-mb-0sp4">{{ icon('award') }} {{ _('قوالب الشهادات') }}</h1>
 
 {% call azad_card('', '', 'award') %}
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-4)">
-  <p style="color:var(--muted);margin:0">{{ _('إدارة قوالب شهادات الإتمام والتوجيهي.') }}</p>
+<div class="u-between-mb-sp4">
+  <p class="u-muted u-m-0">{{ _('إدارة قوالب شهادات الإتمام والتوجيهي.') }}</p>
   {{ azad_badge(_('قريباً'), 'warning') }}
 </div>
 
 {% if templates %}
-<div style="overflow-x:auto">
+<div class="u-overflow-x-auto">
 <table class="azad-table">
   <thead>
     <tr>
@@ -26,10 +26,10 @@
   <tbody>
     {% for t in templates %}
     <tr>
-      <td style="font-weight:600">{{ t.name }}</td>
+      <td class="u-bold">{{ t.name }}</td>
       <td>{{ t.school.name_ar if t.school else _('عام') }}</td>
       <td>{{ azad_badge(_('نشط') if t.is_active else _('معطّل'), 'success' if t.is_active else 'muted') }}</td>
-      <td><span style="color:var(--muted);font-size:var(--text-sm)">{{ _('قريباً') }}</span></td>
+      <td><span class="u-muted u-text-sm-t">{{ _('قريباً') }}</span></td>
     </tr>
     {% endfor %}
   </tbody>

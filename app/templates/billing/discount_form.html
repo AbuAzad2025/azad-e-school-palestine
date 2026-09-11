@@ -5,7 +5,7 @@
   <h2 class="azad-section__title">{{ icon('tag') }} {{ _('كود خصم جديد') }}</h2>
 </div>
 
-<div class="card" style="max-width:600px">
+<div class="card u-maxw-600">
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">
@@ -22,14 +22,14 @@
       <ul class="form-errors"><li>{{ error }}</li></ul>
       {% endfor %}
     </div>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
+    <div class="u-flex-wrap-gap">
+      <div class="u-flex-1-min">
         <div class="azad-field">
           {{ form.type.label(class="azad-field__label") }}
           {{ form.type(class="azad-field__select") }}
         </div>
       </div>
-      <div style="flex:1;min-width:200px">
+      <div class="u-flex-1-min">
         <div class="azad-field">
           {{ form.value.label(class="azad-field__label") }}
           {{ form.value(class="azad-field__input", placeholder=_("مثال: 20 للنسبة، 50 للمبلغ")) }}
@@ -39,14 +39,14 @@
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
+    <div class="u-flex-wrap-gap">
+      <div class="u-flex-1-min">
         <div class="azad-field">
           {{ form.max_uses.label(class="azad-field__label") }}
           {{ form.max_uses(class="azad-field__input") }}
         </div>
       </div>
-      <div style="flex:1;min-width:200px">
+      <div class="u-flex-1-min">
         <div class="azad-field">
           {{ form.expiry_date.label(class="azad-field__label") }}
           {{ form.expiry_date(class="azad-field__input") }}

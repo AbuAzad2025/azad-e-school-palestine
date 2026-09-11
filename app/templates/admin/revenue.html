@@ -4,12 +4,12 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('لوحة الإيرادات') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('لوحة الإيرادات') }}</h1>
     <p class="page-subtitle">{{ _('تتبع إيرادات المنصة وتحليل الأداء') }}</p>
   </div>
-  <form method="get" style="display:flex;gap:.5rem;align-items:end">
+  <form method="get" class="u-flex-gap-05 u-items-end">
     <label class="form-label">{{ _('الفترة') }}</label>
-    <select name="days" data-auto-submit class="form-select" style="width:auto">
+    <select name="days" data-auto-submit class="form-select u-w-auto">
       <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
       <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوم') }}</option>
       <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوم') }}</option>
@@ -19,29 +19,29 @@
 </div>
 
 {% set s = data.summary %}
-<div class="azad-quick-actions" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="azad-quick-actions u-grid-cards--fit">
   {{ azad_stat_card(s.total_revenue ~ ' ' ~ s.currency, _('إجمالي الإيرادات'), 'credit-card', 'var(--azad-green)') }}
   {{ azad_stat_card(s.transaction_count, _('عدد المعاملات'), 'shopping-cart', 'var(--azad-blue)') }}
   {{ azad_stat_card(data.growth_rate ~ '%', _('معدل النمو'), 'trending-up', 'var(--azad-amber)' if data.growth_rate >= 0 else 'var(--azad-red)') }}
 </div>
 
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('الإيرادات حسب بوابة الدفع') }}</h2>
   <canvas id="gatewayChart" height="250"></canvas>
 </div>
 
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('أعلى 10 مدارس من حيث الإيرادات') }}</h2>
   <canvas id="schoolChart" height="300"></canvas>
 </div>
 
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('الاتجاه الشهري للإيرادات') }}</h2>
   <canvas id="trendChart" height="300"></canvas>
 </div>
 
 {% if data.by_school %}
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('تفاصيل الإيرادات حسب المدرسة') }}</h2>
   <div class="azad-table-container">
     <table class="azad-table">

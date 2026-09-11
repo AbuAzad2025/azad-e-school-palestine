@@ -15,11 +15,11 @@
       </div>
     </div>
     <div class="item-actions">
-      <form method="post" action="{{ url_for('billing.review', payment_id=p.id, result='approve') }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('billing.review', payment_id=p.id, result='approve') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn" type="submit">{{ _('اعتماد') }}</button>
       </form>
-      <form method="post" action="{{ url_for('billing.review', payment_id=p.id, result='reject') }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('billing.review', payment_id=p.id, result='reject') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn-outline" type="submit">{{ _('رفض') }}</button>
       </form>

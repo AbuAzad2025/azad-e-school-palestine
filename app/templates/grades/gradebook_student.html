@@ -18,7 +18,7 @@
     </div>
     <div>
       <strong>{{ e.mark if e and e.mark is not none else '—' }}</strong>
-      {% if item.max_mark %}<small style="color:var(--muted)">/ {{ item.max_mark }}</small>{% endif %}
+      {% if item.max_mark %}<small class="u-muted">/ {{ item.max_mark }}</small>{% endif %}
     </div>
   </div>
   {% endfor %}

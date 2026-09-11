@@ -34,17 +34,17 @@
 <div class="card">
   <form method="post" action="{{ url_for('schools.grade_add', school_id=school.id) }}" novalidate>
     {{ grade_form.hidden_tag() }}
-    <div style="display:flex;gap:1rem;flex-wrap:wrap">
-      <div class="azad-field" style="flex:1;min-width:120px">
+    <div class="u-flex-wrap-gap">
+      <div class="azad-field u-flex-1-120">
         {{ grade_form.grade_level.label }}
         {{ grade_form.grade_level() }}
         {% for e in grade_form.grade_level.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
       </div>
-      <div class="azad-field" style="flex:2;min-width:200px">
+      <div class="azad-field u-flex-2-200">
         {{ grade_form.name_ar.label }}
         {{ grade_form.name_ar() }}
       </div>
-      <div class="azad-field" style="align-self:end">{{ grade_form.submit(class="azad-btn") }}</div>
+      <div class="azad-field u-self-end">{{ grade_form.submit(class="azad-btn") }}</div>
     </div>
   </form>
 </div>

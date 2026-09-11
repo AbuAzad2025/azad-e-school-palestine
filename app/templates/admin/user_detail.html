@@ -6,7 +6,7 @@
   <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('رجوع') }}</a>
 </div>
 
-<div class="card" style="margin-bottom: 1.5rem;">
+<div class="card u-mb-1-5">
   <div class="azad-section">
     <h2>{{ _('معلومات الحساب') }}</h2>
   </div>
@@ -38,7 +38,7 @@
   </div>
 </div>
 
-<div class="card" style="margin-top: 1.5rem;">
+<div class="card u-mt-1-5">
   <div class="azad-section">
     <h2>{{ _('عضويات المدارس') }}</h2>
   </div>
@@ -64,19 +64,19 @@
   {% endif %}
 </div>
 
-<div class="card" style="margin-top: 1.5rem;">
+<div class="card u-mt-1-5">
   <div class="azad-section">
     <h2>{{ _('الإجراءات') }}</h2>
   </div>
-  <div class="item-actions" style="gap: 0.75rem; flex-wrap: wrap;">
-    <form method="post" action="{{ url_for('admin.user_toggle', user_id=user.id) }}" style="display:inline">
+  <div class="item-actions u-wrap-gap-075">
+    <form class="u-inline" method="post" action="{{ url_for('admin.user_toggle', user_id=user.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="azad-btn-{{ 'outline' if user.is_active else 'btn' }}" type="submit">
         {{ _('تعطيل') if user.is_active else _('تفعيل') }}
       </button>
     </form>
     {% if user.role.value != 'super_admin' and user.id != current_user.id %}
-    <form method="post" action="{{ url_for('admin.user_impersonate', user_id=user.id) }}" style="display:inline">
+    <form class="u-inline" method="post" action="{{ url_for('admin.user_impersonate', user_id=user.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="azad-btn" type="submit">{{ _('انتحال الصفة') }}</button>
     </form>

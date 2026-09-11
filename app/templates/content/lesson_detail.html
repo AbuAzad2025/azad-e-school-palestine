@@ -12,7 +12,7 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ lesson.title }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ lesson.title }}</h1>
     <p class="page-subtitle">
       {{ class_room.subject.name_ar }}
       <span class="badge-status badge-{{ 'ok' if lesson.status == 'published' else 'warn' }}">{{ lesson.status }}</span>
@@ -27,7 +27,7 @@
 </div>
 
 {% if lesson.body_html %}
-  <div class="card" style="margin-bottom:1rem">{{ lesson.body_html | e }}</div>
+  <div class="card u-mb-1">{{ lesson.body_html | e }}</div>
 {% endif %}
 
 <div class="azad-section"><h2>{{ _('المرفقات') }}</h2></div>
@@ -48,7 +48,7 @@
     </div>
     {% if can_teach and att.stored_name %}
     <div class="item-actions">
-      <form method="post" action="{{ url_for('content.attachment_delete', att_id=att.id) }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('content.attachment_delete', att_id=att.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn-outline" type="submit">{{ _('حذف') }}</button>
       </form>
@@ -56,11 +56,11 @@
     {% endif %}
     {% if not can_teach and att.stored_name %}
     <div class="item-actions">
-      <form method="post" action="{{ url_for('content.mark_offline') }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('content.mark_offline') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="attachment_id" value="{{ att.id }}">
         <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
-        <button type="submit" class="azad-btn-outline" style="font-size:var(--text-sm)" aria-label="{{ _('تحميل بدون إنترنت') }}">{{ icon('download') }}</button>
+        <button type="submit" class="azad-btn-outline u-text-sm-t" aria-label="{{ _('تحميل بدون إنترنت') }}">{{ icon('download') }}</button>
       </form>
     </div>
     {% endif %}
@@ -73,7 +73,7 @@
 
 {% if can_teach %}
 <div class="azad-section"><h2>{{ _('رفع مرفق') }}</h2></div>
-<div class="card" style="margin-bottom:1rem">
+<div class="card u-mb-1">
   <form method="post" action="{{ url_for('content.attachment_upload', class_id=class_room.id, lesson_id=lesson.id) }}" enctype="multipart/form-data" novalidate>
     {{ att_form.hidden_tag() }}
     <div class="azad-field">{{ att_form.file.label }}{{ att_form.file() }}{% for e in att_form.file.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>

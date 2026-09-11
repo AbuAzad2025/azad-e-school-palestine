@@ -5,19 +5,19 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_id)}, {'label': _('منشئ المعايير')}]) }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ _('منشئ معايير التقييم') }}</h1>
+<h1 class="page-title u-mb-0sp4">{{ _('منشئ معايير التقييم') }}</h1>
 
 {% call azad_card(_('إنشاء قالب تقييم'), '', 'edit') %}
 <form method="post" action="{{ url_for('grades.rubric_create', class_id=class_id) }}" id="rubric-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <div style="display:flex;gap:var(--sp-4);flex-wrap:wrap;margin-bottom:var(--sp-6)">
-    <div style="flex:2;min-width:200px">
+  <div class="u-panel-gapsp4">
+    <div class="u-flex-2-200">
       <div class="azad-field">
         <label class="azad-field__label" for="title">{{ _('اسم القالب') }}</label>
         <input type="text" name="title" id="title" class="azad-field__input" required placeholder="{{ _('مثال: تقييم المقال') }}">
       </div>
     </div>
-    <div style="flex:1;min-width:200px">
+    <div class="u-flex-1-min">
       <div class="azad-field">
         <label class="azad-field__label" for="description">{{ _('الوصف') }}</label>
         <input type="text" name="description" id="description" class="azad-field__input" placeholder="{{ _('وصف مختصر (اختياري)') }}">
@@ -25,33 +25,33 @@
     </div>
   </div>
 
-  <h2 style="margin-bottom:var(--sp-3)">{{ icon('list') }} {{ _('معايير التقييم') }}</h2>
+  <h2 class="u-mb-sp3">{{ icon('list') }} {{ _('معايير التقييم') }}</h2>
   <div id="criteria-container">
-    <div class="rubric-criteria-row" data-index="0" style="display:flex;gap:var(--sp-3);margin-bottom:var(--sp-3);flex-wrap:wrap;align-items:end;padding:var(--sp-3);background:var(--azad-slate);border-radius:var(--radius-lg)">
-      <div style="flex:3;min-width:160px">
+    <div class="rubric-criteria-row u-slate-row" data-index="0">
+      <div class="u-flex-3-160">
         <label class="azad-field__label">{{ _('عنوان المعيار') }}</label>
         <input type="text" name="criteria[0][title]" class="azad-field__input" required placeholder="{{ _('مثال: المحتوى') }}">
       </div>
-      <div style="flex:2;min-width:140px">
+      <div class="u-flex-2-140">
         <label class="azad-field__label">{{ _('الوصف') }}</label>
         <input type="text" name="criteria[0][description]" class="azad-field__input" placeholder="{{ _('وصف المعيار') }}">
       </div>
-      <div style="flex:1;min-width:80px">
+      <div class="u-flex-1-80">
         <label class="azad-field__label">{{ _('الدرجة القصوى') }}</label>
         <input type="number" name="criteria[0][max_score]" class="azad-field__input" min="1" max="100" required value="25">
       </div>
-      <div style="flex:0">
-        <button type="button" class="azad-btn-outline remove-criteria" style="color:var(--azad-red)" aria-label="{{ _('حذف') }}">{{ icon('trash') }}</button>
+      <div class="u-flex-none">
+        <button type="button" class="azad-btn-outline remove-criteria u-text-red" aria-label="{{ _('حذف') }}">{{ icon('trash') }}</button>
       </div>
     </div>
   </div>
 
-  <div style="display:flex;align-items:center;gap:var(--sp-4);margin:var(--sp-4) 0">
+  <div class="u-tour-row">
     <button type="button" class="azad-btn-outline" id="add-criteria">{{ icon('plus') }} {{ _('إضافة معيار') }}</button>
-    <div style="margin-inline-start:auto;display:flex;align-items:center;gap:var(--sp-2)">
-      <span class="azad-field__label" style="margin:0">{{ _('المجموع') }}:</span>
+    <div class="u-ms-auto-inline">
+      <span class="azad-field__label u-m-0">{{ _('المجموع') }}:</span>
       <span id="weight-sum" class="azad-badge-variant azad-badge-variant--info">0</span>
-      <span style="color:var(--muted)">/ 100</span>
+      <span class="u-muted">/ 100</span>
     </div>
   </div>
 
@@ -63,13 +63,13 @@
 {% endcall %}
 
 {% if templates %}
-<h2 style="margin:var(--sp-6) 0 var(--sp-3)">{{ icon('folder') }} {{ _('القوالب المحفوظة') }}</h2>
-<div style="display:grid;gap:var(--sp-4);grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+<h2 class="u-m-sp6-0-sp3">{{ icon('folder') }} {{ _('القوالب المحفوظة') }}</h2>
+<div class="u-cards-280">
   {% for t in templates %}
   {% call azad_card(t.title, t.description or '', 'file-text') %}
-    <div style="margin-bottom:var(--sp-3)">
+    <div class="u-mb-sp3">
       {% for c in t.criteria %}
-      <div style="display:flex;justify-content:space-between;padding:var(--sp-2) 0;border-bottom:1px solid var(--border, #e2e8f0)">
+      <div class="u-list-row">
         <span>{{ c.title }}</span>
         <span class="azad-badge-variant azad-badge-variant--info">{{ c.max_score }}</span>
       </div>

@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ _('تواصل معنا') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="azad-section" style="margin-top:2rem">
+<div class="azad-section u-mt-2">
   <h2 class="azad-section__title">{{ _('تواصل معنا') }}</h2>
-  <p style="color:var(--muted);text-align:center;max-width:700px;margin:0 auto">
+  <p class="u-center-700-nm u-muted u-text-center">
     {{ _('نحن هنا للمساعدة. املأ النموذج وسنرد عليك في أقرب وقت ممكن.') }}
   </p>
 </div>
 
-<div class="card" style="max-width:700px;margin:2rem auto;padding:2rem">
+<div class="card u-center-700-p2">
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">
@@ -47,19 +47,19 @@
       {% endfor %}
     </div>
     <div class="form-actions">
-      {{ form.submit(class="azad-btn", style="width:100%") }}
+      {{ form.submit(class="azad-btn u-w100") }}
     </div>
   </form>
 </div>
 
-<div class="azad-section" style="margin-top:3rem;text-align:center">
+<div class="azad-section u-mt-3 u-text-center">
   <h2 class="azad-section__title">{{ _('طرق التواصل الأخرى') }}</h2>
-  <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem">
-    <a href="mailto:info@azad-school.ps" class="azad-btn-outline" style="display:flex;align-items:center;gap:.5rem">
+  <div class="u-center-2r">
+    <a href="mailto:info@azad-school.ps" class="azad-btn-outline u-flex u-items-center u-gap-0-5">
       {{ icon('mail') }} {{ _('بريد إلكتروني') }}
     </a>
     {% if config.WHATSAPP_BUSINESS_NUMBER %}
-    <a href="https://wa.me/{{ config.WHATSAPP_BUSINESS_NUMBER }}?text={{ _('مرحباً، أحتاج مساعدة') | urlencode }}" target="_blank" rel="noopener" class="azad-btn-outline" style="display:flex;align-items:center;gap:.5rem;background:#25D366;border-color:#25D366;color:#fff">
+    <a href="https://wa.me/{{ config.WHATSAPP_BUSINESS_NUMBER }}?text={{ _('مرحباً، أحتاج مساعدة') | urlencode }}" target="_blank" rel="noopener" class="azad-btn-outline u-wa-btn">
       {{ icon('message-circle') }} {{ _('واتساب') }}
     </a>
     {% endif %}

@@ -3,12 +3,12 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ _('تقييم الجلسة') }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ _('تقييم الجلسة') }}</h1>
     <p class="page-subtitle">{{ session.subject }} — {{ _('مع') }} {{ session.tutor.name_ar }}</p>
   </div>
 </div>
 
-<div class="azad-card" style="max-width: 600px;">
+<div class="azad-card u-maxw-600">
   <div class="card-header">
     <h3 class="card-title">{{ _('تقييمك مهم') }}</h3>
   </div>
@@ -29,7 +29,7 @@
 
       <div class="azad-field">
         <label for="comment" class="form-label">{{ _('تعليق (اختياري)') }}</label>
-        <textarea id="comment" name="comment" rows="4" placeholder="{{ _('اكتب تعليقك هنا...') }}" style="width:100%"></textarea>
+        <textarea class="u-w-full" id="comment" name="comment" rows="4" placeholder="{{ _('اكتب تعليقك هنا...') }}"></textarea>
       </div>
 
       <div class="form-actions">

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="azad-section">
   <div>
-    <h1 class="page-title azad-title" style="margin:0">{{ quiz.title }}</h1>
+    <h1 class="page-title azad-title u-m-0">{{ quiz.title }}</h1>
     <p class="page-subtitle">{{ class_room.subject.name_ar }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
   </div>
 </div>
@@ -20,7 +20,7 @@
       </div>
     </div>
     <div class="item-actions">
-      <form method="post" action="{{ url_for('assessment.question_delete', question_id=q.id) }}" style="display:inline">
+      <form class="u-inline" method="post" action="{{ url_for('assessment.question_delete', question_id=q.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="azad-btn-outline" type="submit">{{ _('حذف') }}</button>
       </form>
@@ -49,7 +49,7 @@
       {% endfor %}
       <div class="azad-field">{{ form.correct_index.label }}{{ form.correct_index() }}</div>
     </div>
-    <div data-qtype="true_false" style="display:none">
+    <div class="u-none" data-qtype="true_false">
       <div class="azad-field">{{ form.correct_tf.label }}{{ form.correct_tf() }}</div>
     </div>
 
@@ -58,30 +58,30 @@
 </div>
 
 <!-- AI Question Generation Form -->
-<div class="card" style="margin-top:1.5rem;border:1px solid var(--azad-navy);border-radius:var(--radius);background:var(--azad-navy);color:#fff;padding:1rem">
-  <h3 style="margin:0 0 .5rem 0;color:#fff;font-size:1rem;">{{ _('توليد أسئلة بواسطة AI') }}</h3>
+<div class="card u-callout-navy-solid">
+  <h3 class="u-heading-inverse">{{ _('توليد أسئلة بواسطة AI') }}</h3>
   <form method="post" action="{{ url_for('assessment.ai_generate_questions') }}" class="ai-generate-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="text" name="topic" placeholder="{{ _('موضوع الأسئلة') }}" aria-label="{{ _('موضوع الأسئلة') }}" style="width:100%;padding:.5rem;font-size:.9rem;margin-bottom:.5rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
-    <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
-      <select name="count" aria-label="{{ _('عدد الأسئلة') }}" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+    <input class="u-filter-navy" type="text" name="topic" placeholder="{{ _('موضوع الأسئلة') }}" aria-label="{{ _('موضوع الأسئلة') }}">
+    <div class="u-flex u-gap-0-5 u-mb-0-5">
+      <select class="u-field--navy" name="count" aria-label="{{ _('عدد الأسئلة') }}">
         <option value="3">{{ _('3 أسئلة') }}</option>
         <option value="5" selected>{{ _('5 أسئلة') }}</option>
         <option value="10">{{ _('10 أسئلة') }}</option>
       </select>
-      <select name="question_types" multiple="multiple" aria-label="{{ _('أنواع الأسئلة') }}" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+      <select class="u-field--navy" name="question_types" multiple="multiple" aria-label="{{ _('أنواع الأسئلة') }}">
         <option value="mcq">MCQ</option>
         <option value="true_false">True/False</option>
         <option value="essay">Essay</option>
       </select>
     </div>
-    <select name="difficulty" aria-label="{{ _('مستوى الصعوبة') }}" style="flex:1;padding:.3rem;font-size:.9rem;border:1px solid var(--azad-navy);background:var(--azad-navy);color:#fff">
+    <select class="u-field--navy" name="difficulty" aria-label="{{ _('مستوى الصعوبة') }}">
       <option value="medium">{{ _('متوسط') }}</option>
       <option value="easy">{{ _('سهل') }}</option>
       <option value="hard">{{ _('صعب') }}</option>
     </select>
     <button class="azad-btn-outline" type="submit">{{ _('توليد') }}</button>
-    <small style="margin-top:.5rem;display:block;opacity:.8">{{ _('سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد') }}</small>
+    <small class="u-mt-0-5 u-block u-op-80">{{ _('سيقوم الذكاء الاصطناعي بإنشاء أسئلة بناءً على الموضوع المحدد') }}</small>
   </form>
 </div>
 {% endblock %}

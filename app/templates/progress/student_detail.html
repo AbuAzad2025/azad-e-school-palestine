@@ -20,8 +20,8 @@
             </div>
         </div>
         <div class="item-actions">
-            <div class="progress-bar" style="width:100px; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
-                <div style="width:{{ item.progress_pct }}%; height:100%; background:{% if item.status == 'completed' %}var(--azad-green){% elif item.status == 'in_progress' %}var(--azad-blue){% else %}var(--text-muted){% endif %}; border-radius:4px;"></div>
+            <div class="meter">
+                <i class="mf-{{ (item.progress_pct // 5 * 5) if item.progress_pct < 100 else 100 }} {{ 'mf-green' if item.status == 'completed' else 'mf-blue' if item.status == 'in_progress' else 'mf-muted' }}"></i>
             </div>
             <span class="meta-chip">{{ item.progress_pct }}%</span>
         </div>

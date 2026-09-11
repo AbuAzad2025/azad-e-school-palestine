@@ -20,8 +20,8 @@
             </div>
         </div>
         <div class="item-actions">
-            <div class="progress-bar" style="width:120px; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
-                <div style="width:{{ item.avg_progress }}%; height:100%; background:var(--azad-green); border-radius:4px;"></div>
+            <div class="meter meter--w120">
+                <i class="mf-{{ (item.avg_progress // 5 * 5) if item.avg_progress < 100 else 100 }} mf-green"></i>
             </div>
         </div>
     </div>

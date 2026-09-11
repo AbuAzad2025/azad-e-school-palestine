@@ -55,11 +55,11 @@
 
 <div class="azad-section"><h2>{{ _('إجراءات سريعة') }}</h2></div>
 {{ azad_quick_actions([
-    {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'color': 'var(--azad-navy)'},
-    {'icon': 'book-open', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'color': 'var(--azad-blue)'},
-    {'icon': 'calendar', 'label': _('التقويم'), 'href': url_for('calendar.index', school_id=school_id), 'color': 'var(--azad-green)'},
-    {'icon': 'credit-card', 'label': _('الاشتراكات'), 'href': url_for('admin.subscriptions_list'), 'color': 'var(--azad-gold)'},
-    {'icon': 'cash', 'label': _('دفعات معلقة'), 'href': url_for('admin.pending_payments'), 'color': 'var(--color-warning)'},
-    {'icon': 'users', 'label': _('المستخدمين'), 'href': url_for('admin.users_list'), 'color': 'var(--text-muted)'}
+    {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'variant': 'blue'},
+    {'icon': 'book-open', 'label': _('صفوفي'), 'href': url_for('schools.my_classes'), 'variant': 'blue'},
+    {'icon': 'calendar', 'label': _('التقويم'), 'href': url_for('calendar.index', school_id=school_id), 'variant': 'blue'},
+    {'icon': 'credit-card', 'label': _('الاشتراكات'), 'href': url_for('admin.subscriptions_list'), 'variant': 'blue'},
+    {'icon': 'cash', 'label': _('دفعات معلقة'), 'href': url_for('admin.pending_payments'), 'variant': 'blue'},
+    {'icon': 'users', 'label': _('المستخدمين'), 'href': url_for('admin.users_list'), 'variant': 'blue'}
 ]) }}
 {% endblock %}

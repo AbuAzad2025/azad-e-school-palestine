@@ -4,16 +4,16 @@
 {% block content %}
 {{ azad_breadcrumb([{'label': _('التنزيلات بدون إنترنت')}]) }}
 
-<h1 class="page-title" style="margin:0 0 var(--sp-4)">{{ icon('download') }} {{ _('التنزيلات بدون إنترنت') }}</h1>
+<h1 class="page-title u-mb-0sp4">{{ icon('download') }} {{ _('التنزيلات بدون إنترنت') }}</h1>
 
 {% if items %}
-<div style="display:grid;gap:var(--sp-4)">
+<div class="u-grid-sp4">
   {% for item in items %}
   {% call azad_card(item.lesson.title, '', 'file') %}
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--sp-3)">
-    <div style="flex:1">
-      <div style="font-weight:600">{{ item.attachment.original_name or item.attachment.kind }}</div>
-      <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-2);color:var(--muted);font-size:var(--text-sm)">
+  <div class="u-between-sm">
+    <div class="u-flex-1">
+      <div class="u-bold">{{ item.attachment.original_name or item.attachment.kind }}</div>
+      <div class="u-meta-row">
         <span>{{ azad_badge(item.status, 'success' if item.status == 'ready' else 'warning') }}</span>
         {% if item.expires_at %}
         <span>{{ icon('clock') }} {{ _('يعمل حتى') }} {{ item.expires_at.strftime('%Y-%m-%d') }}</span>
@@ -22,7 +22,7 @@
     </div>
     <form method="post" action="{{ url_for('content.remove_offline', download_id=item.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="azad-btn-outline" style="color:var(--azad-red);font-size:var(--text-sm)">{{ icon('trash') }} {{ _('إزالة') }}</button>
+      <button type="submit" class="azad-btn-outline u-text-red u-text-sm-t">{{ icon('trash') }} {{ _('إزالة') }}</button>
     </form>
   </div>
   {% endcall %}

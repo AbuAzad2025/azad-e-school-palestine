@@ -10,7 +10,7 @@
   <div class="item-actions">
     <a class="azad-btn-outline" href="{{ url_for('content.lesson_detail', class_id=class_room.id, lesson_id=lesson.id) }}">{{ _('فتح') }}</a>
     {% if can_teach %}
-    <form method="post" action="{{ url_for('content.lesson_publish', class_id=class_room.id, lesson_id=lesson.id) }}" style="display:inline">
+    <form class="u-inline" method="post" action="{{ url_for('content.lesson_publish', class_id=class_room.id, lesson_id=lesson.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="azad-btn-outline" type="submit">{{ _('نشر') if lesson.status != 'published' else _('مسودة') }}</button>
     </form>

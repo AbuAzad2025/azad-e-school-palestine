@@ -4,8 +4,10 @@
 ═══════════════════════════════════════════ #}
 
 {# ─── CSS Grid Form Row ─── #}
+{# cols is clamped to the known variant set 1..4 (no inline styles). #}
 {% macro azad_form_row(cols=2, class='') %}
-<div class="azad-form-row {{ class }}" style="grid-template-columns: repeat({{ cols }}, 1fr);">
+{% set _cols = cols if cols in (1, 2, 3, 4) else 4 %}
+<div class="azad-form-row azad-form-row--{{ _cols }} {{ class }}">
   {{ caller() }}
 </div>
 {% endmacro %}
