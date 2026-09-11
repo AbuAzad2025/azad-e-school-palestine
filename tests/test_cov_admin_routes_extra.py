@@ -154,5 +154,30 @@ class TestUserImpersonate:
     def test_impersonate_exit(self, client, app):
         email = _make_admin(app)
         _login(client, email)
+        # بلا جلسة انتحال نشطة: المشرف الأصلي يُرفض (403) — الخروج مسموح فقط
+        # لجلسة انتحال بدأها سوبر أدمن (راجع اختبارات الأمان).
+        resp = client.post("/admin/impersonate/exit", follow_redirects=True)
+        assert resp.status_code == 403
+
+    def test_impersonate_exit_full_cycle(self, client, app):
+        """الدورة الكاملة: انتحال ← خروج يعيد المشرف الأصلي (200/302)."""
+        admin_email = _make_admin(app)
+        _login(client, admin_email)
+        with app.app_context():
+            make_school(app)
+            student_email = f"student-{_uid()}@test.com"
+            u = User(
+                email=student_email,
+                name_ar="طالب اختبار",
+                role=UserRole.student,
+                password_hash=hash_password("TestPass123!"),
+                approval_status=UserApprovalStatus.approved,
+                is_active=True,
+            )
+            _db.session.add(u)
+            _db.session.commit()
+            student_id = u.id
+        resp = client.post(f"/admin/users/{student_id}/impersonate", follow_redirects=True)
+        assert resp.status_code == 200
         resp = client.post("/admin/impersonate/exit", follow_redirects=True)
         assert resp.status_code in (200, 302)

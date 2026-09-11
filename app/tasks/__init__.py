@@ -168,7 +168,8 @@ def dispatch(task, *args: Any, inline_timeout: float | None = None, **kwargs: An
 
     logger = _get_logger("celery.dispatch")
 
-    if _HAS_CELERY:
+    # مهمة celery حقيقية فقط لها .delay — الدوال العادية تُنفّذ inline أدناه
+    if _HAS_CELERY and callable(getattr(task, "delay", None)):
         async_result = task.delay(*args, **kwargs)
         return {"mode": "celery", "task_id": getattr(async_result, "id", None)}
 
