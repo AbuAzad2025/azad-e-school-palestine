@@ -16,12 +16,30 @@ P3-02: Session-level variable set via SET LOCAL (auto-reset on transaction end).
 
 from __future__ import annotations
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from app.core.logging import get_logger
 from app.extensions import db
 
 logger = get_logger(__name__)
+
+
+def _table_exists(table_name: str) -> bool:
+    """حماية زمن التشغيل: الجدول قد لا يكون موجوداً (اختبارات/ترحيل قديم)."""
+    try:
+        return inspect(db.session.get_bind()).has_table(table_name)
+    except Exception:  # noqa: BLE001 — لا يوجد اتصال/جدول
+        return False
+
+
+def _has_column(table_name: str, column_name: str) -> bool:
+    """فحص وجود عمود قبل بناء سياسة تعتمد عليه (مثل school_id)."""
+    try:
+        cols = inspect(db.session.get_bind()).get_columns(table_name)
+        return column_name in {c["name"] for c in cols}
+    except Exception:  # noqa: BLE001
+        return False
+
 
 # ─── Tables that carry school_id and MUST have RLS ─────────────────────
 _TENANT_TABLES: list[str] = [
@@ -118,11 +136,25 @@ def reset_tenant_context() -> None:
         pass  # Non-critical: SET LOCAL auto-resets on transaction end
 
 
-def enable_rls_on_table(table_name: str) -> None:
+def enable_rls_on_table(table_name: str) -> bool:
     """Enable RLS and create the tenant isolation policy for a single table.
 
     Idempotent: safe to run multiple times.
+
+    Returns True when a policy was (re)created, False when the table was
+    skipped (missing table or missing school_id column — same guard as the
+    g1h2i3j4k5l6 migration, so enable_all can never crash at runtime).
     """
+    if not _table_exists(table_name):
+        logger.warning("rls_skipped", table=table_name, reason="table does not exist")
+        return False
+    if not _has_column(table_name, "school_id"):
+        # BUGFIX: several registry entries predate a schema decision (e.g.
+        # announcements traces tenancy via classes, not a school_id column).
+        # Building a policy against a missing column raises UndefinedColumn.
+        logger.warning("rls_skipped", table=table_name, reason="missing school_id column")
+        return False
+
     # 1. Enable RLS on the table
     db.session.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY"))
     # 2. Force RLS even for table owners (defense in depth)
@@ -152,14 +184,21 @@ def enable_rls_on_table(table_name: str) -> None:
         )
     )
     logger.info("rls_policy_created", table=table_name, policy=policy_name)
+    return True
 
 
-def enable_rls_on_indirect_table(table_name: str, subquery: str) -> None:
+def enable_rls_on_indirect_table(table_name: str, subquery: str) -> bool:
     """Enable RLS on a table where school_id is derived via subquery.
 
     Used for tables like quiz_attempts that don't directly have school_id
     but can be traced to one through joins.
+
+    Returns True when a policy was (re)created, False when skipped.
     """
+    if not _table_exists(table_name):
+        logger.warning("rls_skipped", table=table_name, reason="table does not exist")
+        return False
+
     db.session.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY"))
     db.session.execute(text(f"ALTER TABLE {table_name} FORCE ROW LEVEL SECURITY"))
 
@@ -183,18 +222,27 @@ def enable_rls_on_indirect_table(table_name: str, subquery: str) -> None:
         )
     )
     logger.info("rls_policy_created_indirect", table=table_name, policy=policy_name)
+    return True
 
 
 def enable_all_rls_policies() -> None:
-    """Enable RLS on all tenant-scoped tables.  Call from Alembic migration."""
+    """Enable RLS on all tenant-scoped tables.  Call from Alembic migration.
+
+    Tables lacking a school_id column (schema decision pending) are skipped
+    with a warning instead of crashing the whole migration/upgrade.
+    """
+    enabled: list[str] = []
+    skipped: list[str] = []
     for table in _TENANT_TABLES:
-        enable_rls_on_table(table)
+        (enabled if enable_rls_on_table(table) else skipped).append(table)
 
     for table, subquery in _INDIRECT_TENANT_TABLES.items():
-        enable_rls_on_indirect_table(table, subquery)
+        (enabled if enable_rls_on_indirect_table(table, subquery) else skipped).append(table)
 
     db.session.commit()
-    logger.info("all_rls_policies_enabled", count=len(_TENANT_TABLES) + len(_INDIRECT_TENANT_TABLES))
+    logger.info("all_rls_policies_enabled", enabled=len(enabled), skipped=len(skipped))
+    if skipped:
+        logger.warning("rls_skipped_tables", tables=skipped)
 
 
 def disable_all_rls_policies() -> None:
