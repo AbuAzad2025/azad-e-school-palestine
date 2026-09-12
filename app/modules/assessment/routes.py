@@ -98,8 +98,12 @@ def ai_generate_questions():
     question_types = data.get("question_types", ["mcq", "true_false", "essay"])
     difficulty = data.get("difficulty", "medium")
 
-    questions = get_ai_service().generate_questions(
-        topic=topic, count=count, question_types=question_types, difficulty=difficulty
+    import asyncio
+
+    questions = asyncio.run(
+        get_ai_service().generate_questions(
+            topic=topic, count=count, question_types=question_types, difficulty=difficulty
+        )
     )
     return {"questions": questions}, 200
 
@@ -283,7 +287,7 @@ def attempt_result(attempt_id):
         attempt=attempt,
         quiz=attempt.quiz,
         answers=answers,
-        is_teacher=is_teacher,
+        viewer_is_teacher=is_teacher,
     )
 
 

@@ -39,7 +39,7 @@
       </legend>
     {% if q.type == 'mcq' %}
       {% set saved = answers.get(q.id) %}
-      {% for item in (q.options.items if q.options else []) %}
+      {% for item in (q.options.get("items", []) if q.options else []) %}
         {% set idx = loop.index0 %}
         <label class="quiz-option">
           <input type="radio" name="q_{{ q.id }}" value="{{ idx }}" {% if saved and saved.answer.index == idx %}checked{% endif %}>

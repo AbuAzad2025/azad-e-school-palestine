@@ -13,9 +13,11 @@ from flask_babel import gettext as _babel_gettext
 
 
 def _(msgid: str, **variables: Any) -> str:
-    """ترجمة رسالة مع placeholders مسماة، بأمان داخل أو خارج سياق الطلب."""
-    try:
+    """ترجمة رسالة مع placeholders مسماة، بأمان داخل أو خارج سياق الطلب.
+
+    ملاحظة: gettext يطبق %-تنسيق على msgid دائماً؛ تمرير variables فارغة
+    (مثل رسالة تحتوي "%" حرفية) يسبب ValueError — لذا لا نمررها إلا عند وجودها.
+    """
+    if variables:
         return _babel_gettext(msgid, **variables)
-    except RuntimeError:
-        # لا سياق Flask (سكربت/اختبار) — نعيد المصدر مع التنسيق فقط
-        return msgid % variables if variables else msgid
+    return _babel_gettext(msgid)
