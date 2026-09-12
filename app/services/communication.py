@@ -1,5 +1,6 @@
 """التواصل الداخلي: إشعارات + سجل تدقيق — خدمة موحّدة بلا تكرار."""
 
+from decimal import Decimal
 from typing import Any
 
 from flask import request
@@ -65,9 +66,10 @@ def audit(
             ip = remote
 
     # دمج التفاصيل المالية في detail
+    # ملاحظة: JSONB لا يقبل Decimal — نحوّله إلى str للحفاظ على الدقة
     financial_detail: dict[str, Any] = {}
     if amount is not None:
-        financial_detail["amount"] = amount
+        financial_detail["amount"] = str(amount) if isinstance(amount, Decimal) else amount
     if currency:
         financial_detail["currency"] = currency
     if gateway:
