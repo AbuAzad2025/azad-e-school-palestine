@@ -18,6 +18,11 @@ export default defineConfig({
       reportsDirectory: "coverage/js",
       include: ["app/static/js/**/*.js"],
       exclude: [],
+      thresholds: {
+        // Gate — keep above 90 lines; ratchet upward as coverage improves.
+        lines: 90,
+        functions: 85,
+      },
     },
   },
 });
