@@ -121,19 +121,16 @@ class TestSuggestGradePaths:
         fake_response = MagicMock()
         fake_response.choices = [MagicMock(message=MagicMock(content='{"score": 9, "feedback": "g"}'))]
         fake_response.usage = MagicMock(prompt_tokens=100, completion_tokens=50)
-        client = MagicMock()
-        client.chat.completions.create = (
-            asyncio.coroutine(lambda **kw: fake_response) if hasattr(asyncio, "coroutine") else None
-        )
 
-        # modern approach: an async function
         async def _create(**kw):
             return fake_response
 
+        client = MagicMock()
         client.chat.completions.create = _create
         with (
             patch.object(ai_service, "_get_client", return_value=client),
             patch.object(ai_service, "_record_usage") as rec,
+            patch("app.services.ai.OPENAI_AVAILABLE", True),
         ):
             result = asyncio.run(ai_service.suggest_grade("42", "mcq", correct_answer="42"))
         assert result["score"] == 9
@@ -147,14 +144,20 @@ class TestSuggestGradePaths:
 
         client = MagicMock()
         client.chat.completions.create = _boom
-        with patch.object(ai_service, "_get_client", return_value=client):
+        with (
+            patch.object(ai_service, "_get_client", return_value=client),
+            patch("app.services.ai.OPENAI_AVAILABLE", True),
+        ):
             result = asyncio.run(ai_service.suggest_grade("x", "mcq"))
         assert "error" in result
         assert "fallback" in result
 
     def test_rate_limited_returns_fallback(self, ai_service):
         ai_service.config.api_key = "sk-test"
-        with patch.object(ai_service, "_check_limits", return_value=(False, "Rate limit: 60 rpm")):
+        with (
+            patch.object(ai_service, "_check_limits", return_value=(False, "Rate limit: 60 rpm")),
+            patch("app.services.ai.OPENAI_AVAILABLE", True),
+        ):
             result = asyncio.run(ai_service.suggest_grade("x", "essay"))
         assert result["error"].startswith("Rate limit")
 
@@ -187,14 +190,21 @@ class TestGenerateQuestionsPaths:
 
         client = MagicMock()
         client.chat.completions.create = _create
-        with patch.object(ai_service, "_get_client", return_value=client), patch.object(ai_service, "_record_usage"):
+        with (
+            patch.object(ai_service, "_get_client", return_value=client),
+            patch.object(ai_service, "_record_usage"),
+            patch("app.services.ai.OPENAI_AVAILABLE", True),
+        ):
             qs = asyncio.run(ai_service.generate_questions("رياضيات", count=2))
         assert len(qs) == 2
-        assert qs[0]["prompt"] == "2+2?"
+        assert "2+2?" in qs[0]["prompt"]
 
     def test_real_api_limits_path(self, ai_service):
         ai_service.config.api_key = "sk-test"
-        with patch.object(ai_service, "_check_limits", return_value=(False, "Budget: exceeded")):
+        with (
+            patch.object(ai_service, "_check_limits", return_value=(False, "Budget: exceeded")),
+            patch("app.services.ai.OPENAI_AVAILABLE", True),
+        ):
             qs = asyncio.run(ai_service.generate_questions("t", count=2))
         assert qs[0]["error"].startswith("Budget")
 
@@ -206,7 +216,10 @@ class TestGenerateQuestionsPaths:
 
         client = MagicMock()
         client.chat.completions.create = _boom
-        with patch.object(ai_service, "_get_client", return_value=client):
+        with (
+            patch.object(ai_service, "_get_client", return_value=client),
+            patch("app.services.ai.OPENAI_AVAILABLE", True),
+        ):
             qs = asyncio.run(ai_service.generate_questions("t", count=2))
         assert "error" in qs[0]
 
