@@ -229,7 +229,7 @@ def session_pay(session_id):
     # Only the student (payer) can confirm payment
     if current_user.id != session_.student_id:
         abort(403)
-    update_session(session_, payment_status="approved")
+    update_session(session_, payment_status="paid")
     audit(
         "tutoring.payment",
         "tutoring_sessions",
