@@ -19,9 +19,9 @@ export default defineConfig({
       include: ["app/static/js/**/*.js"],
       exclude: [],
       thresholds: {
-        // Gate — keep above 90 lines; ratchet upward as coverage improves.
-        lines: 90,
-        functions: 85,
+        // Gate — CI-verified 97.69% lines; ratchet via scripts/coverage_gaps.py
+        lines: 97,
+        functions: 90,
       },
     },
   },
