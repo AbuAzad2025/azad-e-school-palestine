@@ -352,7 +352,10 @@ class TestChatStreamPaths:
         client.chat.completions.create = _boom
         with app.app_context():
             ai_service._get_or_create_session(uid, None, None)
-            with patch.object(ai_service, "_get_client", return_value=client):
+            with (
+                patch.object(ai_service, "_get_client", return_value=client),
+                patch("app.services.ai.OPENAI_AVAILABLE", True),
+            ):
                 chunks = list(asyncio.run(_collect(ai_service.ask_question_stream(uid, "q"))))
         assert any('"error"' in c for c in chunks)
         assert any("[DONE]" in c for c in chunks)
