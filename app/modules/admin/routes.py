@@ -554,7 +554,6 @@ def pending_payments():
 def payment_approve(payment_id):
     """اعتماد الدفع اليدوي وتفعيل الاشتراك + إنشاء عضوية الصف."""
     payment = ManualPayment.query.get_or_404(payment_id)
-    from app.core.db import tx_on_commit
     from app.services.billing import approve_payment
 
     approve_payment(payment, reviewer_id=current_user.id)
@@ -579,13 +578,11 @@ def payment_approve(payment_id):
     db.session.add(audit_entry)
     db.session.commit()
 
-    # P-SEC-15: إشعار بعد الالتزام الناجح فقط
-    def _notify():
-        from app.services.email import send_payment_approved_email
+    # P-SEC-15: إشعار بعد الالتزام الناجح فقط — الاتصال هنا خارج أي tx() فعلياً،
+    # فيُنفَّذ مباشرة (tx_on_commit خارج tx يؤجل الخطاف لمعاملة مستقبلية).
+    from app.services.email import send_payment_approved_email
 
-        send_payment_approved_email(payment)
-
-    tx_on_commit(_notify)
+    send_payment_approved_email(payment)
 
     flash(_("تم اعتماد الدفع وتفعيل الاشتراك"), "success")
     return redirect(url_for("admin.pending_payments"))
@@ -597,7 +594,6 @@ def payment_approve(payment_id):
 def payment_reject(payment_id):
     """رفض الدفع وإلغاء الاشتراك."""
     payment = ManualPayment.query.get_or_404(payment_id)
-    from app.core.db import tx_on_commit
     from app.services.billing import reject_payment
 
     reject_payment(payment, reviewer_id=current_user.id)
@@ -622,13 +618,10 @@ def payment_reject(payment_id):
     db.session.add(audit_entry)
     db.session.commit()
 
-    # P-SEC-17: إشعار الرفض بعد الالتزام
-    def _notify():
-        from app.services.email import send_payment_rejected_email
+    # P-SEC-17: إشعار الرفض بعد الالتزام — الاتصال هنا خارج أي tx() فعلياً.
+    from app.services.email import send_payment_rejected_email
 
-        send_payment_rejected_email(payment)
-
-    tx_on_commit(_notify)
+    send_payment_rejected_email(payment)
 
     flash(_("تم رفض الدفع"), "warning")
     return redirect(url_for("admin.pending_payments"))
