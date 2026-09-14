@@ -190,9 +190,8 @@ def main() -> int:
     threshold = load_threshold()
     if args.update:
         changed = False
-        bl, fl = pct(backend["lines_covered"], backend["lines_valid"]), pct(
-            frontend["lines_covered"], frontend["lines_valid"]
-        )
+        bl = round(pct(backend["lines_covered"], backend["lines_valid"]), 2)
+        fl = round(pct(frontend["lines_covered"], frontend["lines_valid"]), 2)
         if bl >= 100.0 and threshold.get("backend", 0) < 100:
             threshold["backend"] = 100.0
             changed = True
@@ -207,11 +206,12 @@ def main() -> int:
 
     status = 0
     if args.check:
-        bl, fl = pct(backend["lines_covered"], backend["lines_valid"]), pct(
-            frontend["lines_covered"], frontend["lines_valid"]
-        )
-        req_b = threshold.get("backend", 0.0)
-        req_f = threshold.get("frontend", 0.0)
+        # Compare at 2-decimal display precision — 97.688% renders as "97.69%"
+        # and must not fail a 97.69 floor (float-border class of bugs).
+        bl = round(pct(backend["lines_covered"], backend["lines_valid"]), 2)
+        fl = round(pct(frontend["lines_covered"], frontend["lines_valid"]), 2)
+        req_b = round(threshold.get("backend", 0.0), 2)
+        req_f = round(threshold.get("frontend", 0.0), 2)
         if bl < req_b:
             print(f"❌ Backend coverage {bl:.2f}% < ratchet {req_b:.2f}%", file=sys.stderr)
             status = 1
