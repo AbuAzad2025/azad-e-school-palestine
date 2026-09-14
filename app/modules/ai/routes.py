@@ -59,10 +59,25 @@ def chat_stream():
         import asyncio
 
         async def stream():
-            async for chunk in ai_service.ask_question_stream(
-                user_id=current_user.id, question=question, context=context, class_id=class_id, lesson_id=lesson_id
-            ):
-                yield chunk
+            try:
+                async for chunk in ai_service.ask_question_stream(
+                    user_id=current_user.id, question=question, context=context, class_id=class_id, lesson_id=lesson_id
+                ):
+                    yield chunk
+            finally:
+                # The generator runs on a copied contextvars context — its scoped
+                # session is not the instance removed at request teardown, so the
+                # flush-only chat rows would leak (uncommitted + lock-holding).
+                # Commit the chat history (P1 data-loss bug: it was flushed and
+                # silently discarded) and release the connection deterministically.
+                try:
+                    from app.core.db import tx
+
+                    tx(lambda: None)
+                except Exception:
+                    db.session.rollback()
+                finally:
+                    db.session.remove()
 
         # Run async generator in sync context
         loop = asyncio.new_event_loop()
