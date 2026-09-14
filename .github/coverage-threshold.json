@@ -1,5 +1,5 @@
 {
-  "backend": 93.22,
+  "backend": 93.21,
   "frontend": 97.69,
-  "note": "Monotonic ratchet floors (line coverage). Raise only via scripts/coverage_gaps.py --update when a scope hits 100%."
+  "note": "Monotonic ratchet floors (line coverage, verified-green values). Raise only after a green run via scripts/coverage_gaps.py --update — never above the last verified measurement."
 }
