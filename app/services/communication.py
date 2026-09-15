@@ -55,7 +55,7 @@ def audit(
     يدعم تتبع التغييرات على مستوى الحقل (field-level audit) عبر `changes`:
         changes = {"field_name": {"old": old_value, "new": new_value}}
     """
-    uid = current_user.id if current_user.is_authenticated else None
+    uid = current_user.id if (current_user and current_user.is_authenticated) else None
     ip = None
     if request:
         forwarded = request.headers.get("X-Forwarded-For")
