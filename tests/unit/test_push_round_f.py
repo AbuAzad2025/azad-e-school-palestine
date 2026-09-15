@@ -386,6 +386,7 @@ class TestVideoTaskInternals:
 
 
 class TestAdminFindPgTool:
+    @pytest.mark.skipif(sys.platform != "win32", reason="ProgramFiles fallback is Windows-only")
     def test_windows_fallback_finds_exe(self, app, tmp_path, monkeypatch):
         import app.modules.admin.routes as admin_mod
 
