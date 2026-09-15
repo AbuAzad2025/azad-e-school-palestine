@@ -52,6 +52,10 @@ messages.pot
 # ===== Test Artifacts =====
 coverage/
 coverage-js/
+covG/
+covH/
+covJS/
+cov?/
 coverage.xml
 coverage.json
 coverage.zip
