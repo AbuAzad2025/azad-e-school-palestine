@@ -16,7 +16,7 @@ import types
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from app.core import cache as cache_mod
@@ -104,44 +104,26 @@ class TestDispatchGuardrails:
             assert out == {"mode": "inline", "result": "ok"}
 
     def test_notifications_module_guard(self):
-        """No celery → importing the tasks module raises ImportError (line 14 guard).
+        """_HAS_CELERY=False → importing the tasks module raises ImportError.
 
-        Deterministic regardless of collection order: purge any previously
-        imported copies from sys.modules and hide celery for the duration.
+        Deterministic in any collection order: purge cached copies and force
+        the package-level flag False during import (same proven pattern as
+        the round-F video guard — earlier suites can leave the cached
+        app.tasks module with a leaked True flag).
         """
-        import builtins
         import importlib
         import sys
 
-        saved_sys = {
-            name: sys.modules.pop(name)
-            for name in list(sys.modules)
-            if name == "app.tasks.notifications" or name.startswith("app.tasks.notifications.")
-        }
-        real_import = builtins.__import__
-
-        def _hide_celery(name, *args, **kwargs):
-            if name == "celery" or name.startswith("celery."):
-                raise ImportError("celery hidden for guard test")
-            return real_import(name, *args, **kwargs)
-
+        sys.modules.pop("app.tasks.notifications", None)
         try:
-            with pytest.raises(ImportError):
-                builtins.__import__ = _hide_celery
-                importlib.import_module("app.tasks.notifications")
+            with patch("app.tasks._HAS_CELERY", False):
+                with pytest.raises(ImportError):
+                    importlib.import_module("app.tasks.notifications")
         finally:
-            builtins.__import__ = real_import
-            # restore prior state
-            for name, mod in saved_sys.items():
-                sys.modules[name] = mod
             sys.modules.pop("app.tasks.notifications", None)
-            # if celery is genuinely available, re-import normally so later
-            # tests see a healthy module
-            try:
-                real_import("celery")
-            except ImportError:
-                pass
-            else:
+            from app.tasks import _HAS_CELERY as _flag_now
+
+            if _flag_now:  # celery usable → restore a healthy cached module
                 importlib.import_module("app.tasks.notifications")
 
 
