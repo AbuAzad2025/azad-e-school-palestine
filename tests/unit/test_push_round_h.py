@@ -104,16 +104,45 @@ class TestDispatchGuardrails:
             assert out == {"mode": "inline", "result": "ok"}
 
     def test_notifications_module_guard(self):
-        """No celery → importing the tasks module raises ImportError (line 14 guard)."""
-        if _HAS_CELERY:
-            pytest.skip("celery installed locally — guard branch is CI-only") if False else None
-            import importlib
+        """No celery → importing the tasks module raises ImportError (line 14 guard).
 
-            mod = importlib.import_module("app.tasks.notifications")
-            assert mod is not None
-        else:
+        Deterministic regardless of collection order: purge any previously
+        imported copies from sys.modules and hide celery for the duration.
+        """
+        import builtins
+        import importlib
+        import sys
+
+        saved_sys = {
+            name: sys.modules.pop(name)
+            for name in list(sys.modules)
+            if name == "app.tasks.notifications" or name.startswith("app.tasks.notifications.")
+        }
+        real_import = builtins.__import__
+
+        def _hide_celery(name, *args, **kwargs):
+            if name == "celery" or name.startswith("celery."):
+                raise ImportError("celery hidden for guard test")
+            return real_import(name, *args, **kwargs)
+
+        try:
             with pytest.raises(ImportError):
-                __import__("app.tasks.notifications")
+                builtins.__import__ = _hide_celery
+                importlib.import_module("app.tasks.notifications")
+        finally:
+            builtins.__import__ = real_import
+            # restore prior state
+            for name, mod in saved_sys.items():
+                sys.modules[name] = mod
+            sys.modules.pop("app.tasks.notifications", None)
+            # if celery is genuinely available, re-import normally so later
+            # tests see a healthy module
+            try:
+                real_import("celery")
+            except ImportError:
+                pass
+            else:
+                importlib.import_module("app.tasks.notifications")
 
 
 # ── 2. sentry wrapper ──────────────────────────────────────────────────────
