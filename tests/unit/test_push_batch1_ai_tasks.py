@@ -71,12 +71,12 @@ class TestRateLimiterAndBudget:
         assert len(rl.request_times) == 0
 
     def test_budget_monthly_reset(self):
-        from datetime import datetime, timedelta
+        from datetime import UTC, datetime, timedelta
 
         from app.services.ai import BudgetTracker
 
         bt = BudgetTracker(10.0)
-        bt._last_reset = datetime.utcnow() - timedelta(days=40)
+        bt._last_reset = datetime.now(UTC) - timedelta(days=40)
         bt._monthly_spent = 9.5
         usage = bt.get_usage()  # triggers month rollover
         assert usage["spent_usd"] == 0.0
