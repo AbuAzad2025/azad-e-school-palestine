@@ -847,7 +847,11 @@ class TestServicePureBits:
                     )
                 )
                 db.session.add(Badge(name="إكمال", icon_name="book", criteria_type=BadgeCriteriaType.course_complete))
-                today = datetime.now(UTC)
+                # Seed at noon UTC: func.date() renders in the *server* timezone, so
+                # seeding near local midnight (server tz != UTC) shifts dates by one
+                # day and breaks the streak. Noon UTC maps to the same calendar date
+                # in any tz up to +12h — deterministic 24/7.
+                noon = datetime.now(UTC).replace(hour=12, minute=0, second=0, microsecond=0)
                 for d, lid_d in enumerate(day_lessons):
                     db.session.add(
                         StudentProgress(
@@ -856,7 +860,7 @@ class TestServicePureBits:
                             class_id=cid,
                             status="completed",
                             progress_pct=100,
-                            completed_at=today - timedelta(days=d),
+                            completed_at=noon - timedelta(days=d),
                         )
                     )
 

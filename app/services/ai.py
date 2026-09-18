@@ -12,7 +12,7 @@ import random
 import time
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 
 from app.core.i18n import _
@@ -108,7 +108,7 @@ class BudgetTracker:
         self._last_reset: datetime | None = None
 
     def _ensure_current_month(self):
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         if self._last_reset is None or self._last_reset < month_start:
             self._monthly_spent = 0.0
@@ -576,7 +576,7 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
     # ======================================================================
     def get_usage_stats(self, user_id: int | None = None, days: int = 30) -> dict:
         """إحصائيات استخدام AI."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
         query = AiUsageLog.query.filter(AiUsageLog.created_at >= cutoff)
         if user_id:
             query = query.filter_by(user_id=user_id)
