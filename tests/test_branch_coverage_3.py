@@ -81,7 +81,7 @@ class TestPaymentsGateways:
                 amount=Decimal("50"), currency="ILS",
                 status=PaymentStatus.PENDING, user_id=1,
             )
-            assert pi.expires_at > datetime.utcnow()
+            assert pi.expires_at > datetime.now(UTC)
 
     def test_stripe_gateway_init_no_stripe(self, app):
         from app.services.payments import StripeGateway
@@ -392,7 +392,7 @@ class TestAiServiceBranches:
         with app.app_context():
             bt = BudgetTracker(monthly_budget_usd=100.0)
             bt.record_spending(80.0)
-            bt._last_reset = datetime(2020, 1, 1)
+            bt._last_reset = datetime(2020, 1, 1, tzinfo=UTC)
             bt._ensure_current_month()
             assert bt._monthly_spent == 0.0
 

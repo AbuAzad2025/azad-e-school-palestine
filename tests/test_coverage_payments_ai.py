@@ -13,7 +13,7 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -73,7 +73,7 @@ class TestPaymentEnums:
         assert intent.user_id == 42
         assert intent.subscription_id is None
         assert intent.gateway_response is None
-        assert intent.expires_at > datetime.utcnow()
+        assert intent.expires_at > datetime.now(UTC)
 
     def test_payment_intent_with_metadata(self):
         from app.services.payments import PaymentGateway, PaymentIntent, PaymentStatus
@@ -415,7 +415,7 @@ class TestBudgetTracker:
         from app.services.ai import BudgetTracker
 
         bt = BudgetTracker(monthly_budget_usd=10.0)
-        bt._last_reset = datetime(2020, 1, 1)
+        bt._last_reset = datetime(2020, 1, 1, tzinfo=UTC)
         bt._monthly_spent = 9.9
         # Should reset because _last_reset is old
         can, msg = bt.can_spend(5.0)
