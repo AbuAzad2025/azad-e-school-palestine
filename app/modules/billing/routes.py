@@ -113,7 +113,7 @@ def subscribe_route(class_id, class_room=None):
 @bp.post("/subscriptions/<int:subscription_id>/pay")
 @login_required
 def payment_create(subscription_id):
-    sub = Subscription.query.get_or_404(subscription_id)
+    sub = db.get_or_404(Subscription, subscription_id)
     class_room = _class_or_404(sub.class_id)
     if not is_member(class_room, current_user):
         abort(403)
@@ -156,7 +156,7 @@ def admin():
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def review(payment_id, result):
-    payment = ManualPayment.query.get_or_404(payment_id)
+    payment = db.get_or_404(ManualPayment, payment_id)
     if result == "approve":
         try:
             sub = approve_payment(payment, reviewer_id=current_user.id)
@@ -265,7 +265,7 @@ def validate_code():
 @bp.get("/invoices/<int:subscription_id>")
 @login_required
 def invoice_view(subscription_id):
-    sub = Subscription.query.get_or_404(subscription_id)
+    sub = db.get_or_404(Subscription, subscription_id)
     class_room = _class_or_404(sub.class_id)
     if not is_member(class_room, current_user):
         abort(403)
@@ -285,7 +285,7 @@ def invoice_view(subscription_id):
 @bp.get("/invoices/<int:subscription_id>/pdf")
 @login_required
 def invoice_pdf(subscription_id):
-    sub = Subscription.query.get_or_404(subscription_id)
+    sub = db.get_or_404(Subscription, subscription_id)
     class_room = _class_or_404(sub.class_id)
     if not is_member(class_room, current_user):
         abort(403)

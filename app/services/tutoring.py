@@ -303,7 +303,7 @@ def generate_zoom_meeting(session_id: int, user_id: int) -> tuple[str | None, st
 
 
 def generate_live_session_url(session_id: int, user_id: int) -> str | None:
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if session_.tutor_id != user_id and session_.student_id != user_id:
         return None
 

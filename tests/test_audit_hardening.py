@@ -88,7 +88,7 @@ def test_record_manual_payment_with_receipt_saves_both(app):
         payment, error = record_manual_payment(sub, f"ref-{_uid()}", 50.5, receipt_file=_png_file())
         assert error is None
         assert payment is not None
-        fresh = ManualPayment.query.get(payment.id)
+        fresh = _db.session.get(ManualPayment, payment.id)
         assert len(fresh.receipts) == 1
         assert fresh.amount == money("50.50")
 

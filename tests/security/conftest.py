@@ -246,7 +246,7 @@ def school_admin_b_persona(app, school_b):
 def teacher_a_persona(app, school_a, class_a):
     uid, c = make_persona(app, "teacher", school_id=school_a, name_ar="معلم أ")
     with app.app_context():
-        cr = ClassRoom.query.get(class_a)
+        cr = _db.session.get(ClassRoom, class_a)
         cr.teacher_id = uid
         _db.session.commit()
     return uid, c
@@ -256,7 +256,7 @@ def teacher_a_persona(app, school_a, class_a):
 def teacher_b_persona(app, school_b, class_b):
     uid, c = make_persona(app, "teacher", school_id=school_b, name_ar="معلم ب")
     with app.app_context():
-        cr = ClassRoom.query.get(class_b)
+        cr = _db.session.get(ClassRoom, class_b)
         cr.teacher_id = uid
         _db.session.commit()
     return uid, c

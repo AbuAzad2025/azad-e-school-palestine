@@ -38,7 +38,7 @@ def _login(client, email: str, password: str = "TestPass123!"):
 
 def _email(app, user_id):
     with app.app_context():
-        return User.query.get(user_id).email
+        return db.session.get(User, user_id).email
 
 
 def test_search_api_requires_auth(client):

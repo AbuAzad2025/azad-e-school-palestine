@@ -784,7 +784,7 @@ class TestNotificationLogic:
             db.session.commit()
             n.is_read = True
             db.session.commit()
-            assert Notification.query.get(n.id).is_read is True
+            assert db.session.get(Notification, n.id).is_read is True
 
 
 # ═══════════════════════════════════════════════════════════════════

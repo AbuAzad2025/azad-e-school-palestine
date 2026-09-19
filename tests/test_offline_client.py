@@ -45,7 +45,7 @@ def test_lesson_model_has_offline_available(app):
         db.session.commit()
 
         # Reload and check
-        loaded = Lesson.query.get(lesson.id)
+        loaded = db.session.get(Lesson, lesson.id)
         assert loaded.is_offline_available is True
 
 

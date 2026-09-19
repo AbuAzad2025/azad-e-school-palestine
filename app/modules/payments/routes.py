@@ -2,6 +2,7 @@
 
 import os
 
+from app.core.db import db
 from app.models.billing import Subscription
 from app.services.payments import PaymentGateway, get_payment_service
 from flask import Blueprint, abort, jsonify, render_template, request
@@ -117,7 +118,7 @@ def create_payment_intent():
 
     # تحقق الملكية والمبلغ للاشتراك
     if subscription_id:
-        sub = Subscription.query.get_or_404(subscription_id)
+        sub = db.get_or_404(Subscription, subscription_id)
         if sub.user_id != current_user.id:
             return jsonify({"error": _("غير مصرح: الاشتراك لا يعود لك")}), 403
         # تحقق المبلغ يطابق سعر الاشتراك

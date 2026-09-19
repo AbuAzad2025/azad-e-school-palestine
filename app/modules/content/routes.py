@@ -1,6 +1,7 @@
 """مسارات المحتوى: دروس + وحدات + مرفقات (وصول مقيّد بأعضاء الصف)"""
 
 from app.core import TxError
+from app.core.db import db
 from app.core.permissions import class_access_required, class_teach_required
 from app.models.content import LessonAttachment
 from app.services.access import can_teach_class, can_view_class
@@ -180,7 +181,7 @@ def attachment_youtube(class_id, lesson_id):
 @bp.post("/attachments/<int:att_id>/delete")
 @login_required
 def attachment_delete(att_id):
-    att = LessonAttachment.query.get_or_404(att_id)
+    att = db.get_or_404(LessonAttachment, att_id)
     class_room = _class_or_404(att.lesson.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -192,7 +193,7 @@ def attachment_delete(att_id):
 @bp.get("/attachments/<int:att_id>/download")
 @login_required
 def attachment_download(att_id):
-    att = LessonAttachment.query.get_or_404(att_id)
+    att = db.get_or_404(LessonAttachment, att_id)
     class_room = _class_or_404(att.lesson.class_id)
     if not can_view_class(class_room, current_user):
         abort(403)
@@ -298,7 +299,7 @@ def remove_offline(download_id):
     from app.models.offline import OfflineDownload
     from app.services.offline import remove_offline as _remove_offline
 
-    download = OfflineDownload.query.get_or_404(download_id)
+    download = db.get_or_404(OfflineDownload, download_id)
     if download.student_id != current_user.id:
         abort(403)
 

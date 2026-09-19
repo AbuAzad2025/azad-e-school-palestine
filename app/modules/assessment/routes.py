@@ -111,7 +111,7 @@ def ai_generate_questions():
 @bp.route("/<int:class_id>/quizzes/<int:quiz_id>", methods=["GET", "POST"])
 @class_teach_required
 def quiz_manage(class_id, quiz_id, class_room=None):
-    quiz = Quiz.query.options(selectinload(Quiz.questions)).get_or_404(quiz_id)
+    quiz = db.get_or_404(Quiz, quiz_id, options=[selectinload(Quiz.questions)])
     if quiz.class_id != class_id:
         abort(404)
     form = QuestionForm()
@@ -143,7 +143,7 @@ def quiz_manage(class_id, quiz_id, class_room=None):
 @bp.post("/questions/<int:question_id>/delete")
 @login_required
 def question_delete(question_id):
-    question = Question.query.get_or_404(question_id)
+    question = db.get_or_404(Question, question_id)
     class_room = _class_or_404(question.quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -155,7 +155,7 @@ def question_delete(question_id):
 @bp.get("/quizzes/<int:quiz_id>/attempt")
 @login_required
 def attempt_start(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = db.get_or_404(Quiz, quiz_id)
     class_room = _class_or_404(quiz.class_id)
     if not can_view_class(class_room, current_user):
         abort(403)
@@ -294,7 +294,7 @@ def attempt_result(attempt_id):
 @bp.get("/quizzes/<int:quiz_id>/results")
 @login_required
 def quiz_results(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = db.get_or_404(Quiz, quiz_id)
     class_room = _class_or_404(quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -317,7 +317,7 @@ def quiz_results(quiz_id):
 @bp.post("/answers/<int:answer_id>/grade")
 @login_required
 def answer_grade(answer_id):
-    answer = Answer.query.get_or_404(answer_id)
+    answer = db.get_or_404(Answer, answer_id)
     class_room = _class_or_404(answer.attempt.quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -411,7 +411,7 @@ def question_bank_delete(question_id):
 @bp.get("/quiz/<int:quiz_id>/bank-import")
 @login_required
 def bank_import_page(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = db.get_or_404(Quiz, quiz_id)
     class_room = _class_or_404(quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -427,7 +427,7 @@ def bank_import_page(quiz_id):
 @bp.post("/quiz/<int:quiz_id>/bank-import")
 @login_required
 def bank_import_action(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    quiz = db.get_or_404(Quiz, quiz_id)
     class_room = _class_or_404(quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -504,8 +504,8 @@ def proctor_log(attempt_id):
 def quiz_stats(quiz_id):
     from app.models.assessment import Quiz
 
-    quiz = Quiz.query.get_or_404(quiz_id)
-    class_room = ClassRoom.query.get_or_404(quiz.class_id)
+    quiz = db.get_or_404(Quiz, quiz_id)
+    class_room = db.get_or_404(ClassRoom, quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
 

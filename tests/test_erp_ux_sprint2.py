@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from app.extensions import db
 from app.models.user import User
 from tests.conftest import (
     make_class,
@@ -20,7 +21,7 @@ TEMPLATES_DIR = Path(__file__).parent.parent / "app" / "templates"
 
 def _email(app, user_id):
     with app.app_context():
-        return User.query.get(user_id).email
+        return db.session.get(User, user_id).email
 
 
 def _login(client, email: str, password: str = "TestPass123!"):
@@ -106,7 +107,7 @@ def test_bulk_action_endpoint(app, client):
     data = resp.get_json()
     assert data["success"] is True
     with app.app_context():
-        assert User.query.get(target_id).is_active is False
+        assert db.session.get(User, target_id).is_active is False
 
 
 def test_admin_users_table_has_bulk_and_actions_dropdown(app, client):

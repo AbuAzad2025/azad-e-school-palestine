@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from app.extensions import db
 from app.models.user import User
 from markupsafe import Markup
 from tests.conftest import make_user
@@ -34,7 +35,7 @@ class DummyField:
 
 def _email(app, user_id):
     with app.app_context():
-        return User.query.get(user_id).email
+        return db.session.get(User, user_id).email
 
 
 def _login(client, email: str, password: str = "TestPass123!"):

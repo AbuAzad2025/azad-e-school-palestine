@@ -24,6 +24,7 @@ import pytest
 def _cleanup_ai_singletons():
     """Reset AiService class-level singletons after tests to prevent leakage."""
     from app.services.ai import AiService
+
     yield
     AiService._rate_limiter = None
     AiService._budget_tracker = None
@@ -125,9 +126,12 @@ class TestStripeGateway:
 
         gw = StripeGateway({})
         intent = PaymentIntent(
-            id="test", gateway=PaymentGateway.STRIPE,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.PENDING, user_id=1,
+            id="test",
+            gateway=PaymentGateway.STRIPE,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.PENDING,
+            user_id=1,
         )
         result = gw.verify_payment(intent, {})
         assert result is False
@@ -137,9 +141,12 @@ class TestStripeGateway:
 
         gw = StripeGateway({})
         intent = PaymentIntent(
-            id="test", gateway=PaymentGateway.STRIPE,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.COMPLETED, user_id=1,
+            id="test",
+            gateway=PaymentGateway.STRIPE,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.COMPLETED,
+            user_id=1,
         )
         result = gw.refund(intent)
         assert result is False
@@ -150,9 +157,12 @@ class TestStripeGateway:
         gw = StripeGateway({})
         gw.stripe = MagicMock()  # pretend stripe is installed
         intent = PaymentIntent(
-            id="test", gateway=PaymentGateway.STRIPE,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.COMPLETED, user_id=1,
+            id="test",
+            gateway=PaymentGateway.STRIPE,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.COMPLETED,
+            user_id=1,
             gateway_response=None,
         )
         result = gw.refund(intent)
@@ -165,11 +175,13 @@ class TestPayTabsGateway:
     def test_paytabs_init(self):
         from app.services.payments import PayTabsGateway
 
-        gw = PayTabsGateway({
-            "profile_id": "123",
-            "server_key": "key123",
-            "webhook_secret": "secret123",
-        })
+        gw = PayTabsGateway(
+            {
+                "profile_id": "123",
+                "server_key": "key123",
+                "webhook_secret": "secret123",
+            }
+        )
         assert gw.profile_id == "123"
         assert gw.server_key == "key123"
 
@@ -178,9 +190,12 @@ class TestPayTabsGateway:
 
         gw = PayTabsGateway({})
         intent = PaymentIntent(
-            id="test", gateway=PaymentGateway.PAYTABS,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.PENDING, user_id=1,
+            id="test",
+            gateway=PaymentGateway.PAYTABS,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.PENDING,
+            user_id=1,
         )
         result = gw.verify_payment(intent, {})
         assert result is False
@@ -190,14 +205,20 @@ class TestPayTabsGateway:
 
         gw = PayTabsGateway({"webhook_secret": "my_secret"})
         intent = PaymentIntent(
-            id="test", gateway=PaymentGateway.PAYTABS,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.PENDING, user_id=1,
+            id="test",
+            gateway=PaymentGateway.PAYTABS,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.PENDING,
+            user_id=1,
         )
-        result = gw.verify_payment(intent, {
-            "payload": {"tran_ref": "T1"},
-            "headers": {"X-Paytabs-Signature": "bad_signature"},
-        })
+        result = gw.verify_payment(
+            intent,
+            {
+                "payload": {"tran_ref": "T1"},
+                "headers": {"X-Paytabs-Signature": "bad_signature"},
+            },
+        )
         assert result is False
 
     def test_paytabs_verify_correct_signature(self):
@@ -206,9 +227,12 @@ class TestPayTabsGateway:
 
         gw = PayTabsGateway({"webhook_secret": "my_secret"})
         intent = PaymentIntent(
-            id="paytabs_T1", gateway=PaymentGateway.PAYTABS,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.PENDING, user_id=1,
+            id="paytabs_T1",
+            gateway=PaymentGateway.PAYTABS,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.PENDING,
+            user_id=1,
         )
         payload = {"tran_ref": "T1", "status": "A"}
         payload_bytes = json.dumps(payload, sort_keys=True).encode()
@@ -224,10 +248,13 @@ class TestPayTabsGateway:
                 }
                 mock_get.return_value = mock_resp
                 with patch("app.services.payments.db") as mock_db:
-                    result = gw.verify_payment(intent, {
-                        "payload": payload,
-                        "headers": {"X-Paytabs-Signature": sig},
-                    })
+                    result = gw.verify_payment(
+                        intent,
+                        {
+                            "payload": payload,
+                            "headers": {"X-Paytabs-Signature": sig},
+                        },
+                    )
                     assert result is True
 
 
@@ -245,9 +272,12 @@ class TestWhatsAppGateway:
 
         gw = WhatsAppPaymentGateway({})
         intent = PaymentIntent(
-            id="wa_123", gateway=PaymentGateway.WHATSAPP,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.PENDING, user_id=1,
+            id="wa_123",
+            gateway=PaymentGateway.WHATSAPP,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.PENDING,
+            user_id=1,
         )
         result = gw.verify_payment(intent, {})
         assert result is False
@@ -279,9 +309,12 @@ class TestPaymentService:
 
         gw = ManualPaymentGateway({})
         intent = PaymentIntent(
-            id="manual_123", gateway=PaymentGateway.MANUAL,
-            amount=Decimal("50"), currency="ILS",
-            status=PaymentStatus.PENDING, user_id=1,
+            id="manual_123",
+            gateway=PaymentGateway.MANUAL,
+            amount=Decimal("50"),
+            currency="ILS",
+            status=PaymentStatus.PENDING,
+            user_id=1,
         )
         # Manual gateway requires admin approval
         result = gw.verify_payment(intent, {})
@@ -547,7 +580,9 @@ class TestAiService:
         # This will fail without API key — test the setup path
         with patch.object(svc, "_get_client") as mock_client:
             mock_resp = MagicMock()
-            mock_resp.choices = [MagicMock(message=MagicMock(content='{"score": 8, "feedback": "Good", "mistake": null}'))]
+            mock_resp.choices = [
+                MagicMock(message=MagicMock(content='{"score": 8, "feedback": "Good", "mistake": null}'))
+            ]
             mock_resp.usage = MagicMock(prompt_tokens=100, completion_tokens=50)
             mock_client.return_value.chat.completions.create.return_value = mock_resp
 

@@ -1,5 +1,6 @@
 """مسارات تتبع تقدم الطالب"""
 
+from app.core.db import db
 from app.core.permissions import class_teach_required, role_required
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
@@ -63,7 +64,7 @@ def lesson_heartbeat(lesson_id):
     from app.models.class_room import ClassMember
     from app.models.content import Lesson
 
-    lesson = Lesson.query.get_or_404(lesson_id)
+    lesson = db.get_or_404(Lesson, lesson_id)
     # Ensure student is a member of the lesson's class
     _is_member = ClassMember.query.filter_by(class_id=lesson.class_id, user_id=current_user.id, status="active").first()
     if not _is_member:
@@ -88,7 +89,7 @@ def video_update(attachment_id):
     from app.models.class_room import ClassMember
     from app.models.content import LessonAttachment
 
-    attachment = LessonAttachment.query.get_or_404(attachment_id)
+    attachment = db.get_or_404(LessonAttachment, attachment_id)
     # Ensure student is a member of the lesson's class
     _cls_id = attachment.lesson.class_id
     _is_member = ClassMember.query.filter_by(class_id=_cls_id, user_id=current_user.id, status="active").first()

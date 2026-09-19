@@ -1,5 +1,6 @@
 """اختبارات مكتبة المحتوى المشتركة — استيراد دروس."""
 
+from app.extensions import db
 from app.services.content import import_lesson, shared_lessons
 from tests.conftest import make_attachment, make_class, make_grade, make_lesson, make_school, make_subject, make_user
 
@@ -20,9 +21,8 @@ def test_import_lesson_success(app):
         make_attachment(app, source_lesson_id, kind="video", youtube_url="https://youtube.com/watch?v=abc")
 
         # جعل الدرس مشتركاً
-        source_lesson = Lesson.query.get(source_lesson_id)
+        source_lesson = db.session.get(Lesson, source_lesson_id)
         source_lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 
@@ -31,7 +31,6 @@ def test_import_lesson_success(app):
     assert error is None
     # Query the imported lesson fresh with attachments to avoid DetachedInstanceError
     with app.app_context():
-        from app.extensions import db
         from app.models.content import Lesson
         from sqlalchemy.orm import selectinload
 
@@ -101,9 +100,8 @@ def test_import_lesson_invalid_class_fails(app):
         from app.models.content import Lesson
 
         source_lesson_id = make_lesson(app, source_class_id, title="درس مشترك", status="published")
-        source_lesson = Lesson.query.get(source_lesson_id)
+        source_lesson = db.session.get(Lesson, source_lesson_id)
         source_lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 
@@ -127,10 +125,9 @@ def test_shared_lessons_list(app):
         from app.models.content import Lesson
 
         shared_id = make_lesson(app, class_id, title="درس مشترك", status="published")
-        private_id = make_lesson(app, class_id, title="درس خاص", status="published")
-        shared_lesson = Lesson.query.get(shared_id)
+        make_lesson(app, class_id, title="درس خاص", status="published")
+        shared_lesson = db.session.get(Lesson, shared_id)
         shared_lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 
@@ -155,9 +152,8 @@ def test_import_lesson_student_forbidden(app):
         from app.models.content import Lesson
 
         source_lesson_id = make_lesson(app, source_class_id, title="درس مشترك", status="published")
-        source_lesson = Lesson.query.get(source_lesson_id)
+        source_lesson = db.session.get(Lesson, source_lesson_id)
         source_lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 
@@ -185,9 +181,8 @@ def test_shared_library_page(app, client):
         from app.models.content import Lesson
 
         lesson_id = make_lesson(app, class_id, title="درس مشترك", status="published")
-        lesson = Lesson.query.get(lesson_id)
+        lesson = db.session.get(Lesson, lesson_id)
         lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 
@@ -213,9 +208,8 @@ def test_import_lesson_route_success(app, client):
         from app.models.content import Lesson
 
         source_lesson_id = make_lesson(app, source_class_id, title="درس مشترك", status="published")
-        lesson = Lesson.query.get(source_lesson_id)
+        lesson = db.session.get(Lesson, source_lesson_id)
         lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 
@@ -233,7 +227,7 @@ def test_import_lesson_route_student_forbidden(app, client):
     """الطالب لا يمكنه الوصول لمسار الاستيراد."""
     school_id = make_school(app)
     student_email = f"student_{school_id}@test.com"
-    student_id = make_user(app, role="student", school_id=school_id, email=student_email)
+    make_user(app, role="student", school_id=school_id, email=student_email)
     grade_id = make_grade(app, school_id)
     subject_id = make_subject(app)
     class_id = make_class(
@@ -244,9 +238,8 @@ def test_import_lesson_route_student_forbidden(app, client):
         from app.models.content import Lesson
 
         lesson_id = make_lesson(app, class_id, title="درس مشترك", status="published")
-        lesson = Lesson.query.get(lesson_id)
+        lesson = db.session.get(Lesson, lesson_id)
         lesson.is_shared = True
-        from app.extensions import db
 
         db.session.commit()
 

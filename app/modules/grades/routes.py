@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from app.core.db import db
 from app.core.permissions import class_access_required, class_teach_required
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.gradebook import GradeItem, Submission
@@ -131,7 +132,7 @@ def assignment_submit(class_id, assignment_id, class_room=None):
 def submission_file(submission_id):
     from flask import current_app, send_from_directory
 
-    submission = Submission.query.get_or_404(submission_id)
+    submission = db.get_or_404(Submission, submission_id)
     class_room = _class_or_404(submission.assignment.class_id)
     if not can_view_class(class_room, current_user):
         abort(403)
@@ -144,7 +145,7 @@ def submission_file(submission_id):
 @bp.post("/submissions/<int:submission_id>/grade")
 @login_required
 def submission_grade(submission_id):
-    submission = Submission.query.get_or_404(submission_id)
+    submission = db.get_or_404(Submission, submission_id)
     class_room = _class_or_404(submission.assignment.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -215,7 +216,7 @@ def category_create(class_id, class_room=None):
 def grade_item_create(category_id):
     from app.models.gradebook import GradeCategory
 
-    category = GradeCategory.query.get_or_404(category_id)
+    category = db.get_or_404(GradeCategory, category_id)
     class_room = _class_or_404(category.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -229,7 +230,7 @@ def grade_item_create(category_id):
 @bp.post("/items/<int:item_id>/grade")
 @login_required
 def grade_set(item_id):
-    item = GradeItem.query.get_or_404(item_id)
+    item = db.get_or_404(GradeItem, item_id)
     class_room = _class_or_404(item.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -365,7 +366,7 @@ def rubric_grade(template_id, submission_id):
     from app.models.gradebook import Submission
     from app.services.rubric import get_rubric_grades, get_rubric_template
 
-    submission = Submission.query.get_or_404(submission_id)
+    submission = db.get_or_404(Submission, submission_id)
     class_room = _class_or_404(submission.assignment.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -391,7 +392,7 @@ def rubric_grade_save(submission_id):
     from app.models.gradebook import Submission
     from app.services.rubric import grade_with_rubric
 
-    submission = Submission.query.get_or_404(submission_id)
+    submission = db.get_or_404(Submission, submission_id)
     class_room = _class_or_404(submission.assignment.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -426,7 +427,7 @@ def appeal_submit(submission_id):
     from app.models.gradebook import Submission
     from app.services.grade_appeals import submit_appeal
 
-    submission = Submission.query.get_or_404(submission_id)
+    submission = db.get_or_404(Submission, submission_id)
     if current_user.id != submission.student_id:
         abort(403)
     reason = request.form.get("reason", "").strip()
@@ -448,7 +449,7 @@ def appeal_review(appeal_id):
     from app.models.gradebook import GradeAppeal
     from app.services.grade_appeals import review_appeal
 
-    appeal = GradeAppeal.query.get_or_404(appeal_id)
+    appeal = db.get_or_404(GradeAppeal, appeal_id)
     class_room = _class_or_404(appeal.submission.assignment.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)

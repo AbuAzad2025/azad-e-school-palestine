@@ -147,7 +147,7 @@ class TestCommunicationService:
 
         uid = _user(app)
         with app.app_context():
-            user = __import__("app.models.user", fromlist=["User"]).User.query.get(uid)
+            user = __import__("app.models.user", fromlist=["User"]).db.session.get(User, uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit("test.action", "users", 1, detail={"key": "value"})
@@ -161,7 +161,7 @@ class TestCommunicationService:
 
         uid = _user(app)
         with app.app_context():
-            user = __import__("app.models.user", fromlist=["User"]).User.query.get(uid)
+            user = __import__("app.models.user", fromlist=["User"]).db.session.get(User, uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit(
@@ -184,7 +184,7 @@ class TestCommunicationService:
 
         uid = _user(app)
         with app.app_context():
-            user = __import__("app.models.user", fromlist=["User"]).User.query.get(uid)
+            user = __import__("app.models.user", fromlist=["User"]).db.session.get(User, uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit("test.update", changes={"name": {"old": "a", "new": "b"}})
@@ -773,9 +773,9 @@ class TestSchoolsService:
             _db.session.add(c_obj)
             _db.session.commit()
             student = _user(app, "student")
-            err = join_class(c_obj, User.query.get(student))
+            err = join_class(c_obj, db.session.get(User, student))
             assert err is None
-            assert is_member(c_obj, User.query.get(student)) is True
+            assert is_member(c_obj, db.session.get(User, student)) is True
 
     def test_join_class_already_member(self, app):
         from app.services.schools import join_class
@@ -790,8 +790,8 @@ class TestSchoolsService:
             _db.session.add(c_obj)
             _db.session.commit()
             student = _user(app, "student")
-            join_class(c_obj, User.query.get(student))
-            err = join_class(c_obj, User.query.get(student))
+            join_class(c_obj, db.session.get(User, student))
+            err = join_class(c_obj, db.session.get(User, student))
             assert err is not None
 
     def test_join_class_full(self, app):
@@ -812,9 +812,9 @@ class TestSchoolsService:
             _db.session.add(c_obj)
             _db.session.commit()
             s1 = _user(app, "student")
-            join_class(c_obj, User.query.get(s1))
+            join_class(c_obj, db.session.get(User, s1))
             s2 = _user(app, "student")
-            err = join_class(c_obj, User.query.get(s2))
+            err = join_class(c_obj, db.session.get(User, s2))
             assert "ممتلئ" in err
 
     def test_get_or_create_subject(self, app):
@@ -990,7 +990,7 @@ class TestContentService:
             delete_attachment(att)
             from app.models.content import LessonAttachment
 
-            assert LessonAttachment.query.get(att.id) is None
+            assert db.session.get(LessonAttachment, att.id) is None
 
     def test_shared_lessons(self, app):
         from app.services.content import create_lesson, shared_lessons

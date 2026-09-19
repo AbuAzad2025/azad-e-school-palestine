@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from app.extensions import db
 from app.models.user import User
 from markupsafe import Markup
 from tests.conftest import (
@@ -36,7 +39,7 @@ class DummyField:
 
 def _email(app, user_id):
     with app.app_context():
-        return User.query.get(user_id).email
+        return db.session.get(User, user_id).email
 
 
 def _login(client, email: str, password: str = "TestPass123!"):
@@ -62,7 +65,7 @@ def test_form_row_macro_renders_grid_layout(app):
     # التخطيط الشبكي أصبح عبر الصنف (لا أنماط مضمّنة): صنف المتغيّر في HTML
     # وقاعدة grid-template-columns في app.css.
     assert "azad-form-row--3" in html
-    css = open("app/static/css/app.css", encoding="utf-8").read()
+    css = Path("app/static/css/app.css").read_text(encoding="utf-8")
     assert ".azad-form-row--3" in css
     assert "grid-template-columns: repeat(3, 1fr)" in css
 

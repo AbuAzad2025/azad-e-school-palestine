@@ -1,5 +1,6 @@
 """مسارات التقويم الأكاديمي"""
 
+from app.core.db import db
 from app.core.permissions import role_required
 from app.models.user import UserRole
 from app.services.calendar import create_event, delete_event, list_events
@@ -64,7 +65,7 @@ def event_delete(event_id):
     from app.core.tenancy import current_school_id
     from app.models.calendar import AcademicEvent
 
-    event = AcademicEvent.query.get_or_404(event_id)
+    event = db.get_or_404(AcademicEvent, event_id)
     # school_admin can only delete events in their own school
     if current_user.role == UserRole.school_admin:
         if event.school_id != current_school_id():

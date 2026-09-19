@@ -3,6 +3,7 @@
 from datetime import UTC
 from decimal import Decimal
 
+from app.core.db import db
 from app.core.permissions import role_required
 from app.models.tutoring import TutoringRequest, TutoringSession, TutorReview
 from app.models.user import User, UserRole
@@ -45,7 +46,7 @@ def index():
 
 @bp.get("/tutors/<int:tutor_id>")
 def profile(tutor_id):
-    tutor = User.query.get_or_404(tutor_id)
+    tutor = db.get_or_404(User, tutor_id)
     prof = get_profile(tutor_id)
     if not prof or not prof.is_active:
         abort(404)
@@ -128,7 +129,7 @@ def book(tutor_id):
     if current_user.role != UserRole.student:
         flash(_("حجز الدروس الخصوصية متاح للطلاب فقط. سجّل الدخول بحساب طالب لتتمكن من الحجز."), "warning")
         return redirect(url_for("tutoring.index"))
-    tutor = User.query.get_or_404(tutor_id)
+    tutor = db.get_or_404(User, tutor_id)
     prof = get_profile(tutor_id)
     if not prof or not prof.is_active:
         abort(404)
@@ -177,7 +178,7 @@ def book(tutor_id):
 @bp.post("/requests/<int:req_id>/respond/<result>")
 @login_required
 def respond(req_id, result):
-    req = TutoringRequest.query.get_or_404(req_id)
+    req = db.get_or_404(TutoringRequest, req_id)
     if req.tutor_id != current_user.id:
         abort(403)
     if req.status != "pending":
@@ -197,7 +198,7 @@ def respond(req_id, result):
 @bp.route("/sessions/<int:session_id>", methods=["GET", "POST"])
 @login_required
 def session_detail(session_id):
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     form = SessionForm(obj=session_)
@@ -223,7 +224,7 @@ def session_detail(session_id):
 @bp.post("/sessions/<int:session_id>/pay")
 @login_required
 def session_pay(session_id):
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     # Only the student (payer) can confirm payment
@@ -247,7 +248,7 @@ def session_pay(session_id):
 @bp.route("/sessions/<int:session_id>/status/<value>")
 @login_required
 def session_status(session_id, value):
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     if current_user.id != session_.tutor_id:
@@ -266,7 +267,7 @@ def session_status(session_id, value):
 @login_required
 def live_session_url(session_id):
     """يعود URL الجلسة المباشرة للمعلم أو الطالب."""
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     url = generate_live_session_url(session_id, current_user.id)
@@ -279,7 +280,7 @@ def live_session_url(session_id):
 @login_required
 def live_session_status(session_id):
     """يعرض حالة الجلسة الحية ونشاطها."""
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     return {
@@ -294,7 +295,7 @@ def live_session_status(session_id):
 @login_required
 def start_live_session(session_id):
     """يبدأ الجلسة المباشرة (يحدث من قبل المعلم أو الطالب)."""
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     # تحديث الحالة وتوليد رابط Jitsi تلقائياً
@@ -308,7 +309,7 @@ def start_live_session(session_id):
 @login_required
 def end_live_session(session_id):
     """ينهي الجلسة المباشرة (يحدث من قبل المعلم أو الطالب)."""
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
     update_session_live_status(session_, live_status="completed", online_link=None)
@@ -324,7 +325,7 @@ def rate_session_view(session_id):
 
     from app.models.tutoring import TutoringSession
 
-    session_ = TutoringSession.query.get_or_404(session_id)
+    session_ = db.get_or_404(TutoringSession, session_id)
     if session_.student_id != current_user.id:
         abort(403)
     if session_.status not in ("completed", "ended"):

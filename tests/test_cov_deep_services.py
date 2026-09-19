@@ -597,12 +597,12 @@ class TestImpersonationDeep:
         with app.app_context():
             student = _user(app, "student")
             target = _user(app, "student")
-            u = User.query.get(student)
+            u = db.session.get(User, student)
             with app.test_request_context():
                 from flask_login import login_user
 
                 login_user(u)
-                result = start_impersonation(User.query.get(target))
+                result = start_impersonation(db.session.get(User, target))
                 assert result is not None
                 assert "غير مصرح" in result
 
@@ -611,7 +611,7 @@ class TestImpersonationDeep:
 
         with app.app_context():
             admin_id = _user(app, "super_admin")
-            admin = User.query.get(admin_id)
+            admin = db.session.get(User, admin_id)
             with app.test_request_context():
                 from flask_login import login_user
 
@@ -626,8 +626,8 @@ class TestImpersonationDeep:
         with app.app_context():
             admin1_id = _user(app, "super_admin")
             admin2_id = _user(app, "super_admin")
-            admin1 = User.query.get(admin1_id)
-            target = User.query.get(admin2_id)
+            admin1 = db.session.get(User, admin1_id)
+            target = db.session.get(User, admin2_id)
             with app.test_request_context():
                 from flask_login import login_user
 
@@ -642,10 +642,10 @@ class TestImpersonationDeep:
         with app.app_context():
             admin_id = _user(app, "super_admin")
             target_id = _user(app, "student")
-            target = User.query.get(target_id)
+            target = db.session.get(User, target_id)
             target.is_active = False
             _db.session.commit()
-            admin = User.query.get(admin_id)
+            admin = db.session.get(User, admin_id)
             with app.test_request_context():
                 from flask_login import login_user
 
@@ -715,8 +715,8 @@ class TestAccessDeep:
             subjid = _subject(app)
             cid = _class(app, sid, gid, subjid)
             admin_id = _user(app, "super_admin")
-            admin = User.query.get(admin_id)
-            cls = ClassRoom.query.get(cid)
+            admin = db.session.get(User, admin_id)
+            cls = db.session.get(ClassRoom, cid)
             assert can_view_class(cls, admin) is True
 
     def test_can_teach_class_super_admin(self, app):
@@ -729,8 +729,8 @@ class TestAccessDeep:
             tid = _user(app, "teacher")
             cid = _class(app, sid, gid, subjid, tid)
             admin_id = _user(app, "super_admin")
-            admin = User.query.get(admin_id)
-            cls = ClassRoom.query.get(cid)
+            admin = db.session.get(User, admin_id)
+            cls = db.session.get(ClassRoom, cid)
             assert can_teach_class(cls, admin) is True
 
     def test_can_teach_class_teacher_owner(self, app):
@@ -742,8 +742,8 @@ class TestAccessDeep:
             subjid = _subject(app)
             tid = _user(app, "teacher")
             cid = _class(app, sid, gid, subjid, tid)
-            teacher = User.query.get(tid)
-            cls = ClassRoom.query.get(cid)
+            teacher = db.session.get(User, tid)
+            cls = db.session.get(ClassRoom, cid)
             # Without setting current_school_id, teacher might not match
             # But teacher_id should match
             assert can_teach_class(cls, teacher) is True
@@ -758,8 +758,8 @@ class TestAccessDeep:
             tid = _user(app, "teacher")
             cid = _class(app, sid, gid, subjid, tid)
             other_tid = _user(app, "teacher")
-            other_teacher = User.query.get(other_tid)
-            cls = ClassRoom.query.get(cid)
+            other_teacher = db.session.get(User, other_tid)
+            cls = db.session.get(ClassRoom, cid)
             assert can_teach_class(cls, other_teacher) is False
 
 

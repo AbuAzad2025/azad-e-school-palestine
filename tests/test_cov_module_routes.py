@@ -138,7 +138,7 @@ def _class(app, school_id, grade_id, subject_id, teacher_id=None):
 def _get_email(app, uid):
     """Get user email inside app_context."""
     with app.app_context():
-        return User.query.get(uid).email
+        return db.session.get(User, uid).email
 
 
 class TestAdminRoutes:

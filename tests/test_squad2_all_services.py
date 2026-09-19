@@ -1,7 +1,7 @@
 """SQUAD 2 MEGA: Tests for AI, analytics, gamification, progress, offline,
 quiz_stats, question_bank, tenant, individual, invoice services."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from app.extensions import db
@@ -46,8 +46,8 @@ class TestRateLimiter:
 
     def test_clean_old(self):
         rl = RateLimiter(max_rpm=10, max_tpm=5000)
-        rl.request_times.append(datetime.utcnow().timestamp() - 120)
-        rl.token_usage.append((datetime.utcnow().timestamp() - 120, 100))
+        rl.request_times.append(datetime.now(UTC).timestamp() - 120)
+        rl.token_usage.append((datetime.now(UTC).timestamp() - 120, 100))
         rl._clean_old()
         assert len(rl.request_times) == 0
 

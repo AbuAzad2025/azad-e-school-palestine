@@ -28,8 +28,9 @@ from tests.conftest import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _uid() -> str:
-    return f"_{int(time.time()*1000000)}"
+    return f"_{int(time.time() * 1000000)}"
 
 
 def _make_student(app, school_id=None):
@@ -48,11 +49,13 @@ def _make_super_admin(app):
 # PAYMENTS — all gateway implementations, fraud detection, webhook verification
 # ===========================================================================
 
+
 class TestPaymentsGateways:
     """payments.py — all gateway implementations and PaymentService branches."""
 
     def test_payment_service_singleton(self, app):
         from app.services.payments import get_payment_service
+
         with app.app_context():
             svc1 = get_payment_service()
             svc2 = get_payment_service()
@@ -60,6 +63,7 @@ class TestPaymentsGateways:
 
     def test_payment_intent_dataclass(self, app):
         from app.services.payments import PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             pi = PaymentIntent(
                 id="test_123",
@@ -75,22 +79,28 @@ class TestPaymentsGateways:
 
     def test_payment_intent_default_expiry(self, app):
         from app.services.payments import PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             pi = PaymentIntent(
-                id="test", gateway=PaymentGateway.STRIPE,
-                amount=Decimal("50"), currency="ILS",
-                status=PaymentStatus.PENDING, user_id=1,
+                id="test",
+                gateway=PaymentGateway.STRIPE,
+                amount=Decimal("50"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
             )
             assert pi.expires_at > datetime.now(UTC)
 
     def test_stripe_gateway_init_no_stripe(self, app):
         from app.services.payments import StripeGateway
+
         with app.app_context():
             gw = StripeGateway({})
             assert gw.stripe is None
 
     def test_stripe_gateway_create_no_stripe(self, app):
         from app.services.payments import StripeGateway, PaymentStatus
+
         with app.app_context():
             gw = StripeGateway({})
             with pytest.raises(RuntimeError, match="Stripe not configured"):
@@ -98,61 +108,98 @@ class TestPaymentsGateways:
 
     def test_stripe_refund_no_stripe(self, app):
         from app.services.payments import StripeGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = StripeGateway({})
-            pi = PaymentIntent(id="stripe_test", gateway=PaymentGateway.STRIPE,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="stripe_test",
+                gateway=PaymentGateway.STRIPE,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.refund(pi) is False
 
     def test_stripe_refund_no_response(self, app):
         from app.services.payments import StripeGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = StripeGateway({})
-            pi = PaymentIntent(id="stripe_test", gateway=PaymentGateway.STRIPE,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1,
-                               gateway_response=None)
+            pi = PaymentIntent(
+                id="stripe_test",
+                gateway=PaymentGateway.STRIPE,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+                gateway_response=None,
+            )
             assert gw.refund(pi) is False
 
     def test_paytabs_verify_no_secret(self, app):
         from app.services.payments import PayTabsGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = PayTabsGateway({})
-            pi = PaymentIntent(id="pt_test", gateway=PaymentGateway.PAYTABS,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="pt_test",
+                gateway=PaymentGateway.PAYTABS,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.verify_payment(pi, {"payload": {}, "headers": {}}) is False
 
     def test_paytabs_refund_returns_false(self, app):
         from app.services.payments import PayTabsGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = PayTabsGateway({})
-            pi = PaymentIntent(id="pt_test", gateway=PaymentGateway.PAYTABS,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="pt_test",
+                gateway=PaymentGateway.PAYTABS,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.refund(pi) is False
 
     def test_cashu_verify_no_secret(self, app):
         from app.services.payments import CashUGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = CashUGateway({})
-            pi = PaymentIntent(id="cashu_test", gateway=PaymentGateway.CASHU,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="cashu_test",
+                gateway=PaymentGateway.CASHU,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.verify_payment(pi, {"payload": {}, "headers": {}}) is False
 
     def test_cashu_refund_returns_false(self, app):
         from app.services.payments import CashUGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = CashUGateway({})
-            pi = PaymentIntent(id="cashu_test", gateway=PaymentGateway.CASHU,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="cashu_test",
+                gateway=PaymentGateway.CASHU,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.refund(pi) is False
 
     def test_cashu_create_intent(self, app):
         from app.services.payments import CashUGateway, PaymentStatus
+
         with app.app_context():
             gw = CashUGateway({})
             pi = gw.create_payment_intent(Decimal("50"), "ILS", 42, {"key": "val"})
@@ -162,16 +209,23 @@ class TestPaymentsGateways:
 
     def test_whatsapp_verify_admin_approved(self, app):
         from app.services.payments import WhatsAppPaymentGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = WhatsAppPaymentGateway({})
-            pi = PaymentIntent(id="wa_test", gateway=PaymentGateway.WHATSAPP,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="wa_test",
+                gateway=PaymentGateway.WHATSAPP,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.verify_payment(pi, {"admin_approved": True}) is True
             assert gw.verify_payment(pi, {}) is False
 
     def test_whatsapp_build_message(self, app):
         from app.services.payments import WhatsAppPaymentGateway
+
         with app.app_context():
             gw = WhatsAppPaymentGateway({})
             msg = gw._build_payment_message(Decimal("100"), {"description": "Test", "currency": "ILS"})
@@ -180,6 +234,7 @@ class TestPaymentsGateways:
 
     def test_whatsapp_build_message_no_metadata(self, app):
         from app.services.payments import WhatsAppPaymentGateway
+
         with app.app_context():
             gw = WhatsAppPaymentGateway({})
             msg = gw._build_payment_message(Decimal("50"), None)
@@ -187,34 +242,53 @@ class TestPaymentsGateways:
 
     def test_whatsapp_refund_returns_false(self, app):
         from app.services.payments import WhatsAppPaymentGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = WhatsAppPaymentGateway({})
-            pi = PaymentIntent(id="wa_test", gateway=PaymentGateway.WHATSAPP,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="wa_test",
+                gateway=PaymentGateway.WHATSAPP,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.refund(pi) is False
 
     def test_manual_verify_admin_approved(self, app):
         from app.services.payments import ManualPaymentGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = ManualPaymentGateway({})
-            pi = PaymentIntent(id="m_test", gateway=PaymentGateway.MANUAL,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="m_test",
+                gateway=PaymentGateway.MANUAL,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.verify_payment(pi, {"admin_approved": True}) is True
             assert gw.verify_payment(pi, {}) is False
 
     def test_manual_refund_returns_false(self, app):
         from app.services.payments import ManualPaymentGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = ManualPaymentGateway({})
-            pi = PaymentIntent(id="m_test", gateway=PaymentGateway.MANUAL,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="m_test",
+                gateway=PaymentGateway.MANUAL,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.refund(pi) is False
 
     def test_get_gateway_config_all(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             for gw_type in PaymentGateway:
@@ -225,6 +299,7 @@ class TestPaymentsGateways:
 
     def test_extract_subscription_id_stripe(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             payload = {"data": {"object": {"metadata": {"subscription_id": "42"}}}}
@@ -232,6 +307,7 @@ class TestPaymentsGateways:
 
     def test_extract_subscription_id_paytabs(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             payload = {"metadata": {"subscription_id": "55"}}
@@ -239,6 +315,7 @@ class TestPaymentsGateways:
 
     def test_extract_subscription_id_cashu(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             payload = {"metadata": {"subscription_id": "77"}}
@@ -246,24 +323,28 @@ class TestPaymentsGateways:
 
     def test_extract_subscription_id_whatsapp_returns_none(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             assert svc._extract_subscription_id({}, PaymentGateway.WHATSAPP) is None
 
     def test_extract_subscription_id_manual_returns_none(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             assert svc._extract_subscription_id({}, PaymentGateway.MANUAL) is None
 
     def test_extract_subscription_id_unknown_returns_none(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             assert svc._extract_subscription_id({}, "unknown") is None
 
     def test_extract_amount_stripe(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             payload = {"data": {"object": {"amount_received": 10000}}}
@@ -271,12 +352,14 @@ class TestPaymentsGateways:
 
     def test_extract_amount_stripe_no_amount(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             assert svc._extract_amount({}, PaymentGateway.STRIPE) is None
 
     def test_extract_amount_paytabs(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             payload = {"cart_amount": 50.0}
@@ -284,6 +367,7 @@ class TestPaymentsGateways:
 
     def test_extract_amount_cashu(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             payload = {"amount": 75.0}
@@ -291,12 +375,14 @@ class TestPaymentsGateways:
 
     def test_extract_amount_unknown(self, app):
         from app.services.payments import PaymentService, PaymentGateway
+
         with app.app_context():
             svc = PaymentService()
             assert svc._extract_amount({}, "unknown") is None
 
     def test_fraud_detection_no_data(self, app):
         from app.services.payments import PaymentService
+
         with app.app_context():
             svc = PaymentService()
             sid = make_school(app)
@@ -304,17 +390,24 @@ class TestPaymentsGateways:
 
     def test_cleanup_expired_intents(self, app):
         from app.services.payments import PaymentService
+
         with app.app_context():
             svc = PaymentService()
             assert svc.cleanup_expired_intents() == 0
 
     def test_stripe_verify_no_webhook_secret(self, app):
         from app.services.payments import StripeGateway, PaymentIntent, PaymentGateway, PaymentStatus
+
         with app.app_context():
             gw = StripeGateway({})
-            pi = PaymentIntent(id="stripe_test", gateway=PaymentGateway.STRIPE,
-                               amount=Decimal("100"), currency="ILS",
-                               status=PaymentStatus.PENDING, user_id=1)
+            pi = PaymentIntent(
+                id="stripe_test",
+                gateway=PaymentGateway.STRIPE,
+                amount=Decimal("100"),
+                currency="ILS",
+                status=PaymentStatus.PENDING,
+                user_id=1,
+            )
             assert gw.verify_payment(pi, {"payload": "", "headers": {}}) is False
 
 
@@ -322,11 +415,13 @@ class TestPaymentsGateways:
 # AI SERVICE — RateLimiter, BudgetTracker, mock grading, sessions
 # ===========================================================================
 
+
 class TestAiServiceBranches:
     """ai.py — RateLimiter, BudgetTracker, AiService internals."""
 
     def test_rate_limiter_allows(self, app):
         from app.services.ai import RateLimiter
+
         with app.app_context():
             rl = RateLimiter(max_rpm=60, max_tpm=100000)
             ok, msg = rl.can_proceed(1000)
@@ -334,6 +429,7 @@ class TestAiServiceBranches:
 
     def test_rate_limiter_rpm_exceeded(self, app):
         from app.services.ai import RateLimiter
+
         with app.app_context():
             rl = RateLimiter(max_rpm=2, max_tpm=100000)
             rl.record_request(100)
@@ -344,6 +440,7 @@ class TestAiServiceBranches:
 
     def test_rate_limiter_tpm_exceeded(self, app):
         from app.services.ai import RateLimiter
+
         with app.app_context():
             rl = RateLimiter(max_rpm=100, max_tpm=200)
             rl.record_request(150)
@@ -354,6 +451,7 @@ class TestAiServiceBranches:
     def test_rate_limiter_cleans_old(self, app):
         from app.services.ai import RateLimiter
         import time
+
         with app.app_context():
             rl = RateLimiter(max_rpm=1, max_tpm=100000)
             rl.record_request(100)
@@ -365,6 +463,7 @@ class TestAiServiceBranches:
 
     def test_budget_tracker_allows(self, app):
         from app.services.ai import BudgetTracker
+
         with app.app_context():
             bt = BudgetTracker(monthly_budget_usd=100.0)
             ok, msg = bt.can_spend(10.0)
@@ -372,6 +471,7 @@ class TestAiServiceBranches:
 
     def test_budget_tracker_exceeded(self, app):
         from app.services.ai import BudgetTracker
+
         with app.app_context():
             bt = BudgetTracker(monthly_budget_usd=10.0)
             ok, msg = bt.can_spend(15.0)
@@ -380,6 +480,7 @@ class TestAiServiceBranches:
 
     def test_budget_tracker_records(self, app):
         from app.services.ai import BudgetTracker
+
         with app.app_context():
             bt = BudgetTracker(monthly_budget_usd=100.0)
             bt.record_spending(50.0)
@@ -389,6 +490,7 @@ class TestAiServiceBranches:
 
     def test_budget_tracker_monthly_reset(self, app):
         from app.services.ai import BudgetTracker
+
         with app.app_context():
             bt = BudgetTracker(monthly_budget_usd=100.0)
             bt.record_spending(80.0)
@@ -398,6 +500,7 @@ class TestAiServiceBranches:
 
     def test_budget_tracker_usage_percent_zero_budget(self, app):
         from app.services.ai import BudgetTracker
+
         with app.app_context():
             bt = BudgetTracker(monthly_budget_usd=0)
             usage = bt.get_usage()
@@ -405,12 +508,14 @@ class TestAiServiceBranches:
 
     def test_ai_config_from_env(self, app):
         from app.services.ai import AiConfig
+
         with app.app_context():
             config = AiConfig()
             assert config.model  # has a default
 
     def test_estimate_cost(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             cost = svc._estimate_cost(1000, 1000)
@@ -418,6 +523,7 @@ class TestAiServiceBranches:
 
     def test_estimate_cost_unknown_model(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             svc.config.model = "unknown-model"
@@ -426,6 +532,7 @@ class TestAiServiceBranches:
 
     def test_check_limits_no_limiter(self, app):
         from app.services.ai import AiService, RateLimiter, BudgetTracker
+
         with app.app_context():
             AiService._rate_limiter = None
             AiService._budget_tracker = None
@@ -435,6 +542,7 @@ class TestAiServiceBranches:
 
     def test_check_limits_rate_limited(self, app):
         from app.services.ai import AiService, RateLimiter, BudgetTracker
+
         with app.app_context():
             AiService._rate_limiter = RateLimiter(max_rpm=1, max_tpm=100000)
             AiService._rate_limiter.record_request(100)
@@ -446,6 +554,7 @@ class TestAiServiceBranches:
 
     def test_mock_grade_mcq(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             result = svc._mock_grade("mcq", {"index": 0})
@@ -453,6 +562,7 @@ class TestAiServiceBranches:
 
     def test_mock_grade_true_false(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             result = svc._mock_grade("true_false", {"value": True})
@@ -460,6 +570,7 @@ class TestAiServiceBranches:
 
     def test_mock_grade_essay(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             result = svc._mock_grade("essay", None)
@@ -468,6 +579,7 @@ class TestAiServiceBranches:
 
     def test_mock_grade_unknown(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             result = svc._mock_grade("matching", None)
@@ -475,6 +587,7 @@ class TestAiServiceBranches:
 
     def test_mock_generate_questions(self, app):
         from app.services.ai import AiService
+
         with app.app_context():
             svc = AiService()
             qs = svc._mock_generate_questions("Math", 3, ["mcq", "true_false", "essay"])
@@ -486,6 +599,7 @@ class TestAiServiceBranches:
     def test_verify_permission_super_admin(self, app):
         from app.services.ai import AiService
         from app.models.user import User, UserRole
+
         with app.app_context():
             svc = AiService()
             uid = _make_super_admin(app)
@@ -496,6 +610,7 @@ class TestAiServiceBranches:
     def test_verify_permission_correct_role(self, app):
         from app.services.ai import AiService
         from app.models.user import User, UserRole
+
         with app.app_context():
             svc = AiService()
             uid = _make_student(app)
@@ -505,6 +620,7 @@ class TestAiServiceBranches:
     def test_verify_permission_wrong_role(self, app):
         from app.services.ai import AiService
         from app.models.user import User, UserRole
+
         with app.app_context():
             svc = AiService()
             uid = _make_student(app)
@@ -514,6 +630,7 @@ class TestAiServiceBranches:
     def test_verify_permission_set_of_roles(self, app):
         from app.services.ai import AiService
         from app.models.user import User, UserRole
+
         with app.app_context():
             svc = AiService()
             uid = _make_student(app)
@@ -522,6 +639,7 @@ class TestAiServiceBranches:
 
     def test_get_client_no_openai(self, app):
         from app.services.ai import AiService, OPENAI_AVAILABLE
+
         with app.app_context():
             if OPENAI_AVAILABLE:
                 pytest.skip("openai is installed")
@@ -531,6 +649,7 @@ class TestAiServiceBranches:
 
     def test_model_pricing_coverage(self, app):
         from app.services.ai import MODEL_PRICING
+
         with app.app_context():
             for model, prices in MODEL_PRICING.items():
                 assert "input" in prices
@@ -543,12 +662,14 @@ class TestAiServiceBranches:
 # PERMISSIONS — decorator import + callable check
 # ===========================================================================
 
+
 class TestPermissionsDecorators:
     """permissions.py — verify all decorators are callable."""
 
     def test_role_required_callable(self, app):
         from app.core.permissions import role_required
         from app.models.user import UserRole
+
         with app.app_context():
             deco = role_required(UserRole.student)
             assert callable(deco)
@@ -556,6 +677,7 @@ class TestPermissionsDecorators:
     def test_any_role_needs_auth(self, app):
         from app.core.permissions import any_role
         from app.models.user import UserRole
+
         # any_role calls _has_any which accesses current_user (None outside request)
         with app.app_context():
             with pytest.raises(AttributeError):
@@ -563,21 +685,25 @@ class TestPermissionsDecorators:
 
     def test_class_access_required_callable(self, app):
         from app.core.permissions import class_access_required
+
         with app.app_context():
             assert callable(class_access_required)
 
     def test_class_teach_required_callable(self, app):
         from app.core.permissions import class_teach_required
+
         with app.app_context():
             assert callable(class_teach_required)
 
     def test_parent_of_required_callable(self, app):
         from app.core.permissions import parent_of_required
+
         with app.app_context():
             assert callable(parent_of_required)
 
     def test_student_only_callable(self, app):
         from app.core.permissions import student_only
+
         with app.app_context():
             assert callable(student_only)
 

@@ -14,6 +14,7 @@ from typing import Any
 
 from app.core.api import api_error, api_paginated, api_response
 from app.core.api_auth import api_auth_required
+from app.core.db import db
 from app.core.logging import get_logger
 from app.core.permissions import role_required
 from app.models.billing import Subscription, SubscriptionPlan
@@ -166,7 +167,7 @@ def api_lessons_list():
 @api_auth_required
 def api_lessons_get(lesson_id: int):
     """جلب درس محدد."""
-    lesson = Lesson.query.get(lesson_id)
+    lesson = db.session.get(Lesson, lesson_id)
     if not lesson:
         return api_error(_("الدرس غير موجود"), 404, "NOT_FOUND")
 
@@ -244,7 +245,7 @@ def api_tutoring_sessions_list():
 @api_auth_required
 def api_tutoring_sessions_get(session_id: int):
     """جلب جلسة تعليمية محددة."""
-    session = TutoringSession.query.get(session_id)
+    session = db.session.get(TutoringSession, session_id)
     if not session:
         return api_error(_("الجلسة غير موجودة"), 404, "NOT_FOUND")
 

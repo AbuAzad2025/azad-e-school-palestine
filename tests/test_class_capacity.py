@@ -18,8 +18,8 @@ def test_class_without_capacity_allows_join(app):
     with app.app_context():
         from app.models.user import User
 
-        student = User.query.get(student_id)
-        room = ClassRoom.query.get(class_id)
+        student = db.session.get(User, student_id)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, student)
         assert result is None
 
@@ -34,7 +34,7 @@ def test_class_at_capacity_blocks_join(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 2
         db.session.commit()
 
@@ -47,8 +47,8 @@ def test_class_at_capacity_blocks_join(app):
         s3_id = make_user(app, role="student")
         from app.models.user import User
 
-        s3 = User.query.get(s3_id)
-        room = ClassRoom.query.get(class_id)
+        s3 = db.session.get(User, s3_id)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, s3)
         assert result is not None
 
@@ -63,7 +63,7 @@ def test_class_below_capacity_allows_join(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 5
         db.session.commit()
 
@@ -74,8 +74,8 @@ def test_class_below_capacity_allows_join(app):
         s2_id = make_user(app, role="student")
         from app.models.user import User
 
-        s2 = User.query.get(s2_id)
-        room = ClassRoom.query.get(class_id)
+        s2 = db.session.get(User, s2_id)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, s2)
         assert result is None
 
@@ -90,7 +90,7 @@ def test_class_exact_capacity_blocks(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 1
         db.session.commit()
 
@@ -101,8 +101,8 @@ def test_class_exact_capacity_blocks(app):
         s2_id = make_user(app, role="student")
         from app.models.user import User
 
-        s2 = User.query.get(s2_id)
-        room = ClassRoom.query.get(class_id)
+        s2 = db.session.get(User, s2_id)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, s2)
         assert result is not None
 
@@ -117,7 +117,7 @@ def test_member_removed_frees_spot(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 2
         db.session.commit()
 
@@ -134,8 +134,8 @@ def test_member_removed_frees_spot(app):
         s3_id = make_user(app, role="student")
         from app.models.user import User
 
-        s3 = User.query.get(s3_id)
-        room = ClassRoom.query.get(class_id)
+        s3 = db.session.get(User, s3_id)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, s3)
         assert result is None
 
@@ -150,7 +150,7 @@ def test_max_students_zero_allows_unlimited(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 0
         db.session.commit()
 
@@ -162,8 +162,8 @@ def test_max_students_zero_allows_unlimited(app):
         s_new_id = make_user(app, role="student")
         from app.models.user import User
 
-        s_new = User.query.get(s_new_id)
-        room = ClassRoom.query.get(class_id)
+        s_new = db.session.get(User, s_new_id)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, s_new)
         assert result is None
 
@@ -178,10 +178,10 @@ def test_class_with_capacity_set(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 30
         db.session.commit()
-        c2 = ClassRoom.query.get(class_id)
+        c2 = db.session.get(ClassRoom, class_id)
         assert c2.max_students == 30
 
 
@@ -195,7 +195,7 @@ def test_existing_member_not_affected_by_capacity(app):
     class_id = make_class(app, school_id, grade_id, subject_id, teacher_id)
 
     with app.app_context():
-        c = ClassRoom.query.get(class_id)
+        c = db.session.get(ClassRoom, class_id)
         c.max_students = 1
         db.session.commit()
 
@@ -205,7 +205,7 @@ def test_existing_member_not_affected_by_capacity(app):
 
         from app.models.user import User
 
-        s1_user = User.query.get(s1)
-        room = ClassRoom.query.get(class_id)
+        s1_user = db.session.get(User, s1)
+        room = db.session.get(ClassRoom, class_id)
         result = join_class(room, s1_user)
         assert result is not None

@@ -228,7 +228,7 @@ def users_list():
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def user_detail(user_id):
-    user = User.query.options(selectinload(User.role_links).joinedload(UserRoleLink.school)).get_or_404(user_id)
+    user = db.get_or_404(User, user_id, options=[selectinload(User.role_links).joinedload(UserRoleLink.school)])
     memberships = user.role_links
     return render_template("admin/user_detail.html", user=user, memberships=memberships)
 
@@ -237,7 +237,7 @@ def user_detail(user_id):
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def user_toggle(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == current_user.id:
         flash(_("لا يمكنك تعطيل حسابك الخاص"), "warning")
     else:
@@ -312,7 +312,7 @@ def user_impersonate(user_id):
     actor = impersonator_user() or current_user
     if actor.role != UserRole.super_admin:
         abort(403)
-    target = User.query.get_or_404(user_id)
+    target = db.get_or_404(User, user_id)
     error = start_impersonation(target)
     if error:
         flash(_(error), "danger")
@@ -367,7 +367,7 @@ def schools_list():
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def school_detail(school_id):
-    school = School.query.get_or_404(school_id)
+    school = db.get_or_404(School, school_id)
     classes = (
         ClassRoom.query.filter_by(school_id=school_id, is_active=True)
         .options(
@@ -417,7 +417,7 @@ def subscriptions_list():
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def subscription_cancel(sub_id):
-    sub = Subscription.query.get_or_404(sub_id)
+    sub = db.get_or_404(Subscription, sub_id)
 
     def _cancel():
         sub.status = "cancelled"
@@ -431,11 +431,15 @@ def subscription_cancel(sub_id):
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def subscription_detail(sub_id):
-    sub = Subscription.query.options(
-        joinedload(Subscription.user),
-        joinedload(Subscription.plan),
-        joinedload(Subscription.payments).joinedload(ManualPayment.receipts),
-    ).get_or_404(sub_id)
+    sub = db.get_or_404(
+        Subscription,
+        sub_id,
+        options=[
+            joinedload(Subscription.user),
+            joinedload(Subscription.plan),
+            joinedload(Subscription.payments).joinedload(ManualPayment.receipts),
+        ],
+    )
     now = datetime.now(UTC)
     steps = [
         {
@@ -553,7 +557,7 @@ def pending_payments():
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def payment_approve(payment_id):
     """اعتماد الدفع اليدوي وتفعيل الاشتراك + إنشاء عضوية الصف."""
-    payment = ManualPayment.query.get_or_404(payment_id)
+    payment = db.get_or_404(ManualPayment, payment_id)
     from app.services.billing import approve_payment
 
     approve_payment(payment, reviewer_id=current_user.id)
@@ -593,7 +597,7 @@ def payment_approve(payment_id):
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def payment_reject(payment_id):
     """رفض الدفع وإلغاء الاشتراك."""
-    payment = ManualPayment.query.get_or_404(payment_id)
+    payment = db.get_or_404(ManualPayment, payment_id)
     from app.services.billing import reject_payment
 
     reject_payment(payment, reviewer_id=current_user.id)
@@ -906,7 +910,7 @@ def pending_registrations():
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def registration_approve(user_id):
     """قبول تسجيل مستخدم"""
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.approval_status != UserApprovalStatus.pending:
         flash(_("هذا المستخدم ليس في حالة انتظار"), "warning")
         return redirect(url_for("admin.pending_registrations"))
@@ -928,7 +932,7 @@ def registration_approve(user_id):
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def registration_reject(user_id):
     """رفض تسجيل مستخدم"""
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.approval_status != UserApprovalStatus.pending:
         flash(_("هذا المستخدم ليس في حالة انتظار"), "warning")
         return redirect(url_for("admin.pending_registrations"))
@@ -1103,7 +1107,7 @@ def contact_mark_read(message_id):
     """تمييز رسالة كمقروءة"""
     from app.models.communication import ContactMessage
 
-    msg = ContactMessage.query.get_or_404(message_id)
+    msg = db.get_or_404(ContactMessage, message_id)
     if msg.status == "new":
 
         def _mark_read():
@@ -1121,7 +1125,7 @@ def contact_reply(message_id):
     from app.models.communication import ContactMessage
     from app.services.email import send_contact_reply_email
 
-    msg = ContactMessage.query.get_or_404(message_id)
+    msg = db.get_or_404(ContactMessage, message_id)
     reply_text = request.form.get("reply_text", "").strip()
     if not reply_text:
         flash(_("نص الرد مطلوب"), "danger")
@@ -1166,7 +1170,7 @@ def review_payout(payout_id, result):
     """اعتماد أو رفض طلب سحب"""
     from app.models.tutoring import TutorCommission, TutorPayout
 
-    payout = TutorPayout.query.get_or_404(payout_id)
+    payout = db.get_or_404(TutorPayout, payout_id)
     if result == "approve":
         payout.status = "approved"
         payout.reviewed_by = current_user.id
