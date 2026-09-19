@@ -491,7 +491,7 @@ class TestAuthService:
 
         with app.app_context():
             uid = _user(app)
-            u = db.session.get(User, uid)
+            u = _db.session.get(User, uid)
             u.is_active = False
             _db.session.commit()
             user, err = authenticate(u.email, "TestPass123!")
@@ -503,7 +503,7 @@ class TestAuthService:
 
         with app.app_context():
             uid = _user(app)
-            u = db.session.get(User, uid)
+            u = _db.session.get(User, uid)
             token = request_password_reset(u.email)
             assert token is not None
 
@@ -519,7 +519,7 @@ class TestAuthService:
 
         with app.app_context():
             uid = _user(app)
-            u = db.session.get(User, uid)
+            u = _db.session.get(User, uid)
             mark_login(u)
             assert u.last_login_at is not None
 
