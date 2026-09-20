@@ -147,7 +147,7 @@ class TestCommunicationService:
 
         uid = _user(app)
         with app.app_context():
-            user = __import__("app.models.user", fromlist=["User"])._db.session.get(User, uid)
+            user = _db.session.get(User, uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit("test.action", "users", 1, detail={"key": "value"})
@@ -161,7 +161,7 @@ class TestCommunicationService:
 
         uid = _user(app)
         with app.app_context():
-            user = __import__("app.models.user", fromlist=["User"])._db.session.get(User, uid)
+            user = _db.session.get(User, uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit(
@@ -184,7 +184,7 @@ class TestCommunicationService:
 
         uid = _user(app)
         with app.app_context():
-            user = __import__("app.models.user", fromlist=["User"])._db.session.get(User, uid)
+            user = _db.session.get(User, uid)
             with app.test_request_context(environ_base={"REMOTE_ADDR": "127.0.0.1"}):
                 login_user(user)
                 audit("test.update", changes={"name": {"old": "a", "new": "b"}})
