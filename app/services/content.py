@@ -1,6 +1,7 @@
 """خدمات المحتوى: الوحدات والدروس والمرفقات (رفع آمن عبر core/uploads)."""
 
 import bleach
+from bleach.css_sanitizer import CSSSanitizer
 from sqlalchemy.orm import selectinload
 
 from app.core.db import tx
@@ -49,6 +50,9 @@ ALLOWED_HTML_ATTRS = {
     "*": ["class", "style", "dir", "lang"],
 }
 
+# تنظيف قيم style المضمّنة (يمنع url()/expression()) — يلغي NoCssSanitizerWarning.
+_CSS_SANITIZER = CSSSanitizer()
+
 
 def _sanitize_html(raw: str | None) -> str | None:
     """ينظف HTML من عناصر خطرة (script, iframe, event handlers) مع الحفاظ على التنسيق."""
@@ -58,6 +62,7 @@ def _sanitize_html(raw: str | None) -> str | None:
         raw,
         tags=ALLOWED_HTML_TAGS,
         attributes=ALLOWED_HTML_ATTRS,
+        css_sanitizer=_CSS_SANITIZER,
         strip=True,
     )
 

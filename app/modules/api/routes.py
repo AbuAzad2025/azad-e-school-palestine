@@ -288,7 +288,7 @@ def api_users_list():
         user_ids_in_school = (
             UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active.is_(True))
             .with_entities(UserRoleLink.user_id)
-            .subquery()
+            .scalar_subquery()
         )
         query = query.filter(User.id.in_(user_ids_in_school))
 
@@ -354,7 +354,7 @@ def api_classes_list():
         member_class_ids = (
             ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
             .with_entities(ClassMember.class_id)
-            .subquery()
+            .scalar_subquery()
         )
         query = query.filter(ClassRoom.id.in_(member_class_ids))
 
@@ -454,19 +454,19 @@ def api_search():
         user_ids_in_school = (
             UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active.is_(True))
             .with_entities(UserRoleLink.user_id)
-            .subquery()
+            .scalar_subquery()
         )
         user_q = user_q.filter(User.id.in_(user_ids_in_school))
     elif role in (UserRole.student, UserRole.parent, UserRole.teacher):
         class_ids = (
             ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
             .with_entities(ClassMember.class_id)
-            .subquery()
+            .scalar_subquery()
         )
         member_user_ids = (
             ClassMember.query.filter(ClassMember.class_id.in_(class_ids), ClassMember.status == "active")
             .with_entities(ClassMember.user_id)
-            .subquery()
+            .scalar_subquery()
         )
         user_q = user_q.filter(User.id.in_(member_user_ids))
     else:
@@ -494,7 +494,7 @@ def api_search():
         member_class_ids = (
             ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
             .with_entities(ClassMember.class_id)
-            .subquery()
+            .scalar_subquery()
         )
         class_q = class_q.filter(ClassRoom.id.in_(member_class_ids))
 

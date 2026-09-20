@@ -54,7 +54,7 @@ def compose(reply_to: int | None = None):
             .filter(ClassRoom.school_id == school_id, ClassMember.status == "active")
             .with_entities(ClassMember.user_id)
             .distinct()
-            .subquery()
+            .scalar_subquery()
         )
         users = (
             User.query.filter(
