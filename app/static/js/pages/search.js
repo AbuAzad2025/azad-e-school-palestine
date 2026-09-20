@@ -182,6 +182,8 @@ function renderResults(data) {
   // Refresh result items reference for keyboard nav
   resultItems = Array.from(container.querySelectorAll(".azad-search-result"));
   activeIndex = -1;
+  // إزالة أي aria-activedescendant قديم أصبح يشير لعنصر لم يعد موجوداً
+  updateActiveItem();
 }
 
 let abortController = null;
@@ -199,6 +201,8 @@ async function performSearch(query) {
     }
     activeIndex = -1;
     resultItems = [];
+    // الإزاحة القديمة أصبحت معلقة بعد تفريغ النتائج — نمسحها
+    updateActiveItem();
     return;
   }
 
