@@ -13,7 +13,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from tests.conftest import _uid, make_user
 
 PASSWORD = "TestPass123!"
@@ -22,14 +21,25 @@ PASSWORD = "TestPass123!"
 @pytest.fixture(autouse=True)
 def _reset_ai_singletons():
     """Isolate class-level singletons between tests (rate/budget state leaks)."""
+    import app.services.ai as ai_mod
     from app.services.ai import AiService
 
-    saved = (AiService._rate_limiter, AiService._budget_tracker, AiService._client)
+    saved = (
+        AiService._rate_limiter,
+        AiService._budget_tracker,
+        AiService._client,
+        ai_mod.OPENAI_AVAILABLE,
+    )
     AiService._rate_limiter = None
     AiService._budget_tracker = None
     AiService._client = None
     yield
-    AiService._rate_limiter, AiService._budget_tracker, AiService._client = saved
+    (
+        AiService._rate_limiter,
+        AiService._budget_tracker,
+        AiService._client,
+        ai_mod.OPENAI_AVAILABLE,
+    ) = saved
 
 
 def _mock_completion(content: str, prompt_tokens: int = 120, completion_tokens: int = 60) -> MagicMock:
@@ -40,8 +50,16 @@ def _mock_completion(content: str, prompt_tokens: int = 120, completion_tokens: 
 
 
 def _with_api_key(svc) -> None:
-    """Force the 'real API' code paths offline-deterministically."""
+    """Force the 'real API' code paths offline-deterministically.
+
+    The service gates on the module-level OPENAI_AVAILABLE flag (set once at
+    import time). CI installs no openai package, so we must patch the flag
+    too — api_key alone selects the real paths only where the SDK exists.
+    """
+    import app.services.ai as ai_mod
+
     svc.config.api_key = "sk-test-key"
+    ai_mod.OPENAI_AVAILABLE = True
 
 
 class TestLimitsRefusalPaths:
@@ -124,9 +142,7 @@ class TestSuggestGradeRealAndErrors:
             svc._record_usage = MagicMock()
             payload = json.dumps({"score": 9, "feedback": "ممتاز", "mistake": None})
             with patch.object(AiService, "_get_client") as gc:
-                gc.return_value.chat.completions.create = AsyncMock(
-                    return_value=_mock_completion(payload, 200, 80)
-                )
+                gc.return_value.chat.completions.create = AsyncMock(return_value=_mock_completion(payload, 200, 80))
                 result = asyncio.run(
                     svc.suggest_grade(
                         student_answer="B",
@@ -148,12 +164,8 @@ class TestSuggestGradeRealAndErrors:
             _with_api_key(svc)
             for qt in ("true_false", "essay", "short_answer"):
                 with patch.object(AiService, "_get_client") as gc:
-                    gc.return_value.chat.completions.create = AsyncMock(
-                        side_effect=RuntimeError("boom")
-                    )
-                    result = asyncio.run(
-                        svc.suggest_grade(student_answer="ج", question_type=qt, correct_answer="ص")
-                    )
+                    gc.return_value.chat.completions.create = AsyncMock(side_effect=RuntimeError("boom"))
+                    result = asyncio.run(svc.suggest_grade(student_answer="ج", question_type=qt, correct_answer="ص"))
                 assert "error" in result
                 assert "fallback" in result
                 assert result["fallback"]["score"] >= 5
@@ -170,7 +182,6 @@ class TestSuggestGradeRealAndErrors:
             assert "fallback" in result
 
     def test_mock_grade_question_type_matrix(self, app):
-        from app.services.ai import AiService
 
         with app.app_context():
             svc = self._svc(app)
@@ -191,17 +202,9 @@ class TestGenerateQuestionsRealAndErrors:
             svc = AiService()
             _with_api_key(svc)
             svc._record_usage = MagicMock()  # hardcoded user_id=0 would violate FK
-            payload = json.dumps(
-                {
-                    "questions": [
-                        {"type": "mcq", "prompt": f"س{i}"} for i in range(4)
-                    ]
-                }
-            )
+            payload = json.dumps({"questions": [{"type": "mcq", "prompt": f"س{i}"} for i in range(4)]})
             with patch.object(AiService, "_get_client") as gc:
-                gc.return_value.chat.completions.create = AsyncMock(
-                    return_value=_mock_completion(payload, 300, 150)
-                )
+                gc.return_value.chat.completions.create = AsyncMock(return_value=_mock_completion(payload, 300, 150))
                 qs = asyncio.run(svc.generate_questions(topic="الكسور", count=2, user_id=1))
             assert len(qs) == 2  # truncated to count
             assert qs[0]["prompt"] == "س0"
@@ -216,9 +219,7 @@ class TestGenerateQuestionsRealAndErrors:
             svc._record_usage = MagicMock()  # hardcoded user_id=0 would violate FK
             payload = json.dumps([{"type": "essay", "prompt": "ق1"}])
             with patch.object(AiService, "_get_client") as gc:
-                gc.return_value.chat.completions.create = AsyncMock(
-                    return_value=_mock_completion(payload)
-                )
+                gc.return_value.chat.completions.create = AsyncMock(return_value=_mock_completion(payload))
                 qs = asyncio.run(svc.generate_questions(topic="قواعد", count=5))
             assert qs == [{"type": "essay", "prompt": "ق1"}]
 
@@ -229,9 +230,7 @@ class TestGenerateQuestionsRealAndErrors:
             svc = AiService()
             _with_api_key(svc)
             with patch.object(AiService, "_get_client") as gc:
-                gc.return_value.chat.completions.create = AsyncMock(
-                    side_effect=RuntimeError("network down")
-                )
+                gc.return_value.chat.completions.create = AsyncMock(side_effect=RuntimeError("network down"))
                 qs = asyncio.run(svc.generate_questions(topic="هندسة", count=3))
             assert "error" in qs[0]
             assert len(qs) == 4  # error marker + 3 mock questions
@@ -278,29 +277,19 @@ class TestChatStreamingPaths:
                     _chunk("مرحبا "),
                     _chunk("بك"),
                     _chunk(None),  # empty delta skipped
-                    _chunk("",
-                           usage=MagicMock(prompt_tokens=90, completion_tokens=30)),
+                    _chunk("", usage=MagicMock(prompt_tokens=90, completion_tokens=30)),
                 ]
             )
             with patch.object(AiService, "_get_client") as gc:
                 gc.return_value.chat.completions.create = AsyncMock(return_value=stream_obj)
-                chunks = asyncio.run(
-                    _collect(svc._real_stream([{"role": "user", "content": "hi"}], session.id))
-                )
+                chunks = asyncio.run(_collect(svc._real_stream([{"role": "user", "content": "hi"}], session.id)))
 
             assert chunks[-1] == "data: [DONE]\n\n"
-            joined = "".join(chunks)
             # JSON-escaped unicode — decode the deltas before asserting content
-            deltas = [
-                json.loads(c[6:])["delta"]
-                for c in chunks
-                if c.startswith("data: {")
-            ]
+            deltas = [json.loads(c[6:])["delta"] for c in chunks if c.startswith("data: {")]
             assert "مرحبا" in "".join(deltas) and "بك" in "".join(deltas)
             assistant = (
-                AiMessage.query.filter_by(session_id=session.id, role="assistant")
-                .order_by(AiMessage.id.desc())
-                .first()
+                AiMessage.query.filter_by(session_id=session.id, role="assistant").order_by(AiMessage.id.desc()).first()
             )
             assert assistant is not None and "مرحبا بك" in assistant.content
             db.session.rollback()
@@ -311,9 +300,7 @@ class TestChatStreamingPaths:
         with app.app_context():
             svc = AiService()
             AiService._rate_limiter = RateLimiter(max_rpm=0, max_tpm=10_000)
-            chunks = asyncio.run(
-                _collect(svc._real_stream([{"role": "user", "content": "hi"}], 1))
-            )
+            chunks = asyncio.run(_collect(svc._real_stream([{"role": "user", "content": "hi"}], 1)))
             assert any("error" in c for c in chunks)
             assert chunks[-1] == "data: [DONE]\n\n"
 
@@ -325,6 +312,7 @@ class TestChatStreamingPaths:
             svc = AiService()
             _with_api_key(svc)
             with patch.object(svc, "_real_stream") as rs:
+
                 async def _boom(*a, **k):
                     raise RuntimeError("connection reset")
                     yield  # pragma: no cover
