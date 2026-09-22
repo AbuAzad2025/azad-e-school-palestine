@@ -1065,14 +1065,44 @@ class TestAdminRouteGaps:
         assert "dashboard" in resp.location
 
     def test_subscription_detail_unknown_status_else_arm(self, app):
-        """سطر 474: حالة خارج القوائم المعروفة → فرع else في الخط الزمني."""
-        sid, cid = _setup_class(app)
-        uid, _ = mk_user(app, role="student", school_id=sid)
-        pid = make_subscription_plan(app, sid, cid)
-        sub_id = make_subscription(app, uid, pid, cid, status="draft")
-        client = login_as(app, mk_user(app, role="super_admin"))
-        resp = client.get(f"/admin/subscriptions/{sub_id}")
-        assert resp.status_code == 200
+        """سطر 474: حالة خارج القوائم المعروفة → فرع else في الخط الزمني.
+
+        القاعدة بعد المايجريشن (كما في CI) تفرض قيد ck_subscription_status يمنع
+        إدراج حالات غير معروفة مثل "draft"، لذا نمرّر كائن Subscription غير
+        محفوظ مباشرة إلى الدالة (مع تعطيل جلب البيانات فقط) — نفس المنطق،
+        بلا تعارض مع قيد القاعدة."""
+        from app.extensions import db
+        from app.models.billing import Subscription
+        from app.models.user import User
+        from app.modules.admin import routes as admin_routes
+        from flask_login import login_user
+
+        admin_id, _ = mk_user(app, role="super_admin")
+
+        sub = Subscription(user_id=admin_id, plan_id=None, class_id=None, price=Decimal("100"))
+        sub.status = "حالة-مجهولة"  # type: ignore[assignment]
+        sub.id = 474
+        sub.payments = []
+        sub.user = MagicMock()
+        sub.user.name_ar = "طالب"
+
+        with app.app_context():
+            with app.test_request_context():
+                login_user(db.session.get(User, admin_id))
+                with (
+                    patch.object(admin_routes.db, "get_or_404", return_value=sub),
+                    patch.object(admin_routes, "render_template", return_value="ok") as rt,
+                ):
+                    resp = admin_routes.subscription_detail(474)
+        assert resp == "ok"
+        assert rt.call_args.args[0] == "admin/subscription_detail.html"
+        steps = rt.call_args.kwargs["timeline_steps"]
+        # الخطوة الأولى (مُرسل) منجزة دائماً، وكل أذرع else غير منجزة وغير نشطة وبلا تاريخ
+        assert steps[0]["done"] is True
+        for step in steps[1:]:
+            assert step["done"] is False
+            assert step["active"] is False
+            assert step["date"] is None
 
 
 class TestAiRouteGaps:

@@ -152,22 +152,26 @@ class TestAllowedExtension:
     )
     def test_allowed_extension(self, app, filename, expected):
         with app.test_request_context():
-            app.config["ALLOWED_EXTENSIONS"] = {
-                "pdf",
-                "png",
-                "jpg",
-                "jpeg",
-                "webp",
-                "gif",
-                "mp4",
-                "webm",
-                "mp3",
-                "docx",
-                "pptx",
-                "xlsx",
-            }
-            result = allowed_extension(filename)
-            assert result is expected
+            original = app.config["ALLOWED_EXTENSIONS"]
+            try:
+                app.config["ALLOWED_EXTENSIONS"] = {
+                    "pdf",
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "webp",
+                    "gif",
+                    "mp4",
+                    "webm",
+                    "mp3",
+                    "docx",
+                    "pptx",
+                    "xlsx",
+                }
+                result = allowed_extension(filename)
+                assert result is expected
+            finally:
+                app.config["ALLOWED_EXTENSIONS"] = original
 
 
 # ---------------------------------------------------------------------------
@@ -298,38 +302,60 @@ class TestSaveUpload:
 
     def test_disallowed_extension_raises_error(self, app):
         with app.test_request_context():
-            app.config["ALLOWED_EXTENSIONS"] = {"pdf"}
-            file = FileStorage(stream=BytesIO(b"test"), filename="malware.exe", content_type="application/x-executable")
-            with pytest.raises(TxError):
-                save_upload(file)
+            original = app.config["ALLOWED_EXTENSIONS"]
+            try:
+                app.config["ALLOWED_EXTENSIONS"] = {"pdf"}
+                file = FileStorage(
+                    stream=BytesIO(b"test"), filename="malware.exe", content_type="application/x-executable"
+                )
+                with pytest.raises(TxError):
+                    save_upload(file)
+            finally:
+                app.config["ALLOWED_EXTENSIONS"] = original
 
     def test_disallowed_mime_raises_error(self, app):
         with app.test_request_context():
-            app.config["ALLOWED_EXTENSIONS"] = {"pdf"}
-            file = FileStorage(stream=BytesIO(b"test"), filename="file.pdf", content_type="text/html")
-            with pytest.raises(TxError):
-                save_upload(file)
+            original = app.config["ALLOWED_EXTENSIONS"]
+            try:
+                app.config["ALLOWED_EXTENSIONS"] = {"pdf"}
+                file = FileStorage(stream=BytesIO(b"test"), filename="file.pdf", content_type="text/html")
+                with pytest.raises(TxError):
+                    save_upload(file)
+            finally:
+                app.config["ALLOWED_EXTENSIONS"] = original
 
     def test_invalid_content_raises_error(self, app):
         with app.test_request_context():
-            app.config["ALLOWED_EXTENSIONS"] = {"pdf"}
-            content = b"<html>not a pdf</html>" + b"\x00" * 80
-            file = FileStorage(stream=BytesIO(content), filename="file.pdf", content_type="application/pdf")
-            with pytest.raises(TxError):
-                save_upload(file)
+            original = app.config["ALLOWED_EXTENSIONS"]
+            try:
+                app.config["ALLOWED_EXTENSIONS"] = {"pdf"}
+                content = b"<html>not a pdf</html>" + b"\x00" * 80
+                file = FileStorage(stream=BytesIO(content), filename="file.pdf", content_type="application/pdf")
+                with pytest.raises(TxError):
+                    save_upload(file)
+            finally:
+                app.config["ALLOWED_EXTENSIONS"] = original
 
     def test_valid_file_succeeds(self, app):
         with app.test_request_context():
-            app.config["ALLOWED_EXTENSIONS"] = {"png"}
-            content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
-            file = FileStorage(stream=BytesIO(content), filename="test.png", content_type="image/png")
-            result = save_upload(file)
-            assert result.endswith(".png")
+            original = app.config["ALLOWED_EXTENSIONS"]
+            try:
+                app.config["ALLOWED_EXTENSIONS"] = {"png"}
+                content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+                file = FileStorage(stream=BytesIO(content), filename="test.png", content_type="image/png")
+                result = save_upload(file)
+                assert result.endswith(".png")
+            finally:
+                app.config["ALLOWED_EXTENSIONS"] = original
 
     def test_subfolder(self, app):
         with app.test_request_context():
-            app.config["ALLOWED_EXTENSIONS"] = {"png"}
-            content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
-            file = FileStorage(stream=BytesIO(content), filename="test.png", content_type="image/png")
-            result = save_upload(file, subfolder="receipts")
-            assert result.startswith("receipts/")
+            original = app.config["ALLOWED_EXTENSIONS"]
+            try:
+                app.config["ALLOWED_EXTENSIONS"] = {"png"}
+                content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+                file = FileStorage(stream=BytesIO(content), filename="test.png", content_type="image/png")
+                result = save_upload(file, subfolder="receipts")
+                assert result.startswith("receipts/")
+            finally:
+                app.config["ALLOWED_EXTENSIONS"] = original

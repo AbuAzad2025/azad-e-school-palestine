@@ -315,6 +315,22 @@ def app():
     yield a
 
 
+@pytest.fixture(autouse=True)
+def _isolate_app_config(request):
+    """يحمي app الـsession-scoped من تسريب تعديلات config بين الاختبارات.
+
+    أي اختبار يعدّل app.config يُستعاد بعده تلقائياً — لا يتسرب التعديل
+    للاختبارات اللاحقة (خاصة عبر ملفات اختبار متعددة)."""
+    if "app" not in request.fixturenames:
+        yield
+        return
+    app = request.getfixturevalue("app")
+    snapshot = dict(app.config)
+    yield
+    app.config.clear()
+    app.config.update(snapshot)
+
+
 def _guard_dev_database() -> None:
     """رفض تشغيل الاختبارات على قاعدة بيانات تحتوي بيانات حقيقية/بذور.
 
