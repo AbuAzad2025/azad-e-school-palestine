@@ -215,10 +215,10 @@ class TestClassJoin:
         client = login_as(app, email)
         code = f"J{make_school.__name__[:2].upper()}{id(app) % 1000:04d}X"
         with app.app_context():
-            room = ClassRoom.query.get(cid)
-            room.join_code = code
             from app.extensions import db
 
+            room = db.session.get(ClassRoom, cid)
+            room.join_code = code
             db.session.commit()
         resp = client.post("/schools/classes/join", data={"code": code}, follow_redirects=True)
         assert resp.status_code == 200
