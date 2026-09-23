@@ -143,7 +143,9 @@ class TestFindPgTool:
         monkeypatch.setattr(os, "environ", {**os.environ, "ProgramFiles": str(pf)})
         monkeypatch.setattr(
             "os.path.expandvars",
-            lambda s: s.replace("%ProgramFiles%", str(pf)).replace("%ProgramFiles(x86)%", str(pf)),
+            lambda s: s.replace("%ProgramFiles%", str(pf))
+            .replace("%ProgramFiles(x86)%", str(pf))
+            .replace("\\", "/"),
         )
 
         from app.modules.admin.routes import _find_pg_tool

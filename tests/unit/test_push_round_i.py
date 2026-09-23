@@ -550,11 +550,11 @@ class TestServicePureBits:
         assert _parse_llm_response("") is None
 
     def test_webp_magic(self, app):
-        """RIFF prefix maps to video/webm; short headers (<4 bytes) are rejected."""
+        """RIFF....WEBP → image/webp; generic RIFF → video/webm; <4 bytes rejected."""
         from app.core.uploads import _detect_magic_type
 
-        assert _detect_magic_type(b"RIFF\x00\x00\x00\x00WEBP", ".webp") == "video/webm"
-        assert _detect_magic_type(b"RIFF", ".webp") == "video/webm"  # 4-byte RFF prefix still detected
+        assert _detect_magic_type(b"RIFF\x00\x00\x00\x00WEBP", ".webp") == "image/webp"
+        assert _detect_magic_type(b"RIFF", ".webp") == "video/webm"  # 4-byte RIFF without WEBP tag
         assert _detect_magic_type(b"RIF", ".webp") is None  # too short (<4 bytes)
 
     def test_fmt_date_fallback(self, app):
