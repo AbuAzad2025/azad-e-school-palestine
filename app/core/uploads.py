@@ -69,10 +69,12 @@ def _detect_magic_type(header: bytes, ext: str) -> str | None:
     # MP4 (ftyp box)
     if header[4:8] == b"ftyp":
         return "video/mp4"
+    # WebP (RIFF....WEBP) — must be checked before the generic RIFF/WebM rule
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "image/webp"
     # WebM/Matroska
     if header[:4] == b"RIFF":
         return "video/webm"
-    # ZIP (docx/xlsx/pptx)
     if header[:4] == b"PK\x03\x04":
         ext_lower = ext.lower()
         if ext_lower in OFFICE_EXTENSIONS:
@@ -89,9 +91,6 @@ def _detect_magic_type(header: bytes, ext: str) -> str | None:
     # GIF
     if header[:6] in (b"GIF87a", b"GIF89a"):
         return "image/gif"
-    # WebP (RIFF....WEBP)
-    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
-        return "image/webp"
 
     return None
 

@@ -42,25 +42,24 @@ class _TxContext:
     are discarded so they never fire.
     """
 
-    __slots__ = ("is_outermost", "hooks", "_depth_token")
+    __slots__ = ("is_outermost", "hooks", "_depth_token", "_parent")
 
     def __init__(self) -> None:
         current = _tx_depth.get()
         self.is_outermost = current == 0
         self.hooks: list[Callable[[], None]] = []
         self._depth_token = _tx_depth.set(current + 1)
-        # Register as the current context so tx_on_commit() can append directly
+        # Remember the context active before us (parent) and register ourselves
+        # as current so tx_on_commit() appends here (stack semantics).
+        self._parent = _current_tx_ctx.get(None)
         _current_tx_ctx.set(self)
 
     def finalize(self, *, committed: bool) -> None:
         """Restore depth.  If this was the outermost tx and we committed,
         drain accumulated hooks.  Otherwise, propagate hooks upward."""
         _tx_depth.reset(self._depth_token)
-        # Clear current context reference
-        if not self.is_outermost:
-            _current_tx_ctx.set(None)
-        else:
-            _current_tx_ctx.set(None)
+        # Pop the stack: restore the parent context (None at the top level).
+        _current_tx_ctx.set(self._parent)
 
         if committed and self.is_outermost:
             # Fire hooks outside any transaction context
@@ -68,9 +67,8 @@ class _TxContext:
         elif committed and not self.is_outermost:
             # Inner tx committed (savepoint released) — propagate hooks
             # upward to the parent _TxContext (which is still active).
-            parent = _current_tx_ctx.get(None)
-            if parent is not None:
-                parent.hooks.extend(self.hooks)
+            if self._parent is not None:
+                self._parent.hooks.extend(self.hooks)
 
 
 def _drain_post_commit_hooks(hooks: list[Callable[[], None]]) -> None:
