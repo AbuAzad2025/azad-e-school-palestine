@@ -1,5 +1,6 @@
 """مسارات المصادقة: تسجيل، دخول، خروج، إعادة تعيين كلمة مرور"""
 
+from app.models.user import UserRole
 from app.services.auth import authenticate, mark_login, register_user, request_password_reset
 from app.services.auth import reset_password as reset_user_password
 from flask import current_app, flash, make_response, redirect, render_template, url_for
@@ -55,6 +56,7 @@ def login():
                 redirect_target = url_for("schools.my_classes")
             elif user.role == UserRole.student:
                 from app.core.context import is_individual
+
                 redirect_target = url_for("individual.my_courses") if is_individual() else url_for("schools.my_classes")
             elif user.role == UserRole.parent:
                 redirect_target = url_for("family.index")
