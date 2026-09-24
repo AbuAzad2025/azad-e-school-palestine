@@ -2,7 +2,7 @@
 
 from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
-from wtforms import EmailField, PasswordField, RadioField, SelectField, StringField, SubmitField
+from wtforms import BooleanField, EmailField, PasswordField, RadioField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
 
 
@@ -54,13 +54,14 @@ class LoginForm(FlaskForm):
     email = EmailField(
         _("البريد الإلكتروني"),
         validators=[DataRequired(), Email()],
-        render_kw={"maxlength": "254"},
+        render_kw={"maxlength": "254", "autocomplete": "email"},
     )
     password = PasswordField(
         _("كلمة المرور"),
         validators=[DataRequired()],
-        render_kw={"maxlength": "128"},
+        render_kw={"maxlength": "128", "autocomplete": "current-password"},
     )
+    remember = BooleanField(_("تذكّرني"))
     submit = SubmitField(_("تسجيل الدخول"))
 
 

@@ -43,10 +43,23 @@ def login():
         if error:
             flash(_(error), "danger")
         elif user is not None:
-            login_user(user)
+            login_user(user, remember=form.remember.data)
             is_first_login = user.last_login_at is None
             mark_login(user)
-            resp = make_response(redirect(url_for("auth.dashboard")))
+
+            # تحويل مباشر للوحة المطلوبة حسب الدور — بدون تعقيد أو تكدس
+            redirect_target = url_for("auth.dashboard")
+            if user.role == UserRole.super_admin or user.role == UserRole.school_admin:
+                redirect_target = url_for("admin.dashboard")
+            elif user.role == UserRole.teacher:
+                redirect_target = url_for("schools.my_classes")
+            elif user.role == UserRole.student:
+                from app.core.context import is_individual
+                redirect_target = url_for("individual.my_courses") if is_individual() else url_for("schools.my_classes")
+            elif user.role == UserRole.parent:
+                redirect_target = url_for("family.index")
+
+            resp = make_response(redirect(redirect_target))
             if is_first_login:
                 resp.set_cookie("azad_show_tour", "1", max_age=300, path="/")
             return resp

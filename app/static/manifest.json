@@ -21,7 +21,7 @@
     {
       "name": "لوحتي",
       "short_name": "لوحة",
-      "url": "/my/dashboard",
+      "url": "/dashboard",
       "icons": [{"src": "/static/img/icon-192.png", "sizes": "192x192"}]
     }
   ]
