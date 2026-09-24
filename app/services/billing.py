@@ -185,7 +185,7 @@ def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> S
 
     def _approve():
         # P2-10: منع إعادة الاعتماد (توسيع الاشتراك مجاناً)
-        locked = db.session.execute(
+        locked: ManualPayment = db.session.execute(
             db.select(ManualPayment).where(ManualPayment.id == payment.id).with_for_update()
         ).scalar_one()
         if locked.status != "pending":
@@ -225,7 +225,7 @@ def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> No
     """
 
     def _reject():
-        locked = db.session.execute(
+        locked: ManualPayment = db.session.execute(
             db.select(ManualPayment).where(ManualPayment.id == payment.id).with_for_update()
         ).scalar_one()
         if locked.status != "pending":

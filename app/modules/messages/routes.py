@@ -1,5 +1,7 @@
 """مسارات الرسائل: صندوق وارد، إرسال، خيوط، تحديد مقروءة."""
 
+from collections.abc import Sequence
+
 from app.extensions import db
 from app.models.message import Message
 from app.models.user import User
@@ -100,7 +102,7 @@ def thread_view(message_id: int):
         abort(403)
     if msg.recipient_id == current_user.id:
         mark_read(msg.id, current_user.id)
-    replies = (
+    replies: Sequence[Message] = (
         db.session.execute(db.select(Message).filter_by(parent_message_id=msg.id).order_by(Message.created_at.asc()))
         .scalars()
         .all()
