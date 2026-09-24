@@ -5,11 +5,11 @@ models/user.py 69              (is_authenticated_prop)
 modules/admin/routes.py 314    (impersonate while impersonating non-super)
 modules/api/routes.py 473      (search: admin role with no school → filter(False))
 modules/billing/routes.py 36   (_class_or_404 → abort 404)
-modules/grades/routes.py 308   (report_card_pdf render branch)
+modules/grades/routes.py 308   (report_card_pdf parent non-child → 403)
 modules/media/routes.py 100    (realpath traversal guard → 403)
 modules/payments/routes.py 201 (verify_payment → gateway refuses → 400)
 modules/progress/routes.py 49  (student_detail parent non-child → 403)
-modules/schools/routes.py 32   (_school_id_or_abort abort arm)
+modules/schools/routes.py 32   (_school_id_or_abort success return arm)
 modules/tutoring/routes.py 341 (rate window: naive end_time coercion)
 services/access.py 55          (can_view_class parent direct member)
 services/ai.py 30              (openai import success arm)
@@ -50,6 +50,35 @@ def _api_token(app, uid: int) -> str:
 
     with app.app_context():
         return make_api_token(uid)
+
+
+def _end_time_loaded_naive():
+    """Simulate a non-TZ backend: strip tzinfo whenever a TutoringSession loads.
+
+    On PostgreSQL TSTZ every read reattaches tzinfo (verified: even a Core
+    UPDATE with type_coerce(DateTime) comes back aware), so the defensive
+    ``tzinfo is None`` coercion arms are unreachable through stored values.
+    A load-event hook exercises them exactly the way a naive-datetime
+    backend would deliver the row.
+    """
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _ctx():
+        from app.models.tutoring import TutoringSession
+        from sqlalchemy import event
+
+        def _naivize(target, _ctx):
+            if target.end_time is not None and target.end_time.tzinfo is not None:
+                target.end_time = target.end_time.replace(tzinfo=None)
+
+        event.listen(TutoringSession, "load", _naivize)
+        try:
+            yield
+        finally:
+            event.remove(TutoringSession, "load", _naivize)
+
+    return _ctx()
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -175,6 +204,20 @@ class TestReportCardPdfRender:
         resp = client.get(f"/classes/{class_id}/report-card/999999/pdf")
         assert resp.status_code in (200, 302)
 
+    def test_report_card_pdf_parent_not_of_student_403(self, app, client):
+        """Parent passes can_view_class (direct member) but is_parent_of fails
+        for the requested student → abort(403)."""
+        from tests.conftest import make_class, make_class_member, make_grade, make_school, make_subject, make_user
+
+        school_id = make_school(app)
+        parent_uid = make_user(app, role="parent", school_id=school_id)
+        other_uid = make_user(app, role="student", school_id=school_id)
+        class_id = make_class(app, school_id, make_grade(app, school_id), make_subject(app))
+        make_class_member(app, class_id, parent_uid)
+        _login(client, app, parent_uid)
+        resp = client.get(f"/classes/{class_id}/report-card/{other_uid}/pdf")
+        assert resp.status_code == 403
+
 
 # ═════════════════════════════════════════════════════════════════════
 # modules/media/routes.py:100 — realpath traversal guard
@@ -281,6 +324,20 @@ class TestSchoolIdOrAbort:
                 _school_id_or_abort()
         assert getattr(excinfo.value, "code", None) == 403
 
+    def test_authenticated_school_user_returns_school_id(self, app):
+        """Line 32: ``return sid`` — the success arm (never reached by app routes)."""
+        from app.extensions import db
+        from app.models.user import User
+        from app.modules.schools.routes import _school_id_or_abort
+        from flask_login import login_user
+        from tests.conftest import make_school, make_user
+
+        school_id = make_school(app)
+        uid = make_user(app, role="teacher", school_id=school_id)
+        with app.test_request_context("/schools/"):
+            login_user(db.session.get(User, uid))
+            assert _school_id_or_abort() == school_id
+
 
 # ═════════════════════════════════════════════════════════════════════
 # modules/tutoring/routes.py:341 — rate window coercion of naive end_time
@@ -288,9 +345,22 @@ class TestSchoolIdOrAbort:
 
 
 class TestTutoringRateWindow:
+    def test_end_time_loaded_naive_guard(self, app):
+        """Guard: with the load hook active the attribute really reads naive."""
+        from app.extensions import db
+        from app.models.tutoring import TutoringSession
+        from tests.conftest import make_tutoring_session, make_user
+
+        sid = make_tutoring_session(app, make_user(app, role="teacher"), make_user(app, role="student"))
+        with _end_time_loaded_naive():
+            with app.app_context():
+                s = db.session.get(TutoringSession, sid)
+                assert s.end_time is not None
+                assert s.end_time.tzinfo is None
+
     def test_rate_form_coerces_naive_end_time(self, app, client):
-        """end_time naive (DB round-trip) + duration_min=0 → replace(tzinfo=UTC)
-        arm executes and the GET renders the rate form."""
+        """end_time delivered naive (non-TZ backend simulation) + duration_min=0
+        → replace(tzinfo=UTC) arm executes and the GET renders the rate form."""
         from app.extensions import db
         from app.models.tutoring import TutoringSession
         from tests.conftest import make_tutoring_session, make_user
@@ -299,12 +369,11 @@ class TestTutoringRateWindow:
         student_uid = make_user(app, role="student")
         sid = make_tutoring_session(app, tutor_uid, student_uid, status="completed")
         with app.app_context():
-            s = db.session.get(TutoringSession, sid)
-            s.end_time = (datetime.now(UTC) - timedelta(hours=1)).replace(tzinfo=None)
-            s.duration_min = 0
+            db.session.get(TutoringSession, sid).duration_min = 0  # no recompute from scheduled_at
             db.session.commit()
         _login(client, app, student_uid)
-        resp = client.get(f"/tutoring/rate/{sid}")
+        with _end_time_loaded_naive():
+            resp = client.get(f"/tutoring/rate/{sid}")
         assert resp.status_code == 200
 
 
@@ -508,8 +577,6 @@ class TestRejectApproverMissing:
 
 class TestRateSessionSuccess:
     def test_rate_session_creates_review(self, app):
-        from app.extensions import db
-        from app.models.tutoring import TutoringSession
         from app.services.tutoring import rate_session
         from tests.conftest import make_tutoring_session, make_user
 
@@ -517,14 +584,17 @@ class TestRateSessionSuccess:
         student_uid = make_user(app, role="student")
         sid = make_tutoring_session(app, tutor_uid, student_uid, status="completed")
         with app.app_context():
-            s = db.session.get(TutoringSession, sid)
-            s.end_time = (datetime.now(UTC) - timedelta(hours=1)).replace(tzinfo=None)
-            s.duration_min = 0
+            from app.extensions import db
+            from app.models.tutoring import TutoringSession
+
+            db.session.get(TutoringSession, sid).duration_min = 0
             db.session.commit()
-            review, err = rate_session(sid, student_uid, 5)
-            assert err is None
-            assert review is not None
-            assert review.rating == 5
+        with _end_time_loaded_naive():
+            with app.app_context():
+                review, err = rate_session(sid, student_uid, 5)
+                assert err is None
+                assert review is not None
+                assert review.rating == 5
 
 
 # ═════════════════════════════════════════════════════════════════════
