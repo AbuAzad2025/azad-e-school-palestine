@@ -163,7 +163,7 @@ jobs:
           PYTHONPATH: .
           SECRET_KEY: ci-asset-quality-key
           APP_ENV: testing
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           FLASK_APP: run.py
         run: |
           pytest tests/test_css_architecture.py tests/test_wcag_aa.py \
@@ -213,7 +213,7 @@ jobs:
       - name: Run migrations
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-test-key
           FLASK_APP: run.py
           TALISMAN_ENABLED: "0"
@@ -222,7 +222,7 @@ jobs:
       - name: Run tests
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-test-key-not-for-production
           FLASK_APP: run.py
           TALISMAN_FORCE_HTTPS: "0"
@@ -352,7 +352,7 @@ jobs:
       - name: Run migrations
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           TALISMAN_ENABLED: "0"
@@ -361,7 +361,7 @@ jobs:
       - name: Run E2E
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           APP_ENV: testing
@@ -423,7 +423,7 @@ jobs:
       - name: flask db upgrade
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-key
           FLASK_APP: run.py
         run: flask db upgrade
@@ -431,7 +431,7 @@ jobs:
       - name: flask db downgrade
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-key
           FLASK_APP: run.py
         run: flask db downgrade -- -1
@@ -439,7 +439,7 @@ jobs:
       - name: Verify app boot
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
           SECRET_KEY: ci-key
           FLASK_APP: run.py
           APP_ENV: testing
