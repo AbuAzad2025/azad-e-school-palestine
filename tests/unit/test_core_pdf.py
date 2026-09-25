@@ -255,6 +255,8 @@ def test_font_readiness_warning_when_missing(app, tmp_path, monkeypatch):
 
 def test_pdf_embeds_shaped_arabic_glyphs():
     """الخط العربي مدمج والتشكيل ظاهر في PDF نهائي (font != fallback)."""
+    pytest.importorskip("pypdf")  # فحص عميق للاستخراج — اختياري في CI
+
     from app.core.pdf import (
         blank_pdf_document,
         build_pdf_bytes,
