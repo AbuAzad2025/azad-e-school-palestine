@@ -697,7 +697,7 @@ class TestPaymentService:
 
 
 class TestInvoicePdfGaps:
-    def test_pdf_success_real_bytes(self, app):
+    def test_pdf_success_real_bytes(self, app, tmp_path, monkeypatch):
         from app.services.invoice import generate_invoice_number, render_invoice_pdf
         from tests.conftest import (
             make_class,
@@ -718,6 +718,7 @@ class TestInvoicePdfGaps:
             sub = make_subscription(app, uid, plan, cid, price=80.0, status="active")
             from app.services.invoice import generate_invoice_html
 
+            monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
             with app.test_request_context("/"):
                 html = generate_invoice_html(sub)
                 assert html is not None
@@ -728,8 +729,8 @@ class TestInvoicePdfGaps:
                 )
                 assert "INV-" in number
                 pdf = render_invoice_pdf(sub)
-                # xhtml2pdf قد يكون مثبتاً أو لا — كلاهما عقد صالح
-                assert pdf is None or isinstance(pdf, bytes)
+                assert isinstance(pdf, bytes)
+                assert bytes(pdf)[:5] == b"%PDF-"
 
     def test_pdf_html_none(self, app):
         from app.services.invoice import render_invoice_pdf

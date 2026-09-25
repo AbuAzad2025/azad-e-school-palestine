@@ -1068,11 +1068,30 @@ class TestServiceMicroBranches:
             login_user(db.session.get(User, uid))
             assert can_view_class(db.session.get(ClassRoom, cid), db.session.get(User, uid)) is True
 
-    def test_invoice_pdf_error_returns_none(self, app):
+    def test_invoice_pdf_error_returns_none(self, app, tmp_path, monkeypatch):
+        """فشل بناء قصة الفاتورة → render_invoice_pdf يعيد None (بلا انهيار)."""
         from app.services import invoice as inv
+        from tests.conftest import (
+            make_class,
+            make_grade,
+            make_school,
+            make_subject,
+            make_subscription,
+            make_subscription_plan,
+            make_user,
+        )
 
-        fake = MagicMock()
-        fake.err = 1
-        with patch.object(inv, "generate_invoice_html", return_value="<html/>"):
-            with patch("xhtml2pdf.pisa.CreatePDF", return_value=fake):
-                assert inv.render_invoice_pdf(1) is None
+        sid = make_school(app)
+        with app.app_context():
+            gid = make_grade(app, sid)
+            cid = make_class(app, sid, gid, make_subject(app))
+            plan = make_subscription_plan(app, sid, cid)
+            uid = make_user(app, role="student", school_id=sid)
+            sub_id = make_subscription(app, uid, plan, cid, price=80.0, status="active")
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
+        with app.app_context():
+            with patch.object(inv, "build_invoice_story", side_effect=RuntimeError("pdf boom")):
+                assert inv.render_invoice_pdf(sub_id) is None
+            # لم يُكتب أي ملف فواتير بسبب الفشل
+            invoices_dir = tmp_path / "generated" / "invoices"
+            assert not invoices_dir.exists() or not any(invoices_dir.iterdir())

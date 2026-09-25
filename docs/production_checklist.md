@@ -24,6 +24,8 @@
 - [ ] `deploy/Dockerfile` يبنى بنجاح و`deploy/docker-compose.production.yml` يضم postgres:15 وredis:7 وnginx.
 - [ ] خدمة systemd (`deploy/azad-e-school.service`) مفعّلة: `systemctl enable --now azad-e-school`.
 - [ ] nginx يُوجّه 80/443 → gunicorn، مع TLS سليم.
+- [ ] توليد PDF: خط Amiri مضمّن في الصورة (`deploy/fonts`، رخصة OFL) مع `PDF_FONT_DIR=/app/deploy/fonts`
+      (مضبوط في Dockerfile). لاستبداله بخط آخر اضبط `PDF_FONT_DIR`. العلامة في السجلات عند فقدان الخط: `pdf_font_fallback`.
 - [ ] `/health` و`/health/deep` يعيدان 200 خلف البروكسي.
 - [ ] Sentry / تسجيل الأخطاء يستقبل الأحداث (`SENTRY_DSN` مضبوط).
 

@@ -13,7 +13,7 @@ Wallet: transfer failure branches, tutor commission math, admin credit
 (idempotency + validation), transaction history.
 
 Invoice: missing subscription branch, invoice number format, real PDF bytes
-(xhtml2pdf is installed in this environment).
+(reportlab platypus via app/core/pdf.py).
 """
 
 from __future__ import annotations
@@ -537,8 +537,9 @@ class TestPaymentService:
 
         svc = self._svc()
         payload = {"metadata": {"subscription_id": sub_id}, "cart_amount": "75.00"}
-        from flask_login import login_user
         from app.models.user import User
+        from flask_login import login_user
+
         with app.test_request_context():
             user = db.session.get(User, uid)
             login_user(user)
@@ -941,13 +942,14 @@ class TestInvoiceService:
         with app.app_context():
             assert render_invoice_pdf(99999999) is None
 
-    def test_render_pdf_produces_real_pdf_bytes(self, app):
+    def test_render_pdf_produces_real_pdf_bytes(self, app, tmp_path, monkeypatch):
+        from app.extensions import db
+        from app.models.user import User
         from app.services.invoice import render_invoice_pdf
         from flask_login import login_user
-        from app.models.user import User
-        from app.extensions import db
 
         sub_id = self._full_chain(app)
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         with app.test_request_context():
             user = db.session.get(User, 1)  # subscription owner user_id=1
             if user:

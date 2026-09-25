@@ -4,6 +4,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1
 
+# خط عربي مضمّن لتوليد PDF (Amiri — رخصة OFL؛ انظر deploy/fonts/OFL.txt)
+ENV PDF_FONT_DIR=/app/deploy/fonts
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

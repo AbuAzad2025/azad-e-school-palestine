@@ -154,7 +154,7 @@ class TestInvoiceImportError:
             real_import = builtins.__import__
 
             def fake_import(name, *args, **kwargs):
-                if name == "xhtml2pdf":
+                if name == "app.core.pdf":
                     raise ImportError("forced for test")
                 return real_import(name, *args, **kwargs)
 

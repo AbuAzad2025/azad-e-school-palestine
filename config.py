@@ -57,6 +57,9 @@ class _BaseConfig:
 
     BACKUP_DIR = BASE_DIR / "backups"
 
+    # توليد PDF: مجلد الخطوط العربية — الافتراضي خط Amiri المرفق في deploy/fonts (رخصة OFL)
+    PDF_FONT_DIR = os.getenv("PDF_FONT_DIR", str(BASE_DIR / "deploy" / "fonts"))
+
     # === أمان ===
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

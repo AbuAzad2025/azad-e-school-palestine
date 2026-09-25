@@ -194,7 +194,7 @@ class TestBillingClassOr404:
 class TestReportCardPdfRender:
     def test_report_card_pdf_renders_or_falls_back(self, app, client):
         """can_view_class passes for the class teacher → render_report_card_pdf
-        branch runs (PDF body or flash fallback when xhtml2pdf is absent)."""
+        branch runs (PDF body or flash fallback on PDF generation failure)."""
         from tests.conftest import make_class, make_grade, make_school, make_subject, make_user
 
         school_id = make_school(app)

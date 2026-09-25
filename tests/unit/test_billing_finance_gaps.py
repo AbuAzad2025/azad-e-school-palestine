@@ -162,6 +162,31 @@ class TestInvoice:
         with app.test_request_context("/"):
             assert generate_invoice_html(999_999) is None
 
+    def test_build_invoice_story_fills_elements(self, app):
+        """قصة الفاتورة المشتركة تمتلئ بعناصر platypus (تستخدمها الخدمة والمهمة)."""
+        from app.services.invoice import build_invoice_story
+        from reportlab.platypus import Table
+
+        sid = make_school(app)
+        with app.app_context():
+            cid = _class_setup(app, sid)
+            plan = make_subscription_plan(app, sid, cid)
+            uid = make_user(app, role="student", school_id=sid)
+            sub_id = make_subscription(app, uid, plan, cid, price=100.0, status="active")
+            make_payment(app, sub_id, amount=40.0, status="approved")
+            make_payment(app, sub_id, amount=10.0, status="pending")
+            from app.extensions import db
+            from app.models.billing import Subscription
+
+            sub = db.session.get(Subscription, sub_id)
+
+            from app.core.pdf import blank_pdf_document
+
+            doc, story = blank_pdf_document()
+            build_invoice_story(story, sub)
+        assert len(story) >= 8  # عنوان + وصف + meta + جدولا + عناوين + سجل مدفوعات
+        assert any(isinstance(el, Table) for el in story)
+
     def test_generate_invoice_html_real_subscription(self, app):
         from app.services.invoice import generate_invoice_html
 
@@ -178,22 +203,20 @@ class TestInvoice:
             assert html is not None
             assert "INV-" in html  # invoice number rendered
 
-    def test_render_invoice_pdf_returns_bytes(self, app):
+    def test_render_invoice_pdf_returns_bytes(self, app, tmp_path, monkeypatch):
         from app.services.invoice import render_invoice_pdf
 
         sid = make_school(app)
+        monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         with app.app_context():
             cid = _class_setup(app, sid)
             plan = make_subscription_plan(app, sid, cid)
             uid = make_user(app, role="student", school_id=sid)
             sub = make_subscription(app, uid, plan, cid, price=100.0, status="active")
-            with app.test_request_context("/"):
-                pdf = render_invoice_pdf(sub)
-            # xhtml2pdf installed → real bytes; if import missing → None. Both are
-            # valid, but assert the contract either way.
-            if pdf is not None:
-                assert isinstance(pdf, bytes)
-                assert len(pdf) > 0
+            pdf = render_invoice_pdf(sub)
+        assert isinstance(pdf, bytes)
+        assert bytes(pdf)[:5] == b"%PDF-"
+        assert len(pdf) > 1000
 
 
 # ═══════════════════════════════════════════════════════════════════════════

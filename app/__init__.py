@@ -373,6 +373,11 @@ def create_app(config_class=Config):
             "sample_count": len(_response_times),
         }
 
+        # جاهزية توليد PDF: وجود خط عربي TTF قابل للاكتشاف
+        from app.core.pdf import font_readiness
+
+        checks["pdf_font"] = font_readiness()
+
         return jsonify(checks)
 
     # ════════════════════════════════════════════════════════════

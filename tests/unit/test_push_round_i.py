@@ -580,10 +580,8 @@ class TestServicePureBits:
         plan = make_subscription_plan(app, sid, class_id=cid)
         sub_id = make_subscription(app, uid, plan, cid)
         with app.app_context():
-            with patch.dict(sys.modules, {"xhtml2pdf": None, "xhtml2pdf.pisa": None}):
-                # generate_invoice_html renders base templates → needs request context
-                with app.test_request_context("/"):
-                    assert render_invoice_pdf(sub_id) is None
+            with patch.dict(sys.modules, {"app.core.pdf": None}):
+                assert render_invoice_pdf(sub_id) is None
 
     def test_report_card_pdf_importerror(self, app):
         from app.services.report_card import render_report_card_pdf
@@ -592,7 +590,7 @@ class TestServicePureBits:
         uid, _ = mk(app, "student", school_id=sid)
         make_class_member(app, cid, uid)
         with app.app_context():
-            with patch.dict(sys.modules, {"xhtml2pdf": None, "xhtml2pdf.pisa": None}):
+            with patch.dict(sys.modules, {"app.core.pdf": None}):
                 assert render_report_card_pdf(uid, cid) is None
 
     def test_payment_reminder_missing_subscription(self, app):

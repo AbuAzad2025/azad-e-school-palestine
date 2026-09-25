@@ -10,7 +10,6 @@ For Celery-guarded modules, uses subprocess-based import to bypass the guard.
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -42,7 +41,7 @@ from tests.conftest import (
 @pytest.fixture(scope="session", autouse=True)
 def _patch_celery_guard():
     """Allow task modules to be imported by patching the Celery guard.
-    
+
     Handles both @celery_app.task (bare) and @celery_app.task(...) (factory) forms.
     """
     with patch("app.tasks._HAS_CELERY", True):
@@ -291,6 +290,37 @@ class TestHealthDeep:
         with patch("app.__init__.shutil.disk_usage", side_effect=OSError):
             data = c.get("/health/deep").get_json()
             assert data["disk_detail"] == {}
+
+    def test_pdf_font_readiness_reported(self, app, tmp_path, monkeypatch):
+        """/health/deep يرجع تقرير جاهزية خط PDF (ok أو warning حسب المضيف)."""
+        with app.app_context():
+            sa = _super_admin(app)
+            sa_id = sa.id
+            c = app.test_client()
+            with c.session_transaction() as sess:
+                sess["_user_id"] = str(sa_id)
+        monkeypatch.setitem(app.config, "PDF_FONT_DIR", str(tmp_path))
+        (tmp_path / "notonaskharabic-regular.ttf").write_bytes(b"x")
+        data = c.get("/health/deep").get_json()
+        assert data["pdf_font"]["status"] == "ok"
+        assert "font_file" in data["pdf_font"]
+
+    def test_pdf_font_readiness_warning_flow(self, app, tmp_path, monkeypatch):
+        """غياب الخط لا يُسقط الحالة العامة — warning فقط داخل pdf_font."""
+        from app.core import pdf as pdf_mod
+
+        with app.app_context():
+            sa = _super_admin(app)
+            sa_id = sa.id
+            c = app.test_client()
+            with c.session_transaction() as sess:
+                sess["_user_id"] = str(sa_id)
+        monkeypatch.setitem(app.config, "PDF_FONT_DIR", str(tmp_path))
+        monkeypatch.setattr(pdf_mod, "_iter_font_dirs", lambda: [])
+        data = c.get("/health/deep").get_json()
+        assert data["pdf_font"]["status"] == "warning"
+        assert data["pdf_font"]["font_file"] is None
+        assert data["status"] in ("healthy", "degraded")  # warning لا يُسقط الخدمة
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -577,11 +607,11 @@ class TestVideoAttachmentTx:
 
 class TestReportHelpers:
     def test_get_output_dir(self, app, tmp_path, monkeypatch):
-        from app.tasks import reports as r
+        from app.core.pdf import pdf_output_dir
 
         monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path))
         with app.app_context():
-            path = r._get_output_dir(1, "reports")
+            path = pdf_output_dir(1, "reports")
         assert os.path.isdir(path)
         assert "1" in path
 
@@ -602,10 +632,9 @@ class TestReportHelpers:
                 grade_data={"total": 85.5, "gpa": 3.7},
             )
         assert os.path.isfile(path)
-        with open(path) as f:
-            d = json.load(f)
-        assert d["student_id"] == u.id
-        assert d["grade_data"] == {"total": 85.5, "gpa": 3.7}
+        assert path.endswith(".pdf")
+        with open(path, "rb") as f:
+            assert f.read(5) == b"%PDF-"
 
     def test_write_class_report_pdf(self, app, tmp_path, monkeypatch):
         from app.tasks import reports as r
@@ -628,10 +657,9 @@ class TestReportHelpers:
                 grades_summary=grades,
             )
         assert os.path.isfile(path)
-        with open(path) as f:
-            d = json.load(f)
-        assert d["class_id"] == cr.id
-        assert d["student_count"] == 2
+        assert path.endswith(".pdf")
+        with open(path, "rb") as f:
+            assert f.read(5) == b"%PDF-"
 
     def test_write_invoice_pdf(self, app, tmp_path, monkeypatch):
         from app.tasks import reports as r
@@ -681,10 +709,9 @@ class TestReportHelpers:
                 school_id=sid,
             )
         assert os.path.isfile(path)
-        with open(path) as f:
-            d = json.load(f)
-        assert d["subscription_id"] == sub_obj.id
-        assert d["price"] == "250.00"
+        assert path.endswith(".pdf")
+        with open(path, "rb") as f:
+            assert f.read(5) == b"%PDF-"
 
 
 # ═══════════════════════════════════════════════════════════════════

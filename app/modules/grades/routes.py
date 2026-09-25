@@ -311,7 +311,7 @@ def report_card_pdf(class_id, student_id):
 
     pdf = render_report_card_pdf(student_id, class_id)
     if pdf is None:
-        flash(_("تعذر إنشاء ملف PDF. تأكد من تثبيت xhtml2pdf."), "danger")
+        flash(_("تعذر إنشاء ملف PDF."), "danger")
         return redirect(url_for("grades.report_card", class_id=class_id, student_id=student_id))
     return Response(
         pdf,

@@ -694,7 +694,8 @@ class TestInvoiceDeep:
             assert str(datetime.now().year) in num
             assert "INV-" in num
 
-    def test_render_invoice_pdf_no_xhtml2pdf(self, app):
+    def test_render_invoice_pdf_no_subscription(self, app):
+        """اشتراك غير موجود → None (بغض النظر عن مكتبة PDF)."""
         from app.services.invoice import render_invoice_pdf
 
         with app.app_context():

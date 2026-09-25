@@ -3,17 +3,21 @@
 P4-07: Report card generation, invoices, and analytics as background tasks.
 P4-08: Generated files stored on disk with cleanup after configurable retention.
 P4-09: Reports scoped to school_id for tenancy isolation.
+
+التنفيذ الحقيقي: reportlab (platypus) مباشرة عبر البنية المشتركة في
+app/core/pdf.py — خط عربي مدمج + تشكيل RTL + كتابة ذرّية. الملفات تُكتب
+تحت instance/uploads/generated/<subdir>/<school_id>/ — خارج المجلد العام (D7).
 """
 
 from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Any
 
 from app.tasks import _HAS_CELERY
 
 if not _HAS_CELERY:
     raise ImportError("Celery is required for app.tasks.reports")
-
-from datetime import UTC, datetime
-from typing import Any
 
 from app.tasks import ContextTask, celery_app
 
@@ -25,10 +29,10 @@ def generate_report_card(
     class_id: int,
     school_id: int,
 ) -> dict:
-    """Generate a PDF report card for a student in a specific class.
+    """Generate an Arabic PDF report card for a student in a specific class.
 
     Runs heavy computation (grade aggregation, PDF rendering) in background.
-    Result stored on disk; path returned for retrieval.
+    Result stored under generated/report_cards/<school_id>/; path returned.
 
     Args:
         student_id: Target student.
@@ -39,6 +43,8 @@ def generate_report_card(
         {"status": "completed" | "failed", "file_path": str | None, "error": str | None}
     """
     from app.core.logging import get_logger
+    from app.extensions import db
+    from app.models.user import User
     from app.services.grade_calc import calculate_student_grade
 
     logger = get_logger(__name__)
@@ -53,7 +59,11 @@ def generate_report_card(
         # Calculate grades (heavy query)
         grade_data = calculate_student_grade(student_id, class_id)
 
-        # Generate PDF (placeholder — real implementation uses reportlab/weasyprint)
+        # Student display name for the PDF header (extra key — harmless)
+        student = db.session.get(User, student_id)
+        grade_data["student_name"] = getattr(student, "name_ar", None) or str(student_id)
+
+        # Render real PDF via shared infra (Arabic font + atomic write)
         output_path = _write_report_pdf(
             student_id=student_id,
             class_id=class_id,
@@ -92,7 +102,7 @@ def generate_class_report(
     class_id: int,
     school_id: int,
 ) -> dict:
-    """Generate a PDF report for an entire class (all students).
+    """Generate a PDF grade report for an entire class (all students).
 
     Args:
         class_id: Target class.
@@ -154,6 +164,9 @@ def generate_invoice(
 ) -> dict:
     """Generate a PDF invoice for a subscription.
 
+    Reuses the shared invoice service (numbering + payment summary) so the
+    background artifact matches the on-screen invoice data exactly.
+
     Args:
         subscription_id: Target subscription.
         school_id: School (for tenancy + currency).
@@ -168,6 +181,8 @@ def generate_invoice(
     logger.info("invoice_generation_started", subscription_id=subscription_id)
 
     try:
+        from app.extensions import db
+
         sub = db.session.get(Subscription, subscription_id)
         if not sub:
             return {"status": "failed", "file_path": None, "error": "Subscription not found"}
@@ -186,19 +201,7 @@ def generate_invoice(
         return {"status": "failed", "file_path": None, "error": str(exc)}
 
 
-# ─── PDF Writing Helpers ───────────────────────────────────────────────
-
-
-def _get_output_dir(school_id: int, subdir: str = "reports") -> str:
-    """Get/create output directory for generated files."""
-    import os
-
-    from flask import current_app
-
-    base = current_app.config.get("UPLOAD_FOLDER", "instance/uploads")
-    path = os.path.join(str(base), "generated", subdir, str(school_id))
-    os.makedirs(path, exist_ok=True)
-    return path
+# ─── PDF Writers (real rendering via app/core/pdf.py) ─────────────────
 
 
 def _write_report_pdf(
@@ -207,33 +210,19 @@ def _write_report_pdf(
     school_id: int,
     grade_data: dict,
 ) -> str:
-    """Write report card PDF. Returns file path.
+    """Render the report card PDF for one student. Returns file path.
 
-    NOTE: This is a production stub. In a real implementation, use
-    reportlab or weasyprint to generate actual PDFs.
+    التخطيط الوحيد لبطاقة الدرجات يعيش في app/services/report_card.py::
+    build_report_card_story — هذه مجرد مهمة الخلفية الملفّة عليه.
     """
-    import json
-    import os
+    from app.core.pdf import blank_pdf_document, build_pdf_bytes, write_pdf_file
+    from app.services.report_card import build_report_card_story
 
-    output_dir = _get_output_dir(school_id, "report_cards")
-    filename = f"report_{student_id}_{class_id}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
-    filepath = os.path.join(output_dir, filename)
-
-    # For now, write structured data. Replace with actual PDF generation.
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "student_id": student_id,
-                "class_id": class_id,
-                "school_id": school_id,
-                "generated_at": datetime.now(UTC).isoformat(),
-                "grade_data": grade_data,
-            },
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
-    return filepath
+    doc, story = blank_pdf_document()
+    build_report_card_story(story, student_id, class_id, grade_data)
+    return write_pdf_file(
+        "report_cards", f"report_{student_id}_{class_id}", build_pdf_bytes(doc, story), school_id=school_id
+    )
 
 
 def _write_class_report_pdf(
@@ -241,28 +230,55 @@ def _write_class_report_pdf(
     school_id: int,
     grades_summary: list[dict],
 ) -> str:
-    """Write class-wide report PDF."""
-    import json
-    import os
+    """Render the class-wide grade report PDF. Returns file path."""
+    from reportlab.lib.units import mm
 
-    output_dir = _get_output_dir(school_id, "class_reports")
-    filename = f"class_{class_id}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
-    filepath = os.path.join(output_dir, filename)
+    from app.core.pdf import (
+        blank_pdf_document,
+        build_pdf_bytes,
+        register_arabic_font,
+        shape_arabic,
+        shape_arabic_deep,
+        story_meta,
+        story_subtitle,
+        story_table,
+        story_title,
+        write_pdf_file,
+    )
 
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "class_id": class_id,
-                "school_id": school_id,
-                "generated_at": datetime.now(UTC).isoformat(),
-                "student_count": len(grades_summary),
-                "grades": [{k: v for k, v in item.items() if k != "student"} for item in grades_summary],
-            },
-            f,
-            ensure_ascii=False,
-            indent=2,
+    font = register_arabic_font()
+
+    rows = [
+        [
+            shape_arabic_deep("#"),
+            shape_arabic_deep("الطالب"),
+            shape_arabic_deep("الدرجة النهائية"),
+            shape_arabic_deep("التقدير"),
+        ]
+    ]
+    for idx, item in enumerate(grades_summary, start=1):
+        student = item.get("student")
+        name = getattr(student, "name_ar", None) or str(item.get("student_id"))
+        rows.append(
+            [
+                str(idx),
+                shape_arabic_deep(str(name)),
+                f"{float(item.get('final_grade') or 0):.1f}",
+                shape_arabic_deep(str(item.get("letter_grade", ""))),
+            ]
         )
-    return filepath
+
+    doc, story = blank_pdf_document()
+    story_title(story, shape_arabic_deep("تقرير درجات الصف"), font)
+    story_subtitle(story, shape_arabic(f"عدد الطلاب: {len(grades_summary)}"), font)
+    story_meta(story, f"Class #{class_id} | {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}")
+
+    if len(rows) > 1:
+        story_table(story, rows, [15 * mm, 75 * mm, 35 * mm, 35 * mm], font)
+    else:
+        story_subtitle(story, shape_arabic_deep("لا يوجد طلاب في هذا الصف"), font)
+
+    return write_pdf_file("class_reports", f"class_{class_id}", build_pdf_bytes(doc, story), school_id=school_id)
 
 
 def _write_invoice_pdf(
@@ -270,32 +286,15 @@ def _write_invoice_pdf(
     payments: list[Any],
     school_id: int,
 ) -> str:
-    """Write invoice PDF."""
-    import json
-    import os
+    """Render the invoice PDF. Returns file path.
 
-    output_dir = _get_output_dir(school_id, "invoices")
-    filename = f"invoice_{subscription.id}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
-    filepath = os.path.join(output_dir, filename)
+    التخطيط الوحيد للفاتورة يعيش في app/services/invoice.py::
+    build_invoice_story — هذه مجرد مهمة الخلفية الملفّة عليه.
+    """
+    from app.core.pdf import blank_pdf_document, build_pdf_bytes, write_pdf_file
+    from app.services.invoice import build_invoice_story
 
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "subscription_id": subscription.id,
-                "user_id": subscription.user_id,
-                "school_id": school_id,
-                "generated_at": datetime.now(UTC).isoformat(),
-                "price": str(subscription.price),
-                "currency": subscription.currency,
-                "status": subscription.status,
-                "payments": [{"id": p.id, "amount": str(p.amount), "status": p.status} for p in payments],
-            },
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
-    return filepath
-
-
-# Need db for generate_invoice
-from app.extensions import db  # noqa: E402
+    doc, story = blank_pdf_document()
+    build_invoice_story(story, subscription, payments)
+    data = build_pdf_bytes(doc, story)
+    return write_pdf_file("invoices", f"invoice_{subscription.id}", data, school_id=school_id)

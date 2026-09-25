@@ -11,13 +11,13 @@ Covers:
 - notifications.dispatch_notification / bulk_dispatch_school_announcement:
   real Notification rows, tenancy-scoped bulk send, role filter, missing user.
 - reports.generate_report_card / generate_class_report / generate_invoice:
-  real grade data, real JSON artifacts on disk, failed-subscription branch.
+  real grade data, real PDF artifacts on disk (%PDF- header, non-trivial
+  size), failed-subscription branch.
 - video.transcode_video_to_hls guardrails: missing source, bad probe.
 """
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
@@ -277,6 +277,17 @@ class TestNotificationTasks:
 # ═══════════════════════════════════════════════════════════════════════════
 
 
+def _assert_real_pdf(path: str) -> None:
+    """الملف مكتوب فعلاً PDF سليم (ترويسة + حجم غير تافه) — لا JSON stubs."""
+    import os
+
+    assert os.path.isfile(path)
+    assert path.endswith(".pdf")
+    data = open(path, "rb").read()
+    assert data.startswith(b"%PDF-")
+    assert len(data) > 1000  # PDF حقيقي بخط مدمج، ليس ملفاً فارغاً
+
+
 class TestReportTasks:
     def test_generate_report_card_writes_artifact(self, app):
         from app.tasks.reports import generate_report_card
@@ -290,10 +301,8 @@ class TestReportTasks:
                 result = generate_report_card(_self(), student_id, cid, sid)
 
             assert result["status"] == "completed" and result["error"] is None
-            with open(result["file_path"], encoding="utf-8") as f:
-                data = json.load(f)
-            assert data["student_id"] == student_id
-            assert data["grade_data"] == {"total": 88.5}
+            _assert_real_pdf(result["file_path"])
+            assert f"report_{student_id}_{cid}" in result["file_path"]
 
     def test_generate_class_report_counts_students(self, app):
         from app.tasks.reports import generate_class_report
@@ -310,9 +319,8 @@ class TestReportTasks:
             result = generate_class_report(_self(), cid, sid)
             assert result["status"] == "completed"
             assert result["student_count"] == 2
-            with open(result["file_path"], encoding="utf-8") as f:
-                data = json.load(f)
-            assert data["student_count"] == 2
+            _assert_real_pdf(result["file_path"])
+            assert f"class_{cid}_" in result["file_path"]
 
     def test_generate_invoice_missing_subscription(self, app):
         from app.tasks.reports import generate_invoice
@@ -351,10 +359,8 @@ class TestReportTasks:
 
             result = generate_invoice(_self(), sub.id, sid)
             assert result["status"] == "completed"
-            with open(result["file_path"], encoding="utf-8") as f:
-                data = json.load(f)
-            assert data["subscription_id"] == sub.id
-            assert data["payments"][0]["id"] == pay.id
+            _assert_real_pdf(result["file_path"])
+            assert f"invoice_{sub.id}_" in result["file_path"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
