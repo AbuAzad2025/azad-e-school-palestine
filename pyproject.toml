@@ -21,12 +21,18 @@ indent-style = "space"
 line-ending = "auto"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 check_untyped_defs = true
 disallow_untyped_defs = false
 ignore_missing_imports = true
 warn_unused_ignores = true
-exclude = ["migrations", "tests"]
+exclude = [
+  "migrations",
+  "tests",
+  ".venv",
+  "node_modules",
+  "deprecated/sphinx\\.py",
+]
 
 [[tool.mypy.overrides]]
 # نماذج SQLAlchemy declarative: db.Model ديناميكية لا يفهمها mypy (سلوك معروف).
