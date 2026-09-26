@@ -42,6 +42,7 @@ if _HAS_CELERY:
             "task_acks_late": True,  # Ack after execution (not before)
             "task_reject_on_worker_lost": True,  # Re-queue on crash
             "task_default_retry_delay": 60,
+            "task_default_max_retries": 1,
             "task_max_retries": 3,
             "worker_prefetch_multiplier": 1,  # One task at a time per worker
             "worker_max_tasks_per_child": 100,  # Prevent memory leaks
@@ -57,8 +58,20 @@ if _HAS_CELERY:
             "app.tasks.notifications",
             "app.tasks.reports",
             "app.tasks.grading",
+            "app.tasks.i18n_monitor",
         ]
     )
+
+    # P4-13: فحص صحة الكتالوجات اللغوية دورياً (كل 30 دقيقة افتراضياً)
+    # يُفعّل فقط عندما يكون Celery مُثبّتاً و `beat` يعمل — انظر deploy/docker-compose.production.yml
+    celery_app.conf.beat_schedule = {
+        **getattr(celery_app.conf, "beat_schedule", {}),
+        "i18n-catalog-audit": {
+            "task": "app.tasks.i18n_monitor.audit_translation_catalogs",
+            "schedule": 1800.0,
+            "options": {"queue": "maintenance"},
+        },
+    }
 
     def init_celery(app: Any) -> None:
         """Bind Celery to a Flask app and configure Flask app context for tasks.
