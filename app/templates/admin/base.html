@@ -48,12 +48,16 @@
   </aside>
   <div class="admin-nav-overlay" data-admin-nav-overlay></div>
 
-  <main class="admin-content" id="adminContent" role="region" aria-label="{{ _('محتوى الإدارة') }}">
+  {# Deliberately a div: base.html already renders the page's single main
+     landmark, and nesting a second one duplicates it for screen readers.
+     (Angle brackets in this comment would be parsed as real markup by
+     the accessibility tests, which scan the raw template source.) #}
+  <div class="admin-content" id="adminContent" role="region" aria-label="{{ _('محتوى الإدارة') }}">
     <div class="admin-toolbar">
       <button class="admin-drawer-toggle" type="button" data-admin-nav-toggle aria-label="{{ _('فتح القائمة') }}">{{ icon('menu') }}</button>
       {% block admin_toolbar %}{% endblock %}
     </div>
     {% block admin_content %}{% endblock %}
-  </main>
+  </div>
 </div>
 {% endblock %}
