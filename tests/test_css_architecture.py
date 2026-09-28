@@ -5,6 +5,7 @@ Validates ITCSS/BEM discipline, design-token usage, and build pipeline.
 
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -61,7 +62,7 @@ def _referenced_static_names() -> set[str]:
         # Precache entries look like "/static/js/core/api.js" or "/offline"
         for m in re.findall(r'"([^"]+)"', sw_txt):
             if m.startswith("/static/"):
-                referenced.add(m[len("/static/"):])
+                referenced.add(m[len("/static/") :])
             elif m == "/offline":
                 referenced.add("offline.html")
     # 4. JS module graph (index.js static + dynamic imports)
@@ -157,12 +158,36 @@ class TestNoImportantOveruse:
         assert not failures, "\n".join(failures)
 
 
+def _build_module():
+    """Load scripts/build_css.py so assertions use the real bundle config."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("build_css", BASE_DIR / "scripts" / "build_css.py")
+    assert spec and spec.loader, "Cannot load scripts/build_css.py"
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture(scope="module")
+def built_bundles():
+    """Rebuild dist/ once, then assert against fresh artifacts (order-independent)."""
+    subprocess.run(
+        [sys.executable, "scripts/build_css.py"],
+        cwd=BASE_DIR,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return _build_module()
+
+
 class TestBuildPipeline:
-    """Build script produces minified CSS and manifest."""
+    """Build script produces self-contained bundles and a manifest."""
 
     def test_build_script_runs(self):
         result = subprocess.run(
-            ["python", "scripts/build_css.py"],
+            [sys.executable, "scripts/build_css.py"],
             cwd=BASE_DIR,
             capture_output=True,
             text=True,
@@ -170,12 +195,14 @@ class TestBuildPipeline:
         )
         assert "saved" in result.stdout.lower(), result.stdout + result.stderr
 
-    def test_minified_files_exist_and_are_smaller(self):
-        for src_name in ("brand.css", "app.css", "ai-chat.css"):
-            src = CSS_DIR / src_name
-            dist = DIST_DIR / src_name.replace(".css", ".min.css")
+    def test_minified_bundles_are_smaller_than_their_sources(self, built_bundles):
+        """A bundle is one page's whole stylesheet set, so the size invariant is
+        against the sum of its sources — not the single same-named source."""
+        for name, spec in built_bundles.BUNDLES.items():
+            dist = DIST_DIR / name.replace(".css", ".min.css")
             assert dist.exists(), f"Missing {dist.name}"
-            assert dist.stat().st_size < src.stat().st_size, f"{dist.name} not smaller than source"
+            source_bytes = sum((CSS_DIR / rel).stat().st_size for rel in dict.fromkeys(spec["sources"]))
+            assert dist.stat().st_size < source_bytes, f"{dist.name} not smaller than its sources"
 
     def test_manifest_created(self):
         manifest = DIST_DIR / "manifest.txt"
@@ -184,6 +211,70 @@ class TestBuildPipeline:
         assert "brand.min.css" in content
         assert "app.min.css" in content
         assert "ai-chat.min.css" in content
+
+    def test_bundles_contain_no_unresolved_imports(self, built_bundles):
+        """A relative @import inside dist/ would resolve against dist/ (where no
+        such file exists) and silently drop every token it defined."""
+        offenders = []
+        for dist in DIST_DIR.glob("*.min.css"):
+            css = dist.read_text(encoding="utf-8")
+            for target in re.findall(r"@import\s+(?:url\(\s*)?['\"]?([^'\")\s;]+)", css):
+                if not target.startswith(("http://", "https://", "//", "data:")):
+                    offenders.append(f"{dist.name}: @import {target}")
+        assert not offenders, "Unresolved local @import in bundles:\n" + "\n".join(offenders)
+
+    def test_bundles_define_every_token_they_use(self, built_bundles):
+        """var(--x) with no fallback invalidates the declaration it sits in, so
+        every referenced token must be defined inside the same bundle."""
+        offenders = []
+        for dist in DIST_DIR.glob("*.min.css"):
+            css = dist.read_text(encoding="utf-8")
+            defined = set(re.findall(r"--([A-Za-z0-9_-]+)\s*:", css))
+            for name, fallback in re.findall(r"var\(\s*--([A-Za-z0-9_-]+)\s*(,)?", css):
+                if not fallback and name not in defined:
+                    offenders.append(f"{dist.name}: var(--{name})")
+        assert not offenders, (
+            "Bundles reference tokens they do not define (declaration would be "
+            "dropped at runtime):\n" + "\n".join(offenders)
+        )
+
+    def test_dynamic_class_variants_survive_the_purge(self, built_bundles):
+        """Jinja composes these at render time (azad-badge--{{ … }}), so a purge
+        that only trusts literal tokens must not delete them."""
+        css = (DIST_DIR / "app.min.css").read_text(encoding="utf-8")
+        purged = [
+            cls
+            for cls in (
+                "azad-badge--success",
+                "azad-badge--info",
+                "azad-badge--warning",
+                "azad-badge--danger",
+                "azad-badge--muted",
+                "azad-badge-variant--success",
+                "badge-err",
+                "u-bg-green-solid",
+            )
+            if f".{cls}" not in css
+        ]
+        assert not purged, f"Runtime-reachable classes were purged: {purged}"
+
+    def test_every_template_stylesheet_is_bundled_or_a_companion(self, built_bundles):
+        """No template may link a stylesheet that no bundle covers (it would
+        ship alongside a bundle with no defined tokens)."""
+        covered = set()
+        for spec in built_bundles.BUNDLES.values():
+            covered.update(spec["sources"])
+        covered.update(built_bundles.COMPANIONS)
+        unlocked = sorted(
+            {
+                ref[len("css/") :]
+                for tp in _all_templates()
+                for ref in _asset_refs(tp)
+                if ref.startswith("css/") and not ref.startswith("css/dist/")
+            }
+            - covered
+        )
+        assert not unlocked, f"Stylesheets loaded by templates but in no bundle: {unlocked}"
 
 
 class TestStaticAssetExistence:
@@ -285,9 +376,7 @@ class TestJinjaBlockAssetIntegrity:
             first_block = src.find("{% block ")
             for m in re.finditer(r"(?:<link[^>]+rel=['\"]stylesheet['\"]|<script[^>]+src=)", src):
                 if first_block == -1 or m.start() < first_block:
-                    offenders.append(
-                        f"{tp.relative_to(TEMPLATES_DIR)}: asset load before/outside any block"
-                    )
+                    offenders.append(f"{tp.relative_to(TEMPLATES_DIR)}: asset load before/outside any block")
                     break
         assert not offenders, "\n".join(offenders)
 
