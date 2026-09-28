@@ -8,10 +8,14 @@ on standalone/external seed scripts such as scripts/seed_clean_env.py.
 Design rules:
 - Zero dummy data: only creates missing core system entities required by the
   runtime.
-- Idempotent: safe to run on every app startup / deployment.
+- Idempotent: safe to run on every deployment.
 - Transactional: all mutations run through the project's `tx()` context.
 - Deterministic: does not invent super admins or tenants unless explicitly
   configured via explicit app config values.
+- Never implicit: nothing here runs from create_app(), because create_app()
+  also runs for `flask db upgrade` — i.e. before the tables this module reads
+  exist. Call it from the `flask init-system` deploy step (or from a flow that
+  genuinely needs an entity, as the individual-auth path does).
 """
 
 from __future__ import annotations
@@ -35,9 +39,9 @@ def _existing_school(domain: str) -> School | None:
 def ensure_system_school_exists() -> School:
     """Ensure the system school exists.
 
-    This is the application-internal equivalent of the legacy
-    get_or_create_system_school() behavior, but it is intentionally
-    referenced from the app lifecycle rather than from ad-hoc scripts.
+    Thin, named entry point over get_or_create_system_school() so callers can
+    depend on this module instead of reaching into the schools service. Called
+    lazily by flows that need the system tenant, and by `flask init-system`.
     """
     from app.services.schools import get_or_create_system_school
 

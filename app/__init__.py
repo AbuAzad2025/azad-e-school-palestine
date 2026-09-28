@@ -297,24 +297,16 @@ def create_app(config_class=Config):
         )
         click.echo("system_bootstrap=" + str(report))
 
-    # Many app modules rely on the system school existing before they boot
-    # (e.g., individual user workflows, RLS context, auth flows).
-    # Ensure it exists as part of application initialization, not as a
-    # standalone external seed script.
-    with app.app_context():
-        from .core.bootstrap import ensure_system_school_exists
-
-        ensure_system_school_exists()
-
+    # System-entity bootstrapping deliberately does NOT happen here.
+    # create_app() runs for every command, including `flask db upgrade` on a
+    # fresh database, so querying schools/users at this point aborts the very
+    # migration that would create them (`relation "schools" does not exist`).
+    # Nothing is lost by leaving it out: the flows that need the system school
+    # create it lazily (see app/services/auth.py), and deployments run the
+    # idempotent `flask init-system` command after migrating.
     from .core import context
-    from .core.bootstrap import bootstrap_system
 
     context.register(app)
-
-    # Simple smoke test: ensure the system school exists so the app
-    # can start cleanly without relying on external seed scripts.
-    with app.app_context():
-        _ = bootstrap_system(app)
 
     @app.get("/health")
     def health():
