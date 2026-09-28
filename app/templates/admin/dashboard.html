@@ -3,7 +3,8 @@
 {% block title %}{{ _('لوحة المشرف') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block admin_content %}
 <div class="azad-section">
-  <h1 class="page-title azad-title">{{ _('لوحة المشرف') }}</h1>
+  <h1 class="page-title">{{ _('لوحة المشرف') }}</h1>
+  <p class="page-subtitle">{{ _('نظرة عامة على المنصة والمستخدمين والمدارس') }}</p>
 </div>
 
 <div class="stats-grid">
@@ -22,7 +23,7 @@
 </div>
 
 <div class="chart-grid">
-  <div class="card chart-card">
+  <div class="azad-card chart-card">
     <h2 class="chart-card__title">{{ _('التسجيلات الشهرية') }}</h2>
     <canvas data-chart="bar"
             data-chart-title="{{ _('مستخدمين جدد') }}"
@@ -30,8 +31,11 @@
             data-chart-values='{{ chart_signups | map(attribute='count') | list | tojson }}'
             data-chart-colors='["var(--azad-navy)","var(--azad-blue)","var(--azad-green)","var(--azad-gold)","var(--color-info)","var(--azad-red)"]'
             aria-label="{{ _('رسم بياني للتسجيلات الشهرية') }}"></canvas>
+    <div class="azad-card__body">
+      <p class="form-hint">توجه: هذا القطاع يخضع لمراجعة لاحقة — لا حذف للبقية.</p>
+    </div>
   </div>
-  <div class="card chart-card">
+  <div class="azad-card chart-card">
     <h2 class="chart-card__title">{{ _('الاشتراكات حسب الحالة') }}</h2>
     <canvas data-chart="doughnut"
             data-chart-title="{{ _('الاشتراكات') }}"
@@ -40,7 +44,7 @@
             data-chart-colors='["var(--azad-green)","var(--color-warning)","var(--color-danger)","var(--azad-blue)"]'
             aria-label="{{ _('رسم بياني للاشتراكات حسب الحالة') }}"></canvas>
   </div>
-  <div class="card chart-card chart-card--wide">
+  <div class="azad-card chart-card chart-card--wide">
     <h2 class="chart-card__title">{{ _('الإيرادات الشهرية') }}</h2>
     <canvas data-chart="bar"
             data-chart-title="{{ _('إيرادات') }}"
@@ -51,20 +55,20 @@
   </div>
 </div>
 
-<div class="card u-mb-1">
-  <div class="azad-section">
-    <h2>{{ _('المدارس الحديثة') }}</h2>
+<div class="azad-card">
+  <div class="azad-card__header">
+    <h2 class="azad-card__title">{{ _('المدارس الحديثة') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.schools_list') }}">{{ _('عرض الكل') }}</a>
   </div>
   {% if recent_schools %}
-  <div class="azad-list">
+  <div class="azad-list azad-list--nested">
     {% for s in recent_schools %}
     <div class="azad-item">
       <div>
         <div class="item-title">{{ s.display_name }}</div>
         <div class="item-meta">
-          <span>{{ _('نطاق:') }} {{ s.domain or _('بلا نطاق') }}</span>
-          <span>{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
+          <span class="meta-chip">{{ _('نطاق:') }} {{ s.domain or _('بلا نطاق') }}</span>
+          <span class="meta-chip">{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
         </div>
       </div>
       <div class="item-actions">
@@ -74,17 +78,21 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">{{ _('لا توجد مدارس بعد') }}</div>
+  <div class="azad-empty">
+    <div class="azad-empty__icon">{{ icon('school') }}</div>
+    <h3 class="azad-empty__title">{{ _('لا توجد مدارس بعد') }}</h3>
+    <p class="azad-empty__description">{{ _('المدارس التي تضم مستخدمين будут aparecer هنا') }}</p>
+  </div>
   {% endif %}
 </div>
 
-<div class="card u-mb-1">
-  <div class="azad-section">
-    <h2>{{ _('المستخدمين الجدد') }}</h2>
+<div class="azad-card">
+  <div class="azad-card__header">
+    <h2 class="azad-card__title">{{ _('المستخدمين الجدد') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.users_list') }}">{{ _('عرض الكل') }}</a>
   </div>
   {% if recent_users %}
-  <div class="azad-list">
+  <div class="azad-list azad-list--nested">
     {% for u in recent_users %}
     <div class="azad-item">
       <div>
@@ -101,36 +109,40 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">{{ _('لا يوجد مستخدمين جدد') }}</div>
+  <div class="azad-empty">
+    <div class="azad-empty__icon">{{ icon('users') }}</div>
+    <h3 class="azad-empty__title">{{ _('لا يوجد مستخدمين جدد') }}</h3>
+    <p class="azad-empty__description">{{ _('سيظهر هنا آخر المستخدمين الذين انضموا للمنصة') }}</p>
+  </div>
   {% endif %}
 </div>
 
-<div class="card u-mb-1">
-  <div class="azad-section">
-    <h2>{{ _('الاشتراكات') }}</h2>
+<div class="azad-card">
+  <div class="azad-card__header">
+    <h2 class="azad-card__title">{{ _('الاشتراكات') }}</h2>
     <a class="azad-btn-outline" href="{{ url_for('admin.subscriptions_list') }}">{{ _('عرض الكل') }}</a>
   </div>
   <div class="azad-list">
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('نشطة') }}</div>
-        <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_active }}</span></div>
+        <div class="item-meta"><span class="stat-num">{{ subs_active }}</span></div>
       </div>
       <span class="azad-badge-variant azad-badge-variant--success">{{ _('نشطة') }}</span>
     </div>
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('معلقة') }}</div>
-        <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_pending }}</span></div>
+        <div class="item-meta"><span class="stat-num">{{ subs_pending }}</span></div>
       </div>
       <span class="azad-badge-variant azad-badge-variant--warning">{{ _('معلقة') }}</span>
     </div>
     <div class="azad-item">
       <div>
         <div class="item-title">{{ _('منتهية') }}</div>
-        <div class="item-meta"><span class="stat-num stat-num--inline">{{ subs_expired }}</span></div>
+        <div class="item-meta"><span class="stat-num">{{ subs_expired }}</span></div>
       </div>
-      <span class="badge-status badge-err">{{ _('منتهية') }}</span>
+      <span class="azad-badge-variant azad-badge-variant--danger">{{ _('منتهية') }}</span>
     </div>
   </div>
 </div>

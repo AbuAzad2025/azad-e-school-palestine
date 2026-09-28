@@ -1,50 +1,80 @@
 {% extends "base.html" %}
 {% block title %}{{ school.display_name }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<h1 class="page-title azad-title">{{ school.display_name }}</h1>
-<p class="page-subtitle">{{ school.name_en or '' }} {% if school.domain %}<span class="meta-chip">{{ school.domain }}</span>{% endif %}</p>
+<nav class="azad-breadcrumb" aria-label="{{ _('التنقل') }}">
+  <ol class="azad-breadcrumb__list">
+    <li class="azad-breadcrumb__item"><a href="{{ url_for('auth.dashboard') }}" class="azad-breadcrumb__link">{{ _('الرئيسية') }}</a></li>
+    <li class="azad-breadcrumb__separator">/</li>
+    <li class="azad-breadcrumb__item"><a href="{{ url_for('schools.my_classes') }}" class="azad-breadcrumb__link">{{ _('صفوفي') }}</a></li>
+    <li class="azad-breadcrumb__separator">/</li>
+    <li class="azad-breadcrumb__item azad-breadcrumb__item--active" aria-current="page">{{ school.display_name }}</li>
+  </ol>
+</nav>
 
-<div class="azad-section">
-  <h2>{{ _('الصفوف') }}</h2>
-  <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">+ {{ _('صف جديد') }}</a>
+<div class="page-header">
+  <div class="page-header__info">
+    <h1 class="page-title">{{ school.display_name }}</h1>
+    <p class="page-subtitle">{% if school.name_en %}{{ school.name_en }}{% endif %} {% if school.domain %}<span class="meta-chip">{{ school.domain }}</span>{% endif %}</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">
+      {{ icon('plus') }} {{ _('صف جديد') }}
+    </a>
+  </div>
 </div>
-{% if classes %}
-<div class="azad-list">
-  {% for c in classes %}
-  <div class="azad-item">
-    <div>
-      <div class="item-title">{{ c.name or c.subject.name_ar }}</div>
-      <div class="item-meta">
-        <span>{{ c.subject.name_ar }}</span>
-        <span>{{ _('الصف') }} {{ c.grade.name_ar if c.grade else c.grade_id }}</span>
-        <span>{{ _('رمز:') }} <code>{{ c.join_code }}</code></span>
+
+<div class="azad-card">
+  <div class="azad-card__header">
+    <h2 class="azad-card__title">{{ _('الصفوف') }}</h2>
+    <span class="meta-chip">{{ classes|length }} {{ _('صف') }}</span>
+  </div>
+  {% if classes %}
+  <div class="azad-list azad-list--nested">
+    {% for c in classes %}
+    <div class="azad-item">
+      <div>
+        <div class="item-title">{{ c.name or c.subject.name_ar }}</div>
+        <div class="item-meta">
+          <span class="meta-chip">{{ c.subject.name_ar }}</span>
+          <span class="meta-chip">{{ _('الصف') }} {{ c.grade.name_ar if c.grade else c.grade_id }}</span>
+          <span class="meta-chip mono">{{ _('رمز:') }} <code>{{ c.join_code }}</code></span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=c.id) }}">{{ _('فتح') }}</a>
       </div>
     </div>
-    <div class="item-actions">
-      <a class="azad-btn-outline" href="{{ url_for('schools.class_detail', class_id=c.id) }}">{{ _('فتح') }}</a>
-    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
+  {% else %}
+  <div class="azad-empty">
+    <div class="azad-empty__icon">{{ icon('school') }}</div>
+    <h3 class="azad-empty__title">{{ _('لا صفوف بعد في هذه المدرسة.') }}</h3>
+    <p class="azad-empty__description">{{ _('أنشئ أول صف لمدرستك لبدء إضافة الطلاب والمحتوى') }}</p>
+    <a class="azad-btn" href="{{ url_for('schools.class_new', school_id=school.id) }}">{{ _('أنشئ أول صف') }}</a>
+  </div>
+  {% endif %}
 </div>
-{% else %}
-<div class="empty-state">{{ _('لا صفوف بعد في هذه المدرسة.') }} <a href="{{ url_for('schools.class_new', school_id=school.id) }}">{{ _('أنشئ أول صف') }}</a></div>
-{% endif %}
 
-<div class="azad-section"><h2>{{ _('إضافة مستوى دراسي') }}</h2></div>
-<div class="card">
+<div class="azad-card" style="margin-top: var(--sp-5);">
+  <div class="azad-card__header">
+    <h2 class="azad-card__title">{{ _('إضافة مستوى دراسي') }}</h2>
+  </div>
   <form method="post" action="{{ url_for('schools.grade_add', school_id=school.id) }}" novalidate>
     {{ grade_form.hidden_tag() }}
-    <div class="u-flex-wrap-gap">
-      <div class="azad-field u-flex-1-120">
-        {{ grade_form.grade_level.label }}
-        {{ grade_form.grade_level() }}
+    <div class="azad-form-row">
+      <div class="azad-field azad-field--grow">
+        <label for="grade_level" class="azad-field__label">{{ _('المستوى الدراسي') }} <span class="required">*</span></label>
+        {{ grade_form.grade_level(id="grade_level") }}
         {% for e in grade_form.grade_level.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}
       </div>
-      <div class="azad-field u-flex-2-200">
-        {{ grade_form.name_ar.label }}
-        {{ grade_form.name_ar() }}
+      <div class="azad-field azad-field--grow">
+        <label for="name_ar" class="azad-field__label">{{ _('الاسم بالعربية') }} <span class="required">*</span></label>
+        {{ grade_form.name_ar(id="name_ar") }}
       </div>
-      <div class="azad-field u-self-end">{{ grade_form.submit(class="azad-btn") }}</div>
+      <div class="azad-field" style="display: flex; align-items: flex-end;">
+        {{ grade_form.submit(class="azad-btn", style="margin-top: var(--sp-1); width: auto;") }}
+      </div>
     </div>
   </form>
 </div>

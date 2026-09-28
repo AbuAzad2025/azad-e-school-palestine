@@ -13,7 +13,7 @@
 </div>
 
 {% if my_sub %}
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <h2 class="billing-card-title">{{ _('اشتراكك الحالي') }}</h2>
   <div class="item-meta billing-meta">
     <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ my_sub.status }}</span>
@@ -52,7 +52,7 @@
 
 {% if can_teach %}
 <div class="azad-section"><h2>{{ _('خطة جديدة') }}</h2></div>
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <form method="post" action="{{ url_for('billing.plan_create', class_id=class_room.id) }}" novalidate>
     {{ plan_form.hidden_tag() }}
     {% call azad_form_row(cols=4) %}
@@ -68,7 +68,7 @@
 
 {% if current_user.role == 'student' and my_sub and my_sub.status == 'pending' %}
 <div class="azad-section"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
-<div class="card">
+<div class="azad-card">
   <p class="form-hint u-mb-0-75">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>
   <form method="post" action="{{ url_for('billing.payment_create', subscription_id=my_sub.id) }}" enctype="multipart/form-data" novalidate>
     {{ pay_form.hidden_tag() }}
@@ -87,7 +87,7 @@
 
 {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') and plans %}
 <div class="azad-section"><h2>{{ _('كود خصم') }}</h2></div>
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <form id="discount-form" method="post" action="{{ url_for('billing.validate_code') }}" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="discount-form">

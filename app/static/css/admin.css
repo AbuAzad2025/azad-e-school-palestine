@@ -12,7 +12,7 @@
 }
 .admin-nav-item:hover, .admin-nav-item.active { background: var(--azad-navy); color: var(--azad-white); }
 .admin-nav-item .icon { width: 1.15em; height: 1.15em; }
-.admin-nav-item .badge { margin-inline-start: auto; }
+.admin-nav-item .badge, .admin-nav-item .azad-badge-variant { margin-inline-start: auto; }
 .admin-nav-section { font-size: .72rem; text-transform: uppercase; color: var(--text-muted); padding: .6rem 1rem .3rem; margin-top: .75rem; font-weight: 700; letter-spacing: .5px; }
 .admin-content { flex: 1; padding: 1.5rem; overflow-y: auto; min-width: 0; }
 .admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }

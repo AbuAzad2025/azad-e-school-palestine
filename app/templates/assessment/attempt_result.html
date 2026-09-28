@@ -25,7 +25,7 @@
         {% endif %}
       </div>
       {% if q.type == 'essay' and a and a.answer %}
-        <div class="card u-mt-0-6 u-p-08"><strong>{{ _('إجابتك:') }}</strong> {{ a.answer.text }}</div>
+        <div class="azad-card u-mt-0-6 u-p-08"><strong>{{ _('إجابتك:') }}</strong> {{ a.answer.text }}</div>
       {% endif %}
       {% if viewer_is_teacher and q.type == 'essay' and a and a.answer and a.is_correct is none %}
         <form method="post" action="{{ url_for('assessment.answer_grade', answer_id=a.id) }}" class="u-form-actions">

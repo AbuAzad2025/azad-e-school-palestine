@@ -5,7 +5,7 @@
 <div class="azad-section">
   <h1 class="page-title azad-title">{{ _('إدارة المدارس') }}</h1>
   <form method="get" class="form-inline gradebook-form-row">
-    <div class="gradebook-form-col--2"><input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" aria-label="{{ _('بحث بالاسم أو النطاق') }}" class="form-control"></div>
+    <div class="gradebook-form-col--2"><input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو النطاق') }}" aria-label="{{ _('بحث بالاسم أو النطاق') }}" class="azad-field__input"></div>
     <div class="gradebook-form-actions"><button class="azad-btn" type="submit">{{ _('بحث') }}</button></div>
     {% if search %}
     <div class="gradebook-form-actions"><a href="{{ url_for('admin.schools_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a></div>

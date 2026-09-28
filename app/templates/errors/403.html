@@ -1,10 +1,25 @@
 {% extends "base.html" %}
 {% block title %}{{ _('لا تملك صلاحية الوصول') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-error" role="alert">
-  <h1 class="azad-error__code">403</h1>
-  <p class="azad-error__message">{{ _('لا تملك صلاحية الوصول إلى هذه الصفحة.') }}</p>
-  <p class="azad-error__hint">{{ _('هذه الصفحة متاحة لدور محدّد (مثل الطلاب أو المعلمين أو المشرفين). سجّل الدخول بالحساب المناسب ثم حاول مجدداً.') }}</p>
-  <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
+<div class="error-page" role="alert" aria-labelledby="error-code-403">
+  <div class="error-page__icon error-page__icon--warning" aria-hidden="true">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+  </div>
+  <h1 class="error-page__code" id="error-code-403">403</h1>
+  <h2 class="error-page__title">{{ _('لا تملك صلاحية الوصول') }}</h2>
+  <p class="error-page__message">{{ _('لا تملك الصلاحيات اللازمة للوصول إلى هذه الصفحة.') }}</p>
+  <p class="error-page__hint">{{ _('هذه الصفحة متاحة لدور محدّد. سجّل الدخول بالحساب المناسب ثم حاول مجدداً.') }}</p>
+  <div class="error-page__actions">
+    <a class="azad-btn azad-btn-lg" href="{{ url_for('auth.dashboard') }}">
+      {{ icon('dashboard') }} {{ _('العودة إلى لوحي') }}
+    </a>
+    <a class="azad-btn-outline azad-btn-lg" href="{{ url_for('main.index') }}">
+      {{ icon('home') }} {{ _('الرئيسية') }}
+    </a>
+  </div>
 </div>
 {% endblock %}

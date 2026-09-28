@@ -9,7 +9,7 @@
 </div>
 
 {% if can_teach %}
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <form method="post" action="{{ url_for('grades.assignment_create', class_id=class_room.id) }}" novalidate>
     {{ form.hidden_tag() }}
     <div class="azad-field">{{ form.title.label }}{{ form.title() }}{% for e in form.title.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>

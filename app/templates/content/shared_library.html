@@ -8,11 +8,11 @@
   </div>
 </div>
 
-<div class="card u-mb-1-5">
+<div class="azad-card u-mb-1-5">
   <form method="get" class="u-between-1r">
     <div class="azad-field u-flex-1-min">
       <label class="form-label">{{ _('تصفية حسب المادة') }}</label>
-      <select name="subject_id" class="form-select">
+      <select name="subject_id" class="azad-field__select">
         <option value="">{{ _('كل المواد') }}</option>
         {% for s in subjects %}
         <option value="{{ s.id }}" {% if s.id == selected_subject %}selected{% endif %}>{{ s.name_ar }}</option>

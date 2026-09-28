@@ -1,27 +1,34 @@
 {% extends "base.html" %}
 {% block title %}{{ _('نسيت كلمة المرور') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="azad-card azad-card--centered">
-  <div class="azad-auth-header">
-    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
-    <h1 class="azad-auth-title azad-title">{{ _('استعادة كلمة المرور') }}</h1>
-    <p class="azad-auth-hint">{{ _('أدخل بريدك وسنرسل إليك رابط إعادة التعيين.') }}</p>
+<div class="auth-card">
+  <div class="auth-card__header">
+    <div class="auth-card__logo">
+      <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" width="48" height="48">
+    </div>
+    <div>
+      <h1 class="auth-card__title">{{ _('استعادة كلمة المرور') }}</h1>
+      <p class="auth-card__subtitle">{{ _('أدخل بريدك وسنرسل إليك رابط إعادة التعيين.') }}</p>
+    </div>
   </div>
-  <form method="post" novalidate>
+  <form method="post" novalidate class="auth-card__form">
     {{ form.hidden_tag() }}
     <div class="azad-field">
-      {{ form.email.label }}
-      {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
+      <label for="email" class="azad-field__label">{{ _('البريد الإلكتروني') }} <span class="required">*</span></label>
+      {{ form.email(id="email", autocomplete="email", placeholder="example@mail.com") }}
       {% if form.email.errors %}
         <div class="azad-field__error">
+          <span class="icon">{{ icon('alert-circle') }}</span>
           {% for e in form.email.errors %}<span>{{ e }}</span>{% endfor %}
         </div>
       {% endif %}
     </div>
     <div class="azad-form-actions">
-      {{ form.submit(class="azad-btn") }}
+      {{ form.submit(class="azad-btn azad-btn-lg", aria_label=_("إرسال رابط إعادة التعيين")) }}
     </div>
   </form>
-  <p class="azad-auth-alt"><a href="{{ url_for('auth.login') }}">{{ _('العودة لتسجيل الدخول') }}</a></p>
+  <div class="auth-card__footer">
+    <p class="auth-card__alt"><a href="{{ url_for('auth.login') }}" class="auth-card__link">{{ _('العودة لتسجيل الدخول') }}</a></p>
+  </div>
 </div>
 {% endblock %}

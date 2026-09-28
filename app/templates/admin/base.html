@@ -8,18 +8,25 @@
 <div class="admin-layout">
   <aside class="admin-sidebar" id="adminSidebar">
     <button class="admin-sidebar-close" type="button" data-admin-nav-close aria-label="{{ _('إغلاق القائمة') }}">{{ icon('x') }}</button>
+    <div class="admin-sidebar__brand">
+      <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('أزاد') }}" class="admin-sidebar__logo">
+      <div>
+        <div class="admin-sidebar__title">{{ _('مدرسة أزاد الإلكترونية') }}</div>
+        <div class="admin-sidebar__subtitle">{{ _('لوحة المشرف') }}</div>
+      </div>
+    </div>
     <nav class="admin-nav">
       <div class="admin-nav-section">{{ _('الرئيسية') }}</div>
       <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" {% if request.endpoint == 'admin.dashboard' %}aria-current="page"{% endif %}>{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
 
       <div class="admin-nav-section">{{ _('الإدارة') }}</div>
-      <a href="{{ url_for('admin.users_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}" {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}aria-current="page"{% endif %}>{{ icon('users') }} {{ _('المستخدمون') }}{% if pagination and pagination.total > 0 %}<span class="badge badge-primary">{{ pagination.total }}</span>{% endif %}</a>
-      <a href="{{ url_for('admin.pending_registrations') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_registrations' %}active{% endif %}" {% if request.endpoint == 'admin.pending_registrations' %}aria-current="page"{% endif %}>{{ icon('user-plus') }} {{ _('التسجيلات المعلقة') }}{% if pending_reg_count > 0 %}<span class="badge badge-warn">{{ pending_reg_count }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.users_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}" {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}aria-current="page"{% endif %}>{{ icon('users') }} {{ _('المستخدمون') }}{% if pagination and pagination.total > 0 %}<span class="nav-badge">{{ pagination.total }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.pending_registrations') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_registrations' %}active{% endif %}" {% if request.endpoint == 'admin.pending_registrations' %}aria-current="page"{% endif %}>{{ icon('user-plus') }} {{ _('التسجيلات المعلقة') }}{% if pending_reg_count > 0 %}<span class="nav-badge nav-badge--warning">{{ pending_reg_count }}</span>{% endif %}</a>
       <a href="{{ url_for('admin.schools_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.schools_list' or request.endpoint == 'admin.school_detail' %}active{% endif %}" {% if request.endpoint == 'admin.schools_list' or request.endpoint == 'admin.school_detail' %}aria-current="page"{% endif %}>{{ icon('school') }} {{ _('المدارس') }}</a>
 
       <div class="admin-nav-section">{{ _('الاشتراكات والفوترة') }}</div>
-      <a href="{{ url_for('admin.subscriptions_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.subscriptions_list' %}active{% endif %}" {% if request.endpoint == 'admin.subscriptions_list' %}aria-current="page"{% endif %}>{{ icon('card') }} {{ _('الاشتراكات') }} <span class="badge badge-{{ 'ok' if subs_pending == 0 else 'warn' }}">{{ subs_pending }}</span></a>
-      <a href="{{ url_for('admin.pending_payments') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_payments' %}active{% endif %}" {% if request.endpoint == 'admin.pending_payments' %}aria-current="page"{% endif %}>{{ icon('cash') }} {{ _('مدفوعات معلقة') }} {% if pending_payments > 0 %}<span class="badge badge-warn">{{ pending_payments }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.subscriptions_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.subscriptions_list' %}active{% endif %}" {% if request.endpoint == 'admin.subscriptions_list' %}aria-current="page"{% endif %}>{{ icon('card') }} {{ _('الاشتراكات') }}{% if subs_pending > 0 %}<span class="nav-badge nav-badge--{{ 'warning' if subs_pending > 0 else 'success' }}">{{ subs_pending }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.pending_payments') }}" class="admin-nav-item {% if request.endpoint == 'admin.pending_payments' %}active{% endif %}" {% if request.endpoint == 'admin.pending_payments' %}aria-current="page"{% endif %}>{{ icon('cash') }} {{ _('مدفوعات معلقة') }}{% if pending_payments > 0 %}<span class="nav-badge nav-badge--warning">{{ pending_payments }}</span>{% endif %}</a>
 
       <div class="admin-nav-section">{{ _('الذكاء الاصطناعي') }}</div>
       <a href="{{ url_for('admin.ai_usage') }}" class="admin-nav-item {% if request.endpoint == 'admin.ai_usage' %}active{% endif %}" {% if request.endpoint == 'admin.ai_usage' %}aria-current="page"{% endif %}>{{ icon('sparkles') }} {{ _('إحصائيات AI') }}</a>
@@ -41,12 +48,12 @@
   </aside>
   <div class="admin-nav-overlay" data-admin-nav-overlay></div>
 
-  <div class="admin-content" id="adminContent" role="region" aria-label="{{ _('محتوى الإدارة') }}">
+  <main class="admin-content" id="adminContent" role="region" aria-label="{{ _('محتوى الإدارة') }}">
     <div class="admin-toolbar">
       <button class="admin-drawer-toggle" type="button" data-admin-nav-toggle aria-label="{{ _('فتح القائمة') }}">{{ icon('menu') }}</button>
       {% block admin_toolbar %}{% endblock %}
     </div>
     {% block admin_content %}{% endblock %}
-  </div>
+  </main>
 </div>
 {% endblock %}

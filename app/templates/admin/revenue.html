@@ -9,7 +9,7 @@
   </div>
   <form method="get" class="u-flex-gap-05 u-items-end">
     <label class="form-label">{{ _('الفترة') }}</label>
-    <select name="days" data-auto-submit class="form-select u-w-auto">
+    <select name="days" data-auto-submit class="azad-field__select u-w-auto">
       <option value="7" {% if days == 7 %}selected{% endif %}>{{ _('آخر 7 أيام') }}</option>
       <option value="30" {% if days == 30 %}selected{% endif %}>{{ _('آخر 30 يوم') }}</option>
       <option value="90" {% if days == 90 %}selected{% endif %}>{{ _('آخر 90 يوم') }}</option>

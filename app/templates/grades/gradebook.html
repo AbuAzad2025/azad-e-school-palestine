@@ -21,7 +21,7 @@
 </div>
 
 {% if can_teach %}
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <form method="post" action="{{ url_for('grades.category_create', class_id=class_room.id) }}" novalidate>
     {{ category_form.hidden_tag() }}
     {% call azad_form_row(cols=3) %}
@@ -36,7 +36,7 @@
 {% for cat in categories %}
 <div class="azad-section"><h2>{{ icon('folder') }} {{ cat.name }}{% if cat.weight %} <small class="gradebook-meta">({{ cat.weight }})</small>{% endif %}</h2></div>
 {% if can_teach %}
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <form method="post" action="{{ url_for('grades.grade_item_create', category_id=cat.id) }}" novalidate>
     {{ item_form.hidden_tag() }}
     {% call azad_form_row(cols=4) %}

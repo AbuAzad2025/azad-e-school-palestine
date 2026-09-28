@@ -1,0 +1,172 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   AZAD — POLISH LAYER «الطبقة الجمالية»
+   Depth, gradients, micro-interactions. Loads after app.css, overrides nothing
+   structurally — only elevates. Respects prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Ambient page background (soft aurora blobs) ─── */
+.azad-app > .container::before { content: none; }
+body.azad-app {
+  background:
+    radial-gradient(1100px 480px at 85% -10%, rgba(13, 148, 136, 0.07), transparent 60%),
+    radial-gradient(900px 420px at -10% 25%, rgba(194, 65, 12, 0.045), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* ─── Cards: layered depth + gradient top hairline on hover ─── */
+.azad-card,
+.azad-stat-card,
+.azad-item {
+  box-shadow:
+    0 1px 2px rgba(15, 61, 56, 0.05),
+    0 4px 14px -6px rgba(15, 61, 56, 0.07);
+  transition:
+    box-shadow var(--duration-normal) var(--ease-default),
+    transform var(--duration-normal) var(--ease-default),
+    border-color var(--duration-normal) var(--ease-default);
+}
+.azad-card:hover,
+.azad-item:hover {
+  box-shadow:
+    0 2px 4px rgba(15, 61, 56, 0.06),
+    0 14px 32px -10px rgba(15, 61, 56, 0.16);
+}
+.azad-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 2px 4px rgba(15, 61, 56, 0.06),
+    0 16px 36px -10px rgba(15, 61, 56, 0.18);
+}
+.azad-stat-card::before {
+  background: linear-gradient(90deg, var(--stat-accent, var(--azad-blue)) 0%, color-mix(in srgb, var(--stat-accent, var(--azad-blue)) 55%, #7c3aed) 100%);
+  width: 5px;
+}
+
+/* ─── Buttons: press physics + gradient sheen ─── */
+.azad-btn,
+.azad-btn-primary,
+.azad-btn-accent,
+.azad-btn-danger {
+  position: relative;
+  overflow: hidden;
+}
+.azad-btn::after,
+.azad-btn-primary::after,
+.azad-btn-accent::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 55%);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  pointer-events: none;
+}
+.azad-btn:hover::after,
+.azad-btn-primary:hover::after,
+.azad-btn-accent:hover::after {
+  opacity: 1;
+}
+.azad-btn:active,
+.azad-btn-primary:active,
+.azad-btn-accent:active,
+.azad-btn-outline:active,
+.azad-btn-ghost:active,
+.azad-btn-danger:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ─── Links: elegant underline reveal ─── */
+.azad-card__body a,
+.azad-item .item-title a {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-repeat: no-repeat;
+  background-position: right 100%; /* RTL-friendly: grows leftward */
+  transition: background-size var(--duration-normal) var(--ease-out);
+  padding-bottom: 1px;
+}
+.azad-card__body a:hover,
+.azad-item .item-title a:hover {
+  background-size: 100% 1.5px;
+}
+[dir="ltr"] .azad-card__body a,
+[dir="ltr"] .azad-item .item-title a {
+  background-position: left 100%;
+}
+
+/* ─── Inputs: soft inner glow on focus ─── */
+.azad-field__input:focus,
+.azad-field__select:focus,
+.azad-field__textarea:focus,
+.azad-search__input:focus {
+  box-shadow:
+    var(--shadow-ring),
+    inset 0 1px 2px rgba(15, 61, 56, 0.04);
+}
+
+/* ─── Navbar: deep-sea gradient + glow on scroll ─── */
+.navbar {
+  background: linear-gradient(120deg, #0f3d38 0%, #0f766e 60%, #0e7490 100%);
+  box-shadow: 0 2px 16px rgba(15, 61, 56, 0.28);
+}
+.nav-links a.active {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+/* ─── Tables: softer header, breathing rows ─── */
+.azad-table th {
+  background: linear-gradient(120deg, #0f3d38 0%, #115e59 100%);
+  letter-spacing: 0.01em;
+}
+.azad-table tbody tr {
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+/* ─── Badges & chips: subtle inner border ─── */
+.azad-badge-variant,
+.badge-status,
+.meta-chip {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Empty states: friendlier illustration tint ─── */
+.azad-empty__icon {
+  background: linear-gradient(135deg, var(--bg-2), var(--surface-hover));
+  color: var(--azad-blue);
+}
+
+/* ─── Focus visibility everywhere (a11y polish) ─── */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Selection color ─── */
+::selection {
+  background: rgba(13, 148, 136, 0.25);
+}
+
+/* ─── Scrollbar (WebKit) ─── */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* ─── Reduced motion: strip movement, keep clarity ─── */
+@media (prefers-reduced-motion: reduce) {
+  .azad-card, .azad-stat-card, .azad-item,
+  .azad-btn, .azad-btn-primary, .azad-btn-accent {
+    transform: none !important;
+    transition: none !important;
+  }
+}

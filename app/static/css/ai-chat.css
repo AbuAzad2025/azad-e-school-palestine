@@ -137,7 +137,7 @@
 }
 
 .chat-history-item.active .model-badge {
-  background: #01304f;
+  background: #073a33;
   color: var(--azad-teal);
 }
 
@@ -385,7 +385,7 @@
 .input-wrapper textarea:focus {
   outline: none;
   border-color: var(--azad-navy);
-  box-shadow: 0 0 0 3px rgba(1, 78, 124, 0.15);
+  box-shadow: 0 0 0 3px rgba(15, 61, 56, 0.15);
 }
 
 .input-wrapper textarea::placeholder {
@@ -457,9 +457,9 @@
 }
 
 .toast-info { background: var(--azad-navy); }
-.toast-success { background: var(--azad-green); }
+.toast-success { background: var(--azad-green-strong); color: #fff; }
 .toast-error { background: var(--azad-red); }
-.toast-warning { background: var(--azad-gold); color: #1e293b; }
+.toast-warning { background: var(--azad-gold-strong); color: #fff; }
 
 /* Sidebar Toggle */
 @media (max-width: 992px) {
@@ -660,7 +660,7 @@
 
 /* Dark mode tweaks */
 html[data-theme="dark"] .chat-history-item.active {
-  background: #01304f;
+  background: #073a33;
 }
 
 html[data-theme="dark"] .prompt-chip:hover {

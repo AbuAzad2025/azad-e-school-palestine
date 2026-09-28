@@ -1,10 +1,25 @@
 {% extends "base.html" %}
 {% block title %}{{ _('الصفحة غير موجودة') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-error" role="alert">
-  <h1 class="azad-error__code">404</h1>
-  <p class="azad-error__message">{{ _('الصفحة غير موجودة.') }}</p>
-  <p class="azad-error__hint">{{ _('قد تكون الصفحة حُذفت أو انتقل رابطها.') }}</p>
-  <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
+<div class="error-page" role="alert" aria-labelledby="error-code-404">
+  <div class="error-page__icon" aria-hidden="true">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+  </div>
+  <h1 class="error-page__code" id="error-code-404">404</h1>
+  <h2 class="error-page__title">{{ _('الصفحة غير موجودة') }}</h2>
+  <p class="error-page__message">{{ _('الصفحة التي تبحث عنها غير موجودة أو تم نقلها.') }}</p>
+  <p class="error-page__hint">{{ _('قد يكون الرابط غير صحيح أو تم حذف الصفحة') }}</p>
+  <div class="error-page__actions">
+    <a class="azad-btn azad-btn-lg" href="{{ url_for('main.index') }}">
+      {{ icon('home') }} {{ _('العودة إلى الرئيسية') }}
+    </a>
+    <a class="azad-btn-outline azad-btn-lg" href="{{ url_for('auth.dashboard') }}">
+      {{ icon('dashboard') }} {{ _('لوحتي') }}
+    </a>
+  </div>
 </div>
 {% endblock %}

@@ -1,10 +1,25 @@
 {% extends "base.html" %}
 {% block title %}{{ _('طلبات كثيرة جداً') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="card azad-error" role="alert">
-  <h1 class="azad-error__code">429</h1>
-  <p class="azad-error__message">{{ _('لقد تجاوزت الحد المسموح من الطلبات.') }}</p>
-  <p class="azad-error__hint">{{ _('يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.') }}</p>
-  <a class="azad-btn" href="{{ url_for('main.index') }}">{{ _('العودة إلى الرئيسية') }}</a>
+<div class="error-page" role="alert" aria-labelledby="error-code-429">
+  <div class="error-page__icon error-page__icon--warning" aria-hidden="true">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  </div>
+  <h1 class="error-page__code" id="error-code-429">429</h1>
+  <h2 class="error-page__title">{{ _('طلبات كثيرة جداً') }}</h2>
+  <p class="error-page__message">{{ _('لقد تجاوزت الحد المسموح من الطلبات.') }}</p>
+  <p class="error-page__hint">{{ _('يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.') }}</p>
+  <div class="error-page__actions">
+    <a class="azad-btn azad-btn-lg" href="#" onclick="window.location.reload(); return false;">
+      {{ icon('refresh') }} {{ _('إعادة المحاولة') }}
+    </a>
+    <a class="azad-btn-outline azad-btn-lg" href="{{ url_for('main.index') }}">
+      {{ icon('home') }} {{ _('الرئيسية') }}
+    </a>
+  </div>
 </div>
 {% endblock %}

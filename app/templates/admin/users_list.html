@@ -1,41 +1,52 @@
 {% extends "admin/base.html" %}
 {% from "macros/ui.html" import azad_table, azad_pagination %}
-{% block title %}{{ _('المستخدمين') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block title %}{{ _('إدارة المستخدمين') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_toolbar %}
+  <div class="admin-toolbar__filters">
+    <form method="get" class="toolbar-filters">
+      <div class="toolbar-filters__field">
+        <label for="search" class="sr-only">{{ _('بحث بالاسم أو البريد') }}</label>
+        <input id="search" type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" class="azad-field__input">
+      </div>
+      <div class="toolbar-filters__field">
+        <label for="role" class="sr-only">{{ _('تصفية حسب الدور') }}</label>
+        <select id="role" name="role" class="azad-field__select" aria-label="{{ _('تصفية حسب الدور') }}">
+          <option value="">{{ _('كل الأدوار') }}</option>
+          {% for r in roles %}
+          <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="toolbar-filters__actions">
+        <button class="azad-btn" type="submit">{{ icon('search') }} {{ _('بحث') }}</button>
+        {% if search or role_filter %}
+        <a href="{{ url_for('admin.users_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+{% endblock %}
 {% block admin_content %}
 <div class="azad-section">
-  <h1 class="page-title azad-title">{{ _('إدارة المستخدمين') }}</h1>
-  <form method="get" class="form-inline gradebook-form-row">
-    <div class="gradebook-form-col--2"><input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث بالاسم أو البريد') }}" aria-label="{{ _('بحث بالاسم أو البريد') }}" class="form-control"></div>
-    <div class="gradebook-form-col">
-      <select name="role" class="form-control" aria-label="{{ _('تصفية حسب الدور') }}">
-        <option value="">{{ _('كل الأدوار') }}</option>
-        {% for r in roles %}
-        <option value="{{ r.value }}" {% if role_filter == r.value %}selected{% endif %}>{{ r.value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="gradebook-form-actions"><button class="azad-btn" type="submit">{{ _('بحث') }}</button></div>
-    {% if search or role_filter %}
-    <div class="gradebook-form-actions"><a href="{{ url_for('admin.users_list') }}" class="azad-btn-outline">{{ _('مسح') }}</a></div>
-    {% endif %}
-  </form>
+  <h1 class="page-title">{{ _('إدارة المستخدمين') }}</h1>
+  <p class="page-subtitle">{{ pagination.total }} {{ _('مستخدم') }}</p>
 </div>
 
 {% set headers = [
-  {'key': 'name', 'label': _('الاسم')},
-  {'key': 'email', 'label': _('البريد')},
+  {'key': 'name', 'label': _('الاسم'), 'sortable': True},
+  {'key': 'email', 'label': _('البريد'), 'sortable': True},
   {'key': 'role', 'label': _('الدور')},
   {'key': 'status', 'label': _('الحالة')},
-  {'key': 'created', 'label': _('تاريخ الإنشاء')}
+  {'key': 'created', 'label': _('تاريخ الإنشاء'), 'sortable': True}
 ] %}
 
 {% set rows = [] %}
 {% for u in pagination.items %}
   {# P2-17: كتل set تُنتج Markup آمناً مع تهريب القيم الداخلية تلقائياً #}
-  {% set status_badge %}<span class="badge-status badge-{{ 'ok' if u.is_active else 'err' }}">{{ _('نشط') if u.is_active else _('معطل') }}</span>{% endset %}
+  {% set status_badge %}<span class="azad-badge-variant azad-badge-variant--{{ 'success' if u.is_active else 'danger' }}">{{ _('نشط') if u.is_active else _('معطل') }}</span>{% endset %}
   {% set role_chip %}<span class="meta-chip">{{ u.role.value }}</span>{% endset %}
   {% set actions_html %}
-    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('فتح') }}</a>
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('تفاصيل') }}</a>
     {% if u.role.value != 'super_admin' and u.id != current_user.id %}
     <form method="post" action="{{ url_for('admin.user_impersonate', user_id=u.id) }}" class="azad-inline-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -44,7 +55,7 @@
     {% endif %}
     <form method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}" class="azad-inline-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button class="azad-btn-{{ 'outline' if u.is_active else 'btn' }} azad-btn-sm" type="submit">{{ _('تعطيل') if u.is_active else _('تفعيل') }}</button>
+      <button class="azad-btn-{{ 'outline' if u.is_active else 'btn-danger' }} azad-btn-sm" type="submit">{{ _('تعطيل') if u.is_active else _('تفعيل') }}</button>
     </form>
   {% endset %}
   {% set _ = rows.append({
@@ -60,15 +71,17 @@
   }) %}
 {% endfor %}
 
-{{ azad_table(
-  headers=headers,
-  rows=rows,
-  modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile',
-  bulk='users',
-  actions=True,
-  empty_title=_('لا يوجد مستخدمين يطابقون البحث'),
-  empty_icon='users'
-) }}
+<div class="table-scroll">
+  {{ azad_table(
+    headers=headers,
+    rows=rows,
+    modifiers='azad-table--striped azad-table--hover',
+    bulk='users',
+    actions=True,
+    empty_title=_('لا يوجد مستخدمين يطابقون البحث'),
+    empty_icon='users'
+  ) }}
+</div>
 
 {{ azad_pagination(pagination, 'admin.users_list', {'search': search, 'role': role_filter}) }}
 {% endblock %}

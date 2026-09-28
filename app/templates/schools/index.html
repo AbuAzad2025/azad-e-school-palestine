@@ -1,19 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ _('المدارس') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="azad-section">
-  <h1 class="page-title azad-title u-m-0">{{ _('المدارس') }}</h1>
-  <a class="azad-btn" href="{{ url_for('schools.create') }}">+ {{ _('مدرسة جديدة') }}</a>
+<div class="page-header">
+  <div class="page-header__info">
+    <h1 class="page-title">{{ _('المدارس') }}</h1>
+    <p class="page-subtitle">{{ schools|length }} {{ _('مدرسة') }}</p>
+  </div>
+  <div class="page-header__actions">
+    <a class="azad-btn" href="{{ url_for('schools.create') }}">
+      {{ icon('plus') }} {{ _('مدرسة جديدة') }}
+    </a>
+  </div>
 </div>
+
 {% if schools %}
-<div class="azad-list">
+<div class="azad-list azad-list--nested">
   {% for s in schools %}
   <div class="azad-item">
     <div>
       <div class="item-title">{{ s.display_name }}</div>
       <div class="item-meta">
-        <span>{% if s.domain %}{{ s.domain }}{% else %}{{ _('بلا نطاق') }}{% endif %}</span>
-        <span>{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
+        <span class="meta-chip">{% if s.domain %}{{ s.domain }}{% else %}{{ _('بلا نطاق') }}{% endif %}</span>
+        <span class="meta-chip">{{ _('سنة:') }} {{ s.academic_year or '—' }}</span>
       </div>
     </div>
     <div class="item-actions">
@@ -23,6 +31,11 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">{{ _('لا توجد مدارس بعد.') }} <a href="{{ url_for('schools.create') }}">{{ _('أنشئ المدرسة الأولى') }}</a></div>
+<div class="azad-empty">
+  <div class="azad-empty__icon">{{ icon('school') }}</div>
+  <h3 class="azad-empty__title">{{ _('لا توجد مدارس بعد.') }}</h3>
+  <p class="azad-empty__description">{{ _('أنشئ أول مدرسة لتVESك الطلاب والمعلمين') }}</p>
+  <a class="azad-btn" href="{{ url_for('schools.create') }}">{{ _('أنشئ المدرسة الأولى') }}</a>
+</div>
 {% endif %}
 {% endblock %}

@@ -11,13 +11,13 @@
 
       <div class="azad-field">
         <label>{{ _('نص السؤال') }}</label>
-        <textarea name="question_text" class="form-control" rows="3" required placeholder="{{ _('اكتب السؤال هنا...') }}"></textarea>
+        <textarea name="question_text" class="azad-field__input" rows="3" required placeholder="{{ _('اكتب السؤال هنا...') }}"></textarea>
       </div>
 
       <div class="u-grid-2col">
         <div class="azad-field">
           <label>{{ _('النوع') }}</label>
-          <select name="question_type" class="form-control" id="qb-type">
+          <select name="question_type" class="azad-field__input" id="qb-type">
             <option value="mcq">{{ _('اختيار من متعدد') }}</option>
             <option value="true_false">{{ _('صح/خطأ') }}</option>
             <option value="essay">{{ _('مقالي') }}</option>
@@ -25,7 +25,7 @@
         </div>
         <div class="azad-field">
           <label>{{ _('المادة') }}</label>
-          <select name="subject_id" class="form-control">
+          <select name="subject_id" class="azad-field__input">
             <option value="">—</option>
             {% for s in subjects %}
               <option value="{{ s.id }}">{{ s.name_ar }}</option>
@@ -34,7 +34,7 @@
         </div>
         <div class="azad-field">
           <label>{{ _('الصعوبة') }}</label>
-          <select name="difficulty" class="form-control">
+          <select name="difficulty" class="azad-field__input">
             {% for i in range(1, 6) %}
               <option value="{{ i }}" {% if i == 3 %}selected{% endif %}>{{ i }}</option>
             {% endfor %}
@@ -48,13 +48,13 @@
       </div>
 
       <div class="u-grid-2col-sm" id="qb-mcq-opts">
-        <div class="azad-field"><label>{{ _('أ') }}</label><input name="option_a" class="form-control"></div>
-        <div class="azad-field"><label>{{ _('ب') }}</label><input name="option_b" class="form-control"></div>
-        <div class="azad-field"><label>{{ _('ج') }}</label><input name="option_c" class="form-control"></div>
-        <div class="azad-field"><label>{{ _('د') }}</label><input name="option_d" class="form-control"></div>
+        <div class="azad-field"><label>{{ _('أ') }}</label><input name="option_a" class="azad-field__input"></div>
+        <div class="azad-field"><label>{{ _('ب') }}</label><input name="option_b" class="azad-field__input"></div>
+        <div class="azad-field"><label>{{ _('ج') }}</label><input name="option_c" class="azad-field__input"></div>
+        <div class="azad-field"><label>{{ _('د') }}</label><input name="option_d" class="azad-field__input"></div>
         <div class="azad-field">
           <label>{{ _('الإجابة الصحيحة') }}</label>
-          <select name="correct_index" class="form-control">
+          <select name="correct_index" class="azad-field__input">
             <option value="0">{{ _('أ') }}</option><option value="1">{{ _('ب') }}</option>
             <option value="2">{{ _('ج') }}</option><option value="3">{{ _('د') }}</option>
           </select>
@@ -63,7 +63,7 @@
 
       <div id="qb-tf-opts" class="azad-field u-none">
         <label>{{ _('الإجابة') }}</label>
-        <select name="correct_tf" class="form-control">
+        <select name="correct_tf" class="azad-field__input">
           <option value="true">{{ _('صح') }}</option>
           <option value="false">{{ _('خطأ') }}</option>
         </select>

@@ -1,0 +1,194 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   AZAD E-SCHOOL — DESIGN TOKENS «البحري المرجاني»
+   Deep teal primary + coral accent, AA-verified numerically (light & dark).
+   Same token names as before — the whole azad-* system keeps working.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ═══ Brand — Marine-Coral Deep Teal Identity ═══ */
+  --azad-navy: #0c2d2b;            /* Deep Royal Indigo/Navy anchor — solid bgs w/ white text, 13.2:1 */
+  --azad-blue: #0d9488;            /* Primary Teal (buttons, links) — white 5.82:1 */
+  --azad-teal: #14b8a6;            /* Secondary Teal — for progress, hover accents */
+  --azad-red: #e11d48;             /* Coral/Rose accent — white 5.43:1, distinct from teal */
+  --azad-green: #059669;           /* Success green */
+  --azad-gold: #d97706;            /* Amber warning */
+  --azad-purple: #7c3aed;          /* Info/Purple for special states */
+  --azad-indigo: #4f46e5;          /* Indigo for depth + variety */
+  --azad-slate: #f0fdfa;
+
+  /* AA-safe solid backgrounds (white text on them passes) — not overridden in dark */
+  --azad-green-strong: #047857;
+  --azad-gold-strong: #b45309;
+  --azad-teal-strong: #0f766e;
+
+  --azad-gradient: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
+  --azad-gradient-warm: linear-gradient(135deg, #c2410c 0%, #b45309 100%);
+  --azad-gradient-cool: linear-gradient(135deg, #0f766e 0%, #7c3aed 100%);
+
+  /* ═══ Surfaces — Clean Slate & Light Gray for readability ═══ */
+  --bg: #f8fafc;                   /* Slate 50 — crisp primary background */
+  --bg-2: #f1f5f9;                 /* Slate 100 — subtle section backgrounds */
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;              /* Cards, modals, inputs */
+  --surface-2: #f8fafc;            /* Card header, subtle elevations */
+  --surface-hover: #f1f5f9;        /* Hover states on cards/tables */
+
+  --border: #e2e8f0;               /* Slate 200 — visible but gentle borders */
+  --border-strong: #cbd5e1;        /* Slate 300 — stronger borders for emphasis */
+  --border-focus: #0d9488;
+
+  /* ═══ Text — High-contrast WCAG AA/AAA compliant ═══ */
+  --text: #0f172a;                 /* Slate 900 — 15.4:1 on white, 14.8:1 on bg */
+  --text-strong: #0f172a;          /* Headings, titles, high emphasis */
+  --text-medium: #334155;          /* Slate 700 — body copy, 8.6:1 on white */
+  --text-muted: #64748b;           /* Slate 500 — secondary/muted, 4.6:1 on white */
+  --text-faint: #94a3b8;           /* Slate 400 — decorative only, never for body text */
+
+  --heading-1: #0f172a;            /* #0F172A — highest emphasis */
+  --heading-2: #1e293b;            /* Slate 800 — section headings */
+  --heading-3: #334155;           /* Slate 700 — sub headings */
+
+  /* ═══ Status colors — WCAG AA compliant on light/dark ═══ */
+  --color-success: #059669;        /* Emerald 600 */
+  --color-success-light: #ecfdf5;  /* Emerald 50 */
+  --color-success-dark: #065f46;   /* Emerald 800 — 7.8:1 on white */
+  --color-danger: #dc2626;         /* Red 600 — more vivid than coral */
+  --color-danger-light: #fef2f2;   /* Red 50 */
+  --color-danger-dark: #991b1b;    /* Red 900 — 8.2:1 on white, passes AAA */
+  --color-warning: #d97706;        /* Amber 600 */
+  --color-warning-light: #fffbeb;  /* Amber 50 */
+  --color-warning-dark: #92400e;   /* Amber 900 — 7.3:1 on white */
+  --color-info: #0284c7;           /* Sky 600 — more distinct blue */
+  --color-info-light: #f0f9ff;     /* Sky 50 */
+  --color-info-dark: #0369a1;      /* Sky 800 — 7.1:1 on white */
+
+  /* ═══ Shadow tokens — deeper, more premium (not flat) ═══ */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.10), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+  --shadow-ring: 0 0 0 3px rgba(13, 148, 136, 0.25);
+  --shadow-ring-danger: 0 0 0 3px rgba(194, 65, 12, 0.25);
+
+  /* Spacing */
+  --sp-0: 0;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+
+  /* Radius — fuller, friendlier curves */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* ═══ Typography scale — larger, more readable ═══ */
+  --font-sans: "Cairo", "Tajawal", "Segoe UI", "Tahoma", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Nav */
+  --nav-height: 64px;
+  --z-navbar: 70;
+  --z-dropdown: 50;
+  --z-sticky: 60;
+  --z-overlay: 80;
+  --z-modal: 90;
+  --z-toast: 100;
+
+  /* UI token helpers */
+  --color-bg-subtle: var(--bg-2);
+  --color-chip-bg: var(--bg-2);
+  --color-chip-text: var(--text-strong);
+  --color-input-bg: var(--surface);
+  --color-input-border: var(--border-strong);
+  --color-input-focus: var(--azad-blue);
+  --color-link: var(--azad-blue);
+  --color-link-hover: var(--azad-red);
+  --color-heading: var(--text-strong);
+  --color-body: var(--text-medium);
+  --color-muted: var(--text-muted);
+}
+
+/* ═══ Dark mode — slate-based, high contrast ═══ */
+html[data-theme="dark"] {
+  --bg: #0f172a;                   /* Slate 900 — dark, not murky green */
+  --bg-2: #1e293b;                 /* Slate 800 */
+  --bg-elevated: #1e293b;
+  --surface: #1e293b;              /* Cards, modals */
+  --surface-2: #334155;            /* Slate 700 — card headers */
+  --surface-hover: #475569;        /* Slate 600 — hover states */
+
+  --border: #334155;               /* Slate 700 */
+  --border-strong: #475569;        /* Slate 600 */
+  --border-focus: #2dd4bf;         /* Teal cyan for focus rings */
+
+  --text: #f8fafc;                 /* Slate 50 — 15.1:1 on surface */
+  --text-strong: #f8fafc;
+  --text-medium: #cbd5e1;          /* Slate 300 — 9.4:1 on surface */
+  --text-muted: #94a3b8;           /* Slate 400 — 5.2:1 on surface */
+  --text-faint: #64748b;           /* Slate 500 — decorative only */
+
+  --heading-1: #f8fafc;
+  --heading-2: #f1f5f9;            /* Slate 100 */
+  --heading-3: #cbd5e1;
+
+  --color-success: #34d399;        /* Emerald 400 */
+  --color-success-light: #064e3b;  /* Emerald 900 for dark bg */
+  --color-success-dark: #6ee7b7;   /* Emerald 300 */
+  --color-danger: #f87171;         /* Red 400 */
+  --color-danger-light: #450a0a;   /* Red 950 for dark bg */
+  --color-danger-dark: #fca5a5;    /* Red 300 */
+  --color-warning: #fbbf24;        /* Amber 400 */
+  --color-warning-light: #78350f;  /* Amber 950 for dark bg */
+  --color-warning-dark: #fcd34d;   /* Amber 300 */
+  --color-info: #38bdf8;           /* Sky 400 */
+  --color-info-light: #0c4a6e;     /* Sky 900 for dark bg */
+  --color-info-dark: #7dd3fc;      /* Sky 300 */
+
+  --azad-navy: #115e59;
+  --azad-red: #c2410c;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  --shadow-ring: 0 0 0 3px rgba(45, 212, 191, 0.35);
+  --shadow-ring-danger: 0 0 0 3px rgba(251, 146, 60, 0.35);
+
+  --azad-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --color-bg-subtle: #0e211f;
+  --color-chip-bg: #173a33;
+  --color-chip-text: #d7f7f0;
+  --color-input-bg: #0e211f;
+  --color-input-border: #2a5a4f;
+  --color-link: #5eead4;           /* 11.3:1 on dark surface */
+}

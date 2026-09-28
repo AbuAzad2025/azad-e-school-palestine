@@ -28,7 +28,7 @@
 <form method="post" action="{{ url_for('assessment.attempt_submit', attempt_id=attempt.id) }}" id="quiz-form" data-attempt-id="{{ attempt.id }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for q in quiz.questions %}
-  <div class="card quiz-card" data-question-index="{{ loop.index0 }}">
+  <div class="azad-card quiz-card" data-question-index="{{ loop.index0 }}">
     <fieldset class="quiz-fieldset">
       <legend class="quiz-legend u-flex u-items-center u-gap-md">
         <span>{{ loop.index }}. {{ q.prompt }}</span>

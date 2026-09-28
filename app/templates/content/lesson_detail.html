@@ -27,7 +27,7 @@
 </div>
 
 {% if lesson.body_html %}
-  <div class="card u-mb-1">{{ lesson.body_html | e }}</div>
+  <div class="azad-card u-mb-1">{{ lesson.body_html | e }}</div>
 {% endif %}
 
 <div class="azad-section"><h2>{{ _('المرفقات') }}</h2></div>
@@ -73,7 +73,7 @@
 
 {% if can_teach %}
 <div class="azad-section"><h2>{{ _('رفع مرفق') }}</h2></div>
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   <form method="post" action="{{ url_for('content.attachment_upload', class_id=class_room.id, lesson_id=lesson.id) }}" enctype="multipart/form-data" novalidate>
     {{ att_form.hidden_tag() }}
     <div class="azad-field">{{ att_form.file.label }}{{ att_form.file() }}{% for e in att_form.file.errors %}<ul class="form-errors"><li>{{ e }}</li></ul>{% endfor %}</div>
@@ -82,7 +82,7 @@
   </form>
 </div>
 <div class="azad-section"><h2>{{ _('إضافة فيديو خارجي') }}</h2></div>
-<div class="card">
+<div class="azad-card">
   <form method="post" action="{{ url_for('content.attachment_youtube', class_id=class_room.id, lesson_id=lesson.id) }}" novalidate>
     {{ yt_form.hidden_tag() }}
     <div class="azad-field">{{ yt_form.url.label }}{{ yt_form.url() }}</div>
@@ -92,7 +92,7 @@
 </div>
 
 <div class="azad-section"><h2>{{ _('تعديل الدرس') }}</h2></div>
-<div class="card">
+<div class="azad-card">
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     {% for f in form %}

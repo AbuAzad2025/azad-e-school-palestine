@@ -2,12 +2,12 @@
 {% block title %}{{ assignment.title }} — {{ _('واجب') }}{% endblock %}
 {% block content %}
 <h1 class="page-title azad-title">{{ assignment.title }}</h1>
-{% if assignment.body %}<div class="card u-mb-1">{{ assignment.body }}</div>{% endif %}
+{% if assignment.body %}<div class="azad-card u-mb-1">{{ assignment.body }}</div>{% endif %}
 <p class="page-subtitle">{{ _('الدرجة القصوى:') }} {{ assignment.max_mark or '—' }}</p>
 
 {% if current_user.role == 'student' %}
 <div class="azad-section"><h2>{{ _('تسليم الواجب') }}</h2></div>
-<div class="card u-mb-1">
+<div class="azad-card u-mb-1">
   {% if my_sub %}
     <p><span class="azad-badge-variant azad-badge-variant--success">{{ _('سُلّم') }} — {{ my_sub.submitted_at.strftime('%Y-%m-%d %H:%M') if my_sub.submitted_at else '' }}</span>
     {% if my_sub.mark is not none %} — {{ _('الدرجة:') }} {{ my_sub.mark }}/{{ assignment.max_mark or '—' }}{% endif %}</p>
@@ -36,7 +36,7 @@
       </div>
     </div>
     <div class="item-actions">
-      <details class="card u-p08-w100-mb05">
+      <details class="azad-card u-p08-w100-mb05">
         <summary>{{ _('عرض وتصحيح') }}</summary>
         {% if s.body %}<p class="u-my-0-5">{{ s.body }}</p>{% endif %}
         {% if s.file %}<p><a href="{{ url_for('grades.submission_file', submission_id=s.id) }}">📎 {{ _('تحميل الملف المرفق') }}</a></p>{% endif %}

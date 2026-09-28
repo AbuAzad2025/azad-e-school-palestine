@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#014e7c">
+<meta name="theme-color" content="#0f766e">
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="{{ _('منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
 <meta property="og:title" content="{{ _('منصة مدرسة أزاد الإلكترونية') }}">
@@ -49,7 +49,10 @@
 </script>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/polish.css') }}">
 {% block head %}{% endblock %}
   {% if config.PLAUSIBLE_SCRIPT_URL %}
   <script defer data-domain="{{ config.PLAUSIBLE_SCRIPT_URL }}" src="https://plausible.io/js/script.js"></script>
@@ -59,15 +62,15 @@
   <a class="skip-link" href="#main">{{ _('تخطَّ إلى المحتوى') }}</a>
   {% include "partials/navbar.html" %}
   {% if is_impersonating and impersonator %}
-  <div class="impersonate-banner" role="alert">
+  <div class="azad-impersonate-banner" role="alert">
     <div class="container">
-      <div>
-        <strong>{{ icon('alert') }}{{ _('وضع انتحال الصفة') }}</strong>
-        <span>{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, admin=impersonator.name_ar or impersonator.email) }}</span>
+      <div class="azad-impersonate__content">
+        <strong class="azad-impersonate__label">{{ icon('alert') }} {{ _('وضع انتحال الصفة') }}</strong>
+        <span class="azad-impersonate__detail">{{ _('أنت تتصفح الآن كـ %(name)s (%(role)s) — بواسطة %(admin)s', name=current_user.name_ar or current_user.email, role=current_user.role.value, admin=impersonator.name_ar or impersonator.email) }}</span>
       </div>
       <form method="post" action="{{ url_for('admin.impersonate_exit') }}" class="azad-inline-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="azad-btn azad-btn-sm">{{ _('العودة إلى حسابي الأصلي') }}</button>
+        <button type="submit" class="azad-btn azad-btn-sm azad-btn-danger">{{ _('العودة إلى حسابي الأصلي') }}</button>
       </form>
     </div>
   </div>
@@ -76,11 +79,15 @@
     {% block breadcrumbs %}{% endblock %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="azad-flash-stack" role="status">
-          {% for category, message in messages %}
-            <div class="azad-flash azad-flash--{{ category }}">{{ message }}</div>
-          {% endfor %}
+    <div class="azad-flash-stack" role="status" aria-live="polite">
+      {% for category, message in messages %}
+        <div class="azad-flash azad-flash--{{ category }}" role="alert">
+          <span class="azad-flash__icon">{{ icon('check-circle') if category == 'success' else icon('x-circle') if category == 'danger' else icon('alert-triangle') if category == 'warning' else icon('info') }}</span>
+          <span class="azad-flash__content">{{ message }}</span>
+          <button type="button" class="azad-flash__close" data-dismiss-flash aria-label="{{ _('إخفاء') }}">{{ icon('x') }}</button>
         </div>
+      {% endfor %}
+    </div>
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}

@@ -8,10 +8,10 @@
 
 <form method="get" class="form-inline gradebook-form-row">
   <div class="gradebook-form-col--2">
-    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث في الإجراء') }}" aria-label="{{ _('بحث في الإجراء') }}" class="form-control">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث في الإجراء') }}" aria-label="{{ _('بحث في الإجراء') }}" class="azad-field__input">
   </div>
   <div class="gradebook-form-col">
-    <select name="action" class="form-control" aria-label="{{ _('تصفية حسب الإجراء') }}">
+    <select name="action" class="azad-field__input" aria-label="{{ _('تصفية حسب الإجراء') }}">
       <option value="">{{ _('كل الإجراءات') }}</option>
       {% for a in actions %}
       <option value="{{ a }}" {% if action_filter == a %}selected{% endif %}>{{ a }}</option>
@@ -19,7 +19,7 @@
     </select>
   </div>
   <div class="gradebook-form-col">
-    <select name="entity" class="form-control" aria-label="{{ _('تصفية حسب الكيان') }}">
+    <select name="entity" class="azad-field__input" aria-label="{{ _('تصفية حسب الكيان') }}">
       <option value="">{{ _('كل الكيانات') }}</option>
       {% for e in entities %}
       <option value="{{ e }}" {% if entity_filter == e %}selected{% endif %}>{{ e }}</option>

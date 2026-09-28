@@ -1,64 +1,75 @@
 {% extends "base.html" %}
 {% block title %}{{ _('تسجيل كطالب فردي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
 {% block content %}
-<div class="azad-card azad-card--centered">
-  <div class="azad-auth-header">
-    <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" class="azad-auth-logo">
-    <h1 class="azad-auth-title azad-title">{{ _('تسجيل كطالب فردي') }}</h1>
-    <p class="azad-auth-hint">{{ _('سجّل كطالب مستقل واستكشف الكورسات المتاحة مباشرة.') }}</p>
+<div class="auth-card">
+  <div class="auth-card__header">
+    <div class="auth-card__logo">
+      <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" width="48" height="48">
+    </div>
+    <div>
+      <h1 class="auth-card__title">{{ _('تسجيل كطالب فردي') }}</h1>
+      <p class="auth-card__subtitle">{{ _('سجّل كطالب مستقل واستكشف الكورسات المتاحة مباشرة.') }}</p>
+    </div>
   </div>
-  <form method="post" novalidate>
+  <form method="post" novalidate class="auth-card__form">
     {{ form.hidden_tag() }}
     <div class="azad-field">
-      {{ form.name_ar.label }}
-      {{ form.name_ar(autocomplete="name", placeholder=_("الاسم الكامل")) }}
+      <label for="name_ar" class="azad-field__label">{{ _('الاسم الكامل') }} <span class="required">*</span></label>
+      {{ form.name_ar(id="name_ar", autocomplete="name", placeholder=_("الاسم الكامل")) }}
       {% if form.name_ar.errors %}
         <div class="azad-field__error">
+          <span class="icon">{{ icon('alert-circle') }}</span>
           {% for e in form.name_ar.errors %}<span>{{ e }}</span>{% endfor %}
         </div>
       {% endif %}
     </div>
     <div class="azad-field">
-      {{ form.email.label }}
-      {{ form.email(autocomplete="email", placeholder="example@mail.com") }}
+      <label for="email" class="azad-field__label">{{ _('البريد الإلكتروني') }} <span class="required">*</span></label>
+      {{ form.email(id="email", autocomplete="email", placeholder="example@mail.com") }}
       {% if form.email.errors %}
         <div class="azad-field__error">
+          <span class="icon">{{ icon('alert-circle') }}</span>
           {% for e in form.email.errors %}<span>{{ e }}</span>{% endfor %}
         </div>
       {% endif %}
     </div>
     <div class="azad-field">
-      {{ form.grade_level.label }}
-      {{ form.grade_level() }}
+      <label for="grade_level" class="azad-field__label">{{ _('المستوى الدراسي') }} <span class="required">*</span></label>
+      {{ form.grade_level(id="grade_level") }}
       {% if form.grade_level.errors %}
         <div class="azad-field__error">
+          <span class="icon">{{ icon('alert-circle') }}</span>
           {% for e in form.grade_level.errors %}<span>{{ e }}</span>{% endfor %}
         </div>
       {% endif %}
     </div>
     <div class="azad-field">
-      {{ form.password.label }}
-      {{ form.password(autocomplete="new-password", placeholder=_("8 أحرف على الأقل"), data_password_strength="") }}
+      <label for="password" class="azad-field__label">{{ _('كلمة المرور') }} <span class="required">*</span></label>
+      {{ form.password(id="password", autocomplete="new-password", placeholder=_("8 أحرف على الأقل"), data_password_strength="") }}
       {% if form.password.errors %}
         <div class="azad-field__error">
+          <span class="icon">{{ icon('alert-circle') }}</span>
           {% for e in form.password.errors %}<span>{{ e }}</span>{% endfor %}
         </div>
       {% endif %}
     </div>
     <div class="azad-field">
-      {{ form.confirm.label }}
-      {{ form.confirm(autocomplete="new-password") }}
+      <label for="confirm" class="azad-field__label">{{ _('تأكيد كلمة المرور') }} <span class="required">*</span></label>
+      {{ form.confirm(id="confirm", autocomplete="new-password") }}
       {% if form.confirm.errors %}
         <div class="azad-field__error">
+          <span class="icon">{{ icon('alert-circle') }}</span>
           {% for e in form.confirm.errors %}<span>{{ e }}</span>{% endfor %}
         </div>
       {% endif %}
     </div>
     <div class="azad-form-actions">
-      {{ form.submit(class="azad-btn") }}
+      {{ form.submit(class="azad-btn azad-btn-lg", aria_label=_("إنشاء حساب")) }}
     </div>
   </form>
-  <p class="azad-auth-alt">{{ _('لديك حساب بالفعل؟') }} <a href="{{ url_for('auth.login') }}">{{ _('سجّل الدخول') }}</a></p>
-  <p class="azad-auth-alt">{{ _('مدرستك لديها كود انضمام؟') }} <a href="{{ url_for('auth.register') }}">{{ _('سجّل كطالب مدرسي') }}</a></p>
+  <div class="auth-card__footer">
+    <p class="auth-card__alt">{{ _('لديك حساب بالفعل؟') }} <a href="{{ url_for('auth.login') }}" class="auth-card__link">{{ _('سجّل الدخول') }}</a></p>
+    <p class="auth-card__alt">{{ _('مدرستك لديها كود انضمام؟') }} <a href="{{ url_for('auth.register') }}" class="auth-card__link">{{ _('سجّل كطالب مدرسي') }}</a></p>
+  </div>
 </div>
 {% endblock %}

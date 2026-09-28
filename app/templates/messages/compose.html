@@ -17,7 +17,7 @@
 
       <div class="azad-field">
         <label for="recipient_id">{{ _('المستلم') }}</label>
-        <select name="recipient_id" id="recipient_id" required class="form-control">
+        <select name="recipient_id" id="recipient_id" required class="azad-field__input">
           <option value="">{{ _('اختر مستلم...') }}</option>
           {% for u in users %}
             <option value="{{ u.id }}" {% if request.args.get('to')|int == u.id %}selected{% endif %}>
@@ -29,14 +29,14 @@
 
       <div class="azad-field">
         <label for="subject">{{ _('الموضوع') }}</label>
-        <input type="text" name="subject" id="subject" required class="form-control"
+        <input type="text" name="subject" id="subject" required class="azad-field__input"
                value="{{ parent.subject if parent else '' }}"
                placeholder="{{ _('موضوع الرسالة') }}">
       </div>
 
       <div class="azad-field">
         <label for="body">{{ _('الرسالة') }}</label>
-        <textarea name="body" id="body" required class="form-control" rows="8"
+        <textarea name="body" id="body" required class="azad-field__input" rows="8"
                   placeholder="{{ _('اكتب رسالتك هنا...') }}"></textarea>
       </div>
 

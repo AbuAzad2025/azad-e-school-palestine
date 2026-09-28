@@ -10,7 +10,7 @@
 
 <div class="pricing u-mt-2">
   {% for plan in plans %}
-  <div class="price-card {{ 'price-card--popular' if plan.popular else '' }} l-fade">
+  <div class="price-card {{ 'price-card--popular' if plan.popular else '' }}">
     {% if plan.popular %}
     <div class="price-card__popular-badge">{{ _('الأكثر شعبية') }}</div>
     {% endif %}
@@ -54,7 +54,7 @@
   </div>
 </div>
 
-<div class="cta l-fade u-mt-4">
+<div class="cta u-mt-4">
   <h2 class="cta__h">{{ _('مستعد للبدء؟') }}</h2>
   <p class="u-mb-15-op90">{{ _('انضم لآلاف الطلاب والمدارس الذين يثقون بأزاد') }}</p>
   <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg u-bg-navy-inverse">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>

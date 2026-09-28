@@ -13,7 +13,7 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="azad-field">
         <label for="code">{{ _('أدخل رمز الربط') }}</label>
-        {{ link_form.code(class="form-control", placeholder=_("مثال: ABCD1234")) }}
+        {{ link_form.code(class="azad-field__input", placeholder=_("مثال: ABCD1234")) }}
         {% for error in link_form.code.errors %}
         <div class="form-error">{{ error }}</div>
         {% endfor %}
