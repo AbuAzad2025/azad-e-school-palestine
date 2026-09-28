@@ -40,7 +40,7 @@
   gap: var(--sp-2);
 }
 .l-theme-btn {
-  background: var(--color-surface-hover);
+  background: var(--surface-hover);
   border: 1px solid var(--border-strong);
   color: var(--text-medium);
   border-radius: var(--radius-md);

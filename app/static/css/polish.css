@@ -135,7 +135,7 @@ body.azad-app {
 /* ─── Empty states: friendlier illustration tint ─── */
 .azad-empty__icon {
   background: linear-gradient(135deg, var(--bg-2), var(--surface-hover));
-  color: var(--azad-blue);
+  color: var(--color-link);
 }
 
 /* ─── Focus visibility everywhere (a11y polish) ─── */

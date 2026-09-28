@@ -3,18 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#014e7c">
+<meta name="theme-color" content="#0f766e">
 <title>أنت غير متصل — أزاد</title>
 <style>
   /* pure-CSS offline fallback — no external asset deps, no url_for */
+  /* Marine-Coral tokens, inlined because this page must render with zero
+     external assets (the app CSS may itself be unreachable while offline).
+     Values mirror theme.css; --muted previously measured 4.23:1 on the light
+     background and the old green gradient only 3.93:1 under white text. */
   :root{
-    --bg:#f1f5f9;--text:#1e293b;--muted:#64748b;
-    --azad-navy:#014e7c;--azad-green:#009535;
-    --azad-gradient:linear-gradient(135deg,#009535 0%,#014e7c 100%);
+    --bg:#f8fafc;--text:#0f172a;--muted:#475569;
+    --azad-gradient:linear-gradient(135deg,#0f766e 0%,#0e7490 100%);
     --radius-full:9999px;
   }
   html[data-theme="dark"]{
-    --bg:#0b1220;--text:#e2e8f0;--muted:#94a3b8;
+    --bg:#0f172a;--text:#f8fafc;--muted:#cbd5e1;
   }
   body{
     margin:0;display:flex;align-items:center;justify-content:center;

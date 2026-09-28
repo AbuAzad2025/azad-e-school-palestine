@@ -79,7 +79,7 @@ function drawBarChart(ctx, config, width, height) {
     const barHeight = (value / max) * chartHeight;
     const y = height - padding.bottom - barHeight;
 
-    ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#014e7c");
+    ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#0c2d2b");
     ctx.fillRect(x, y, barWidth, barHeight);
 
     // value label
@@ -121,7 +121,7 @@ function drawDoughnutChart(ctx, config, width, height) {
     ctx.moveTo(centerX, centerY);
     ctx.arc(centerX, centerY, radius, start, start + slice);
     ctx.closePath();
-    ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#014e7c");
+    ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#0c2d2b");
     ctx.fill();
     start += slice;
   });
@@ -133,7 +133,7 @@ function drawDoughnutChart(ctx, config, width, height) {
   ctx.textAlign = rtl ? "right" : "left";
   ctx.font = "12px Cairo, sans-serif";
   values.forEach((value, i) => {
-    ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#014e7c");
+    ctx.fillStyle = colors[i] || getCssVar("--azad-navy", "#0c2d2b");
     const boxX = rtl ? legendX - 10 : legendX;
     ctx.fillRect(boxX, legendY, 10, 10);
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text") || "#000";

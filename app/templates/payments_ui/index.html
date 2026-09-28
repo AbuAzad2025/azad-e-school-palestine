@@ -15,9 +15,9 @@
       <h3 class="card-title">{{ method.name }}</h3>
       <p class="card-text text-muted">{{ _('العملات المدعومة:') }} {{ method.currencies|join(', ') }}</p>
       {% if method.enabled %}
-      <span class="azad-badge u-bg-green">{{ _('مفعل') }}</span>
+      <span class="azad-badge azad-badge--success">{{ _('مفعل') }}</span>
       {% else %}
-      <span class="azad-badge u-bg-gray-500">{{ _('معطل') }}</span>
+      <span class="azad-badge azad-badge--muted">{{ _('معطل') }}</span>
       {% endif %}
     </div>
     <div class="card-footer u-panel-foot">

@@ -11,7 +11,7 @@
 
   <div class="stats-grid">
     {{ azad_stat_card(session_.scheduled_at.strftime('%Y-%m-%d %H:%M') if session_.scheduled_at else '—', _('الموعد'), 'calendar', 'var(--azad-blue)') }}
-    {{ azad_stat_card(session_.mode, _('الطريقة'), 'settings', 'var(--azad-teal)') }}
+    {{ azad_stat_card(session_.mode, _('الطريقة'), 'settings', 'var(--azad-teal-strong)') }}
     {{ azad_stat_card(session_.price or '—', _('السعر'), 'cash', 'var(--azad-gold)') }}
 {% set status_badge = '<span class="badge-status badge-' ~ ('ok' if session_.status == 'completed' else 'warn') ~ '">' ~ session_.status ~ '</span>' %}
     {{ azad_stat_card(status_badge, _('الحالة'), 'flag', 'green' if session_.status == 'completed' else 'gold') }}

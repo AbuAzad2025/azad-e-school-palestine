@@ -147,7 +147,7 @@
   border-color: var(--azad-blue);
   box-shadow: var(--shadow-ring);
 }
-.azad-field__input::placeholder { color: var(--text-faint); }
+.azad-field__input::placeholder { color: var(--text-muted); }
 .azad-field__input.is-invalid { border-color: var(--color-danger); }
 .azad-field__input.is-invalid:focus { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2); }
 .azad-field__error { color: var(--color-danger-dark); font-size: var(--text-xs); margin-top: var(--sp-1); }
@@ -177,9 +177,11 @@
 .azad-btn { background: var(--azad-gradient); color: #fff; }
 .azad-btn:hover { filter: brightness(1.08); }
 .azad-btn-primary { background: var(--azad-navy); color: #fff; }
-.azad-btn-primary:hover { background: #016ba0; }
-.azad-btn-outline { border-color: var(--azad-green); background: transparent; color: var(--azad-green); }
-.azad-btn-outline:hover { background: var(--azad-green); color: #fff; }
+.azad-btn-primary:hover { background: #115e59; }
+/* --azad-green (#059669) is only 3.77:1 — fine as a border but not as button
+   text or under white text, so the outline variant uses the strong shade. */
+.azad-btn-outline { border-color: var(--azad-green-strong); background: transparent; color: var(--azad-green-strong); }
+.azad-btn-outline:hover { background: var(--azad-green-strong); color: #fff; }
 .azad-btn-danger { background: var(--color-danger); color: #fff; }
 .azad-btn-danger:hover { background: var(--color-danger-dark); }
 .azad-btn-sm { padding: 0.4rem 1rem; font-size: var(--text-sm); }

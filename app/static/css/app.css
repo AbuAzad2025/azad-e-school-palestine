@@ -401,7 +401,7 @@ a .icon, button .icon { pointer-events: none; }
   color: var(--text-muted);
 }
 .azad-card--centered .azad-auth-alt a {
-  color: var(--azad-blue);
+  color: var(--color-link);
   font-weight: 600;
   text-decoration: none;
 }
@@ -561,7 +561,8 @@ h2.page-subtitle {
   box-shadow: var(--shadow-ring);
 }
 .azad-field__input::placeholder {
-  color: var(--text-faint);
+  /* Placeholder copy is still text: Slate 400 was 2.6:1 on white. */
+  color: var(--text-muted);
 }
 .azad-field__input.is-valid {
   border-color: var(--color-success);
@@ -860,7 +861,7 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   margin-top: var(--sp-1);
 }
 .azad-item .item-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
-.azad-item .item-title a { text-decoration: none; color: var(--azad-blue); }
+.azad-item .item-title a { text-decoration: none; color: var(--color-link); }
 .azad-item .item-title a:hover { text-decoration: underline; }
 .azad-item--child-header {
   border-top: 3px solid var(--azad-blue);
@@ -1180,7 +1181,7 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   border-radius: var(--radius-sm);
   transition: color var(--duration-fast), background var(--duration-fast);
 }
-.azad-breadcrumb__link:hover { color: var(--azad-blue); background: var(--surface-hover); }
+.azad-breadcrumb__link:hover { color: var(--color-link); background: var(--surface-hover); }
 .azad-breadcrumb__separator { color: var(--text-secondary); display: flex; }
 .azad-breadcrumb__item--active {
   color: var(--text);
@@ -1466,8 +1467,8 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   cursor: pointer;
   white-space: nowrap;
 }
-.tab:hover { color: var(--azad-blue); }
-.tab.active { color: var(--azad-blue); border-bottom-color: var(--azad-blue); }
+.tab:hover { color: var(--color-link); }
+.tab.active { color: var(--color-link); border-bottom-color: var(--azad-blue); }
 .tab:focus-visible { outline: none; box-shadow: var(--shadow-ring); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
 
 /* ═══════════════════════════════════
@@ -1651,7 +1652,7 @@ footer.azad-footer a { color: var(--azad-red); font-weight: 600; text-decoration
 }
 html[data-theme="dark"] .price-card__amount,
 html[data-theme="dark"] .price-card__currency {
-  color: var(--azad-blue);
+  color: var(--color-link);
 }
 .price-card__features {
   list-style: none;
@@ -1785,7 +1786,7 @@ html[data-theme="dark"] footer.azad-footer {
 }
 html[data-theme="dark"] .azad-table th { background: var(--bg-2); }
 html[data-theme="dark"] .meta-chip { background: var(--bg-2); color: var(--text-strong); }
-html[data-theme="dark"] .section-head h2 .icon { color: var(--azad-blue); }
+html[data-theme="dark"] .section-head h2 .icon { color: var(--color-link); }
 html[data-theme="dark"] .azad-stat-card { border-color: var(--border); }
 html[data-theme="dark"] .azad-stat-card:hover { border-color: var(--stat-accent); }
 html[data-theme="dark"] .azad-item { border-color: var(--border); }
@@ -1847,7 +1848,7 @@ html[data-theme="dark"] .ba
   border-radius: var(--radius-md);
   transition: color var(--duration-fast), background var(--duration-fast);
 }
-.admin-toolbar__back:hover { color: var(--azad-blue); background: var(--surface-hover); }
+.admin-toolbar__back:hover { color: var(--color-link); background: var(--surface-hover); }
 .admin-toolbar__filters { margin-left: auto; }
 .toolbar-filters { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 .toolbar-filters__field { display: flex; flex-direction: column; gap: var(--sp-1); }
@@ -2152,7 +2153,7 @@ html {
     background: var(--azad-navy);
   }
   [data-theme="dark"] .azad-bottom-nav__item.active {
-    color: var(--azad-blue);
+    color: var(--color-link);
   }
   [data-theme="dark"] .azad-bottom-nav__item.active::after {
     background: var(--azad-blue);
@@ -4181,7 +4182,9 @@ textarea:focus,
 .star-label {
   font-size: 2.5rem;
   cursor: pointer;
-  color: var(--azad-gray-400);
+  /* Unchecked stars are still an interactive control, so they need >= 3:1
+     (and readable as text at 4.67:1) — Slate 400 was 2.6:1. */
+  color: var(--azad-gray-500);
   transition: color 0.2s, filter 0.2s;
   user-select: none;
 }
@@ -4609,8 +4612,11 @@ html[data-theme="dark"] .badge-status.badge-err { background: var(--color-danger
   color: #fff;
   font-size: 1.5rem;
 }
-.badge-card.locked { opacity: 0.55; filter: grayscale(0.6); }
-.badge-card.locked .badge-icon { background: var(--surface-hover); color: var(--text-muted); }
+/* Dim the locked badge by its own surface and icon, not by fading the whole
+   card: opacity on the card compounded with the u-op-60 utility (and any
+   child opacity) and pushed the card title/description below 2.5:1. */
+.badge-card.locked { background: var(--bg-2); }
+.badge-card.locked .badge-icon { background: var(--surface-hover); color: var(--text-muted); filter: grayscale(1); }
 
 /* ── 6. Buttons & actions ─────────────────────────────────────────── */
 .azad-btn-success {
@@ -5148,7 +5154,7 @@ html[data-theme="dark"] .badge-status.badge-err { background: var(--color-danger
 .u-bolder { font-weight: 700; }
 .u-click { cursor: pointer; }
 .u-flex-end { display: flex; align-items: flex-end; }
-.u-text-blue { color: var(--azad-blue); }
+.u-text-blue { color: var(--color-link); }
 .u-text-azad-muted { color: var(--azad-muted, var(--text-muted)); }
 .u-text-danger-fb { color: var(--azad-danger, var(--color-danger)); }
 .u-grid-cards-180 { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
@@ -5185,8 +5191,10 @@ html[data-theme="dark"] .badge-status.badge-err { background: var(--color-danger
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #25d366;
-  border-color: #25d366;
+  /* #25d366 (WhatsApp brand green) gives white text only 1.98:1; #075e54 is
+     the brand's own dark teal and clears AA at ~9:1. */
+  background: #075e54;
+  border-color: #075e54;
   color: #fff;
 }
 .u-panel-foot {
@@ -5326,15 +5334,15 @@ html[data-theme="dark"] .badge-status.badge-err { background: var(--color-danger
   color: var(--text-muted);
   white-space: nowrap;
 }
-.azad-badge--success { background: var(--color-success); color: #fff; }
-.azad-badge--info { background: var(--color-info); color: #fff; }
-.azad-badge--warning { background: var(--color-warning); color: #fff; }
-.azad-badge--danger { background: var(--color-danger); color: #fff; }
-.azad-badge--muted { background: var(--text-muted); color: #fff; }
-html[data-theme="dark"] .azad-badge--success { color: #052e16; }
-html[data-theme="dark"] .azad-badge--info { color: #172554; }
-html[data-theme="dark"] .azad-badge--warning { color: #422006; }
-html[data-theme="dark"] .azad-badge--danger { color: #450a0a; }
+/* Solid white-on-status badges were failing AA: white on --color-success is
+   3.77:1, on --color-warning 3.19:1, on --color-info 4.10:1. Badge text is
+   --text-xs (0.75rem) normal weight, so it needs the full 4.5:1. The tinted
+   pair (light background + dark foreground) clears it in both themes. */
+.azad-badge--success { background: var(--color-success-light); color: var(--color-success-dark); }
+.azad-badge--info { background: var(--color-info-light); color: var(--color-info-dark); }
+.azad-badge--warning { background: var(--color-warning-light); color: var(--color-warning-dark); }
+.azad-badge--danger { background: var(--color-danger-light); color: var(--color-danger-dark); }
+.azad-badge--muted { background: var(--surface-hover); color: var(--text-medium); }
 
 .azad-action-card--warning { --action-color: var(--color-warning); }
 .stepper__bar--pending { background: var(--azad-slate); }

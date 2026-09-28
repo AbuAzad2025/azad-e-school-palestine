@@ -33,7 +33,7 @@
       <p class="card-text text-muted u-text-sm">{{ lesson.body_html|striptags|truncate(100) if lesson.body_html else _('بدون محتوى نصي') }}</p>
       <div class="item-meta u-mt-0-75 u-text-08rem">
         <span class="azad-badge">{{ lesson.class_room.subject.name_ar }}</span>
-        <span class="azad-badge u-bg-indigo">{{ lesson.class_room.name }}</span>
+        <span class="azad-badge azad-badge--info">{{ lesson.class_room.name }}</span>
         <span class="text-muted">{{ _('بواسطة') }} {{ lesson.created_by_user.name_ar if lesson.created_by_user else '—' }}</span>
       </div>
     </div>

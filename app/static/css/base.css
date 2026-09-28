@@ -147,7 +147,7 @@ a:focus-visible {
   color: var(--text-muted);
 }
 .azad-breadcrumb__link:hover {
-  color: var(--azad-blue);
+  color: var(--color-link);
 }
 .azad-breadcrumb__item--active {
   color: var(--text-strong);

@@ -7,7 +7,11 @@
 :root {
   /* ═══ Brand — Marine-Coral Deep Teal Identity ═══ */
   --azad-navy: #0c2d2b;            /* Deep Royal Indigo/Navy anchor — solid bgs w/ white text, 13.2:1 */
-  --azad-blue: #0d9488;            /* Primary Teal (buttons, links) — white 5.82:1 */
+  --azad-blue: #0f766e;            /* Primary Teal (links, accents, fills under white text).
+                                      The previous teal-600 (#0d9488) was labelled 5.82:1
+                                      but actually measures 3.74:1 — it failed AA both as
+                                      text on white and as a fill under white text. teal-700
+                                      measures 5.47:1 in both directions. */
   --azad-teal: #14b8a6;            /* Secondary Teal — for progress, hover accents */
   --azad-red: #e11d48;             /* Coral/Rose accent — white 5.43:1, distinct from teal */
   --azad-green: #059669;           /* Success green */
@@ -41,8 +45,12 @@
   --text: #0f172a;                 /* Slate 900 — 15.4:1 on white, 14.8:1 on bg */
   --text-strong: #0f172a;          /* Headings, titles, high emphasis */
   --text-medium: #334155;          /* Slate 700 — body copy, 8.6:1 on white */
-  --text-muted: #64748b;           /* Slate 500 — secondary/muted, 4.6:1 on white */
-  --text-faint: #94a3b8;           /* Slate 400 — decorative only, never for body text */
+  --text-muted: #475569;           /* Slate 600 — secondary/muted. Slate 500 (#64748b) measured
+                                      only 4.67:1 on white and 4.23:1 on --surface-hover
+                                      (badges, table headers, card footers), so muted text
+                                      failed AA wherever it did not sit on pure white.
+                                      Slate 600 gives 7.6:1 on white, 6.8:1 on --surface-hover. */
+  --text-faint: #94a3b8;           /* Slate 400 — decorative only, never for body text (2.6:1) */
 
   --heading-1: #0f172a;            /* #0F172A — highest emphasis */
   --heading-2: #1e293b;            /* Slate 800 — section headings */
@@ -79,6 +87,7 @@
   --sp-4: 16px;
   --sp-5: 20px;
   --sp-6: 24px;
+  --sp-7: 28px;                    /* referenced by footer/app layouts as var(--sp-7) */
   --sp-8: 32px;
   --sp-10: 40px;
   --sp-12: 48px;
@@ -92,6 +101,7 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
   --radius-full: 9999px;
+  --radius: var(--radius-md);      /* legacy alias — admin.css/app.css still call var(--radius) */
 
   /* ═══ Typography scale — larger, more readable ═══ */
   --font-sans: "Cairo", "Tajawal", "Segoe UI", "Tahoma", system-ui, -apple-system, sans-serif;
@@ -131,11 +141,28 @@
   --color-input-bg: var(--surface);
   --color-input-border: var(--border-strong);
   --color-input-focus: var(--azad-blue);
-  --color-link: var(--azad-blue);
+  /* Link text is theme-aware (teal-700 on light, teal-200 on dark) so rules
+     that render copy should use this token, not --azad-blue: the brand fill
+     has to stay saturated enough to carry white text. */
+  --color-link: #0f766e;
   --color-link-hover: var(--azad-red);
   --color-heading: var(--text-strong);
   --color-body: var(--text-medium);
   --color-muted: var(--text-muted);
+
+  /* ═══ Legacy --azad-* aliases ═══
+     Pre-existing utility classes (u-text-*/u-bg-* in app.css, the quiz
+     timer and the rating stars) reference these names. Without them the
+     whole declaration is invalid at computed-value time, which silently
+     drops the colour instead of falling back — e.g. a var() background
+     left a white icon on a white card. */
+  --azad-warning: var(--color-warning);
+  --azad-warning-light: var(--color-warning-light);
+  --azad-danger: var(--color-danger);
+  --azad-border: var(--border);
+  --azad-muted: var(--text-muted);
+  --azad-gray-400: #94a3b8;        /* decorative only — never body text (2.6:1 on white) */
+  --azad-gray-500: #64748b;        /* use as a background/accent with white on top (4.7:1) */
 }
 
 /* ═══ Dark mode — slate-based, high contrast ═══ */
@@ -153,8 +180,10 @@ html[data-theme="dark"] {
 
   --text: #f8fafc;                 /* Slate 50 — 15.1:1 on surface */
   --text-strong: #f8fafc;
-  --text-medium: #cbd5e1;          /* Slate 300 — 9.4:1 on surface */
-  --text-muted: #94a3b8;           /* Slate 400 — 5.2:1 on surface */
+  --text-medium: #e2e8f0;          /* Slate 200 — 6.1:1 on --surface-hover */
+  --text-muted: #cbd5e1;           /* Slate 300 — Slate 400 measured only 2.95:1 on
+                                      --surface-hover (#475569), which is where muted
+                                      text sits on hovered table rows. Now 5.1:1. */
   --text-faint: #64748b;           /* Slate 500 — decorative only */
 
   --heading-1: #f8fafc;

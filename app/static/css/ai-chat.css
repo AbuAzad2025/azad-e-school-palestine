@@ -642,7 +642,7 @@
 }
 
 .message-content a:hover {
-  color: var(--azad-blue);
+  color: var(--color-link);
 }
 
 .message-content strong {
@@ -669,5 +669,5 @@ html[data-theme="dark"] .prompt-chip:hover {
 }
 
 html[data-theme="dark"] .welcome-icon {
-  color: var(--azad-blue);
+  color: var(--color-link);
 }
