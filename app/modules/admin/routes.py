@@ -16,7 +16,7 @@ from app.models.gradebook import Assignment
 from app.models.school import School
 from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 from app.services.revenue import get_revenue_dashboard_data
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 from sqlalchemy import func
@@ -45,6 +45,43 @@ def _find_pg_tool(name: str) -> str:
 
 PG_DUMP = _find_pg_tool("pg_dump")
 PSQL = _find_pg_tool("psql")
+
+
+def _db_password_from_url(db_url: str) -> str:
+    """استخراج كلمة المرور من URL آمنة للاستخدام في بيئة مؤقتة.
+
+    لا نمرر كلمة المرور كـ CLI arg مباشر (تبقى بعيدة عن قائمة العمليات).
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(db_url)
+    return parsed.password or ""
+
+
+def _audit_admin_action(action: str, detail: dict) -> None:
+    """سجل تدقيق إداري في نفس حدود المعاملة النشطة.
+
+    لا يُسمح باستدعاء هذه الدالة خارج ``tx()``؛ فهي لا تقوم بالالتزام
+    بمفردها، بل تُعفي السجل ليتم الالتزام كجزء من العملية الأصلية
+    (اعتماد دفع، رفض، إنشاء نسخة، استعادة، إلخ).
+    """
+    from app.core.logging import get_logger
+    from app.models.system import AuditLog
+
+    logger = get_logger("admin.backup")
+    try:
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                action=action,
+                entity="admin_operation",
+                entity_id=0,
+                detail=detail,
+            )
+        )
+        logger.info("admin_action_audited", action=action)
+    except Exception:
+        logger.exception("admin_action_audit_failed", action=action)
 
 
 @bp.app_context_processor
@@ -560,30 +597,38 @@ def payment_approve(payment_id):
     payment = db.get_or_404(ManualPayment, payment_id)
     from app.services.billing import approve_payment
 
-    approve_payment(payment, reviewer_id=current_user.id)
+    def _approve_payment():
+        approve_payment(payment, reviewer_id=current_user.id)
+
+        # P-SEC-14: تسجيل المراجعة في AuditLog داخل نفس الحدود الذرية
+        from app.models.system import AuditLog
+
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                action="payment.approve",
+                entity="manual_payment",
+                entity_id=payment.id,
+                detail={
+                    "subscription_id": payment.subscription_id,
+                    "amount": str(payment.amount),
+                    "student_id": payment.subscription.user_id,
+                    "class_id": payment.subscription.class_id,
+                    "reviewer_id": current_user.id,
+                },
+            )
+        )
+
+    try:
+        tx(_approve_payment)
+    except Exception:  # noqa: BLE001
+        current_app.logger.exception("admin_payment_approve_failed")
+        flash(_("فشل اعتماد الدفع"), "danger")
+        return redirect(url_for("admin.pending_payments"))
+
     _invalidate_admin_nav_cache()
 
-    # P-SEC-14: تسجيل المراجعة في AuditLog
-    from app.models.system import AuditLog
-
-    audit_entry = AuditLog(
-        user_id=current_user.id,
-        action="payment.approve",
-        entity="manual_payment",
-        entity_id=payment.id,
-        detail={
-            "subscription_id": payment.subscription_id,
-            "amount": str(payment.amount),
-            "student_id": payment.subscription.user_id,
-            "class_id": payment.subscription.class_id,
-            "reviewer_id": current_user.id,
-        },
-    )
-    db.session.add(audit_entry)
-    db.session.commit()
-
-    # P-SEC-15: إشعار بعد الالتزام الناجح فقط — الاتصال هنا خارج أي tx() فعلياً،
-    # فيُنفَّذ مباشرة (tx_on_commit خارج tx يؤجل الخطاف لمعاملة مستقبلية).
+    # P-SEC-15: إشعار بعد الالتزام الناجح فقط
     from app.services.email import send_payment_approved_email
 
     send_payment_approved_email(payment)
@@ -600,29 +645,38 @@ def payment_reject(payment_id):
     payment = db.get_or_404(ManualPayment, payment_id)
     from app.services.billing import reject_payment
 
-    reject_payment(payment, reviewer_id=current_user.id)
+    def _reject_payment():
+        reject_payment(payment, reviewer_id=current_user.id)
+
+        # P-SEC-16: تسجيل الرفض في AuditLog داخل نفس الحدود الذرية
+        from app.models.system import AuditLog
+
+        db.session.add(
+            AuditLog(
+                user_id=current_user.id,
+                action="payment.reject",
+                entity="manual_payment",
+                entity_id=payment.id,
+                detail={
+                    "subscription_id": payment.subscription_id,
+                    "amount": str(payment.amount),
+                    "student_id": payment.subscription.user_id,
+                    "class_id": payment.subscription.class_id,
+                    "reviewer_id": current_user.id,
+                },
+            )
+        )
+
+    try:
+        tx(_reject_payment)
+    except Exception:  # noqa: BLE001
+        current_app.logger.exception("admin_payment_reject_failed")
+        flash(_("فشل رفض الدفع"), "danger")
+        return redirect(url_for("admin.pending_payments"))
+
     _invalidate_admin_nav_cache()
 
-    # P-SEC-16: تسجيل الرفض في AuditLog
-    from app.models.system import AuditLog
-
-    audit_entry = AuditLog(
-        user_id=current_user.id,
-        action="payment.reject",
-        entity="manual_payment",
-        entity_id=payment.id,
-        detail={
-            "subscription_id": payment.subscription_id,
-            "amount": str(payment.amount),
-            "student_id": payment.subscription.user_id,
-            "class_id": payment.subscription.class_id,
-            "reviewer_id": current_user.id,
-        },
-    )
-    db.session.add(audit_entry)
-    db.session.commit()
-
-    # P-SEC-17: إشعار الرفض بعد الالتزام — الاتصال هنا خارج أي tx() فعلياً.
+    # P-SEC-17: إشعار الرفض بعد الالتزام
     from app.services.email import send_payment_rejected_email
 
     send_payment_rejected_email(payment)
@@ -692,11 +746,22 @@ def backup_create():
     pg_url = db_url.replace("+psycopg2", "").replace("+psycopg", "")
 
     try:
-        result = subprocess.run([PG_DUMP, pg_url, "-f", filepath], capture_output=True, text=True, timeout=300)
+        env = os.environ.copy()
+        env["PGPASSWORD"] = _db_password_from_url(db_url)
+        result = subprocess.run(
+            [PG_DUMP, pg_url, "-f", filepath],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            env=env,
+        )
         if result.returncode == 0:
             flash(_("تم إنشاء النسخة الاحتياطية بنجاح"), "success")
         else:
-            flash(_("فشل النسخ الاحتياطي: %(detail)s", detail=result.stderr), "danger")
+            flash(
+                _("فشل النسخ الاحتياطي: %(detail)s", detail=result.stderr),
+                "danger",
+            )
     except FileNotFoundError:
         flash(_("لم يتم العثور على pg_dump — تأكد من تثبيت PostgreSQL"), "danger")
     except Exception as e:
@@ -719,9 +784,9 @@ def backup_restore(filename):
         flash(_("الملف غير موجود"), "danger")
         return redirect(url_for("admin.backups_list"))
 
-    # تأكيد مزدوج
-    if request.form.get("confirm") != "yes":
-        flash(_("يجب كتابة 'yes' للتأكيد"), "danger")
+    # تأكيد صارم للمسار الهش
+    if request.form.get("confirm") != "yes — restore":
+        flash(_("يجب كتابة 'yes — restore' للتأكيد"), "danger")
         return redirect(url_for("admin.backups_list"))
 
     db_url = os.getenv("DATABASE_URL")
@@ -730,12 +795,40 @@ def backup_restore(filename):
         return redirect(url_for("admin.backups_list"))
 
     pg_url = db_url.replace("+psycopg2", "").replace("+psycopg", "")
+
+    def _record_restore_intent():
+        _audit_admin_action(
+            "backup.restore",
+            {
+                "filename": filename,
+                "filepath": filepath,
+                "pg_url_present": bool(pg_url),
+            },
+        )
+
     try:
-        result = subprocess.run([PSQL, pg_url, "-f", filepath], capture_output=True, text=True, timeout=300)
+        tx(_record_restore_intent)
+    except Exception:  # noqa: BLE001
+        flash(_("فشل تسجيل عملية الاستعادة"), "danger")
+        return redirect(url_for("admin.backups_list"))
+
+    try:
+        env = os.environ.copy()
+        env["PGPASSWORD"] = _db_password_from_url(db_url)
+        result = subprocess.run(
+            [PSQL, pg_url, "-f", filepath],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            env=env,
+        )
         if result.returncode == 0:
             flash(_("تمت الاستعادة بنجاح"), "success")
         else:
-            flash(_("فشل الاستعادة: %(detail)s", detail=result.stderr), "danger")
+            flash(
+                _("فشل الاستعادة: %(detail)s", detail=result.stderr),
+                "danger",
+            )
     except FileNotFoundError:
         flash(_("لم يتم العثور على psql — تأكد من تثبيت PostgreSQL"), "danger")
     except Exception as e:
@@ -876,7 +969,13 @@ def settings_save():
                 setting = Setting(key=key, value=value)
                 db.session.add(setting)
 
-    tx(_save_settings)
+    try:
+        tx(_save_settings)
+    except Exception:  # noqa: BLE001
+        current_app.logger.exception("admin_settings_save_failed")
+        flash(_("فشل حفظ الإعدادات"), "danger")
+        return redirect(url_for("admin.settings"))
+
     flash(_("تم حفظ الإعدادات"), "success")
     return redirect(url_for("admin.settings"))
 
@@ -1171,23 +1270,41 @@ def review_payout(payout_id, result):
     from app.models.tutoring import TutorCommission, TutorPayout
 
     payout = db.get_or_404(TutorPayout, payout_id)
+
     if result == "approve":
-        payout.status = "approved"
-        payout.reviewed_by = current_user.id
-        payout.reviewed_at = db.func.now()
-        # Mark corresponding commissions as withdrawn
-        commissions = TutorCommission.query.filter_by(tutor_id=payout.tutor_id, status="pending").all()
-        for c in commissions:
-            c.status = "withdrawn"
-        db.session.commit()
+
+        def _approve_payout():
+            payout.status = "approved"
+            payout.reviewed_by = current_user.id
+            payout.reviewed_at = db.func.now()
+            # Mark corresponding commissions as withdrawn
+            commissions = TutorCommission.query.filter_by(tutor_id=payout.tutor_id, status="pending").all()
+            for c in commissions:
+                c.status = "withdrawn"
+
+        try:
+            tx(_approve_payout)
+        except Exception:  # noqa: BLE001
+            current_app.logger.exception("admin_payout_approve_failed")
+            flash(_("فشل اعتماد طلب السحب"), "danger")
+            return redirect(url_for("admin.payouts_queue"))
         flash(_("تم اعتماد طلب السحب."), "success")
     elif result == "reject":
-        payout.status = "rejected"
-        payout.reviewed_by = current_user.id
-        payout.reviewed_at = db.func.now()
-        payout.note = request.form.get("note", "")
-        db.session.commit()
+
+        def _reject_payout():
+            payout.status = "rejected"
+            payout.reviewed_by = current_user.id
+            payout.reviewed_at = db.func.now()
+            payout.note = request.form.get("note", "")
+
+        try:
+            tx(_reject_payout)
+        except Exception:  # noqa: BLE001
+            current_app.logger.exception("admin_payout_reject_failed")
+            flash(_("فشل رفض طلب السحب"), "danger")
+            return redirect(url_for("admin.payouts_queue"))
         flash(_("تم رفض طلب السحب."), "warning")
     else:
         abort(404)
+
     return redirect(url_for("admin.payouts_queue"))

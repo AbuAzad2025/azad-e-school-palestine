@@ -278,9 +278,43 @@ def create_app(config_class=Config):
         count = expire_subscriptions()
         click.echo(f"expired_subscriptions={count}")
 
+    @app.cli.command("init-system")
+    @click.option("--super-admin-email", default=None, help="Email of the super admin to ensure exists.")
+    @click.option("--super-admin-password", default=None, help="Password for the super admin.")
+    def init_system_cmd(super_admin_email, super_admin_password):
+        """Initializes mandatory runtime system entities idempotently.
+
+        This command is part of the application lifecycle and is safe to run
+        on every startup/deployment. It only creates missing core system
+        entities required for the runtime to function, with no dummy data.
+        """
+        from .core.bootstrap import bootstrap_system
+
+        report = bootstrap_system(
+            app,
+            super_admin_email=super_admin_email,
+            super_admin_password=super_admin_password,
+        )
+        click.echo("system_bootstrap=" + str(report))
+
+    # Many app modules rely on the system school existing before they boot
+    # (e.g., individual user workflows, RLS context, auth flows).
+    # Ensure it exists as part of application initialization, not as a
+    # standalone external seed script.
+    with app.app_context():
+        from .core.bootstrap import ensure_system_school_exists
+
+        ensure_system_school_exists()
+
     from .core import context
+    from .core.bootstrap import bootstrap_system
 
     context.register(app)
+
+    # Simple smoke test: ensure the system school exists so the app
+    # can start cleanly without relying on external seed scripts.
+    with app.app_context():
+        _ = bootstrap_system(app)
 
     @app.get("/health")
     def health():

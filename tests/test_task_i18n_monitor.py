@@ -24,7 +24,7 @@ def _write_po(
     tmp_path: Path,
     locale: str,
     *,
-    entries: dict[str, str | None] = None,
+    entries: dict[str, str | None] | None = None,
     fuzzy_entries: set[str] | None = None,
     catalog_fuzzy: bool = False,
 ) -> Path:
@@ -147,7 +147,7 @@ def test_snapshot_skip_obsolete_and_empty_id():
     cat.add("محتوى صحيح", "مرحباً")
     cat.add("", "")
     obsolete = cat.add("قديم", "قديم ترجمة")
-    obsolete.obsolete = True
+    obsolete.obsolete = True  # type: ignore[attr-defined]
     snap = _snapshot_entries(cat)
     assert "محتوى صحيح" in snap
     assert snap["محتوى صحيح"] == (False, False)
@@ -162,7 +162,7 @@ def test_snapshot_flags_fuzzy_and_untranslated():
     cat.add("نص نظيف", "clean text")
     cat.add("نص فارغ", "")
     fuzzy = cat.add("نص ضبابي", "ضبابي")
-    fuzzy.flags = ["fuzzy"]
+    fuzzy.flags = {"fuzzy"}
     snap = _snapshot_entries(cat)
     assert snap["نص نظيف"] == (False, False)
     assert snap["نص فارغ"] == (False, True)
@@ -368,8 +368,7 @@ def test_no_regression_when_still_clean(tmp_path: Path, monkeypatch: pytest.Monk
 
 def test_regression_count_spike_triggered(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     ar_path = tmp_path / "app" / "translations" / "ar" / "LC_MESSAGES" / "messages.po"
-
-    big = {f"مفتاح{i}": "قيمة" for i in range(300)}
+    big: dict[str, str | None] = {f"مفتاح{i}": "قيمة" for i in range(300)}
     write_po_manually(ar_path, "ar", entries=big)
 
     _set_catalog_overrides({"ar": ar_path})

@@ -7,6 +7,7 @@ P4-06: Tenancy-scoped: bulk ops filter by school_id to prevent cross-tenant leak
 
 from __future__ import annotations
 
+from app.core.db import tx
 from app.tasks import _HAS_CELERY, ContextTask, celery_app
 
 if not _HAS_CELERY:
@@ -42,7 +43,7 @@ def dispatch_notification(
 
     logger = get_logger("celery.notifications")
 
-    try:
+    def _dispatch():
         user = db.session.get(User, user_id)
         if not user:
             return {"success": False, "notification_id": None, "error": "User not found"}
@@ -56,15 +57,16 @@ def dispatch_notification(
             is_read=False,
         )
         db.session.add(notification)
-        db.session.commit()
-
-        logger.info("notification_dispatched", user_id=user_id, type=type)
         return {"success": True, "notification_id": notification.id, "error": None}
 
+    try:
+        result = tx(_dispatch)
     except Exception as exc:
-        db.session.rollback()
         logger.exception("notification_dispatch_failed", user_id=user_id)
         raise self.retry(exc=exc) from None
+
+    logger.info("notification_dispatched", user_id=user_id, type=type)
+    return result
 
 
 @celery_app.task(base=ContextTask, bind=True, max_retries=2)
@@ -94,9 +96,8 @@ def bulk_dispatch_school_announcement(
     from app.models.user import User, UserRoleLink
 
     logger = get_logger("celery.notifications")
-    errors: list[str] = []
 
-    try:
+    def _dispatch():
         # Query users in this school
         # explicit onclause — users↔user_role_links have two FKs (user_id, approved_by)
         query = User.query.join(UserRoleLink, UserRoleLink.user_id == User.id).filter(
@@ -108,7 +109,7 @@ def bulk_dispatch_school_announcement(
             query = query.filter(UserRoleLink.role == recipient_role)
 
         users = query.all()
-        sent_count = 0
+        errors: list[str] = []
 
         for user in users:
             try:
@@ -121,24 +122,24 @@ def bulk_dispatch_school_announcement(
                     is_read=False,
                 )
                 db.session.add(notification)
-                sent_count += 1
             except Exception as exc:
                 errors.append(f"User {user.id}: {str(exc)}")
 
-        db.session.commit()
+        return {"success": True, "sent_count": len(users) - len(errors), "errors": errors}
 
-        logger.info(
-            "bulk_announcement_sent",
-            school_id=school_id,
-            sent_count=sent_count,
-            error_count=len(errors),
-        )
-        return {"success": True, "sent_count": sent_count, "errors": errors}
-
+    try:
+        result = tx(_dispatch)
     except Exception as exc:
-        db.session.rollback()
         logger.exception("bulk_announcement_failed", school_id=school_id)
         raise self.retry(exc=exc) from None
+
+    logger.info(
+        "bulk_announcement_sent",
+        school_id=school_id,
+        sent_count=result["sent_count"],
+        error_count=len(result["errors"]),
+    )
+    return result
 
 
 @celery_app.task(base=ContextTask, bind=True, max_retries=2)

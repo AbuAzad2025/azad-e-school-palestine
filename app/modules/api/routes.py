@@ -14,6 +14,15 @@ from typing import Any
 
 from app.core.api import api_error, api_paginated, api_response
 from app.core.api_auth import api_auth_required
+from app.core.api_tenancy import (
+    assert_school_access,
+    assert_user_belongs_to_accessible_school,
+    classes_query_for_current_user,
+    current_user_school_id,
+    lesson_access_query_for_current_user,
+    schools_query_for_current_user,
+    users_query_for_current_user,
+)
 from app.core.db import db
 from app.core.logging import get_logger
 from app.core.permissions import role_required
@@ -22,7 +31,7 @@ from app.models.class_room import ClassMember, ClassRoom
 from app.models.content import Lesson
 from app.models.school import School
 from app.models.tutoring import TutoringSession
-from app.models.user import User, UserRole, UserRoleLink
+from app.models.user import User, UserRole
 from flask import request
 from flask_babel import _
 from flask_login import current_user
@@ -72,13 +81,8 @@ def api_me():
 def api_schools_list():
     """قائمة المدارس المتاحة للمستخدم."""
     page, per_page = _parse_pagination()
-    role = current_user.role
-    school_id = getattr(current_user, "school_id", None)
 
-    query = School.query.filter(School.is_active.is_(True))
-    if role != UserRole.super_admin and school_id:
-        query = query.filter(School.id == school_id)
-
+    query = schools_query_for_current_user()
     total = query.count()
     items = query.limit(per_page).offset((page - 1) * per_page).all()
 
@@ -99,14 +103,11 @@ def api_schools_list():
 @api_auth_required
 def api_schools_get(school_id: int):
     """جلب مدرسة محددة."""
+    assert_school_access(school_id)
+
     school = School.query.filter_by(id=school_id, is_active=True).first()
     if not school:
         return api_error(_("المدرسة غير موجودة"), 404, "NOT_FOUND")
-
-    # tenancy check
-    user_school_id = getattr(current_user, "school_id", None)
-    if current_user.role != UserRole.super_admin and user_school_id != school_id:
-        return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
     return api_response(
         {
@@ -134,17 +135,7 @@ def api_lessons_list():
 
     page, per_page = _parse_pagination()
 
-    query = Lesson.query
-    if hasattr(current_user, "school_id") and current_user.school_id:
-        if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
-            joined_class_ids = (
-                ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
-                .with_entities(ClassMember.class_id)
-                .all()
-            )
-            class_ids = [c.class_id for c in joined_class_ids]
-            query = query.filter(Lesson.class_id.in_(class_ids)) if class_ids else query.filter(Lesson.id == -1)
-
+    query = lesson_access_query_for_current_user()
     query = query.order_by(Lesson.created_at.desc())
     total = query.count()
     items = query.limit(per_page).offset((page - 1) * per_page).all()
@@ -171,14 +162,14 @@ def api_lessons_get(lesson_id: int):
     if not lesson:
         return api_error(_("الدرس غير موجود"), 404, "NOT_FOUND")
 
-    # authorization: must be a member of the class, same-school admin, or super admin
     if current_user.role == UserRole.super_admin:
         pass
     elif current_user.role == UserRole.school_admin:
-        from app.models.class_room import ClassRoom as _CR
+        if lesson.class_id is None:
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
 
-        _cls = _CR.query.filter_by(id=lesson.class_id).first()
-        if not _cls or _cls.school_id != getattr(current_user, "school_id", None):
+        class_room = ClassRoom.query.filter_by(id=lesson.class_id).first()
+        if not class_room or class_room.school_id != current_user_school_id():
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
     else:
         is_member = (
@@ -280,18 +271,8 @@ def api_tutoring_sessions_get(session_id: int):
 def api_users_list():
     """قائمة المستخدمين (للمشرفين فقط)."""
     page, per_page = _parse_pagination()
-    role = current_user.role
-    school_id = getattr(current_user, "school_id", None)
 
-    query = User.query.filter(User.is_active.is_(True))
-    if role != UserRole.super_admin and school_id:
-        user_ids_in_school = (
-            UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active.is_(True))
-            .with_entities(UserRoleLink.user_id)
-            .scalar_subquery()
-        )
-        query = query.filter(User.id.in_(user_ids_in_school))
-
+    query = users_query_for_current_user()
     total = query.count()
     items = query.limit(per_page).offset((page - 1) * per_page).all()
 
@@ -315,12 +296,7 @@ def api_users_get(user_id: int):
     if not user:
         return api_error(_("المستخدم غير موجود"), 404, "NOT_FOUND")
 
-    # tenancy check: same school or admin
-    if current_user.role != UserRole.super_admin:
-        current_school_ids = {link.school_id for link in current_user.role_links if link.is_active}
-        user_school_ids = {link.school_id for link in user.role_links if link.is_active}
-        if not (current_school_ids & user_school_ids):
-            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
+    assert_user_belongs_to_accessible_school(user)
 
     return api_response(
         {
@@ -342,22 +318,8 @@ def api_users_get(user_id: int):
 def api_classes_list():
     """قائمة الصفوف المتاحة للمستخدم."""
     page, per_page = _parse_pagination()
-    role = current_user.role
-    school_id = getattr(current_user, "school_id", None)
 
-    query = ClassRoom.query.filter(ClassRoom.is_active.is_(True))
-    if role == UserRole.super_admin:
-        pass
-    elif school_id:
-        query = query.filter(ClassRoom.school_id == school_id)
-    else:
-        member_class_ids = (
-            ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
-            .with_entities(ClassMember.class_id)
-            .scalar_subquery()
-        )
-        query = query.filter(ClassRoom.id.in_(member_class_ids))
-
+    query = classes_query_for_current_user()
     total = query.count()
     items = query.limit(per_page).offset((page - 1) * per_page).all()
 
@@ -382,11 +344,10 @@ def api_classes_get(class_id: int):
     if not class_room:
         return api_error(_("الصف غير موجود"), 404, "NOT_FOUND")
 
-    # authorization: school admin of same school, member, or super admin
     if current_user.role == UserRole.super_admin:
         pass
     elif current_user.role == UserRole.school_admin:
-        if class_room.school_id != getattr(current_user, "school_id", None):
+        if class_room.school_id != current_user_school_id():
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
     else:
         is_member = (
@@ -428,12 +389,7 @@ def api_search():
     results: dict[str, list[dict[str, Any]]] = {}
 
     # Schools
-    school_q = School.query.filter(School.is_active.is_(True))
-    if role != UserRole.super_admin:
-        if school_id:
-            school_q = school_q.filter(School.id == school_id)
-        else:
-            school_q = school_q.filter(False)
+    school_q = schools_query_for_current_user()
     schools = school_q.filter(or_(School.name_ar.ilike(like), School.domain.ilike(like))).limit(limit).all()
     results["schools"] = [
         {
@@ -447,31 +403,7 @@ def api_search():
     ]
 
     # Users
-    user_q = User.query.filter(User.is_active.is_(True))
-    if role == UserRole.super_admin:
-        pass
-    elif school_id:
-        user_ids_in_school = (
-            UserRoleLink.query.filter(UserRoleLink.school_id == school_id, UserRoleLink.is_active.is_(True))
-            .with_entities(UserRoleLink.user_id)
-            .scalar_subquery()
-        )
-        user_q = user_q.filter(User.id.in_(user_ids_in_school))
-    elif role in (UserRole.student, UserRole.parent, UserRole.teacher):
-        class_ids = (
-            ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
-            .with_entities(ClassMember.class_id)
-            .scalar_subquery()
-        )
-        member_user_ids = (
-            ClassMember.query.filter(ClassMember.class_id.in_(class_ids), ClassMember.status == "active")
-            .with_entities(ClassMember.user_id)
-            .scalar_subquery()
-        )
-        user_q = user_q.filter(User.id.in_(member_user_ids))
-    else:
-        user_q = user_q.filter(False)
-
+    user_q = users_query_for_current_user()
     users = user_q.filter(or_(User.name_ar.ilike(like), User.email.ilike(like))).limit(limit).all()
     results["users"] = [
         {
@@ -485,19 +417,7 @@ def api_search():
     ]
 
     # Classes
-    class_q = ClassRoom.query.filter(ClassRoom.is_active.is_(True))
-    if role == UserRole.super_admin:
-        pass
-    elif school_id:
-        class_q = class_q.filter(ClassRoom.school_id == school_id)
-    else:
-        member_class_ids = (
-            ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
-            .with_entities(ClassMember.class_id)
-            .scalar_subquery()
-        )
-        class_q = class_q.filter(ClassRoom.id.in_(member_class_ids))
-
+    class_q = classes_query_for_current_user()
     classes = class_q.filter(or_(ClassRoom.name.ilike(like), ClassRoom.join_code.ilike(like))).limit(limit).all()
     results["classes"] = [
         {
@@ -513,18 +433,18 @@ def api_search():
     # Subscriptions
     # NOTE: explicit ON clause required — Subscription.class_id is nullable and
     # an implicit join(ClassRoom) resolves to a cartesian ON FALSE, matching zero rows.
-    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(ClassRoom, Subscription.class_id == ClassRoom.id)
-    if role == UserRole.super_admin:
+    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(ClassRoom, ClassRoom.id == Subscription.class_id)
+
+    if current_user.role == UserRole.super_admin:
         pass
-    elif role == UserRole.student:
-        # students see ONLY their own subscriptions (must be checked before the
-        # school_id branch — students have school_id and would otherwise see
-        # every subscription in their school)
+    elif current_user.role == UserRole.student:
         sub_q = sub_q.filter(Subscription.user_id == current_user.id)
-    elif school_id:
-        sub_q = sub_q.filter(ClassRoom.school_id == school_id)
     else:
-        sub_q = sub_q.filter(False)
+        school_id = current_user_school_id()
+        if school_id:
+            sub_q = sub_q.filter(ClassRoom.school_id == school_id)
+        else:
+            sub_q = sub_q.filter(False)
 
     subscriptions = (
         sub_q.filter(
