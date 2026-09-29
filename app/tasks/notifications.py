@@ -57,6 +57,9 @@ def dispatch_notification(
             is_read=False,
         )
         db.session.add(notification)
+        # الدالة تُرجع id الإشعار للمُنادي — يتولد عند الـ flush (ليس عند الإنشاء)،
+        # لذا نُجري flush داخل نفس tx() ليُعيَّن المعرف قبل الالتزام (بدون commit مبكر).
+        db.session.flush()
         return {"success": True, "notification_id": notification.id, "error": None}
 
     try:
