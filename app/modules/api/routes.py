@@ -102,12 +102,12 @@ def api_schools_list():
 @bp.get("/schools/<int:school_id>")
 @api_auth_required
 def api_schools_get(school_id: int):
-    """جلب مدرسة محددة."""
-    assert_school_access(school_id)
-
+    """جلب مدرسة محددة (404 أولاً للغير موجود، ثم 403 للعابر للتينانت)."""
     school = School.query.filter_by(id=school_id, is_active=True).first()
     if not school:
         return api_error(_("المدرسة غير موجودة"), 404, "NOT_FOUND")
+
+    assert_school_access(school_id)
 
     return api_response(
         {

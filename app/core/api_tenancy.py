@@ -18,6 +18,7 @@ from typing import Any
 
 from flask import abort
 from flask_login import current_user
+from sqlalchemy import or_
 
 from app.core.tenancy import current_school_id
 from app.models.class_room import ClassMember, ClassRoom
@@ -173,33 +174,46 @@ def users_query_for_current_user() -> Any:
 
 
 def lesson_access_query_for_current_user() -> Any:
-    """استعلام الدروس المرتبطة بالصفوف التي يصل إليها المستخدم الحالي."""
+    """استعلام الدروس المرتبطة بالصفوف التي يصل إليها المستخدم الحالي.
+
+    - super_admin: كل الدروس.
+    - school_admin: كل دروس صفوف مدرسته النشطة.
+    - teacher: دروس الصفوف التي يُدرّسها + الصفوف عضواً نشطاً فيها.
+    - بقية الأدوار: دروس الصفوف عضواً نشطاً فيها فقط.
+    """
 
     query = Lesson.query
 
     if current_user.is_authenticated and current_user.role == UserRole.super_admin:
         return query
 
-    if current_user.is_authenticated and current_user.role in (
-        UserRole.school_admin,
-        UserRole.teacher,
-    ):
-        school_id = current_user_school_id()
-        if school_id:
-            class_ids_query = (
-                ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
-                .with_entities(ClassMember.class_id)
-                .scalar_subquery()
-            )
-            query = query.filter(Lesson.class_id.in_(class_ids_query))
-        else:
-            query = query.filter(False)
-    else:
-        class_ids_query = (
+    school_id = current_user_school_id()
+
+    if current_user.role == UserRole.school_admin and school_id:
+        school_class_ids = (
+            ClassRoom.query.filter(ClassRoom.school_id == school_id, ClassRoom.is_active.is_(True))
+            .with_entities(ClassRoom.id)
+            .scalar_subquery()
+        )
+        query = query.filter(Lesson.class_id.in_(school_class_ids))
+    elif current_user.role == UserRole.teacher and school_id:
+        taught_class_ids = (
+            ClassRoom.query.filter(ClassRoom.teacher_id == current_user.id, ClassRoom.is_active.is_(True))
+            .with_entities(ClassRoom.id)
+            .scalar_subquery()
+        )
+        member_class_ids = (
             ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
             .with_entities(ClassMember.class_id)
             .scalar_subquery()
         )
-        query = query.filter(Lesson.class_id.in_(class_ids_query))
+        query = query.filter(or_(Lesson.class_id.in_(taught_class_ids), Lesson.class_id.in_(member_class_ids)))
+    else:
+        member_class_ids = (
+            ClassMember.query.filter(ClassMember.user_id == current_user.id, ClassMember.status == "active")
+            .with_entities(ClassMember.class_id)
+            .scalar_subquery()
+        )
+        query = query.filter(Lesson.class_id.in_(member_class_ids))
 
     return query
