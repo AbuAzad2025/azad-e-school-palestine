@@ -76,12 +76,12 @@ export async function request(method, url, options = {}) {
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === "AbortError") {
-      const err = new Error("Request timeout");
+      const err = new Error(window.AzadNetworkLabels?.timeout || "انتهت مهلة الاتصال");
       err.name = "TimeoutError";
       throw err;
     }
     if (!navigator.onLine) {
-      const err = new Error("No internet connection");
+      const err = new Error(window.AzadNetworkLabels?.offline || "لا يوجد اتصال بالإنترنت");
       err.name = "NetworkError";
       throw err;
     }

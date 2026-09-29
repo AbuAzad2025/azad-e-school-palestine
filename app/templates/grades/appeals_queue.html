@@ -15,7 +15,7 @@
 ] %}
 {% set rows = [] %}
 {% for appeal in appeals %}
-  {% set status_cell %}<span class="badge-status badge-{{ 'ok' if appeal.status == 'approved' else ('warn' if appeal.status == 'pending' else 'err') }}">{{ appeal.status }}</span>{% endset %}
+  {% set status_cell %}<span class="badge-status badge-{{ 'ok' if appeal.status == 'approved' else ('warn' if appeal.status == 'pending' else 'err') }}">{{ status_label('grade_appeal_status', appeal.status) }}</span>{% endset %}
   {% set actions_html %}<a href="{{ url_for('grades.appeal_detail', appeal_id=appeal.id) }}" class="azad-btn-outline azad-btn-sm">{{ _('تفاصيل') }}</a>{% endset %}
   {% set _ = rows.append({'id': appeal.id, 'cells': {
     'student': appeal.student.name_ar,

@@ -182,6 +182,9 @@ def can_view_class(class_room) -> bool:
 
 
 def register(app):
+    from app.core.labels import status_label
+
+    app.jinja_env.globals["status_label"] = status_label
     app.jinja_env.globals["icon"] = icon
     app.jinja_env.globals["has_role"] = has_role
     app.jinja_env.globals["has_any_role"] = has_any_role

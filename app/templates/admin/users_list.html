@@ -44,7 +44,7 @@
 {% for u in pagination.items %}
   {# P2-17: كتل set تُنتج Markup آمناً مع تهريب القيم الداخلية تلقائياً #}
   {% set status_badge %}<span class="azad-badge-variant azad-badge-variant--{{ 'success' if u.is_active else 'danger' }}">{{ _('نشط') if u.is_active else _('معطل') }}</span>{% endset %}
-  {% set role_chip %}<span class="meta-chip">{{ u.role.value }}</span>{% endset %}
+  {% set role_chip %}<span class="meta-chip">{{ status_label('role', u.role) }}</span>{% endset %}
   {% set actions_html %}
     <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('admin.user_detail', user_id=u.id) }}">{{ _('تفاصيل') }}</a>
     {% if u.role.value != 'super_admin' and u.id != current_user.id %}

@@ -11,6 +11,7 @@ from .cache import set as cache_set
 from .context import register as register_context
 from .db import TxError, tx, tx_on_commit
 from .i18n import _
+from .labels import status_label
 from .logging import get_correlation_id, get_logger
 from .pdf import (
     blank_pdf_document,
@@ -67,6 +68,7 @@ __all__ = [
     "role_required",
     "save_upload",
     "scope_by_school",
+    "status_label",
     "shape_arabic",
     "shape_arabic_deep",
     "story_meta",

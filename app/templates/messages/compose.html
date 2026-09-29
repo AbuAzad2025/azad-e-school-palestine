@@ -21,7 +21,7 @@
           <option value="">{{ _('اختر مستلم...') }}</option>
           {% for u in users %}
             <option value="{{ u.id }}" {% if request.args.get('to')|int == u.id %}selected{% endif %}>
-              {{ u.name_ar }} ({{ u.role.value }})
+              {{ u.name_ar }} ({{ status_label('role', u.role) }})
             </option>
           {% endfor %}
         </select>

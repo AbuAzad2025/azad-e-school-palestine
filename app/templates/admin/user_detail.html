@@ -29,7 +29,7 @@
     </div>
     <div class="azad-item">
       <div class="item-title">{{ _('الدور') }}</div>
-      <div><span class="meta-chip">{{ user.role.value }}</span></div>
+      <div><span class="meta-chip">{{ status_label('role', user.role) }}</span></div>
     </div>
     <div class="azad-item">
       <div class="item-title">{{ _('الحالة') }}</div>
@@ -58,7 +58,7 @@
       <div>
         <div class="item-title">{{ m.school.display_name }}</div>
         <div class="item-meta">
-          <span class="meta-chip">{{ m.role.value }}</span>
+          <span class="meta-chip">{{ status_label('role', m.role) }}</span>
           <span class="azad-badge-variant azad-badge-variant--{{ 'success' if m.is_active else 'danger' }}">{{ _('نشط') if m.is_active else _('معطل') }}</span>
         </div>
       </div>
@@ -72,7 +72,7 @@
   <div class="azad-empty">
     <div class="azad-empty__icon">{{ icon('school') }}</div>
     <h3 class="azad-empty__title">{{ _('هذا المستخدم غير مرتبط بأي مدرسة') }}</h3>
-    <p class="azad-empty__description">{{ _('يمكنك إضافته Memberships للحساب من الإعدادات') }}</p>
+    <p class="azad-empty__description">{{ _('يمكنك إضافة عضويات لهذا الحساب من الإعدادات') }}</p>
   </div>
   {% endif %}
 </div>

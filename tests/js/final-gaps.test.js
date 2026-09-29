@@ -191,7 +191,7 @@ describe("api.js — csrf input fallback + NetworkError", () => {
     );
 
     await expect(request("GET", "/api/x", { timeout: 5000 })).rejects.toThrow(
-      "No internet connection",
+      "لا يوجد اتصال بالإنترنت",
     );
 
     if (desc) Object.defineProperty(navigator, "onLine", desc);

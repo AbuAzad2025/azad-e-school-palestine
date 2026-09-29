@@ -29,7 +29,7 @@
 ] %}
 {% set rows = [] %}
 {% for a in attempts %}
-  {% set status_cell %}<span class="badge-status badge-{{ 'ok' if a.status == 'submitted' else 'warn' }}">{{ a.status }}</span>{% endset %}
+  {% set status_cell %}<span class="badge-status badge-{{ 'ok' if a.status == 'submitted' else 'warn' }}">{{ status_label('attempt_status', a.status) }}</span>{% endset %}
   {% set actions_html %}<a class="azad-btn-outline" href="{{ url_for('assessment.attempt_result', attempt_id=a.id) }}">{{ _('عرض') }}</a>{% endset %}
   {% set _ = rows.append({'id': a.id, 'cells': {
     'student': a.student.name_ar,

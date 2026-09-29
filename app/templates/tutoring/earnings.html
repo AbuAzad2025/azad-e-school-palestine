@@ -54,7 +54,7 @@
   ] %}
   {% set rows = [] %}
   {% for s in sessions %}
-    {% set status_cell %}<span class="azad-badge azad-badge--{{ {'completed': 'success', 'ended': 'success', 'active': 'info', 'requested': 'warning', 'cancelled': 'danger'}.get(s.status, 'muted') }}">{{ s.status }}</span>{% endset %}
+    {% set status_cell %}<span class="azad-badge azad-badge--{{ {'completed': 'success', 'ended': 'success', 'active': 'info', 'requested': 'warning', 'cancelled': 'danger'}.get(s.status, 'muted') }}">{{ status_label('tutoring_session_status', s.status) }}</span>{% endset %}
     {% set price_cell %}<bdi>{{ s.price or 0 }}</bdi> <bdi>{{ s.currency }}</bdi>{% endset %}
     {% set review_cell %}{% set review = s.reviews|first if s.reviews else none %}{% if review %}<span class="u-text-amber">{{ '★' * review.rating }}</span> ({{ review.rating }}/5){% else %}<span class="text-muted">—</span>{% endif %}{% endset %}
     {% set _ = rows.append({'id': s.id, 'cells': {

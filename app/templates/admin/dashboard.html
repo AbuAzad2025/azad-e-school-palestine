@@ -81,7 +81,7 @@
   <div class="azad-empty">
     <div class="azad-empty__icon">{{ icon('school') }}</div>
     <h3 class="azad-empty__title">{{ _('لا توجد مدارس بعد') }}</h3>
-    <p class="azad-empty__description">{{ _('المدارس التي تضم مستخدمين будут aparecer هنا') }}</p>
+    <p class="azad-empty__description">{{ _('المدارس التي تضم مستخدمين ستظهر هنا') }}</p>
   </div>
   {% endif %}
 </div>
@@ -98,7 +98,7 @@
       <div>
         <div class="item-title">{{ u.name_ar }}</div>
         <div class="item-meta">
-          <span class="meta-chip">{{ u.role.value }}</span>
+          <span class="meta-chip">{{ status_label('role', u.role) }}</span>
           <span>{{ u.email }}</span>
         </div>
       </div>

@@ -148,7 +148,7 @@ describe("API Client - request", () => {
     const { request } = await import("@app-static/js/core/api.js");
     await expect(
       request("GET", "/slow", { timeout: 1 }),
-    ).rejects.toThrow("Request timeout");
+    ).rejects.toThrow("انتهت مهلة الاتصال");
   });
 
   it("sends FormData without JSON stringify", async () => {

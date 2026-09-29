@@ -22,8 +22,8 @@
 ] %}
 {% set rows = [] %}
 {% for user in pagination.items %}
-  {% set user_cell %}<div class="u-bold">{{ user.name_ar or user.email }}</div><div class="meta-chip">{{ user.role.value }}</div>{% endset %}
-  {% set role_cell %}<span class="meta-chip">{{ user.role.value }}</span>{% endset %}
+  {% set user_cell %}<div class="u-bold">{{ user.name_ar or user.email }}</div><div class="meta-chip">{{ status_label('role', user.role) }}</div>{% endset %}
+  {% set role_cell %}<span class="meta-chip">{{ status_label('role', user.role) }}</span>{% endset %}
   {% set status_cell %}<span class="azad-badge-variant azad-badge-variant--warning">{{ _('بانتظار الموافقة') }}</span>{% endset %}
   {% set actions_html %}
     <div class="item-actions">

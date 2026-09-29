@@ -26,7 +26,7 @@
     <div>
       <div class="item-title">{{ sub.user.name_ar }} — {{ sub.plan.name if sub.plan else _('خطة') }}</div>
       <div class="item-meta">
-        <span>{{ _('الحالة:') }} <span class="badge-status badge-{{ 'ok' if sub.status == 'active' else ('warn' if sub.status == 'pending' else ('err' if sub.status == 'expired' else 'err')) }}">{{ sub.status }}</span></span>
+        <span>{{ _('الحالة:') }} <span class="badge-status badge-{{ 'ok' if sub.status == 'active' else ('warn' if sub.status == 'pending' else ('err' if sub.status == 'expired' else 'err')) }}">{{ status_label('subscription_status', sub.status) }}</span></span>
         <span>{{ _('المدرسة:') }} {{ sub.class_room.school.display_name if sub.class_room and sub.class_room.school else _('—') }}</span>
         <span>{{ _('السعر:') }} {{ sub.price }} {{ sub.currency }}</span>
         <span>{{ _('ينتهي:') }} {{ sub.end_at.strftime('%Y-%m-%d') if sub.end_at else _('—') }}</span>

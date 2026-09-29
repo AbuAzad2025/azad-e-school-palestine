@@ -16,7 +16,7 @@
 <div class="azad-card u-mb-1">
   <h2 class="billing-card-title">{{ _('اشتراكك الحالي') }}</h2>
   <div class="item-meta billing-meta">
-    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ my_sub.status }}</span>
+    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ status_label('subscription_status', my_sub.status) }}</span>
     <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
     <span>{{ _('المبلغ:') }} <bdi>{{ my_sub.price }}</bdi> <bdi>{{ my_sub.currency }}</bdi></span>
     {% if my_sub.end_at %}<span>{{ _('ينتهي:') }} {{ my_sub.end_at.strftime('%Y-%m-%d') }}</span>{% endif %}

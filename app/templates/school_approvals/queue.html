@@ -19,7 +19,7 @@
 ] %}
 {% set rows = [] %}
 {% for link in links %}
-  {% set role_cell %}<span class="meta-chip">{{ link.role.value }}</span>{% endset %}
+  {% set role_cell %}<span class="meta-chip">{{ status_label('role', link.role) }}</span>{% endset %}
   {% set actions_html %}
     <form class="u-inline" method="post" action="{{ url_for('school_approvals.approve', link_id=link.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

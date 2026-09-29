@@ -15,7 +15,7 @@
     <h1 class="page-title azad-title u-m-0">{{ lesson.title }}</h1>
     <p class="page-subtitle">
       {{ class_room.subject.name_ar }}
-      <span class="badge-status badge-{{ 'ok' if lesson.status == 'published' else 'warn' }}">{{ lesson.status }}</span>
+      <span class="badge-status badge-{{ 'ok' if lesson.status == 'published' else 'warn' }}">{{ status_label('content_status', lesson.status) }}</span>
     </p>
   </div>
   {% if can_teach %}
