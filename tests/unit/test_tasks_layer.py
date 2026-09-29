@@ -386,3 +386,18 @@ class TestVideoTaskGuardrails:
             result = transcode_video_to_hls(_self(), 1, str(p), 1)
             assert result["status"] == "failed"
             assert "invalid" in result["error"].lower() or "probe" in result["error"].lower()
+
+
+class TestReportTasksEmptyClass:
+    def test_generate_class_report_empty_class(self, app):
+        """صف بلا طلاب → رسالة «لا يوجد طلاب» بدل الجدول (reports.py:279)."""
+        from app.tasks.reports import generate_class_report
+
+        sid = make_school(app)
+        with app.app_context():
+            gid = make_grade(app, sid)
+            cid = make_class(app, sid, gid, make_subject(app))
+            result = generate_class_report(_self(), cid, sid)
+            assert result["status"] == "completed"
+            assert result["student_count"] == 0
+            _assert_real_pdf(result["file_path"])

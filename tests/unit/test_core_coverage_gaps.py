@@ -288,3 +288,73 @@ class TestStatusLabel:
         from app.core.labels import status_label
 
         assert status_label("نوع-غير-معروف", "x") == "x"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# فجوات الجولة الثانية — assert_user_belongs بدون مدارس + OSError في listdir
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestApiTenancyAbortPaths:
+    def test_assert_user_belongs_403_when_no_accessible_schools(self, client, app):
+        """مستخدم بلا صلة بأي مدرسة يطلب مستخدماً آخر → 403 (api_tenancy:93)."""
+        from app.core.api_tenancy import assert_user_belongs_to_accessible_school
+        from app.models.user import User
+        from flask_login import login_user
+        from werkzeug.exceptions import Forbidden
+
+        uid = make_user(app, role="student")  # بلا school_id
+        other = make_user(app, role="student")
+        with app.test_request_context():
+            with app.app_context():
+                login_user(User.query.get(uid))
+                target = User.query.get(other)
+                try:
+                    assert_user_belongs_to_accessible_school(target)
+                except Forbidden:
+                    pass
+                else:
+                    raise AssertionError("كان يجب رفع 403")
+
+
+class TestPdfFontOSError:
+    def test_find_font_file_survives_listdir_oserror(self, tmp_path):
+        from unittest.mock import patch
+
+        from app.core import pdf
+
+        locked_dir = tmp_path / "locked"
+        locked_dir.mkdir()
+        with (
+            patch.object(pdf, "_DIRS_EXTRA", [str(locked_dir), str(tmp_path)]),
+            patch.object(pdf.os, "name", "posix"),
+            patch.object(pdf.os, "listdir", side_effect=OSError("permission denied")),
+        ):
+            # كل المجلدات تفشل listdir → None بلا انهيار (103-104)
+            assert pdf._find_font_file() is None
+
+    def test_find_font_file_scans_remaining_dirs_after_oserror(self, tmp_path):
+        from unittest.mock import patch
+
+        from app.core import pdf
+
+        first_dir = tmp_path / "first"
+        first_dir.mkdir()
+        font_file = tmp_path / pdf._ARABIC_FONT_CANDIDATES[0]
+        font_file.write_bytes(b"fake ttf")
+
+        real_listdir = __import__("os").listdir
+
+        def flaky_listdir(path):
+            # المجلد الأول (الموجود فعلاً) يفشل listdir — الثاني سليم
+            if str(path) == str(first_dir):
+                raise OSError("transient failure")
+            return real_listdir(path)
+
+        with (
+            patch.object(pdf, "_DIRS_EXTRA", [str(first_dir), str(tmp_path)]),
+            patch.object(pdf.os, "name", "posix"),
+            patch.object(pdf.os, "listdir", side_effect=flaky_listdir),
+        ):
+            found = pdf._find_font_file()
+        assert found is not None and found.endswith(".ttf")
