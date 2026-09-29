@@ -32,10 +32,6 @@ def _existing_user(email: str) -> User | None:
     return db.session.execute(db.select(User).where(User.email == email)).scalar_one_or_none()
 
 
-def _existing_school(domain: str) -> School | None:
-    return db.session.execute(db.select(School).where(School.domain == domain)).scalar_one_or_none()
-
-
 def ensure_system_school_exists() -> School:
     """Ensure the system school exists.
 

@@ -368,7 +368,7 @@ if _HAS_CELERY and _celery_app is not None:
         _diagnostic_logger.info("i18n_audit_start")
         try:
             result = run_i18n_audit(previous_snapshots=None)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _diagnostic_logger.exception("i18n_audit_error")
             raise self.retry(exc=exc) from None
         return result

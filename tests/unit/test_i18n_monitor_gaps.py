@@ -251,10 +251,11 @@ class TestWritePoManually:
 
 
 class TestCeleryTaskAndFuzzyEntry:
-    def test_celery_task_registered_when_celery_present(self):
-        """جسم مهمة Celery (360-377) مسار بيئي: celery غير مثبت محلياً —
-        app.tasks يضع celery_app=None دون رفع ImportError، لذا العقد
-        الحقيقي: المهمة مسجّلة ⟺ (_HAS_CELERY و celery_app ليس None).
+    def test_celery_task_registered_matches_environment(self):
+        """عقد الوحدة: المهمة مسجّلة ⟺ celery حقيقي متوفر.
+
+        يغطي فرعي if/else عند نهاية الوحدة — بحسب البيئة التي تعمل فيها
+        (محلياً/CI بلا celery: الفرع else بـ None؛ مع celery: الفرع if).
         """
         expected = i18n_monitor._HAS_CELERY and getattr(i18n_monitor, "_celery_app", None) is not None
         assert (i18n_monitor.audit_translation_catalogs is not None) is expected
@@ -288,3 +289,68 @@ class TestCeleryTaskAndFuzzyEntry:
             assert result["ok"] is False
         finally:
             i18n_monitor._CATALOG_PATH_OVERRIDE = old
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# جسم مهمة Celery الحقيقي (360-377) — يتطلب celery مثبتاً
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class TestCeleryTaskBody:
+    def test_task_body_success(self, tmp_path: Path):
+        """المسار السعيد: تسجيل البدء، تشغيل التدقيق، إعادة النتيجة."""
+        import pytest as _pytest
+
+        _pytest.importorskip("celery")
+        from unittest.mock import patch
+
+        ar_path = tmp_path / "ar" / "LC_MESSAGES" / "messages.po"
+        i18n_monitor.write_po_manually(ar_path, "ar", entries={"مرحباً": "السلام عليكم"})
+        en_path = tmp_path / "en" / "LC_MESSAGES" / "messages.po"
+        i18n_monitor.write_po_manually(en_path, "en", entries={"مرحباً": "hello"})
+
+        from app import create_app
+        from app.tasks import celery_app
+
+        celery_app.flask_app = create_app()
+        old = i18n_monitor._CATALOG_PATH_OVERRIDE
+        i18n_monitor._CATALOG_PATH_OVERRIDE = {"ar": ar_path, "en": en_path}
+        try:
+            with patch.object(i18n_monitor, "_diagnostic_logger") as mock_log:
+                result = i18n_monitor.audit_translation_catalogs.run()
+            assert result["ok"] is True
+            info_names = [c.args[0] for c in mock_log.info.call_args_list if c.args]
+            assert "i18n_audit_start" in info_names
+        finally:
+            i18n_monitor._CATALOG_PATH_OVERRIDE = old
+            celery_app.flask_app = None
+
+    def test_task_body_retries_on_failure(self, tmp_path: Path):
+        """مسار الفشل (368-377): run_i18n_audit يرمي → يُسجَّل exception
+        ويُستدعى self.retry. عند الاستدعاء المباشر (.run() بلا worker)
+        يعيد celery رفع الاستثناء الأصلي — سلوكه الموثّق لـ called_directly."""
+        import pytest as _pytest
+
+        _pytest.importorskip("celery")
+        from unittest.mock import patch
+
+        from app import create_app
+        from app.tasks import celery_app
+
+        celery_app.flask_app = create_app()
+        try:
+            with (
+                patch.object(i18n_monitor, "_diagnostic_logger") as mock_log,
+                patch.object(
+                    i18n_monitor,
+                    "run_i18n_audit",
+                    side_effect=RuntimeError("audit exploded"),
+                ),
+                _pytest.raises(RuntimeError, match="audit exploded"),
+            ):
+                i18n_monitor.audit_translation_catalogs.run()
+            # فرع except نُفّذ فعلاً: سجل الخطأ ثم استدعى retry
+            exc_names = [c.args[0] for c in mock_log.exception.call_args_list if c.args]
+            assert "i18n_audit_error" in exc_names
+        finally:
+            celery_app.flask_app = None

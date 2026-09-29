@@ -32,6 +32,8 @@ from datetime import UTC, datetime
 from io import BytesIO
 from typing import Any
 
+from flask import has_request_context
+
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -186,16 +188,16 @@ def pdf_output_dir(school_id: int, subdir: str) -> str:
 
 
 def ctx_school_id() -> int:
-    """school_id من سياق الطلب إن توفر — 0 خارج الطلب/للمشرف العام."""
-    try:
-        from flask import has_request_context
+    """school_id من سياق الطلب إن توفر — 0 خارج الطلب/للمشرف العام.
 
-        if has_request_context():
-            from app.core.tenancy import current_school_id
+    ملاحظة: current_school_id لا يرمي RuntimeError (يعيد None خارج
+    المصادقة)، وhas_request_context آمنة دائماً — لا حاجة لـ try/except
+    (كان ميتاً وحُذف عند مراجعة التغطية).
+    """
+    if has_request_context():
+        from app.core.tenancy import current_school_id
 
-            return current_school_id() or 0
-    except RuntimeError:
-        pass
+        return current_school_id() or 0
     return 0
 
 

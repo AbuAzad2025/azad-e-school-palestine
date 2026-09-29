@@ -1,5 +1,7 @@
 # منصة مدرسة أزاد الإلكترونية — المكدس المعتمد (D2)
 Flask>=3.1
+# celery غير مثبّت عمداً: الإنتاج يعمل بوضع sync-fallback (dispatch في app/tasks/__init__)
+# وإضافة celery تكسر الاستيراد — انظر ContextTask في هذا الملف قبل تفعيلها
 Flask-SQLAlchemy>=3.1
 Flask-Login>=0.6
 Flask-WTF>=1.2

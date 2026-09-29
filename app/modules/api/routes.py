@@ -165,9 +165,8 @@ def api_lessons_get(lesson_id: int):
     if current_user.role == UserRole.super_admin:
         pass
     elif current_user.role == UserRole.school_admin:
-        if lesson.class_id is None:
-            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
-
+        # Lesson.class_id غير قابل لـ NULL في المخطط — فحص not class_room يكفي
+        # لأي حالة شاذة (صف محذوف مثلاً) فترجع 403 (لا فرع ميت لـ class_id=None).
         class_room = ClassRoom.query.filter_by(id=lesson.class_id).first()
         if not class_room or class_room.school_id != current_user_school_id():
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")

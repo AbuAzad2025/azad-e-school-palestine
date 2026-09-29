@@ -15,6 +15,7 @@ import os
 from typing import Any
 
 try:
+    import celery
     from celery import Celery
     from celery.signals import task_postrun, task_prerun
 
@@ -92,8 +93,8 @@ if _HAS_CELERY:
 
     # ─── Flask App Context for Tasks ───────────────────────────────────
 
-    class ContextTask:
-        """Mixin that wraps task execution in Flask app context.
+    class ContextTask(celery.Task):
+        """يغلّف تنفيذ المهمة بسياق تطبيق Flask.
 
         Usage as Celery task base:
             @celery_app.task(base=ContextTask, bind=True)
@@ -102,14 +103,17 @@ if _HAS_CELERY:
 
         This ensures the task runs inside Flask's application context,
         giving access to db, config, and all extensions.
+
+        ملاحظة: يجب أن يرث celery.Task — الفئة العادية تفشل عند تسجيل
+        المهمة (Task.bind) عند تثبيت celery حقيقي.
         """
 
         def __call__(self, *args: Any, **kwargs: Any) -> Any:
             flask_app = getattr(celery_app, "flask_app", None)
             if flask_app is not None:
                 with flask_app.app_context():
-                    return super().__call__(*args, **kwargs)  # type: ignore[misc]
-            return super().__call__(*args, **kwargs)  # type: ignore[misc]
+                    return super().__call__(*args, **kwargs)
+            return super().__call__(*args, **kwargs)
 
     # ─── Task Signals — Structured Logging ─────────────────────────────
 
