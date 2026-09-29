@@ -182,7 +182,12 @@ def test_catalog_path_construction():
 def test_load_catalog_returns_po(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     po_path = _write_po(tmp_path, "ar", entries={"مرحباً": "hello"})
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr("app.tasks.i18n_monitor._catalog_path", lambda loc: po_path)
+    # نُصحّح كائن الوحدة مباشرة بدل target نصي — دقة pytest النصية لـ setattr
+    # تفشل في تشغيل المجموعة الكاملة عندما لا يكون app.tasks.i18n_monitor
+    # مرتبطاً كخاصية على الحزمة الأم.
+    from app.tasks import i18n_monitor as i18n_monitor_module
+
+    monkeypatch.setattr(i18n_monitor_module, "_catalog_path", lambda loc: po_path)
     cat = _load_catalog("ar")
     found = [msg for msg in cat if msg.id == "مرحباً"]
     assert len(found) == 1
