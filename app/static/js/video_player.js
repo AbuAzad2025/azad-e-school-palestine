@@ -75,11 +75,9 @@
     _createWatermarkCanvas() {
       this.canvas = document.createElement("canvas");
       this.canvas.className = "azad-watermark-canvas";
-      this.canvas.style.cssText =
-        "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;";
 
       // Position canvas over video
-      this.container.style.position = "relative";
+      this.container.classList.add("azad-video-container");
       this.container.appendChild(this.canvas);
 
       this.ctx = this.canvas.getContext("2d");

@@ -45,7 +45,7 @@ function updateProgress() {
   });
 
   const pct = total ? Math.round((answered / total) * 100) : 0;
-  bar.style.width = `${pct}%`;
+  bar.style.setProperty("--quiz-progress-pct", `${pct}%`);
   text.textContent = window.AzadQuizLabels
     ? window.AzadQuizLabels.progress
         .replace("{answered}", String(answered))

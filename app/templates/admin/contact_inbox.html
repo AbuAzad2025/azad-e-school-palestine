@@ -88,17 +88,17 @@ function openReplyModal(messageId, email, subject) {
   document.getElementById('reply-to').value = email;
   document.getElementById('reply-subject').value = 'Re: ' + subject;
   document.getElementById('reply-text').value = '';
-  document.getElementById('reply-modal').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  document.getElementById('reply-modal').classList.remove('u-none');
+  document.getElementById('reply-modal').setAttribute('aria-hidden', 'false');
+  document.body.classList.add('u-body-noscroll');
 }
 
 function closeReplyModal() {
-  document.getElementById('reply-modal').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-document.addEventListener('click', function(e) {
-  var openBtn = e.target.closest('[data-reply-open]');
+  document.getElementById('reply-modal').classList.add('u-none');
+  document.getElementById('reply-modal').setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('u-body-noscroll');
+}  document.addEventListener('click', function(e) {
+  const openBtn = e.target.closest('[data-reply-open]');
   if (openBtn) {
     openReplyModal(openBtn.dataset.msgId, openBtn.dataset.email, openBtn.dataset.subject);
     return;

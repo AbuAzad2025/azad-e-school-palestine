@@ -14,7 +14,7 @@
   <p class="error-page__message">{{ _('لقد تجاوزت الحد المسموح من الطلبات.') }}</p>
   <p class="error-page__hint">{{ _('يرجى الانتظار قليلاً ثم المحاولة مرة أخرى.') }}</p>
   <div class="error-page__actions">
-    <a class="azad-btn azad-btn-lg" href="#" onclick="window.location.reload(); return false;">
+    <a class="azad-btn azad-btn-lg" data-error-refresh href="#">
       {{ icon('refresh') }} {{ _('إعادة المحاولة') }}
     </a>
     <a class="azad-btn-outline azad-btn-lg" href="{{ url_for('main.index') }}">

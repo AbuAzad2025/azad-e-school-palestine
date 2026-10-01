@@ -5,44 +5,28 @@
 <head>
     <meta charset="utf-8">
     <title>{{ _('تقرير الدرجات') }} — {{ student.name_ar or student.email }}</title>
-    <style>
+    <style nonce="{{ g.csp_nonce }}">
         @page { size: A4; margin: 1.5cm; }
-        body { font-family: Arial, sans-serif; direction: {{ 'rtl' if is_rtl else 'ltr' }}; font-size: 12px; color: #333; }
-        .header { text-align: center; border-bottom: 3px solid #0f766e; padding-bottom: 1rem; margin-bottom: 1rem; }
-        .header h1 { color: #0f766e; margin: 0; font-size: 1.5rem; }
-        .header h2 { color: #333; margin: 0.5rem 0 0; font-size: 1.1rem; font-weight: normal; }
-        .info { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; }
-        .info div { font-size: 0.9rem; }
-        .info strong { color: #0f766e; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-        th, td { padding: 0.5rem; border: 1px solid #ddd; text-align: center; }
-        th { background: #0f766e; color: white; }
-        tr:nth-child(even) { background: #f8f9fa; }
-        .total-row { background: #0f766e !important; color: white; font-weight: bold; }
-        .section-title { color: #0f766e; border-bottom: 2px solid #0f766e; padding-bottom: 0.25rem; margin: 1rem 0 0.5rem; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
-        .stat { text-align: center; padding: 0.75rem; background: #f8f9fa; border-radius: 6px; }
-        .stat-value { font-size: 1.5rem; font-weight: bold; color: #0f766e; }
-        .stat-label { font-size: 0.8rem; color: #444; }
-        .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #444; }
+        /* Visual tokens centralized in pure-pages.css (rc-* classes).
+           Only the print rule is page-specific and remains here. */
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="rc-header">
         <h1>{{ _('تقرير الدرجات') }}</h1>
         <h2>{{ class_room.name or class_room.subject.name_ar }} — {{ _('الصف %(level)s', level=class_room.grade.grade_level) }}</h2>
     </div>
 
-    <div class="info">
+    <div class="rc-info">
         <div><strong>{{ _('الاسم:') }}</strong> {{ student.name_ar or student.email }}</div>
         <div><strong>{{ _('البريد:') }}</strong> {{ student.email }}</div>
         <div><strong>{{ _('المادة:') }}</strong> {{ class_room.subject.name_ar }}</div>
         <div><strong>{{ _('المعلم:') }}</strong> {{ class_room.teacher.name_ar if class_room.teacher else '—' }}</div>
     </div>
 
-    <h3 class="section-title">{{ _('الدرجات حسب الأقسام') }}</h3>
+    <h3 class="rc-section-title">{{ _('الدرجات حسب الأقسام') }}</h3>
     {% for cat in grade_data.categories %}
-    <table>
+    <table class="rc-table">
         <tr>
             <th scope="col" colspan="4">{{ cat.name }} ({{ _('وزن: %(weight)d%%', weight=(cat.weight * 100)|int) }})</th>
         </tr>
@@ -60,29 +44,29 @@
             <td>{{ item.pct if item.pct is not none else '—' }}</td>
         </tr>
         {% endfor %}
-        <tr class="total-row">
+        <tr class="rc-total-row">
             <td colspan="3">{{ _('متوسط القسم') }}</td>
             <td>{{ cat.category_pct }}%</td>
         </tr>
     </table>
     {% endfor %}
 
-    <div class="stats">
-        <div class="stat">
-            <div class="stat-value">{{ grade_data.final_grade }}</div>
-            <div class="stat-label">{{ _('الدرجة النهائية') }}</div>
+    <div class="rc-stats">
+        <div class="rc-stat">
+            <div class="rc-stat-value">{{ grade_data.final_grade }}</div>
+            <div class="rc-stat-label">{{ _('الدرجة النهائية') }}</div>
         </div>
-        <div class="stat">
-            <div class="stat-value">{{ grade_data.letter_grade }}</div>
-            <div class="stat-label">{{ _('التقدير') }}</div>
+        <div class="rc-stat">
+            <div class="rc-stat-value">{{ grade_data.letter_grade }}</div>
+            <div class="rc-stat-label">{{ _('التقدير') }}</div>
         </div>
-        <div class="stat">
-            <div class="stat-value">{{ avg_progress }}%</div>
-            <div class="stat-label">{{ _('متوسط التقدم') }}</div>
+        <div class="rc-stat">
+            <div class="rc-stat-value">{{ avg_progress }}%</div>
+            <div class="rc-stat-label">{{ _('متوسط التقدم') }}</div>
         </div>
     </div>
 
-    <div class="footer">
+    <div class="rc-footer">
         <p>{{ _('منصة مدرسة أزاد الإلكترونية — هذا التقرير أُنشأ تلقائياً') }}</p>
     </div>
 </body>

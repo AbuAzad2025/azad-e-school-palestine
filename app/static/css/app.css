@@ -757,6 +757,13 @@ h2.page-subtitle {
   margin-top: var(--sp-5);
   justify-content: flex-end;
 }
+.azad-form-actions--col {
+  flex-direction: column;
+  align-items: stretch;
+}
+.azad-form-actions--col .azad-btn {
+  width: 100%;
+}
 
 /* Generic form controls */
 textarea, select, input[type="date"], input[type="datetime-local"], input[type="number"], input[type="time"] {
@@ -1103,6 +1110,9 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   gap: var(--sp-3);
   margin-block: var(--sp-3);
 }
+.azad-actions-grid--auto {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
 .azad-action-card {
   --action-color: var(--azad-blue);
   background: var(--surface);
@@ -1139,6 +1149,12 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   font-weight: 700;
   color: var(--text);
 }
+.azad-action-card--blue   { --action-color: var(--azad-blue); }
+.azad-action-card--green  { --action-color: var(--azad-green); }
+.azad-action-card--gold   { --action-color: var(--azad-gold); }
+.azad-action-card--red    { --action-color: var(--azad-red); }
+.azad-action-card--teal   { --action-color: var(--azad-teal); }
+.azad-action-card--navy   { --action-color: var(--azad-navy); }
 .azad-action-card__count {
   position: absolute;
   top: var(--sp-2);
@@ -1153,6 +1169,24 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   display: grid;
   place-items: center;
   padding: 0 6px;
+}
+
+/* card spacing variants */
+.azad-card--mt {
+  margin-block-start: var(--sp-5);
+}
+
+/* form row column variants */
+.azad-form-row--1 { grid-template-columns: 1fr; }
+.azad-form-row--2 { grid-template-columns: repeat(2, 1fr); }
+.azad-form-row--3 { grid-template-columns: repeat(3, 1fr); }
+.azad-form-row--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 767px) {
+  .azad-form-row--2,
+  .azad-form-row--3,
+  .azad-form-row--4 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ═══════════════════════════════════
@@ -1296,8 +1330,21 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   justify-content: flex-end;
   gap: var(--sp-3);
   padding: var(--sp-4) var(--sp-6);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border);}
+
+/* Flash exit animation (auto-dismiss fade-out) */
+.azad-flash-exit {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  pointer-events: none;
 }
+
+/* Scroll-reveal: hide elements until they enter the viewport */
+.azad-scroll-hidden {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
 
 /* ═══════════════════════════════════
    TOAST NOTIFICATIONS
@@ -1361,11 +1408,24 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   height: 3px;
   background: var(--azad-blue);
   border-radius: 0 0 0 var(--radius-lg);
-  animation: azadToastProgress linear forwards;
+  animation: azadToastProgress var(--azad-toast-duration, 4000ms) linear forwards;
 }
 @keyframes azadToastProgress {
   from { width: 100%; }
   to { width: 0%; }
+}
+
+/* Toast exit animation */
+.azad-toast--exit {
+  animation: azadToastOut 300ms ease-in forwards;
+}
+@keyframes azadToastOut {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(100%) scale(0.9); opacity: 0; }
+}
+[dir="rtl"] @keyframes azadToastOut {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(-100%) scale(0.9); opacity: 0; }
 }
 
 /* ═══════════════════════════════════
@@ -2588,6 +2648,11 @@ html {
 /* ═══════════════════════════════════
    RIPPLE EFFECT (applied via JS)
    ═══════════════════════════════════ */
+.azad-ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
 .azad-ripple {
   position: absolute;
   border-radius: 50%;
@@ -2598,6 +2663,28 @@ html {
 }
 @keyframes azadRipple {
   to { transform: scale(4); opacity: 0; }
+}
+
+/* ════════════════════════════════════
+   VIDEO WATERMARK CANVAS
+   ═══════════════════════════════════ */
+.azad-watermark-canvas {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.azad-video-container {
+  position: relative;
+}
+
+/* Body scroll lock — toggled by JS when nav/drawer is open */
+body.nav-open {
+  overflow: hidden;
 }
 
 /* ════════════════════════════════════
@@ -2786,7 +2873,7 @@ html {
 .quiz-header { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
 .quiz-progress { flex: 1; min-width: 220px; }
 .quiz-progress__track { height: 10px; background: var(--border); border-radius: var(--radius-full); overflow: hidden; }
-.quiz-progress__bar { height: 100%; width: 0; background: var(--azad-navy); transition: width .3s ease; }
+.quiz-progress__bar { height: 100%; width: var(--quiz-progress-pct, 0%); background: var(--azad-navy); transition: width .3s ease; }
 .quiz-progress__text { font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--sp-1); }
 .quiz-timer { font-weight: 800; font-size: var(--text-lg); color: var(--azad-navy); display: inline-flex; align-items: center; gap: var(--sp-2); }
 .quiz-timer--warning { color: var(--azad-warning); }

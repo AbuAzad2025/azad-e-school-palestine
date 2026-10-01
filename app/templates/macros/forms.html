@@ -173,8 +173,8 @@
 {% endmacro %}
 
 {# ─── Form Actions ─── #}
-{% macro azad_form_actions(submit_text=_('حفظ'), submit_class='azad-btn', cancel_url='') %}
-<div class="azad-form-actions">
+{% macro azad_form_actions(submit_text=_('حفظ'), submit_class='azad-btn', cancel_url='', full_width=false) %}
+<div class="azad-form-actions {{ 'azad-form-actions--col' if full_width else '' }}">
   {% if cancel_url %}
   <a href="{{ cancel_url }}" class="azad-btn azad-btn-ghost">{{ _('إلغاء') }}</a>
   {% endif %}

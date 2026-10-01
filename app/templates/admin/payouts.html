@@ -74,13 +74,15 @@
 // P2-03: ربط بالتفويض بدل onclick المضمّنة
 function openRejectModal(payoutId) {
   document.getElementById('reject-form').action = '{{ url_for("admin.review_payout", payout_id=0, result="reject") }}'.replace('/0', '/' + payoutId);
-  document.getElementById('reject-modal').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
+  document.getElementById('reject-modal').classList.remove('u-none');
+  document.getElementById('reject-modal').setAttribute('aria-hidden', 'false');
+  document.body.classList.add('u-body-noscroll');
 }
 
 function closeRejectModal() {
-  document.getElementById('reject-modal').style.display = 'none';
-  document.body.style.overflow = '';
+  document.getElementById('reject-modal').classList.add('u-none');
+  document.getElementById('reject-modal').setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('u-body-noscroll');
 }
 
 document.addEventListener('click', function(e) {

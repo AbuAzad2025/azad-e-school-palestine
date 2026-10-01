@@ -110,8 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var tfOpts = document.getElementById('qb-tf-opts');
   function toggle() {
     var v = typeSelect.value;
-    mcqOpts.style.display = v === 'mcq' ? '' : 'none';
-    tfOpts.style.display = v === 'true_false' ? '' : 'none';
+    mcqOpts.classList.toggle('u-none', v !== 'mcq');
+    tfOpts.classList.toggle('u-none', v !== 'true_false');
   }
   typeSelect.addEventListener('change', toggle);
   toggle();

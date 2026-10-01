@@ -85,6 +85,7 @@ BUNDLES: dict[str, dict[str, object]] = {
 COMPANIONS = [
     "admin.css",
     "components/_gradebook.css",
+    "pages/pure-pages.css",
 ]
 
 # ═══ Purge safelist ═════════════════════════════════════════════════════════
@@ -301,7 +302,10 @@ def _verify_companions(bundle_tokens: set[str]) -> None:
         if not path.is_file():
             raise FileNotFoundError(f"Companion stylesheet not found: {rel}")
         css = _minify(_strip_comments(path.read_text(encoding="utf-8")))
-        missing = _undefined_vars(css, bundle_tokens)
+        # The companion may define its own local custom properties (e.g. scoped
+        # vars on a component root). Exclude those from the undefined-check.
+        companion_defs = set(_VAR_DEF_RE.findall(css))
+        missing = _undefined_vars(css, bundle_tokens | companion_defs)
         if missing:
             raise RuntimeError(
                 f"{rel}: references custom properties no bundle defines "

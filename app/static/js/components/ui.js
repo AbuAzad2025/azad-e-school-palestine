@@ -219,16 +219,18 @@ export function initRipple() {
 
     const ripple = document.createElement("span");
     ripple.className = "azad-ripple";
+    btn.classList.add("azad-ripple-container");
     const rect = btn.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height) * 2;
     ripple.style.width = ripple.style.height = `${size}px`;
     ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
     ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
-    if (!btn.style.position) btn.style.position = "relative";
-    btn.style.overflow = "hidden";
     btn.appendChild(ripple);
     setTimeout(() => {
-      if (ripple.isConnected) ripple.remove();
+      if (ripple.isConnected) {
+        ripple.remove();
+        btn.classList.remove("azad-ripple-container");
+      }
     }, 600);
   });
 }

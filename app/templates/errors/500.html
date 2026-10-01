@@ -17,7 +17,7 @@
     <a class="azad-btn azad-btn-lg" href="{{ url_for('main.index') }}">
       {{ icon('home') }} {{ _('العودة إلى الرئيسية') }}
     </a>
-    <a class="azad-btn-outline azad-btn-lg" href="#" onclick="window.location.reload(); return false;">
+    <a class="azad-btn-outline azad-btn-lg" data-error-refresh href="#">
       {{ icon('refresh') }} {{ _('إعادة التحميل') }}
     </a>
   </div>

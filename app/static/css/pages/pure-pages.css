@@ -1,0 +1,419 @@
+/* ── auth / login ──────────────────────────────────────────────────────────── */
+
+.auth-page {
+  --auth-grad-0: var(--azad-navy);
+  --auth-grad-1: var(--azad-blue);
+
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--auth-grad-0) 0%, var(--auth-grad-1) 100%);
+  padding: var(--sp-6);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.auth-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2xl);
+  padding: var(--sp-8);
+  animation: azadFadeIn var(--duration-normal) var(--ease-out) both;
+}
+
+.auth-card__logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--sp-4);
+}
+
+.auth-card__logo img {
+  width: 64px;
+  height: 64px;
+}
+
+.auth-card__title {
+  text-align: center;
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  margin-bottom: var(--sp-1);
+  color: var(--text-strong);
+}
+
+.auth-card__subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--sp-6);
+}
+
+.auth-form .azad-field { margin-bottom: var(--sp-4); }
+
+.auth-form label {
+  display: block;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  margin-bottom: var(--sp-2);
+  color: var(--text-strong);
+}
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.auth-actions .remember {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+}
+
+.auth-actions .remember input {
+  width: auto;
+  accent-color: var(--azad-blue);
+  cursor: pointer;
+}
+
+.auth-actions .forgot-link {
+  font-size: var(--text-sm);
+  color: var(--azad-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-actions .forgot-link:hover {
+  text-decoration: underline;
+  color: var(--azad-red);
+}
+
+.auth-links {
+  margin-top: var(--sp-6);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.auth-links a {
+  color: var(--azad-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-links a:hover {
+  color: var(--azad-red);
+  text-decoration: underline;
+}
+
+.auth-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: var(--sp-6) 0;
+}
+
+.auth-card__footer {
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .auth-card { padding: var(--sp-6) var(--sp-4); }
+  .auth-card__title { font-size: var(--text-xl); }
+}
+
+/* ── standalone/offline (single static/offline-capable page) ─────────────── */
+
+.pure-page {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: "Cairo", "Tajawal", sans-serif;
+  text-align: center;
+  padding: 2rem;
+}
+
+.pure-page .box { max-width: 400px; }
+
+.pure-page h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 800;
+  background: var(--azad-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pure-page p {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* icon size used on standalone pages, not part of the main icon sprite sizes */
+.pure-page__icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.pure-page .pure-btn {
+  display: inline-block;
+  padding: 0.7rem 1.5rem;
+  background: var(--azad-gradient);
+  color: #fff;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: filter var(--duration-fast) var(--ease-default);
+}
+
+.pure-page .pure-btn:hover { filter: brightness(1.1); }
+
+.pure-page .pure-note {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ── invoice (printable billing document) ─────────────────────────────────── */
+
+.doc-page {
+  font-family: Arial, sans-serif;
+  direction: rtl;
+  font-size: 12px;
+  color: #333;
+}
+
+.doc-header {
+  text-align: center;
+  border-bottom: 3px solid var(--azad-teal);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.doc-header h1 {
+  color: var(--azad-teal);
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.doc-header .doc-no {
+  color: #444;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.doc-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.doc-info-box {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.doc-info-box h3 {
+  margin: 0 0 0.5rem;
+  color: var(--azad-teal);
+  font-size: 0.9rem;
+}
+
+.doc-info-box p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.doc-table th,
+.doc-table td {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.doc-table th {
+  background: var(--azad-teal);
+  color: #fff;
+}
+
+.doc-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.doc-summary-item {
+  text-align: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.doc-summary-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: var(--azad-teal);
+}
+
+.doc-summary-label {
+  font-size: 0.8rem;
+  color: #444;
+}
+
+.doc-total-row {
+  background: var(--azad-teal) !important;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.doc-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+  font-size: 0.8rem;
+  color: #444;
+}
+
+/* ── report card (printable academic report) ─────────────────────────────── */
+
+.rc-page {
+  font-family: Arial, sans-serif;
+  direction: rtl;
+  font-size: 12px;
+  color: #333;
+}
+
+.rc-header {
+  text-align: center;
+  border-bottom: 3px solid var(--azad-teal);
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.rc-header h1 {
+  color: var(--azad-teal);
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.rc-header h2 {
+  color: #333;
+  margin: 0.5rem 0 0;
+  font-size: 1.1rem;
+  font-weight: normal;
+}
+
+.rc-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.rc-info div { font-size: 0.9rem; }
+.rc-info strong { color: var(--azad-teal); }
+
+.rc-section-title {
+  color: var(--azad-teal);
+  border-bottom: 2px solid var(--azad-teal);
+  padding-bottom: 0.25rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.rc-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rc-stat {
+  text-align: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.rc-stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--azad-teal);
+}
+
+.rc-stat-label {
+  font-size: 0.8rem;
+  color: #444;
+}
+
+.rc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.rc-table th,
+.rc-table td {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.rc-table th { background: var(--azad-teal); color: #fff; }
+.rc-table tr:nth-child(even) { background: #f8f9fa; }
+
+.rc-total-row {
+  background: var(--azad-teal) !important;
+  color: #fff;
+  font-weight: bold;
+}
+
+.rc-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+  font-size: 0.8rem;
+  color: #444;
+}

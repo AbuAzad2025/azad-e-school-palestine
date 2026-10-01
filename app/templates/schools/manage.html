@@ -56,13 +56,13 @@
   {% endif %}
 </div>
 
-<div class="azad-card" style="margin-top: var(--sp-5);">
+<div class="azad-card azad-card--mt">
   <div class="azad-card__header">
     <h2 class="azad-card__title">{{ _('إضافة مستوى دراسي') }}</h2>
   </div>
-  <form method="post" action="{{ url_for('schools.grade_add', school_id=school.id) }}" novalidate>
+  <form method="post" action="{{ url_for('schools.grade_add', school_id=school.id) }}" novalidate class="azad-form">
     {{ grade_form.hidden_tag() }}
-    <div class="azad-form-row">
+    <div class="azad-form-row azad-form-row--3">
       <div class="azad-field azad-field--grow">
         <label for="grade_level" class="azad-field__label">{{ _('المستوى الدراسي') }} <span class="required">*</span></label>
         {{ grade_form.grade_level(id="grade_level") }}
@@ -72,8 +72,8 @@
         <label for="name_ar" class="azad-field__label">{{ _('الاسم بالعربية') }} <span class="required">*</span></label>
         {{ grade_form.name_ar(id="name_ar") }}
       </div>
-      <div class="azad-field" style="display: flex; align-items: flex-end;">
-        {{ grade_form.submit(class="azad-btn", style="margin-top: var(--sp-1); width: auto;") }}
+      <div class="azad-field azad-field--grow">
+        {{ grade_form.submit(class="azad-btn azad-btn-block") }}
       </div>
     </div>
   </form>

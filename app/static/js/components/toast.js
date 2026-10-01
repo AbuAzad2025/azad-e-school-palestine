@@ -35,10 +35,7 @@ function announce(message) {
 }
 
 function removeToast(toast) {
-  toast.style.opacity = "0";
-  const isRtl = document.documentElement.dir === "rtl";
-  toast.style.transform = isRtl ? "translateX(-100%)" : "translateX(100%)";
-  toast.style.transition = "all .3s";
+  toast.classList.add("azad-toast--exit");
   setTimeout(() => toast.remove(), 300);
 }
 
@@ -62,9 +59,12 @@ export function show(options) {
     <button class="azad-toast__close" aria-label="${t("close", "إغلاق")}">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
-    <div class="azad-toast__progress" style="animation-duration: ${duration}ms"></div>
+    <div class="azad-toast__progress"></div>
   `;
 
+  if (duration > 0) {
+    toast.style.setProperty("--azad-toast-duration", `${duration}ms`);
+  }
   toast.querySelector(".azad-toast__close").addEventListener("click", () => removeToast(toast));
   container.appendChild(toast);
   announce(message || title);

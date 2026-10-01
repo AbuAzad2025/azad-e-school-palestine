@@ -101,7 +101,7 @@
 
 {# ─── Quick Action Grid ─── #}
 {% macro azad_quick_actions(actions) %}
-<div class="azad-actions-grid">
+<div class="azad-actions-grid azad-actions-grid--auto">
   {% for action in actions %}
   <a href="{{ action.href }}" class="azad-action-card azad-action-card--{{ action.variant | default('blue') }}">
     <div class="azad-action-card__icon">{{ icon(action.icon) }}</div>

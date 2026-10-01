@@ -32,7 +32,7 @@ function initNav() {
     const closeIcon = toggle.querySelector("[data-nav-icon-close]");
     if (openIcon) openIcon.hidden = open;
     if (closeIcon) closeIcon.hidden = !open;
-    document.body.style.overflow = open ? "hidden" : "";
+    document.body.classList.toggle("nav-open", open);
   };
 
   toggle.addEventListener("click", () => setOpen(!links.classList.contains("open")));
@@ -83,15 +83,14 @@ function initScrollAnimations() {
       ".azad-card, .azad-stat-card, .azad-item, .stat-card, .azad-action-card, .dash-card",
     )
     .forEach((el) => {
-      el.style.opacity = "0";
-      el.style.transform = "translateY(12px)";
-      el.style.transition = "opacity .4s ease, transform .4s ease";
+      el.classList.add("azad-scroll-hidden");
       observer.observe(el);
     });
 
   if (!document.getElementById("azad-scroll-styles")) {
     const style = document.createElement("style");
     style.id = "azad-scroll-styles";
+    style.setAttribute("nonce", window.AzadCSPNonce || "");
     style.textContent =
       ".azad-in-view { opacity: 1 !important; transform: translateY(0) !important; }";
     document.head.appendChild(style);
@@ -108,12 +107,23 @@ function initAutoDismissFlashes() {
     .forEach((el) => {
       const delay = parseInt(el.dataset.autoDismiss, 10) || 5000;
       setTimeout(() => {
-        el.style.opacity = "0";
-        el.style.transform = "translateY(-8px)";
-        el.style.transition = "opacity .3s, transform .3s";
+        el.classList.add("azad-flash-exit");
         setTimeout(() => el.remove(), 350);
       }, delay);
     });
+}
+
+/**
+ * Bind the error-page refresh button via delegation (no inline onclick).
+ * @returns {void}
+ */
+function initErrorPageRefresh() {
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-error-refresh]");
+    if (!btn) return;
+    e.preventDefault();
+    window.location.reload();
+  });
 }
 
 /**
@@ -206,6 +216,7 @@ export {
   init,
   initAdminDrawer,
   initAutoDismissFlashes,
+  initErrorPageRefresh,
   initNav,
   initPwaBanner,
   initScrollAnimations,

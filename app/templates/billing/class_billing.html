@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '{{ icon("loader") }} {{ _('جاري التحقق...') }}';
     submitBtn.disabled = true;
-    resultDiv.style.display = 'none';
+    resultDiv.classList.add('u-none');
 
     try {
       const response = await fetch(form.action, {
@@ -138,10 +138,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const data = await response.json();
       if (data.error) {
         resultDiv.innerHTML = '<span class="u-text-danger">{{ icon("alert") }} ' + data.error + '</span>';
-        resultDiv.style.display = 'block';
+        resultDiv.classList.remove('u-none');
       } else {
         resultDiv.innerHTML = '<span class="u-text-success">{{ icon("check") }} {{ _('تم التحقق بنجاح! مبلغ الخصم:') }} ' + data.discount + ' {{ session.currency if my_sub else '₪' }}</span>';
-        resultDiv.style.display = 'block';
+        resultDiv.classList.remove('u-none');
         localStorage.setItem('azad_discount_' + formData.get('plan_id'), JSON.stringify({
           code: formData.get('code'),
           discount: data.discount
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (err) {
       resultDiv.innerHTML = '<span class="u-text-danger">{{ icon("alert") }} {{ _('حدث خطأ، يرجى المحاولة مرة أخرى') }}</span>';
-      resultDiv.style.display = 'block';
+      resultDiv.classList.remove('u-none');
     } finally {
       submitBtn.innerHTML = originalText;
       submitBtn.disabled = false;

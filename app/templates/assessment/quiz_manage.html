@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var sel = document.querySelector('[name="qtype"]');
   function toggle() {
     document.querySelectorAll('[data-qtype]').forEach(function (el) {
-      el.style.display = el.dataset.qtype === sel.value ? '' : 'none';
+      el.classList.toggle('u-none', el.dataset.qtype !== sel.value);
     });
   }
   if (sel) { sel.addEventListener('change', toggle); toggle(); }

@@ -5,43 +5,29 @@
 <head>
     <meta charset="utf-8">
     <title>{{ _('فاتورة %(number)s', number=invoice_number) }}</title>
-    <style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/pure-pages.css') }}">
+    <style nonce="{{ g.csp_nonce }}">
         @page { size: A4; margin: 1.5cm; }
-        body { font-family: Arial, sans-serif; direction: {{ 'rtl' if is_rtl else 'ltr' }}; font-size: 12px; color: #333; }
-        .header { text-align: center; border-bottom: 3px solid #0f766e; padding-bottom: 1rem; margin-bottom: 1.5rem; }
-        .header h1 { color: #0f766e; margin: 0; font-size: 1.8rem; }
-        .header .invoice-no { color: #444; font-size: 0.9rem; margin-top: 0.5rem; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-        .info-box { padding: 1rem; background: #f8f9fa; border-radius: 8px; }
-        .info-box h3 { margin: 0 0 0.5rem; color: #0f766e; font-size: 0.9rem; }
-        .info-box p { margin: 0.25rem 0; font-size: 0.85rem; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
-        th, td { padding: 0.75rem; border: 1px solid #ddd; text-align: center; }
-        th { background: #0f766e; color: white; }
-        .total-row { background: #0f766e !important; color: white; font-weight: bold; font-size: 1.1rem; }
-        .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-        .summary-item { text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 8px; }
-        .summary-value { font-size: 1.3rem; font-weight: bold; color: #0f766e; }
-        .summary-label { font-size: 0.8rem; color: #444; }
-        .footer { text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 0.8rem; color: #444; }
+        /* Visual tokens centralized in pure-pages.css (doc-* classes).
+           Only the print rule is page-specific and remains here. */
     </style>
 </head>
-<body>
-    <div class="header">
+<body class="doc-page">
+    <div class="doc-header">
         <h1>{{ _('منصة مدرسة أزاد الإلكترونية') }}</h1>
-        <div class="invoice-no">{{ _('فاتورة رقم:') }} {{ invoice_number }}</div>
+        <div class="doc-no">{{ _('فاتورة رقم:') }} {{ invoice_number }}</div>
     </div>
 
     <h2>{{ _('بيانات الاشتراك') }}</h2>
 
-    <div class="info-grid">
-        <div class="info-box">
+    <div class="doc-info-grid">
+        <div class="doc-info-box">
             <h3>{{ _('بيانات الاشتراك') }}</h3>
             <p><strong>{{ _('الطالب:') }}</strong> {{ subscription.user.name_ar or subscription.user.email }}</p>
             <p><strong>{{ _('الخطة:') }}</strong> {{ subscription.plan.name }}</p>
             <p><strong>{{ _('المدة:') }}</strong> {{ subscription.start_at|dateformat('medium') if subscription.start_at else '—' }} {{ _('إلى') }} {{ subscription.end_at|dateformat('medium') if subscription.end_at else '—' }}</p>
         </div>
-        <div class="info-box">
+        <div class="doc-info-box">
             <h3>{{ _('تفاصيل الفاتورة') }}</h3>
             <p><strong>{{ _('رقم الاشتراك:') }}</strong> #{{ subscription.id }}</p>
             <p><strong>{{ _('الحالة:') }}</strong> {{ {'pending': _('معلق'), 'active': _('نشط'), 'expired': _('منتهي'), 'cancelled': _('ملغي')}[subscription.status] }}</p>
@@ -49,7 +35,7 @@
         </div>
     </div>
 
-    <table>
+    <table class="doc-table">
         <tr>
             <th scope="col">{{ _('البيان') }}</th>
             <th scope="col">{{ _('المبلغ') }}</th>
@@ -62,13 +48,13 @@
             <td>{{ _('المدفوع') }}</td>
             <td>{{ summary.total_paid|currencyformat(subscription.currency) }}</td>
         </tr>
-        <tr class="total-row">
+        <tr class="doc-total-row">
             <td>{{ _('المتبقي') }}</td>
             <td>{{ summary.balance|currencyformat(subscription.currency) }}</td>
         </tr>
     </table>
 
-    <div class="footer">
+    <div class="doc-footer">
         <p>{{ _('منصة مدرسة أزاد الإلكترونية — هذه فاتورة تلقائية') }}</p>
     </div>
 </body>
