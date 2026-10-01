@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_table %}
+{% from "macros/ui.html" import azad_table, azad_stat_card %}
 {% block title %}{{ _('إحصائيات الاختبار') }} — {{ quiz.title }}{% endblock %}
 {% block content %}
 <div class="azad-section">
@@ -14,12 +14,12 @@
 <div class="empty-state">{{ _('لا توجد محاولات مكتملة لهذا الاختبار بعد.') }}</div>
 {% else %}
 <div class="azad-quick-actions u-grid-cards-180">
-  {% call azad_stat_card(stats.total_attempts, _('المحاولات'), 'users', 'var(--azad-blue)') %}{% endcall %}
-  {% call azad_stat_card(stats.avg_score ~ '/' ~ (quiz.questions|sum(attribute='mark')|round(1)), _('المتوسط'), 'trending-up', 'var(--azad-green)') %}{% endcall %}
-  {% call azad_stat_card(stats.highest_score, _('الأعلى'), 'award', 'var(--azad-amber)') %}{% endcall %}
-  {% call azad_stat_card(stats.lowest_score, _('الأدنى'), 'award', 'var(--azad-red)') %}{% endcall %}
-  {% call azad_stat_card(stats.completion_rate ~ '%', _('معدل الإكمال'), 'check-circle', 'var(--azad-indigo)') %}{% endcall %}
-  {% call azad_stat_card(stats.std_deviation, _('الانحراف المعياري'), 'activity', 'var(--azad-purple)') %}{% endcall %}
+  {{ azad_stat_card(stats.total_attempts, _('المحاولات'), 'users', 'var(--azad-blue)') }}
+  {{ azad_stat_card(stats.avg_score ~ '/' ~ (quiz.questions|sum(attribute='mark')|round(1)), _('المتوسط'), 'trending-up', 'var(--azad-green)') }}
+  {{ azad_stat_card(stats.highest_score, _('الأعلى'), 'award', 'var(--azad-amber)') }}
+  {{ azad_stat_card(stats.lowest_score, _('الأدنى'), 'award', 'var(--azad-red)') }}
+  {{ azad_stat_card(stats.completion_rate ~ '%', _('معدل الإكمال'), 'check-circle', 'var(--azad-indigo)') }}
+  {{ azad_stat_card(stats.std_deviation, _('الانحراف المعياري'), 'activity', 'var(--azad-purple)') }}
 </div>
 
 <div class="azad-section u-mt-2">
