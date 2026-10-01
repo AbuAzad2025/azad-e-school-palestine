@@ -14,7 +14,7 @@ describe("Quiz - updateProgress", () => {
           <input type="radio" name="q3" value="b" checked />
         </div>
       </form>
-      <div id="quiz-progress-bar" style="width: 0%"></div>
+      <div id="quiz-progress-bar" style="--quiz-progress-pct: 0%"></div>
       <span id="quiz-progress-text"></span>
     `;
     window.AzadQuizLabels = undefined;
@@ -25,7 +25,7 @@ describe("Quiz - updateProgress", () => {
     updateProgress();
 
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("33%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("33%");
   });
 
   it("updates text with answered/total", async () => {
@@ -46,7 +46,7 @@ describe("Quiz - updateProgress", () => {
     updateProgress();
 
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("100%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("100%");
   });
 
   it("shows 0% when none answered", async () => {
@@ -55,7 +55,7 @@ describe("Quiz - updateProgress", () => {
     updateProgress();
 
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("0%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("0%");
   });
 
   it("uses custom labels when provided", async () => {

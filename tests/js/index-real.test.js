@@ -65,19 +65,19 @@ describe("Index - initNav (actual module)", () => {
     expect(toggle.querySelector("[data-nav-icon-close]").hidden).toBe(false);
   });
 
-  it("sets body overflow hidden when open", () => {
+  it("sets body nav-open class when open (overflow via CSS)", () => {
     initNav();
     const toggle = document.querySelector("[data-nav-toggle]");
     toggle.click();
-    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.body.classList.contains("nav-open")).toBe(true);
   });
 
-  it("clears body overflow when closed", () => {
+  it("clears nav-open class when closed", () => {
     initNav();
     const toggle = document.querySelector("[data-nav-toggle]");
     toggle.click();
     toggle.click();
-    expect(document.body.style.overflow).toBe("");
+    expect(document.body.classList.contains("nav-open")).toBe(false);
   });
 
   it("closes nav when link clicked inside nav-links", () => {
@@ -179,13 +179,13 @@ describe("Index - initScrollAnimations (actual module)", () => {
     expect(styles[0].textContent).toContain("azad-in-view");
   });
 
-  it("sets opacity and transform on card elements", () => {
+  it("marks cards scroll-hidden (reveal via .azad-in-view CSS)", () => {
     document.body.innerHTML = '<div class="azad-card">Card</div>';
     initScrollAnimations();
     const card = document.querySelector(".azad-card");
-    expect(card.style.opacity).toBe("0");
-    expect(card.style.transform).toBe("translateY(12px)");
-    expect(card.style.transition).toContain("opacity");
+    // JS only toggles classes; opacity/transform live in app.css (CSP-safe)
+    expect(card.classList.contains("azad-scroll-hidden")).toBe(true);
+    expect(card.classList.contains("azad-in-view")).toBe(false);
   });
 });
 
@@ -206,7 +206,8 @@ describe("Index - initAutoDismissFlashes (actual module)", () => {
 
     const flash = document.querySelector(".flash");
     vi.advanceTimersByTime(1100);
-    expect(flash.style.opacity).toBe("0");
+    // Exit animation is CSS-driven via .azad-flash-exit class (CSP-safe)
+    expect(flash.classList.contains("azad-flash-exit")).toBe(true);
     vi.advanceTimersByTime(400);
     expect(flash.parentNode).toBeNull();
   });

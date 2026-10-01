@@ -74,7 +74,8 @@ describe("AzadVideoPlayer — construction", () => {
     const canvas = document.querySelector("#player-box canvas");
     expect(canvas).toBeTruthy();
     expect(canvas.className).toBe("azad-watermark-canvas");
-    expect(canvas.style.pointerEvents).toBe("none");
+    // pointer-events: none comes from .azad-watermark-canvas in app.css (CSP-safe)
+    expect(canvas.getAttribute("style")).toBeNull();
   });
 
   it("skips canvas when watermark disabled", () => {

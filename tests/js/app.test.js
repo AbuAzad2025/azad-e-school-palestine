@@ -51,7 +51,8 @@ describe("AzadToast", () => {
     const toast = window.AzadToast.show({ message: "gone soon", duration: 1000 });
     expect(toast.parentNode).toBeTruthy();
     vi.advanceTimersByTime(1000);
-    expect(toast.style.opacity).toBe("0");
+    // Exit is CSS-driven via .azad-toast--exit class (CSP-safe), not inline style
+    expect(toast.classList.contains("azad-toast--exit")).toBe(true);
     vi.advanceTimersByTime(400);
     expect(toast.parentNode).toBeNull();
   });
@@ -60,7 +61,7 @@ describe("AzadToast", () => {
     const toast = window.AzadToast.show({ message: "closable", duration: 0 });
     const closeBtn = toast.querySelector(".azad-toast__close");
     closeBtn.click();
-    expect(toast.style.opacity).toBe("0");
+    expect(toast.classList.contains("azad-toast--exit")).toBe(true);
     vi.advanceTimersByTime(400);
     expect(toast.parentNode).toBeNull();
   });

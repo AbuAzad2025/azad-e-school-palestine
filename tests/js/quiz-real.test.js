@@ -25,7 +25,7 @@ describe("Quiz - updateProgress (actual module)", () => {
           <input type="radio" name="q3" value="b" checked />
         </div>
       </form>
-      <div id="quiz-progress-bar" style="width: 0%"></div>
+      <div id="quiz-progress-bar" style="--quiz-progress-pct: 0%"></div>
       <span id="quiz-progress-text"></span>
     `;
     window.AzadQuizLabels = undefined;
@@ -34,7 +34,7 @@ describe("Quiz - updateProgress (actual module)", () => {
   it("calculates progress percentage correctly", () => {
     updateProgress();
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("33%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("33%");
   });
 
   it("updates text with answered/total", () => {
@@ -49,14 +49,14 @@ describe("Quiz - updateProgress (actual module)", () => {
     document.querySelector('input[name="q2"]').value = "answer";
     updateProgress();
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("100%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("100%");
   });
 
   it("shows 0% when none answered", () => {
     document.querySelectorAll('input[type="radio"]').forEach((r) => (r.checked = false));
     updateProgress();
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("0%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("0%");
   });
 
   it("uses custom labels when provided", () => {
@@ -491,7 +491,7 @@ describe("Quiz - init (actual module)", () => {
           <input type="radio" name="q1" value="a" />
         </div>
       </form>
-      <div id="quiz-progress-bar" style="width: 0%"></div>
+      <div id="quiz-progress-bar" style="--quiz-progress-pct: 0%"></div>
       <span id="quiz-progress-text"></span>
     `;
 
@@ -502,7 +502,7 @@ describe("Quiz - init (actual module)", () => {
     document.getElementById("quiz-form").dispatchEvent(new Event("change"));
 
     const bar = document.getElementById("quiz-progress-bar");
-    expect(bar.style.width).toBe("100%");
+    expect(bar.style.getPropertyValue("--quiz-progress-pct")).toBe("100%");
   });
 
   it("clears localStorage on submit", () => {
