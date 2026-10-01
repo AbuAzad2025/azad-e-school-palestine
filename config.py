@@ -86,10 +86,7 @@ class _BaseConfig:
             "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
             "https://browser.sentry-cdn.com https://plausible.io"
         ),
-        "style-src": (
-            "'self' 'nonce-{CSP_NONCE}' "
-            "https://fonts.googleapis.com https://cdn.jsdelivr.net"
-        ),
+        "style-src": ("'self' 'nonce-{CSP_NONCE}' https://fonts.googleapis.com https://cdn.jsdelivr.net"),
         "font-src": "'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
         "img-src": "'self' data: https:",
         "connect-src": ("'self' https://api.stripe.com https://*.sentry.io https://plausible.io"),

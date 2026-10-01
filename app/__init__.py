@@ -10,7 +10,6 @@ from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path as _Path
 
-from config import Config
 from flask import (
     Flask,
     current_app,
@@ -30,6 +29,8 @@ from flask_mail import Message
 from flask_talisman import Talisman
 from sqlalchemy import text as sql_text
 from werkzeug.exceptions import HTTPException, Unauthorized
+
+from config import Config
 
 from .core.logging import configure_structlog, correlation_id_middleware, get_logger
 from .core.openapi import init_swagger

@@ -1849,6 +1849,8 @@ class TestTaskErrorPaths:
                 return None
 
         fake_celery.Celery = _FakeCeleryApp
+        # ContextTask(celery.Task) base — bare mixin: super().__call__ raises
+        fake_celery.Task = type("Task", (), {})
         fake_celery.signals = signals
         fake_sig = types.ModuleType("celery.signals")
         fake_sig.task_prerun = signals.task_prerun
