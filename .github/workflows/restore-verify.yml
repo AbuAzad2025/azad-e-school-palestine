@@ -1,5 +1,8 @@
 name: Backup Restore Verification
 
+# مثبّت على ubuntu-24.04: ubuntu-latest ينتقل تدريجياً إلى 26.04 بين 19/10 و19/11/2026
+# (actions/runner-images#14748) — راجع التعليق المقابل في ci.yml.
+
 on:
   schedule:
     - cron: "0 3 * * 0"  # Weekly Sunday 03:00 UTC
@@ -26,7 +29,7 @@ env:
 jobs:
   restore-verify:
     name: Restore & Verify Backup
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     services:

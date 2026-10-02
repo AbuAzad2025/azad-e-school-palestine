@@ -1,5 +1,8 @@
 name: CI
 
+# مثبّت على ubuntu-24.04: التسمية ubuntu-latest تنتقل تدريجياً (وعشوائياً) إلى Ubuntu 26.04
+# بين 19/10 و19/11/2026 (actions/runner-images#14748) — نثبّت لضمان حتمية CI وننتقل لاحقاً بقرار مدروس.
+
 on:
   push:
     branches: [main]
@@ -35,7 +38,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   lint:
     name: Lint & Security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -121,7 +124,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   frontend-asset-quality:
     name: Frontend Asset Quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     services:
       postgres:
@@ -174,7 +177,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   test:
     name: Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     needs: lint
     services:
@@ -256,7 +259,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   test-js:
     name: JS Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     needs: lint
     steps:
@@ -289,7 +292,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   test-e2e:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     needs: [lint, test]
     services:
@@ -384,7 +387,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   build:
     name: Build & Verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: lint
     services:
@@ -461,7 +464,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   coverage:
     name: Coverage Report
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     needs: [test, test-js]
     if: always()
@@ -543,7 +546,7 @@ jobs:
   # ════════════════════════════════════════════════════════════
   deploy:
     name: Deploy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [test, test-js, test-e2e, build, coverage]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
