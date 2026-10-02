@@ -3,6 +3,7 @@ import {
   initNav,
   initAdminDrawer,
   initAutoDismissFlashes,
+  initErrorPageRefresh,
   initPwaBanner,
   initScrollAnimations,
   initServiceWorker,
@@ -336,5 +337,74 @@ describe("Index - global AzadToast import", () => {
     expect(window.AzadToast).toBeTruthy();
     expect(typeof window.AzadToast.show).toBe("function");
     expect(typeof window.AzadToast.success).toBe("function");
+  });
+});
+
+describe("Index - initErrorPageRefresh (actual module)", () => {
+  let reloadMock;
+
+  beforeEach(() => {
+    reloadMock = vi.fn();
+    // jsdom's Location is unforgeable; stubGlobal is the supported way to
+    // observe navigation without triggering "Not implemented" errors.
+    vi.stubGlobal("location", { reload: reloadMock });
+    document.body.innerHTML = "";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.body.innerHTML = "";
+  });
+
+  const clickOn = (el) => {
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    el.dispatchEvent(event);
+    return event;
+  };
+
+  it("reloads the page and cancels the anchor navigation", () => {
+    document.body.innerHTML = '<a data-error-refresh href="#">إعادة التحميل</a>';
+    initErrorPageRefresh();
+
+    const event = clickOn(document.querySelector("[data-error-refresh]"));
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(reloadMock).toHaveBeenCalled();
+  });
+
+  it("delegates clicks from child elements inside the control", () => {
+    document.body.innerHTML = '<a data-error-refresh href="#"><span>icon</span></a>';
+    initErrorPageRefresh();
+
+    const event = clickOn(document.querySelector("[data-error-refresh] span"));
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(reloadMock).toHaveBeenCalled();
+  });
+
+  it("ignores clicks outside the refresh control", () => {
+    document.body.innerHTML = '<button id="plain">عادي</button>';
+    initErrorPageRefresh();
+
+    const event = clickOn(document.getElementById("plain"));
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("is wired by the bootstrap init() — regression guard for the dead control", async () => {
+    // The 500/429 pages extend base.html (which loads this module) and carry a
+    // data-error-refresh anchor, so init() must bind the delegation handler.
+    vi.resetModules();
+    document.body.innerHTML = '<a data-error-refresh href="#">إعادة التحميل</a>';
+
+    await import("@app-static/js/index.js");
+    // init() runs immediately on a ready DOM, or on DOMContentLoaded otherwise.
+    document.dispatchEvent(new Event("DOMContentLoaded"));
+
+    const event = clickOn(document.querySelector("[data-error-refresh]"));
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(reloadMock).toHaveBeenCalled();
   });
 });

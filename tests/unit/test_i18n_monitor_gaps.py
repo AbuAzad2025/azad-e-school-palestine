@@ -6,8 +6,14 @@
 
 from __future__ import annotations
 
+import contextlib
+import importlib
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
+import pytest
+from app import tasks as tasks_pkg
 from app.tasks import i18n_monitor
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -354,3 +360,109 @@ class TestCeleryTaskBody:
             assert "i18n_audit_error" in exc_names
         finally:
             celery_app.flask_app = None
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# جسم مهمة Celery (الأسطر 360-377) في بيئة بلا celery — وهي بيئة CI
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class _FakeTask:
+    """كائن مهمة أدنى يحاكي Celery Task مع bind=True عند الحدود فقط."""
+
+    def __init__(self, fn) -> None:
+        self.fn = fn
+        self.name = getattr(fn, "__name__", "task")
+
+    def run(self, *args, **kwargs):
+        # bind=True → الوسيط الأول المُمرَّر للدالة هو كائن المهمة نفسه
+        return self.fn(self, *args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.run(*args, **kwargs)
+
+    def retry(self, exc=None, **kwargs):
+        # سلوك celery عند الاستدعاء المباشر (called_directly): يعيد رفع السبب
+        raise (exc if exc is not None else RuntimeError("retry without exc"))
+
+
+class _FakeCeleryApp:
+    """تطبيق Celery بديل — يكفي لتفعيل فرع التسجيل في i18n_monitor."""
+
+    def __init__(self, *, max_retries: int | None = None) -> None:
+        self.conf = SimpleNamespace()
+        if max_retries is not None:
+            self.conf.task_default_max_retries = max_retries
+        self.registered: list[_FakeTask] = []
+
+    def task(self, *args, **kwargs):
+        def decorator(fn):
+            fake = _FakeTask(fn)
+            self.registered.append(fake)
+            return fake
+
+        return decorator
+
+
+@contextlib.contextmanager
+def _module_with_fake_celery(celery_app):
+    """أعِد تحميل الوحدة مع تطبيق Celery بديل، ثم أعِد حالتها الطبيعية.
+
+    لا حاجة لتركيب celery فعلياً: ``i18n_monitor`` يستورد ``celery_app`` من
+    ``app.tasks`` (وهو موجود كـ ``None`` في بيئة CI بلا celery)، فحقن بديل
+    هنا يجعل الشرط ``_celery_app is not None`` صحيحاً ويُنفّذ جسم المهمة
+    الحقيقي — نفس أسلوب tests/unit/test_push_round_i.py.
+    """
+    try:
+        with patch.object(tasks_pkg, "celery_app", celery_app):
+            yield importlib.reload(i18n_monitor)
+    finally:
+        importlib.reload(i18n_monitor)  # استعادة الحالة الطبيعية للوحدة
+
+
+class TestCeleryTaskBodyWithoutCelery:
+    """يغطي جسم مهمة Celery (360-377) حتى حين لا يكون celery مثبّتاً."""
+
+    def test_task_body_success_and_conf_default(self):
+        """المسار السعيد + ضبط ``task_default_max_retries`` الافتراضي."""
+        fake_app = _FakeCeleryApp()
+        with _module_with_fake_celery(fake_app) as module:
+            assert module._HAS_CELERY is True
+            assert module._celery_app is fake_app
+            task = module.audit_translation_catalogs
+            assert task is not None
+            assert len(fake_app.registered) == 1  # الديكوريتر سجّل المهمة (سطر 360)
+
+            with (
+                patch.object(module, "_diagnostic_logger") as mock_log,
+                patch.object(
+                    module,
+                    "run_i18n_audit",
+                    return_value={"ok": True, "degraded": []},
+                ) as mock_audit,
+            ):
+                result = task.run()
+
+            assert result == {"ok": True, "degraded": []}
+            mock_audit.assert_called_once_with(previous_snapshots=None)
+            assert [c.args[0] for c in mock_log.info.call_args_list] == ["i18n_audit_start"]
+            assert fake_app.conf.task_default_max_retries == 1
+
+    def test_task_body_retries_and_keeps_existing_conf(self):
+        """مسار الفشل: تسجيل exception ثم ``self.retry(exc=...)``."""
+        fake_app = _FakeCeleryApp(max_retries=3)
+        with _module_with_fake_celery(fake_app) as module:
+            with (
+                patch.object(module, "_diagnostic_logger") as mock_log,
+                patch.object(
+                    module,
+                    "run_i18n_audit",
+                    side_effect=RuntimeError("audit exploded"),
+                ),
+                pytest.raises(RuntimeError, match="audit exploded"),
+            ):
+                module.audit_translation_catalogs.run()
+
+            assert [c.args[0] for c in mock_log.exception.call_args_list] == ["i18n_audit_error"]
+            # إعداد مضبوط سلفاً لا يُلمس (الفرع الآخر لسطر 375)
+            assert fake_app.conf.task_default_max_retries == 3

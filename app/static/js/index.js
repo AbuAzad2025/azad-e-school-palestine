@@ -195,6 +195,7 @@ function init() {
   initTabs();
   initFlashes();
   initAutoDismissFlashes();
+  initErrorPageRefresh();
   initRipple();
   initScrollAnimations();
   initPwaBanner();
