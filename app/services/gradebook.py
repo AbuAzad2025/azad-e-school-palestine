@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.db import TxError, tx
 from app.core.i18n import _
@@ -138,9 +138,20 @@ def set_grade(student_id: int, item: GradeItem, mark, recorded_by=None, note: st
 
 
 def student_gradebook(student_id: int, class_id: int):
-    """دفتر درجات طالب داخل صف: البنود + الدرجات."""
-    categories = list_categories(class_id)
-    items = GradeItem.query.filter_by(class_id=class_id).order_by(GradeItem.id.asc()).all()
+    """دفتر درجات طالب داخل صف: البنود + الدرجات.
+
+    لم يعد ثمن الدفتر 4 استعلامات: ``list_categories`` كان يحمّل البنود عبر
+    selectinload ثم نعيد جلبها مرة ثانية بلا ترتيب — تكرار بلا فائدة في كل
+    عرض. الآن نأخذ البنود من نفس التحميل (3 استعلامات) مع الترتيب العام
+    تصاعدياً كما كان.
+    """
+    categories = list(
+        GradeCategory.query.filter_by(class_id=class_id)
+        .options(selectinload(GradeCategory.items))
+        .order_by(GradeCategory.id.asc())
+        .all()
+    )
+    items = sorted((item for cat in categories for item in cat.items), key=lambda i: i.id)
     entries = {
         e.grade_item_id: e
         for e in GradeEntry.query.filter_by(student_id=student_id)
@@ -159,11 +170,25 @@ def get_attendance(class_id: int, day: date):
 def record_attendance(
     class_id: int, day: date, records: dict[int, str], recorded_by=None, note: str | None = None
 ) -> None:
-    """records: {student_id: status}. upsert لكل طالب."""
+    """records: {student_id: status}. upsert لكل طالب.
+
+    كان يستعلم عن كل طالب على حدة (N استعلامات لتسجيل صف كامل)؛ الآن استعلام
+    واحد يجلب صفوف اليوم الموجودة، ثم insert لكل طالب غير مسجّل بعد.
+    """
+    if not records:
+        return
 
     def _record():
+        existing = {
+            row.student_id: row
+            for row in Attendance.query.filter(
+                Attendance.class_id == class_id,
+                Attendance.date == day,
+                Attendance.student_id.in_(list(records)),
+            ).all()
+        }
         for student_id, status in records.items():
-            row = Attendance.query.filter_by(class_id=class_id, student_id=student_id, date=day).first()
+            row = existing.get(student_id)
             if row:
                 row.status = status
             else:
@@ -193,6 +218,15 @@ def attendance_days(class_id: int):
     ]
 
 
-def attendance_summary(class_id: int, student_id: int):
-    rows = Attendance.query.filter_by(class_id=class_id, student_id=student_id).all()
-    return rows
+def attendance_summary(class_id: int, student_id: int, *, limit: int = 90):
+    """سجل حضور الطالب في الصف — الأحدث أولاً.
+
+    P2-PERF: كان بلا ترتيب ولا حد فيمتلئ الجدول مع كل صف دراسي سابق.
+    الآن مقيّد بالأسهل استخداماً (آخر ``limit`` يوماً) ومرتّب تنازلياً.
+    """
+    return (
+        Attendance.query.filter_by(class_id=class_id, student_id=student_id)
+        .order_by(Attendance.date.desc())
+        .limit(limit)
+        .all()
+    )

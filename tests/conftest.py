@@ -27,6 +27,7 @@ from app.models.progress import StudentProgress, VideoProgress
 from app.models.school import Grade, School, Subject
 from app.models.tenant import TenantQuota
 from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
+from sqlalchemy import event
 
 
 def _ensure_phase2_schema(db_engine):
@@ -391,6 +392,26 @@ def _clean_db(app):
 
 def _uid() -> str:
     return uuid.uuid4().hex[:10]
+
+
+class QueryCounter:
+    """يحصي عبارات SQL التي ينفذها الكود فعلاً عبر المحرك.
+
+    أداة مشتركة لاختبارات ميزانية الاستعلامات (N+1) — مصدر واحد لكل الملفات.
+    """
+
+    def __init__(self, engine):
+        self.engine = engine
+        self.count = 0
+        self._listener = None
+
+    def __enter__(self):
+        self._listener = lambda *a, **kw: setattr(self, "count", self.count + 1)
+        event.listen(self.engine, "before_cursor_execute", self._listener)
+        return self
+
+    def __exit__(self, *args):
+        event.remove(self.engine, "before_cursor_execute", self._listener)
 
 
 def _email() -> str:

@@ -5,6 +5,31 @@ from app.models.user import UserRole
 from app.services.schools import is_member
 
 
+def parent_has_active_member(parent_id: int, class_id: int) -> bool:
+    """هل لولي الأمر طالب واحد على الأقل عضو فعّال في هذا الصف؟
+
+    كان التنفيذ ``is_parent_of`` داخل حلقة على كل عضو بالصف (N استعلامات لـ
+    N طلاب)؛ نتحقق الآن بوجود رابط أسرة نشط واحد فقط باستعلام واحد.
+    """
+    from app.models.class_room import ClassMember
+    from app.models.family import FamilyLink
+
+    return (
+        FamilyLink.query.join(
+            ClassMember,
+            ClassMember.user_id == FamilyLink.student_id,
+        )
+        .filter(
+            FamilyLink.parent_id == parent_id,
+            FamilyLink.status == "active",
+            ClassMember.class_id == class_id,
+            ClassMember.status == "active",
+        )
+        .first()
+        is not None
+    )
+
+
 def _is_class_free(class_room) -> bool:
     """Check if a class is free (no paid SubscriptionPlan)."""
     from decimal import Decimal
@@ -49,14 +74,11 @@ def can_view_class(class_room, user) -> bool:
     # بطالب عضو نشط. الصلاحية مشتقة من عضوية الابن نفسه.
     if user.role == UserRole.parent:
         from app.models.class_room import ClassMember
-        from app.services.family import is_parent_of
 
         if ClassMember.query.filter_by(user_id=user.id, class_id=class_room.id, status="active").first() is not None:
             return True
-        member_student_ids = [
-            m.user_id for m in ClassMember.query.filter_by(class_id=class_room.id, status="active").all()
-        ]
-        return any(is_parent_of(user.id, sid) for sid in member_student_ids)
+        # P2-PERF: استعلام واحد بدل استعلام لكل طالب في الصف
+        return parent_has_active_member(user.id, class_room.id)
 
     # P-SEC-12: الصف مجاني — العضوية كافية
     if _is_class_free(class_room):

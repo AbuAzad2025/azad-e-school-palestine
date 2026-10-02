@@ -4,9 +4,8 @@ Verifies that key endpoints execute a bounded number of SQL queries
 regardless of dataset size, preventing N+1 regressions.
 """
 
-from sqlalchemy import event
-
 from tests.conftest import (
+    QueryCounter,
     make_class,
     make_class_member,
     make_grade,
@@ -14,23 +13,6 @@ from tests.conftest import (
     make_subject,
     make_user,
 )
-
-
-class QueryCounter:
-    """Context manager that counts SQLAlchemy statements via the engine."""
-
-    def __init__(self, engine):
-        self.engine = engine
-        self.count = 0
-        self._listener = None
-
-    def __enter__(self):
-        self._listener = lambda *a, **kw: setattr(self, "count", self.count + 1)
-        event.listen(self.engine, "before_cursor_execute", self._listener)
-        return self
-
-    def __exit__(self, *args):
-        event.remove(self.engine, "before_cursor_execute", self._listener)
 
 
 class TestGradebookQueryCount:

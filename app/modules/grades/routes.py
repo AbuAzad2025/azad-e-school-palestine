@@ -5,7 +5,7 @@ from datetime import date
 from app.core.db import db
 from app.core.permissions import class_access_required, class_teach_required
 from app.models.class_room import ClassMember, ClassRoom
-from app.models.gradebook import GradeItem, Submission
+from app.models.gradebook import Assignment, GradeItem, Submission
 from app.models.user import UserRole
 from app.services.access import can_teach_class, can_view_class
 from app.services.communication import audit, notify
@@ -55,7 +55,14 @@ def assignments(class_id, class_room=None):
     form = AssignmentForm()
     subs = {}
     if current_user.role == UserRole.student:
-        subs = {s.assignment_id: s for s in Submission.query.filter_by(student_id=current_user.id).all()}
+        # P2-PERF: كان يجلب تسليمات الطالب من كل صفوفه (ينمو مع عمر الحساب)؛
+        # القالب يعرض حوالة هذا الصف فقط فنقصره على واجبات الصف.
+        subs = {
+            s.assignment_id: s
+            for s in Submission.query.join(Assignment, Assignment.id == Submission.assignment_id)
+            .filter(Submission.student_id == current_user.id, Assignment.class_id == class_id)
+            .all()
+        }
     return render_template(
         "grades/assignments.html",
         class_room=class_room,
