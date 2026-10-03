@@ -516,7 +516,13 @@ class TestPaymentService:
 
         svc = self._svc()
         fake = MagicMock()
-        fake.verify_payment.return_value = True
+        # process_webhook يستهلك العقد الصريح (WebhookVerification) لا bool،
+        # وإلا التبس «موقّع» بـ «سبق معالجته».
+        from app.services.payments import WebhookVerification
+
+        fake.verify_webhook.return_value = WebhookVerification(
+            verified=True, event_id="manual_1", reason="admin_approved"
+        )
         svc.gateways[PaymentGateway.MANUAL] = fake
         result = svc.process_webhook(PaymentGateway.MANUAL, {"payload": {"x": 1}}, {})
         assert result == {"success": True}

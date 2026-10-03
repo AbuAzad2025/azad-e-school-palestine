@@ -3,6 +3,7 @@
 import os
 
 from app.core.db import db
+from app.core.webhooks import safe_json_loads
 from app.models.billing import Subscription
 from app.services.payments import PaymentGateway, get_payment_service
 from flask import Blueprint, abort, jsonify, render_template, request
@@ -27,18 +28,22 @@ def stripe_webhook():
 @bp.post("/webhook/paytabs")
 def paytabs_webhook():
     """PayTabs webhook endpoint"""
-    payload = request.get_json() or {}
+    # نقرأ الجسم مرة واحدة: نفس البايتات تُستخدم للتحقق من التوقيع ولتفكيك
+    # JSON — إعادة الترميز تُنتج بايتات قد لا تطابق ما وقّع عليه المرسِل.
+    raw_body = request.get_data()
+    payload = safe_json_loads(raw_body)
     payment_service = get_payment_service()
-    result = payment_service.process_webhook(PaymentGateway.PAYTABS, payload, dict(request.headers))
+    result = payment_service.process_webhook(PaymentGateway.PAYTABS, payload, dict(request.headers), raw_body)
     return jsonify(result), 200 if result.get("success") else 400
 
 
 @bp.post("/webhook/cashu")
 def cashu_webhook():
     """CashU webhook endpoint"""
-    payload = request.get_json() or {}
+    raw_body = request.get_data()
+    payload = safe_json_loads(raw_body)
     payment_service = get_payment_service()
-    result = payment_service.process_webhook(PaymentGateway.CASHU, payload, dict(request.headers))
+    result = payment_service.process_webhook(PaymentGateway.CASHU, payload, dict(request.headers), raw_body)
     return jsonify(result), 200 if result.get("success") else 400
 
 

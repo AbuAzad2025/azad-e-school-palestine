@@ -3,9 +3,6 @@
 الأمان: تحقق توقيع Webhook، Idempotency، تحقق ملكية، تحقق مبلغ.
 """
 
-import hashlib
-import hmac
-import json
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -15,6 +12,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from app.core.logging import get_logger
+from app.core.webhooks import header_value, verify_hmac_webhook
 from app.extensions import db
 from app.models.billing import ProcessedEvent
 
@@ -47,6 +45,24 @@ class PaymentStatus(Enum):
     CANCELLED = "cancelled"
 
 
+@dataclass(frozen=True)
+class WebhookVerification:
+    """نتيجة التحقق من webhook — تفصل بين «موقّع» و«سبق معالجته».
+
+    الفصل جوهري: الدالة القديمة كانت تُرجع ``True`` في الحالتين، فلم فرّق
+    ``process_webhook`` بينهما وأعاد تطبيق التفعيل والدفتر والإيميل على
+    الحدث المكرر — أي تفعيل مزدوج من إعادة إرسال واحدة.
+    """
+
+    verified: bool
+    event_id: str | None = None
+    already_processed: bool = False
+    reason: str = ""
+
+    def __bool__(self) -> bool:
+        return self.verified
+
+
 @dataclass
 class PaymentIntent:
     """نية دفع موحدة لجميع البوابات"""
@@ -77,10 +93,30 @@ class PaymentGatewayBase:
         raise NotImplementedError
 
     def verify_payment(self, payment_intent: PaymentIntent, gateway_data: dict) -> bool:
+        """واجهة توافقية (قائمة) — تستدعي ``verify_webhook`` وتُرجع ``verified``."""
+        return bool(self.verify_webhook(gateway_data))
+
+    def verify_webhook(self, gateway_data: dict) -> WebhookVerification:
+        """التحقق الكامل (توقيع + idمعرّف الحدث + حالة المعالجة السابقة).
+
+        ``gateway_data`` يحمل ``raw_body`` (بايتات الطلب الخام) و``headers``
+        و``payload``. كل تنفيذ يعيد نتيجة صريحة بدل bool مبهمة.
+        """
         raise NotImplementedError
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
         raise NotImplementedError
+
+    # ── مساعدات مشتركة للبوابات القائمة ──────────────────────────────
+    @staticmethod
+    def _event_already_processed(event_id: str | None) -> bool:
+        if not event_id:
+            return False
+        return ProcessedEvent.query.filter_by(event_id=event_id).first() is not None
+
+    @staticmethod
+    def _remember_event(event_id: str, gateway: str, payload: dict) -> None:
+        db.session.add(ProcessedEvent(event_id=event_id, gateway=gateway, payload=payload))
 
 
 class StripeGateway(PaymentGatewayBase):
@@ -121,32 +157,34 @@ class StripeGateway(PaymentGatewayBase):
             gateway_response={"client_secret": intent.client_secret},
         )
 
-    def verify_payment(self, payment_intent: PaymentIntent, gateway_data: dict) -> bool:
-        """تحقق توقيع Stripe Webhook + Idempotency عبر ProcessedEvent"""
+    def verify_webhook(self, gateway_data: dict) -> WebhookVerification:
         if not self.stripe or not self.webhook_secret:
-            return False
+            return WebhookVerification(verified=False, reason="stripe_not_configured")
 
         payload = gateway_data.get("payload", "")
-        sig_header = gateway_data.get("headers", {}).get("Stripe-Signature", "")
+        headers = gateway_data.get("headers", {})
+        sig_header = header_value(headers, "Stripe-Signature")
 
         try:
             event = self.stripe.Webhook.construct_event(
                 payload=payload, sig_header=sig_header, secret=self.webhook_secret
             )
         except Exception:
-            return False
+            logger.warning("stripe_webhook_signature_invalid", action="reject")
+            return WebhookVerification(verified=False, reason="signature_invalid")
 
-        # Idempotency: تحقق من event.id
+        if event.get("type") != "payment_intent.succeeded":
+            return WebhookVerification(verified=False, reason="event_type_ignored")
+
         event_id = event.get("id")
-        if event_id and ProcessedEvent.query.filter_by(event_id=event_id).first():
-            return True  # تم المعالجة سابقاً
+        if self._event_already_processed(event_id):
+            return WebhookVerification(
+                verified=True, event_id=event_id, already_processed=True, reason="duplicate_event"
+            )
 
-        if event.type == "payment_intent.succeeded":
-            # حفظ event_id لمنع المعالجة المكررة
-            if event_id:
-                db.session.add(ProcessedEvent(event_id=event_id, gateway="stripe", payload=event))
-            return True
-        return False
+        if event_id:
+            self._remember_event(event_id, "stripe", event)
+        return WebhookVerification(verified=True, event_id=event_id, reason="signature_valid")
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
         if not self.stripe or not payment_intent.gateway_response:
@@ -207,29 +245,33 @@ class PayTabsGateway(PaymentGatewayBase):
             )
         raise RuntimeError(f"PayTabs error: {response.text}")
 
-    def verify_payment(self, payment_intent: PaymentIntent, gateway_data: dict) -> bool:
-        """تحقق HMAC PayTabs Webhook + Idempotency"""
+    def verify_webhook(self, gateway_data: dict) -> WebhookVerification:
         if not self.webhook_secret:
-            return False
+            return WebhookVerification(verified=False, reason="webhook_secret_missing")
 
-        payload = gateway_data.get("payload", {})
-        headers = gateway_data.get("headers", {})
+        payload = gateway_data.get("payload") or {}
+        headers = gateway_data.get("headers") or {}
 
-        # PayTabs يرسل التوقيع في Header: X-Paytabs-Signature
-        received_sig = headers.get("X-Paytabs-Signature", "")
-        payload_bytes = (
-            json.dumps(payload, sort_keys=True).encode() if isinstance(payload, dict) else str(payload).encode()
-        )
+        # PayTabs يوقّع على جسم الطلب الخام: X-Paytabs-Signature
+        if not verify_hmac_webhook(
+            secret=self.webhook_secret,
+            headers=headers,
+            header_name="X-Paytabs-Signature",
+            raw_body=gateway_data.get("raw_body"),
+            payload=payload,
+            gateway="paytabs",
+        ):
+            return WebhookVerification(verified=False, reason="signature_invalid")
 
-        expected_sig = hmac.new(self.webhook_secret.encode(), payload_bytes, hashlib.sha256).hexdigest()
+        tran_ref = str(payload.get("tran_ref") or "").strip()
+        if not tran_ref:
+            return WebhookVerification(verified=False, reason="missing_tran_ref")
 
-        if not hmac.compare_digest(received_sig, expected_sig):
-            return False
-
-        # Idempotency: استخدم tran_ref كـ event_id
-        tran_ref = payload.get("tran_ref") or payment_intent.id.replace("paytabs_", "")
-        if tran_ref and ProcessedEvent.query.filter_by(event_id=f"paytabs_{tran_ref}").first():
-            return True
+        event_id = f"paytabs_{tran_ref}"
+        if self._event_already_processed(event_id):
+            return WebhookVerification(
+                verified=True, event_id=event_id, already_processed=True, reason="duplicate_event"
+            )
 
         # تحقق من حالة الدفع عبر API
         try:
@@ -243,14 +285,11 @@ class PayTabsGateway(PaymentGatewayBase):
             if response.status_code == 200:
                 data = response.json()
                 if data.get("payment_result", {}).get("response_code") == "100":
-                    if tran_ref:
-                        db.session.add(
-                            ProcessedEvent(event_id=f"paytabs_{tran_ref}", gateway="paytabs", payload=payload)
-                        )
-                    return True
+                    self._remember_event(event_id, "paytabs", payload)
+                    return WebhookVerification(verified=True, event_id=event_id, reason="signature_valid")
         except Exception:
             logger.exception("PayTabs verification API call failed")
-        return False
+        return WebhookVerification(verified=False, event_id=event_id, reason="gateway_query_failed")
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
         # PayTabs لا يدعم استرداد تلقائي كامل عبر API بسيط
@@ -282,28 +321,32 @@ class CashUGateway(PaymentGatewayBase):
             metadata=metadata,
         )
 
-    def verify_payment(self, payment_intent: PaymentIntent, gateway_data: dict) -> bool:
-        """تحقق CashU Webhook + Idempotency"""
+    def verify_webhook(self, gateway_data: dict) -> WebhookVerification:
         if not self.webhook_secret:
-            return False
+            return WebhookVerification(verified=False, reason="webhook_secret_missing")
 
-        payload = gateway_data.get("payload", {})
-        headers = gateway_data.get("headers", {})
+        payload = gateway_data.get("payload") or {}
+        headers = gateway_data.get("headers") or {}
 
-        # CashU يستخدم توقيع HMAC في Header
-        received_sig = headers.get("X-Cashu-Signature", "")
-        payload_bytes = (
-            json.dumps(payload, sort_keys=True).encode() if isinstance(payload, dict) else str(payload).encode()
-        )
-        expected_sig = hmac.new(self.webhook_secret.encode(), payload_bytes, hashlib.sha256).hexdigest()
+        if not verify_hmac_webhook(
+            secret=self.webhook_secret,
+            headers=headers,
+            header_name="X-Cashu-Signature",
+            raw_body=gateway_data.get("raw_body"),
+            payload=payload,
+            gateway="cashu",
+        ):
+            return WebhookVerification(verified=False, reason="signature_invalid")
 
-        if not hmac.compare_digest(received_sig, expected_sig):
-            return False
+        txn_id = str(payload.get("transaction_id") or "").strip()
+        if not txn_id:
+            return WebhookVerification(verified=False, reason="missing_transaction_id")
 
-        # Idempotency
-        txn_id = payload.get("transaction_id") or payment_intent.id.replace("cashu_", "")
-        if txn_id and ProcessedEvent.query.filter_by(event_id=f"cashu_{txn_id}").first():
-            return True
+        event_id = f"cashu_{txn_id}"
+        if self._event_already_processed(event_id):
+            return WebhookVerification(
+                verified=True, event_id=event_id, already_processed=True, reason="duplicate_event"
+            )
 
         # التحقق من الحالة عبر API
         try:
@@ -317,12 +360,11 @@ class CashUGateway(PaymentGatewayBase):
             if response.status_code == 200:
                 data = response.json()
                 if data.get("status") == "completed":
-                    if txn_id:
-                        db.session.add(ProcessedEvent(event_id=f"cashu_{txn_id}", gateway="cashu", payload=payload))
-                    return True
+                    self._remember_event(event_id, "cashu", payload)
+                    return WebhookVerification(verified=True, event_id=event_id, reason="signature_valid")
         except Exception:
             logger.exception("CashU verification API call failed")
-        return False
+        return WebhookVerification(verified=False, event_id=event_id, reason="gateway_query_failed")
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
         return False  # غير مدعوم تلقائياً
@@ -368,13 +410,19 @@ class WhatsAppPaymentGateway(PaymentGatewayBase):
             f"سيتم التحقق يدوياً وتفعيل الاشتراك خلال ساعة."
         )
 
-    def verify_payment(self, payment_intent: PaymentIntent, gateway_data: dict) -> bool:
+    def verify_webhook(self, gateway_data: dict) -> WebhookVerification:
+        """التحقق **لا يتم** هنا تلقائياً.
+
+        مصادَق فقط عندما يحمل ``gateway_data`` مفتاح ``admin_approved: True``
+        الذي يضبطه مسار /billing/payments/<id>/approve أو /tutoring/sessions/<id>/pay.
         """
-        التحقق **لا يتم** هنا تلقائياً.
-        يرجع True فقط إذا كان gateway_data يحتوي على مفتاح "admin_approved": True
-        الذي يُضبط من قبل مسار /billing/payments/<id>/approve (أو /tutoring/sessions/<id>/pay).
-        """
-        return bool(gateway_data.get("admin_approved", False))
+        approved = bool(gateway_data.get("admin_approved", False))
+        return WebhookVerification(
+            verified=approved,
+            event_id=str(gateway_data.get("event_id") or "") or None,
+            already_processed=bool(gateway_data.get("already_processed", False)),
+            reason="admin_approved" if approved else "manual_review_required",
+        )
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
         return False  # يتم يدوياً
@@ -396,13 +444,15 @@ class ManualPaymentGateway(PaymentGatewayBase):
             metadata=metadata,
         )
 
-    def verify_payment(self, payment_intent: PaymentIntent, gateway_data: dict) -> bool:
-        """
-        التحقق **لا يتم** هنا تلقائياً.
-        يرجع True فقط إذا كان gateway_data يحتوي على "admin_approved": True
-        الذي يُضبط من قبل مسار /billing/payments/<id>/approve.
-        """
-        return bool(gateway_data.get("admin_approved", False))
+    def verify_webhook(self, gateway_data: dict) -> WebhookVerification:
+        """الدفع اليدوي (إيصال بنكي/كاش) — مصادَق باعتماد المشرف فقط."""
+        approved = bool(gateway_data.get("admin_approved", False))
+        return WebhookVerification(
+            verified=approved,
+            event_id=str(gateway_data.get("event_id") or "") or None,
+            already_processed=bool(gateway_data.get("already_processed", False)),
+            reason="admin_approved" if approved else "manual_review_required",
+        )
 
     def refund(self, payment_intent: PaymentIntent, amount: Decimal | None = None) -> bool:
         return False  # يتم يدوياً
@@ -473,34 +523,46 @@ class PaymentService:
             raise ValueError(f"Gateway {gateway.value} not configured")
         return gateway_obj.create_payment_intent(amount, currency, user_id, metadata)
 
-    def process_webhook(self, gateway: PaymentGateway, payload: dict, headers: dict) -> dict:
-        """معالجة webhook من البوابة مع Idempotency"""
+    def process_webhook(
+        self,
+        gateway: PaymentGateway,
+        payload: dict,
+        headers: dict,
+        raw_body: bytes | None = None,
+    ) -> dict:
+        """معالجة webhook من البوابة مع Idempotency.
+
+        ``raw_body`` هو جسم الطلب الخام كما وقّع عليه المرسِل — نمرّره دائماً
+        لأن إعادة ترميز ``payload`` تعطي بايتات قد لا تطابق توقيع مشروع legit.
+        """
         log = logger.bind(service="payments", gateway=gateway.value)
         log.info("process_webhook_called")
         gateway_obj = self.gateways.get(gateway)
         if not gateway_obj:
             return {"success": False, "error": "Gateway not configured"}
 
-        # التحقق من التوقيع + Idempotency داخل verify_payment
-        dummy_intent = PaymentIntent(
-            id="", gateway=gateway, amount=Decimal("0"), currency="", status=PaymentStatus.PENDING, user_id=0
-        )
-        verified = gateway_obj.verify_payment(
-            dummy_intent,
-            {"payload": payload, "headers": headers},
-        )
+        result = gateway_obj.verify_webhook({"payload": payload, "headers": headers, "raw_body": raw_body})
 
-        if verified:
-            self._handle_successful_payment(payload, gateway)
-            return {"success": True}
-        return {"success": False, "error": "Verification failed"}
+        if not result.verified:
+            log.warning("webhook_rejected", reason=result.reason)
+            return {"success": False, "error": "Verification failed"}
+
+        if result.already_processed:
+            # حدث سبق أن عولج: لا نُعيد التفعيل ولا الدفتر ولا الإيميل.
+            log.info("webhook_duplicate_ignored", event_id=result.event_id)
+            return {"success": True, "duplicate": True, "event_id": result.event_id}
+
+        self._handle_successful_payment(payload, gateway)
+        # الاستجابة توافق العقد السابق {"success": True}؛ معرّف الحدث يُكشف
+        # في فرع التكرار فقط حيث يفيد المُحيل (لا يعيد المحاولة).
+        return {"success": True}
 
     def _handle_successful_payment(self, payload: dict, gateway: PaymentGateway):
         """معالجة دفع ناجح — يُستدعى بعد تحقق ناجح"""
         from app.extensions import db
         from app.models.billing import Subscription
         from app.services.billing import _activate
-        from app.services.communication import audit, notify
+        from app.services.communication import audit
         from app.services.email import send_payment_approved_email
 
         # استخراج معلومات الدفع من payload حسب البوابة
@@ -522,6 +584,22 @@ class PaymentService:
             logger.warning(f"Could not extract amount from {gateway.value} payload")
             return
 
+        # fail-closed: لا تفعيل إلا بمبلغ العملة المتفق عليها. بدون هذا الفحص
+        # يكفي webhook موقع لـ 1 شيكل لتفعيل خطة بـ 500 (الاشتراك مُقفل بـ
+        # FOR UPDATE لكنه غير مُتحقَّق من قيمته).
+        currency = self._extract_currency(payload, gateway)
+        mismatch = self._payment_mismatch(subscription, amount, currency)
+        if mismatch:
+            self._flag_for_review(
+                subscription,
+                title="دفع غير مطابق يتطلب مراجعة",
+                body=(
+                    f"اشتراك #{subscription.id}: توقّعنا {subscription.price} "
+                    f"{subscription.currency} ووصل {amount} {currency or '—'} ({mismatch})"
+                ),
+            )
+            return
+
         # احتيال: تحقق مما إذا كان المبلغ > 3x المتوسط لـ 90 يوماً
         # الحصول على school_id عبر class_id أو plan
         school_id = None
@@ -539,25 +617,11 @@ class PaymentService:
                 school_id = plan.school_id
 
         if school_id and self._is_suspicious_amount(school_id, amount):
-            # وضع علامة للمراجعة اليدوية — via tx() for atomic safety
-            from app.core.db import tx
-
-            def _flag():
-                subscription.status = "pending_review"
-
-            tx(_flag)
-            logger.warning(f"Subscription {subscription_id} flagged for review: amount {amount} suspicious")
-            # إشعار المشرفين (post-commit side effect — ok to fire outside tx)
-            from app.models.user import User, UserRole
-
-            admins = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin])).all()
-            for admin in admins:
-                notify(
-                    admin.id,
-                    "payment_review",
-                    "دفع مشبوه يتطلب مراجعة",
-                    f"اشتراك #{subscription_id} بمبلغ {amount} يتطلب مراجعة يدوية",
-                )
+            self._flag_for_review(
+                subscription,
+                title="دفع مشبوه يتطلب مراجعة",
+                body=f"اشتراك #{subscription.id} بمبلغ {amount} يتطلب مراجعة يدوية",
+            )
             return
 
         # تفعيل الاشتراك
@@ -584,6 +648,70 @@ class PaymentService:
         )
 
         logger.info(f"Subscription {subscription_id} auto-activated via {gateway.value} for amount {amount}")
+
+    def _flag_for_review(self, subscription: "Subscription", title: str, body: str) -> None:
+        """علم الاشتراك «يحتاج مراجعة» + إشعار المشرفين — بلا تفعيل.
+
+        مسار المراجعة اليدوية (مبلغ غير مطابق أو مشبوه). الكتابة ذرّية عبر
+        ``tx()``، والإشعار أثر جانبي بعد الالتزام.
+        """
+        from app.core.db import tx
+
+        def _flag():
+            subscription.status = "pending_review"
+
+        tx(_flag)
+        logger.warning("subscription_flagged_for_review", subscription_id=subscription.id, detail=body)
+
+        from app.models.user import User, UserRole
+        from app.services.communication import notify
+
+        admins = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin])).all()
+        for admin in admins:
+            notify(admin.id, "payment_review", title, body)
+
+    @staticmethod
+    def _payment_mismatch(
+        subscription: "Subscription",
+        amount: Decimal,
+        currency: str | None,
+    ) -> str | None:
+        """سبب عدم مطابقة المبلغ (أو ``None`` إذا طابق).
+
+        المقارنة على منزلتين عشريتين لأن ``Numeric(10,2)`` يُقرَّب عند
+        التخزين؛ والعملة حساسة لحالة الأحرف (ILS ≠ ils في المقارنة النصية
+        لكن البوابات ترسلها variously).
+        """
+        try:
+            expected = Decimal(str(subscription.price)).quantize(Decimal("0.01"))
+        except (ArithmeticError, TypeError, ValueError):
+            return "unreadable_expected_price"
+
+        paid = amount.quantize(Decimal("0.01"))
+        if paid < expected:
+            return "underpaid"
+        if paid > expected:
+            return "overpaid"
+
+        expected_currency = (subscription.currency or "").strip().upper()
+        received_currency = (currency or "").strip().upper()
+        if received_currency and expected_currency and received_currency != expected_currency:
+            return "currency_mismatch"
+        return None
+
+    def _extract_currency(self, payload: dict, gateway: PaymentGateway) -> str | None:
+        """استخراج عملة الدفع من payload حسب البوابة."""
+        if gateway == PaymentGateway.STRIPE:
+            pi = payload.get("data", {}).get("object", {})
+            currency = pi.get("currency")
+            return str(currency) if currency else None
+        if gateway == PaymentGateway.PAYTABS:
+            currency = payload.get("cart_currency") or payload.get("currency")
+            return str(currency) if currency else None
+        if gateway == PaymentGateway.CASHU:
+            currency = payload.get("currency")
+            return str(currency) if currency else None
+        return None
 
     def _extract_subscription_id(self, payload: dict, gateway: PaymentGateway) -> int | None:
         """استخراج subscription_id من payload حسب البوابة"""
