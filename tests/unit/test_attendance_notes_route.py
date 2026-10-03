@@ -154,6 +154,18 @@ class TestAttendanceNoteFlow:
         )
         assert _stored(app, class_id, sid) == ("absent", "مُنظَّفة")
 
+    def test_invalid_status_only_post_writes_nothing(self, app, class_with_teacher):
+        """لا حالة صالحة ⇒ لا كتابة ولا ملاحظات (حارس المسار)."""
+        _school, class_id, _tid, teacher_email, students = class_with_teacher
+        client = _client(app, teacher_email)
+        resp = client.post(
+            f"/classes/{class_id}/attendance?date={DAY.isoformat()}",
+            data={f"status_{students[0]}": "مشترك", f"note_{students[0]}": "ملاحظة يتيمة"},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert _stored(app, class_id, students[0]) is None, "كُتب صف بلا حالة صالحة"
+
     def test_overlong_note_is_rejected_atomically(self, app, class_with_teacher):
         """ملاحظة أطول من الحد: تُرفض الدفعة كاملة ولا تُكتب نصفها."""
         from app.config.constants import ATTENDANCE_NOTE_MAX_LEN
