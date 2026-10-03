@@ -24,12 +24,13 @@
 
 <form method="post" action="{{ url_for('grades.attendance_save', class_id=class_room.id, date=day.isoformat()) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  {% set headers = [{'key': 'student', 'label': _('الطالب')}, {'key': 'status', 'label': _('الحالة')}] %}
+  {% set headers = [{'key': 'student', 'label': _('الطالب')}, {'key': 'status', 'label': _('الحالة')}, {'key': 'note', 'label': _('ملاحظات')}] %}
   {% set rows = [] %}
   {% for m in members %}
     {% set rec = records.get(m.user_id) %}
     {% set status_cell %}{% if can_teach %}<select name="status_{{ m.user_id }}" aria-label="{{ _('حالة حضور') }} {{ m.user.name_ar }}">{% for value, label in [('present','حاضر'),('absent','غائب'),('late','متأخر'),('excused','بعذر')] %}<option value="{{ value }}" {% if rec and rec.status == value %}selected{% endif %}>{{ _(label) }}</option>{% endfor %}</select>{% else %}<span class="badge-status badge-{{ 'ok' if rec and rec.status == 'present' else 'warn' }}">{{ rec.status if rec else '—' }}</span>{% endif %}{% endset %}
-    {% set _ = rows.append({'id': m.user_id, 'cells': {'student': m.user.name_ar, 'status': status_cell}}) %}
+    {% set note_cell %}{% if can_teach %}<div class="u-flex-row u-gap-0-5"><input class="azad-field__input" type="text" name="note_{{ m.user_id }}" value="{{ rec.note if rec and rec.note else '' }}" maxlength="{{ attendance_note_max }}" aria-label="{{ _('ملاحظات') }} — {{ m.user.name_ar }}">{% if rec and rec.note %}<label class="u-text-sm u-flex-row"><input type="checkbox" name="clear_note_{{ m.user_id }}" value="1" aria-label="{{ _('مسح الملاحظة') }} — {{ m.user.name_ar }}"> {{ _('مسح') }}</label>{% endif %}</div>{% elif rec and rec.note %}<span class="u-text-sm">{{ rec.note }}</span>{% else %}<span class="u-muted">—</span>{% endif %}{% endset %}
+    {% set _ = rows.append({'id': m.user_id, 'cells': {'student': m.user.name_ar, 'status': status_cell, 'note': note_cell}}) %}
   {% endfor %}
   {{ azad_table(headers=headers, rows=rows, modifiers='azad-table--card-view-mobile', empty_title=_('لا يوجد طلاب'), empty_icon='users') }}
   {% if can_teach and members %}

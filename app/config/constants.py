@@ -14,6 +14,14 @@ from __future__ import annotations
 DEFAULT_PAGE_SIZE = 20
 MIN_PAGE = 1
 
+# ── Attendance notes ──────────────────────────────────────────────────────────
+
+# One note per student per day (Attendance.note). Mirrors the Length(max=1000)
+# used by the WTForms note fields (billing/tutoring) so every note field in the
+# app shares one budget; enforced server-side because the attendance form posts
+# raw request.form (no WTForms validation).
+ATTENDANCE_NOTE_MAX_LEN = 1000
+
 AUTODISMIT_FLASH_MS = 5000
 
 # Scroll-reveal defaults (must stay in sync with the small inline <style> the

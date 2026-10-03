@@ -168,19 +168,33 @@ def get_attendance(class_id: int, day: date):
 
 
 def record_attendance(
-    class_id: int, day: date, records: dict[int, str], recorded_by=None, note: str | None = None
+    class_id: int,
+    day: date,
+    records: dict[int, str],
+    recorded_by=None,
+    note: str | None = None,
+    notes: dict[int, str] | None = None,
 ) -> None:
     """records: {student_id: status}. upsert لكل طالب.
 
     كان يستعلم عن كل طالب على حدة (N استعلامات لتسجيل صف كامل)؛ الآن استعلام
     واحد يجلب صفوف اليوم الموجودة، ثم insert لكل طالب غير مسجّل بعد.
 
-    دلالة ``note``: ``None`` تعني "لم تُمرَّر ملاحظة" فلا تُمسّ الملاحظة
-    المحفوظة (تعديل الحالة وحده)، بينما أي نص — بما فيه ``""`` — يُكتب على
-    الصف. هذا يفرّق بين "اترك الملاحظة" و"امسح الملاحظة" دون تغيير التوقيع.
+    دلالة الملاحظة (واحدة للصف كله أو لكل طالب):
+      * ``note``        ملاحظة واحدة تُطبَّق على كل طالب في ``records``.
+      * ``notes``       ملاحظات لكل طالب: ``{student_id: note}``، وتسبق
+                        ``note`` عند ورود الطالب في القاموس.
+      * القيمة ``None`` تعني "لم تُمرَّر" فلا تُمسّ الملاحظة المحفوظة (تعديل
+        الحالة وحده)، بينما أي نص — بما فيه ``""`` — يُكتب على الصف.
+        هذا يفرّق بين "اترك الملاحظة" و"امسح الملاحظة".
+
+    ``notes`` لا يضيف استعلاماً: التعيين يتم على كائنات محمّلة أصلاً داخل
+    نفس الدفعة، فتبقى التكلفة O(1) مهما كثر عدد الطلاب.
     """
     if not records:
         return
+
+    per_student = notes or {}
 
     def _record():
         existing = {
@@ -192,11 +206,12 @@ def record_attendance(
             ).all()
         }
         for student_id, status in records.items():
+            value = per_student.get(student_id, note)
             row = existing.get(student_id)
             if row:
                 row.status = status
-                if note is not None:
-                    row.note = note
+                if value is not None:
+                    row.note = value
             else:
                 db.session.add(
                     Attendance(
@@ -204,7 +219,7 @@ def record_attendance(
                         student_id=student_id,
                         date=day,
                         status=status,
-                        note=note,
+                        note=value,
                         recorded_by=recorded_by,
                     )
                 )

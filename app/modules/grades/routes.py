@@ -2,6 +2,7 @@
 
 from datetime import date
 
+from app.config.constants import ATTENDANCE_NOTE_MAX_LEN
 from app.core.db import db
 from app.core.permissions import class_access_required, class_teach_required
 from app.models.class_room import ClassMember, ClassRoom
@@ -264,7 +265,30 @@ def attendance(class_id, class_room=None):
         day=day,
         days=days,
         can_teach=can_teach_class(class_room, current_user),
+        attendance_note_max=ATTENDANCE_NOTE_MAX_LEN,
     )
+
+
+def _attendance_notes(student_ids: dict[int, str]) -> dict[int, str]:
+    """ملاحظات مُرسلة للخدمة من حقول النموذج.
+
+    المتصفح يرسل ``note_<id>=""`` لكل صف لم يلمسه المعلم — وهي الحالة
+    الشائعة عند حفظ الحضور. تمريرها كما هي كان سيمسح كل الملاحظات المحفوظة،
+    فالحقل الفارغ يُقرأ هنا على أنه "لم تُمرَّر" (فتُحفظ الملاحظة القائمة)،
+    والمسح الصريح له مسار مستقل: خانة الاختيار ``clear_note_<id>``.
+
+    لا استعلامات: القراءة من ``request.form`` فقط، فلا تكلفة إضافية عن
+    ``record_attendance`` نفسها.
+    """
+    notes: dict[int, str] = {}
+    for student_id in student_ids:
+        if request.form.get(f"clear_note_{student_id}"):
+            notes[student_id] = ""  # مسح صريح
+            continue
+        text = (request.form.get(f"note_{student_id}") or "").strip()
+        if text:
+            notes[student_id] = text
+    return notes
 
 
 @bp.post("/<int:class_id>/attendance")
@@ -276,10 +300,23 @@ def attendance_save(class_id, class_room=None):
         status = request.form.get(f"status_{member.user_id}")
         if status in ("present", "absent", "late", "excused"):
             records[member.user_id] = status
-    if records:
-        record_attendance(class_id, day, records, recorded_by=current_user.id)
-        audit("attendance.mark", "attendance", class_id, {"date": str(day)})
-        flash(_("سُجّل الحضور."), "success")
+    if not records:
+        return redirect(url_for("grades.attendance", class_id=class_id, date=day.isoformat()))
+
+    notes = _attendance_notes(records)
+    if any(len(value) > ATTENDANCE_NOTE_MAX_LEN for value in notes.values()):
+        # نرفض الدفعة كاملة بدل قصّ الملاحظة في صمت أو حفظ نصفها.
+        flash(_("الملاحظة أطول من الحد المسموح."), "error")
+        return redirect(url_for("grades.attendance", class_id=class_id, date=day.isoformat()))
+
+    record_attendance(class_id, day, records, recorded_by=current_user.id, notes=notes or None)
+    audit(
+        "attendance.mark",
+        "attendance",
+        class_id,
+        {"date": str(day), "noted": len(notes)},
+    )
+    flash(_("سُجّل الحضور."), "success")
     return redirect(url_for("grades.attendance", class_id=class_id, date=day.isoformat()))
 
 
