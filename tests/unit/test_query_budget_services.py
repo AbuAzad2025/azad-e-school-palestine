@@ -110,6 +110,148 @@ class TestAttendanceQueryBudget:
             assert len(attendance_summary(class_id, students[0], limit=2)) == 2
 
 
+class TestAttendanceNoteSemantics:
+    """دلالة ``note`` في التسجيل: تُكتب عند الإنشاء وعند التحديث.
+
+     الخلل المُصلَح: الصف الموجود كان يُحدَّث في ``status`` وحده فتسقط
+     ``note`` — أي أن ملاحظة المعلّم تضيع عند تعديل الحالة لنفس اليوم.
+    التفريق: ``None`` تعني "لم تُمرَّر" (تُحفظ الملاحظة القائمة)، و``""`` تعني
+     "امسح الملاحظة" صراحةً.
+    """
+
+    day = date(2026, 3, 1)
+
+    def _note_of(self, class_id, student_id, day=None):
+        from app.models.attendance import Attendance
+
+        row = Attendance.query.filter_by(class_id=class_id, student_id=student_id, date=day or self.day).one()
+        return row.note
+
+    def test_note_is_stored_on_insert(self, app, class_with_students):
+        """مسار INSERT: الملاحظة تُحفظ عند إنشاء الصف."""
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        with app.app_context():
+            record_attendance(class_id, self.day, {students[0]: "present"}, note="سجلته إدارة المدرسة")
+            assert self._note_of(class_id, students[0]) == "سجلته إدارة المدرسة"
+
+    def test_note_overwrites_existing_on_update(self, app, class_with_students):
+        """مسار UPDATE: الملاحظة الجديدة تُكتب فوق القديمة مع تحديث الحالة."""
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        student = students[0]
+        with app.app_context():
+            record_attendance(class_id, self.day, {student: "present"}, note="ملاحظة أولى")
+            record_attendance(class_id, self.day, {student: "absent"}, note="تصحيح: تأخّر في الوصول")
+            assert self._note_of(class_id, student) == "تصحيح: تأخّر في الوصول"
+
+    def test_none_note_preserves_existing(self, app, class_with_students):
+        """``note=None`` تعني "لم تُمرَّر" — لا تمسح الملاحظة المحفوظة."""
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        student = students[0]
+        with app.app_context():
+            record_attendance(class_id, self.day, {student: "present"}, note="تأخّر عن الدخول")
+            record_attendance(class_id, self.day, {student: "late"})
+            assert self._note_of(class_id, student) == "تأخّر عن الدخول"
+
+    def test_empty_note_clears_existing(self, app, class_with_students):
+        """السلسلة الفارغة مسحٌ صريح للملاحظة (تختلف عن None)."""
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        student = students[0]
+        with app.app_context():
+            record_attendance(class_id, self.day, {student: "present"}, note="ملاحظة قديمة")
+            record_attendance(class_id, self.day, {student: "excused"}, note="")
+            assert self._note_of(class_id, student) == ""
+
+    def test_none_note_keeps_null_on_insert(self, app, class_with_students):
+        """INSERT بلا ملاحظة يبقى NULL — لا تُكتب قيمة فارغة."""
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        with app.app_context():
+            record_attendance(class_id, self.day, {students[0]: "present"})
+            assert self._note_of(class_id, students[0]) is None
+
+    def test_mixed_batch_writes_note_everywhere(self, app, class_with_students):
+        """دفعة واحدة تضم صفوفاً موجودة وأخرى جديدة: الملاحظة تُكتب على كلها."""
+        from app.extensions import db
+        from app.models.attendance import Attendance
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        existing, fresh = students[0], students[1]
+        with app.app_context():
+            record_attendance(class_id, self.day, {existing: "present"}, note="قبل")
+            with QueryCounter(db.engine) as qc:
+                record_attendance(
+                    class_id,
+                    self.day,
+                    {existing: "absent", fresh: "late"},
+                    note="دفعة مختلطة",
+                )
+            # SELECT + UPDATE + INSERT = 3 عبارات ثابتة. السقف وحده لا يثبت
+            # O(1) — انظر الاختبار التالي الذي يقارن دفعتين مختلفتَي الحجم.
+            assert qc.count <= 3, f"الدفعة المختلطة استهلكت {qc.count} استعلامات (السقف 3)"
+            rows = {r.student_id: r for r in Attendance.query.filter_by(class_id=class_id, date=self.day).all()}
+            assert set(rows) == {existing, fresh}
+            assert rows[existing].status == "absent"
+            assert rows[existing].note == "دفعة مختلطة"
+            assert rows[fresh].status == "late"
+            assert rows[fresh].note == "دفعة مختلطة"
+
+    def test_note_path_does_not_scale_with_class_size(self, app, class_with_students):
+        """دليل O(1): نفس عدد الاستعلامات لدفعة بـ 2 طالب وآخر بـ 8.
+
+        السقف الثابت وحده لا يمنع انحدار O(N) خفياً (استعلام لكل صف ضمن
+        الحد الأقصى)، فالمقارنة بين دفعتين مختلفتَي الحجم هي الدليل.
+        """
+        from app.extensions import db
+        from app.services.gradebook import record_attendance
+
+        class_id, _teacher, students = class_with_students
+        counts = []
+        with app.app_context():
+            for size in (2, len(students)):
+                day = self.day + timedelta(days=size)
+                record_attendance(class_id, day, {s: "present" for s in students[:size]}, note="بداية")
+                with QueryCounter(db.engine) as qc:
+                    record_attendance(
+                        class_id,
+                        day,
+                        {s: "absent" for s in students[:size]},
+                        note="تعديل",
+                    )
+                counts.append(qc.count)
+        assert counts[0] == counts[1], f"عدد الاستعلامات تغيّر مع حجم الصف: {counts} — عائد إلى O(N)"
+        assert counts[0] <= 2
+
+    def test_batch_is_atomic_on_failure(self, app, class_with_students):
+        """فشل في الدفعة يتراجع عنها بالكامل — لا كتابة نصفية."""
+        from app.extensions import db
+        from app.models.attendance import Attendance
+        from app.services.gradebook import record_attendance
+        from sqlalchemy.exc import DataError
+
+        class_id, _teacher, students = class_with_students
+        with app.app_context():
+            with pytest.raises(DataError):
+                record_attendance(
+                    class_id,
+                    self.day,
+                    {students[0]: "present", students[1]: "x" * 50},  # يتجاوز varchar(10)
+                    note="لن تُحفظ",
+                )
+            # الجلسة تحتاج تراجعاً صريحاً بعد فشل flush (service رجّع فعلاً).
+            db.session.rollback()
+            assert Attendance.query.filter_by(class_id=class_id, date=self.day).count() == 0
+
+
 class TestParentAccessQueryBudget:
     """صلاحيات ولي الأمر: استعلام واحد مهما كان عدد طلاب الصف."""
 

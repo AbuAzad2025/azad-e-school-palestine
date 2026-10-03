@@ -174,6 +174,10 @@ def record_attendance(
 
     كان يستعلم عن كل طالب على حدة (N استعلامات لتسجيل صف كامل)؛ الآن استعلام
     واحد يجلب صفوف اليوم الموجودة، ثم insert لكل طالب غير مسجّل بعد.
+
+    دلالة ``note``: ``None`` تعني "لم تُمرَّر ملاحظة" فلا تُمسّ الملاحظة
+    المحفوظة (تعديل الحالة وحده)، بينما أي نص — بما فيه ``""`` — يُكتب على
+    الصف. هذا يفرّق بين "اترك الملاحظة" و"امسح الملاحظة" دون تغيير التوقيع.
     """
     if not records:
         return
@@ -191,6 +195,8 @@ def record_attendance(
             row = existing.get(student_id)
             if row:
                 row.status = status
+                if note is not None:
+                    row.note = note
             else:
                 db.session.add(
                     Attendance(
