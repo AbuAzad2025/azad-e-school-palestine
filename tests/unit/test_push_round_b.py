@@ -369,11 +369,15 @@ class TestWebhookProcessing:
         assert result["success"] is False
 
     def test_verification_failure_path(self, app):
-        from app.services.payments import PaymentGateway, get_payment_service
+        from app.services.payments import PaymentGateway, WebhookVerification, get_payment_service
 
         svc = get_payment_service()
         fake_gw = MagicMock()
-        fake_gw.verify_payment.return_value = False
+        # process_webhook يستهلك WebhookVerification الصريح: MagicMock على
+        # verify_payment كان يُقرأ كـ ``موثّق`` لأن truthiness الكائن.
+        fake_gw.verify_webhook.return_value = WebhookVerification(
+            verified=False, reason="signature_invalid"
+        )
         with patch.object(svc, "gateways", {PaymentGateway.STRIPE: fake_gw}):
             result = svc.process_webhook(PaymentGateway.STRIPE, {"payload": "x"}, {"Stripe-Signature": "y"})
         assert result["success"] is False
