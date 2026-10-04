@@ -188,3 +188,34 @@ def dispatch_email_notification(
     except Exception as exc:
         logger.exception("email_dispatch_failed", user_id=user_id)
         raise self.retry(exc=exc) from None
+
+
+@celery_app.task(base=ContextTask, bind=True, max_retries=3, default_retry_delay=30)
+def send_whatsapp_task(self, to: str, body: str, idempotency_key: str = "") -> dict:
+    """Send one outbound WhatsApp message via the Graph API.
+
+    Referenced by ``app.services.whatsapp.dispatch_outbound`` as the fast path
+    when Celery is installed; without Celery the service falls back to a
+    worker thread, so the engine never depends on a broker.
+
+    Args:
+        to: Destination number in E.164 form.
+        body: Message text (truncated to the platform limit by the service).
+        idempotency_key: Provider message id, kept for log correlation.
+
+    Returns:
+        {success: bool, error: str | None}
+    """
+    from app.core.logging import get_logger
+    from app.services.whatsapp import OutboundMessage, deliver_outbound
+
+    logger = get_logger("celery.whatsapp")
+    try:
+        ok = deliver_outbound(OutboundMessage(to=to, body=body, idempotency_key=idempotency_key))
+    except Exception as exc:
+        logger.exception("whatsapp_dispatch_failed", idempotency_key=idempotency_key)
+        raise self.retry(exc=exc) from None
+
+    if not ok:
+        return {"success": False, "error": "delivery_rejected"}
+    return {"success": True, "error": None}

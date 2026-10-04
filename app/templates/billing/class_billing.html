@@ -13,10 +13,10 @@
 </div>
 
 {% if my_sub %}
-<div class="azad-card u-mb-1">
+<div class="azad-card u-mb-1" data-testid="current-subscription">
   <h2 class="billing-card-title">{{ _('اشتراكك الحالي') }}</h2>
   <div class="item-meta billing-meta">
-    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}">{{ status_label('subscription_status', my_sub.status) }}</span>
+    <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}" data-testid="current-subscription-status">{{ status_label('subscription_status', my_sub.status) }}</span>
     <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
     <span>{{ _('المبلغ:') }} <bdi>{{ my_sub.price }}</bdi> <bdi>{{ my_sub.currency }}</bdi></span>
     {% if my_sub.end_at %}<span>{{ _('ينتهي:') }} {{ my_sub.end_at.strftime('%Y-%m-%d') }}</span>{% endif %}
@@ -29,9 +29,9 @@
 {% if plans %}
 <div class="azad-list">
   {% for p in plans %}
-  <div class="azad-item">
+  <div class="azad-item" data-testid="plan-item" data-plan-id="{{ p.id }}">
     <div>
-      <div class="item-title">{{ p.name }} <span class="meta-chip">{{ p.plan }}</span></div>
+      <div class="item-title" data-testid="plan-name">{{ p.name }} <span class="meta-chip">{{ p.plan }}</span></div>
       <div class="item-meta"><span><bdi>{{ p.price }}</bdi> <bdi>{{ p.currency }}</bdi></span></div>
     </div>
     {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') %}
@@ -39,7 +39,7 @@
       <form method="post" action="{{ url_for('billing.subscribe_route', class_id=class_room.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="plan_id" value="{{ p.id }}">
-        <button class="azad-btn" type="submit">{{ _('اشترك') }}</button>
+        <button class="azad-btn" type="submit" data-testid="plan-subscribe">{{ _('اشترك') }}</button>
       </form>
     </div>
     {% endif %}
@@ -47,7 +47,7 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">{{ _('لا خطط بعد.') }}{% if can_teach %} {{ _('أضف خطة أدناه.') }}{% endif %}</div>
+<div class="empty-state" data-testid="plans-empty">{{ _('لا خطط بعد.') }}{% if can_teach %} {{ _('أضف خطة أدناه.') }}{% endif %}</div>
 {% endif %}
 
 {% if can_teach %}

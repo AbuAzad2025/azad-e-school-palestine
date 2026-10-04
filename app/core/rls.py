@@ -63,6 +63,7 @@ _TENANT_TABLES: list[str] = [
     "rubric_templates",
     "school_settings",
     "student_progress",
+    "whatsapp_links",
     "subscription_plans",
     "subscriptions",
     "tenant_quotas",

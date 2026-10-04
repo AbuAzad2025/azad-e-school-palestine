@@ -10,9 +10,9 @@
 
 <div class="azad-grid u-grid-cards-300">
   {% for method in methods %}
-  <div class="azad-card">
+  <div class="azad-card" data-testid="payment-method" data-method-id="{{ method.id }}">
     <div class="card-body">
-      <h3 class="card-title">{{ method.name }}</h3>
+      <h3 class="card-title" data-testid="payment-method-name">{{ method.name }}</h3>
       <p class="card-text text-muted">{{ _('العملات المدعومة:') }} {{ method.currencies|join(', ') }}</p>
       {% if method.enabled %}
       <span class="azad-badge azad-badge--success">{{ _('مفعل') }}</span>
@@ -21,7 +21,7 @@
       {% endif %}
     </div>
     <div class="card-footer u-panel-foot">
-      <button class="azad-btn" data-select-method="{{ method.id }}">{{ _('اختيار') }}</button>
+      <button class="azad-btn" data-select-method="{{ method.id }}" data-testid="payment-method-select">{{ _('اختيار') }}</button>
     </div>
   </div>
   {% endfor %}

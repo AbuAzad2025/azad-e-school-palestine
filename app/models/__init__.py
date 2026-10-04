@@ -104,3 +104,4 @@ __all__ = [
     "WalletTransaction",
     "Announcement",
 ]
+from .whatsapp import WhatsAppLink as WhatsAppLink

@@ -8,10 +8,11 @@
 <h1 class="page-title azad-title">{{ _('درجات الطالب') }}</h1>
 <p class="page-subtitle">{{ _('متابعة درجات الطالب في جميع صفوفه') }}</p>
 
-{% if memberships %}
-<div class="azad-list">
-    {% for m in memberships %}
-    <div class="azad-item">
+{% set visible_memberships = memberships|selectattr('class_room')|list %}
+{% if visible_memberships %}
+<div class="azad-list" data-testid="child-grades-list">
+    {% for m in visible_memberships %}
+    <div class="azad-item" data-testid="child-grades-item" data-class-id="{{ m.class_room.id }}">
         <div>
             <div class="item-title">{{ m.class_room.name or m.class_room.subject.name_ar }}</div>
             <div class="item-meta">
@@ -20,7 +21,7 @@
             </div>
         </div>
         <div class="item-actions">
-            <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('grades.gradebook', class_id=m.class_room.id) }}">{{ _('عرض السجل') }}</a>
+            <a class="azad-btn-outline azad-btn-sm" data-testid="child-grades-open" href="{{ url_for('grades.gradebook', class_id=m.class_room.id) }}">{{ _('عرض السجل') }}</a>
         </div>
     </div>
     {% endfor %}

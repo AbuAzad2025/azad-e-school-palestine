@@ -139,6 +139,12 @@ class _BaseConfig:
 
     PLAUSIBLE_SCRIPT_URL = os.getenv("PLAUSIBLE_SCRIPT_URL", "")
     WHATSAPP_BUSINESS_NUMBER = os.getenv("WHATSAPP_BUSINESS_NUMBER", "")
+    # سرّ التطبيق (Meta App Secret): يُوقّع على الجسم الخام للتحقق من
+    # مصدر الطلب. فارغ = رفض كل webhook (fail-closed) لا تجاوز صامت.
+    WHATSAPP_APP_SECRET = os.getenv("WHATSAPP_APP_SECRET", "")
+    WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    WHATSAPP_GRAPH_VERSION = os.getenv("WHATSAPP_GRAPH_VERSION", "v21.0")
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_JSON = os.getenv("LOG_JSON", "0") == "1"

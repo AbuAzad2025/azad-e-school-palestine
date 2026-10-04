@@ -48,14 +48,14 @@
   </form>
 </div>
 {% endif %}
-<table class="azad-table gradebook-table">
+<table class="azad-table gradebook-table" data-testid="gradebook-table">
   <thead><tr><th scope="col">{{ _('الطالب') }}</th>
     {% for item in items if item.category_id == cat.id %}<th scope="col">{{ item.title }}{% if item.max_mark %}<br><small>({{ item.max_mark }})</small>{% endif %}</th>{% endfor %}
   </tr></thead>
   <tbody>
   {% for m in members %}
-    <tr>
-      <td data-label="{{ _('الطالب') }}">{{ m.user.name_ar }}</td>
+    <tr data-testid="gradebook-row" data-student-id="{{ m.user_id }}">
+      <td data-label="{{ _('الطالب') }}" data-testid="gradebook-student">{{ m.user.name_ar }}</td>
       {% for item in items if item.category_id == cat.id %}
         {% set entry = entries.get((m.user_id, item.id)) %}
         <td data-label="{{ item.title }}">
@@ -63,8 +63,8 @@
           <form method="post" action="{{ url_for('grades.grade_set', item_id=item.id) }}" class="grade-input-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="student_id" value="{{ m.user_id }}">
-            <input type="number" step="0.5" name="mark" value="{{ entry.mark if entry and entry.mark is not none else '' }}" aria-label="{{ _('درجة') }} {{ item.title }} {{ m.user.name_ar }}" class="grade-input">
-            <button class="azad-btn-outline grade-submit-btn" type="submit">✓</button>
+            <input type="number" step="0.5" name="mark" {% if item.max_mark is not none %}max="{{ item.max_mark }}"{% endif %} value="{{ entry.mark if entry and entry.mark is not none else '' }}" aria-label="{{ _('درجة') }} {{ item.title }} {{ m.user.name_ar }}" class="grade-input" data-testid="gradebook-mark">
+            <button class="azad-btn-outline grade-submit-btn" type="submit" data-testid="gradebook-mark-save">✓</button>
           </form>
           {% else %}{{ entry.mark if entry and entry.mark is not none else '—' }}{% endif %}
         </td>

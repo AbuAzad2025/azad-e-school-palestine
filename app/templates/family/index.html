@@ -24,9 +24,9 @@
 
 <div class="azad-section"><h2>{{ _('الحسابات المرتبطة') }}</h2></div>
 {% if children %}
-<div class="azad-list">
+<div class="azad-list" data-testid="family-children-list">
     {% for link in children %}
-    <div class="azad-item">
+    <div class="azad-item" data-testid="family-child" data-student-id="{{ link.student_id }}">
         <div>
             <div class="item-title">{{ link.student.name_ar or link.student.email }}</div>
             <div class="item-meta">
@@ -36,7 +36,7 @@
         </div>
         <div class="item-actions">
             <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_progress', student_id=link.student_id) }}">{{ _('التقدم') }}</a>
-            <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_grades', student_id=link.student_id) }}">{{ _('الدرجات') }}</a>
+            <a class="azad-btn-outline azad-btn-sm" data-testid="family-child-grades" href="{{ url_for('family.child_grades', student_id=link.student_id) }}">{{ _('الدرجات') }}</a>
             <form class="u-inline" method="post" action="{{ url_for('family.do_remove', link_id=link.id) }}" data-confirm="{{ _('هل أنت متأكد من إلغاء الربط؟') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="azad-btn-outline azad-btn-sm u-text-danger">{{ _('إلغاء الربط') }}</button>

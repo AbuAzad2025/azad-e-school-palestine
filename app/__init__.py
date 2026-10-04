@@ -64,6 +64,16 @@ def create_app(config_class=Config):
     configure_structlog(app)
     correlation_id_middleware(app)
 
+    # P2-03: استبدال العنصر النائب في سياسة CSP بالـ nonce الفعلي.
+    # يُسجَّل قبل Talisman عمداً: Flask ينفّذ after_request بترتيب عكسي
+    # للتسجيل، فالدالة الأسبق هي الأحدث تنفيذاً — أي بعد أن يكتب Talisman الترويسة.
+    @app.after_request
+    def _apply_csp_nonce(response):
+        csp = response.headers.get("Content-Security-Policy")
+        if csp and "{CSP_NONCE}" in csp:
+            response.headers["Content-Security-Policy"] = csp.replace("{CSP_NONCE}", getattr(g, "csp_nonce", ""))
+        return response
+
     # === أمان: Talisman (روؤوس HTTP، CSP، HSTS) ===
     if app.config.get("TALISMAN_ENABLED", True):
         Talisman(
@@ -144,11 +154,6 @@ def create_app(config_class=Config):
         if hasattr(g, "_request_start"):
             elapsed_ms = int((_time.monotonic() - g._request_start) * 1000)
             _response_times.append(elapsed_ms)
-        # P2-03: استبدال العنصر النائب في سياسة CSP بالـ nonce الفعلي
-        csp = response.headers.get("Content-Security-Policy")
-        if csp and "{CSP_NONCE}" in csp:
-            nonce = getattr(g, "csp_nonce", "")
-            response.headers["Content-Security-Policy"] = csp.replace("{CSP_NONCE}", nonce)
         return response
 
     if not app.config.get("TALISMAN_ENABLED", True):
@@ -213,6 +218,7 @@ def create_app(config_class=Config):
     from .modules.schools import bp as schools_bp
     from .modules.tutoring import bp as tutoring_bp
     from .modules.wallet_api import bp as wallet_api_bp
+    from .modules.whatsapp import bp as whatsapp_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
@@ -240,6 +246,7 @@ def create_app(config_class=Config):
     app.register_blueprint(individual_bp)
     app.register_blueprint(contact_bp)
     app.register_blueprint(wallet_api_bp)
+    app.register_blueprint(whatsapp_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة
     with app.app_context():

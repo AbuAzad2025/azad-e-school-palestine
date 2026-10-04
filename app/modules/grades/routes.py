@@ -11,6 +11,7 @@ from app.models.user import UserRole
 from app.services.access import can_teach_class, can_view_class
 from app.services.communication import audit, notify
 from app.services.gradebook import (
+    GradeOutOfRange,
     attendance_days,
     create_assignment,
     create_category,
@@ -245,8 +246,13 @@ def grade_set(item_id):
     student_id = request.form.get("student_id", type=int)
     mark = request.form.get("mark", type=float)
     if student_id and mark is not None:
-        set_grade(student_id, item, mark, recorded_by=current_user.id)
-        flash(_("سُجّلت الدرجة."), "success")
+        try:
+            set_grade(student_id, item, mark, recorded_by=current_user.id)
+        except GradeOutOfRange:
+            # الدرجة تتجاوز درجة البند العظمى: تُرفض بلا كتابة، ويُحفظ ما هو مُدوّن.
+            flash(_("الدرجة تتجاوز الدرجة العظمى للبند."), "danger")
+        else:
+            flash(_("سُجّلت الدرجة."), "success")
     return redirect(url_for("grades.gradebook", class_id=class_room.id))
 
 

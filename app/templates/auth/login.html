@@ -13,7 +13,7 @@
     <h1 class="auth-card__title">{{ _('منصة مدرسة أزاد الإلكترونية') }}</h1>
     <p class="auth-card__subtitle">{{ _('سجّل الدخول للمتابعة إلى صفوفك ودرجاتك ومحتواك التعليمي') }}</p>
 
-    <form class="auth-form" method="post" novalidate aria-label="{{ _('نموذج تسجيل الدخول') }}">
+    <form class="auth-form" data-testid="login-form" method="post" novalidate aria-label="{{ _('نموذج تسجيل الدخول') }}">
       {{ form.hidden_tag() }}
       <div class="azad-field">
         <label for="email" class="azad-field__label">{{ _('البريد الإلكتروني') }}</label>
@@ -47,7 +47,7 @@
       </div>
 
       <div class="azad-form-actions">
-        {{ form.submit(class="azad-btn azad-btn-lg", aria_label=_("تسجيل الدخول")) }}
+        {{ form.submit(class="azad-btn azad-btn-lg", aria_label=_("تسجيل الدخول"), data_testid="login-submit") }}
       </div>
     </form>
 

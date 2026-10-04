@@ -1,15 +1,19 @@
 """مسارات Webhook للمدفوعات"""
 
-import os
-
 from app.core.db import db
 from app.core.webhooks import safe_json_loads
+from app.extensions import csrf
 from app.models.billing import Subscription
 from app.services.payments import PaymentGateway, get_payment_service
 from flask import Blueprint, abort, jsonify, render_template, request
 from flask_login import current_user, login_required
 
 bp = Blueprint("payments_webhook", __name__, url_prefix="/api/payments")
+
+# كل مسارات هذا المخطّط بوابات مزوّدين: نداءات خادمية بلا جلسة ولا رمز CSRF،
+# فكان محرّك الحماية يرفضها كلها بـ400. التحقّق يتم داخل كل بوابة (توقيع
+# المزوّد على الجسم الخام) وهو ما يثبت مصدر الطلب.
+csrf.exempt(bp)
 
 
 @bp.post("/webhook/stripe")
@@ -47,19 +51,50 @@ def cashu_webhook():
     return jsonify(result), 200 if result.get("success") else 400
 
 
+# DEPRECATED: the stub that returned {"status": "received"} is gone. The
+# production engine lives in app/modules/whatsapp and verifies a Meta HMAC
+# signature over the raw body before touching anything. This alias is kept so
+# an already-configured Meta subscription URL keeps working, but it no longer
+# accepts unsigned traffic.
 @bp.post("/webhook/whatsapp")
-def whatsapp_webhook():
-    """WhatsApp payment webhook - للتحقق اليدوي"""
-    # التحقق من التوكن
-    verify_token = request.args.get("hub.verify_token")
-    if verify_token:
-        challenge = request.args.get("hub.challenge")
-        if verify_token == os.getenv("WHATSAPP_VERIFY_TOKEN"):
-            return challenge, 200
-        abort(403)
+def whatsapp_webhook_alias():
+    """تفويض كامل إلى محرّك واتساب — لا مسار ثانٍ بلا تحقّق."""
+    from app.core.webhooks import safe_json_loads
+    from app.modules.whatsapp.routes import _handle_events
+    from app.services.whatsapp import (
+        MAX_BODY_BYTES,
+        META_SIGNATURE_HEADER,
+        verification_challenge_response,
+        verified_webhook_scope,
+        verify_inbound_signature,
+    )
+    from flask import current_app, jsonify, request
 
-    # استلام رسالة واتساب (معالجة الرسائل الواردة: استفسارات الدفع، صور الإيصالات، إلخ)
-    return jsonify({"status": "received"}), 200
+    mode = request.args.get("hub.mode")
+    challenge = request.args.get("hub.challenge")
+    if mode or challenge:
+        response = verification_challenge_response(
+            mode=mode,
+            verify_token=request.args.get("hub.verify_token"),
+            challenge=challenge,
+        )
+        if response is None:
+            abort(403)
+        return response, 200
+
+    raw_body = request.get_data()
+    if len(raw_body) > MAX_BODY_BYTES:
+        abort(413)
+    if not verify_inbound_signature(
+        raw_body=raw_body,
+        headers=dict(request.headers),
+        secret=current_app.config.get("WHATSAPP_APP_SECRET") or None,
+        header_name=META_SIGNATURE_HEADER,
+    ):
+        abort(401)
+    with verified_webhook_scope():
+        handled = _handle_events(safe_json_loads(raw_body))
+    return jsonify({"status": "processed", "handled": handled}), 200
 
 
 # مسارات واجهة المستخدم للمدفوعات

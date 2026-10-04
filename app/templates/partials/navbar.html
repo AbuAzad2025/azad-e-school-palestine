@@ -13,9 +13,9 @@
           <kbd>Ctrl+K</kbd>
         </button>
 
-        <a href="{{ url_for('notifications.index') }}" class="nav-icon-btn nav-bell" aria-label="{{ _('الإشعارات') }}">
+        <a href="{{ url_for('notifications.index') }}" data-testid="nav-notifications" class="nav-icon-btn nav-bell" aria-label="{{ _('الإشعارات') }}">
           {{ icon('bell') }}
-          {% if unread_count %}<span class="nav-badge">{{ unread_count }}</span>{% endif %}
+          {% if unread_count %}<span class="nav-badge" data-testid="nav-unread-badge">{{ unread_count }}</span>{% endif %}
         </a>
 
         <a href="{{ url_for('messages.inbox_view') }}" class="nav-icon-btn nav-envelope" aria-label="{{ _('الرسائل') }}">

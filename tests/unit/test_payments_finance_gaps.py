@@ -108,11 +108,16 @@ class TestWebhookRoutes:
         resp = client.post("/api/payments/webhook/cashu", json={"transaction_id": "x"})
         assert resp.status_code == 400
 
-    def test_whatsapp_webhook_receives_messages(self, app):
+    def test_whatsapp_webhook_rejects_unsigned_traffic(self, app):
+        """The old stub answered {"status": "received"} to anyone.
+
+        It now verifies a Meta HMAC signature over the raw body like every
+        other webhook, so unsigned traffic is refused instead of acknowledged.
+        """
         client = app.test_client()
         resp = client.post("/api/payments/webhook/whatsapp")
-        assert resp.status_code == 200
-        assert resp.get_json() == {"status": "received"}
+        assert resp.status_code == 401
+        assert "traceback" not in resp.get_data(as_text=True).lower()
 
     def test_whatsapp_webhook_wrong_verify_token_403(self, app):
         client = app.test_client()

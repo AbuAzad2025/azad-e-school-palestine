@@ -1,6 +1,7 @@
 """خدمات الواجبات والدرجات والحضور."""
 
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -123,7 +124,17 @@ def create_grade_item(category: GradeCategory, title: str, max_mark=None, kind: 
     return tx(_create)
 
 
+class GradeOutOfRange(ValueError):
+    """الدرجة خارج النطاق المسموح به في بند التقييم (أكبر من الدرجة العظمى)."""
+
+
 def set_grade(student_id: int, item: GradeItem, mark, recorded_by=None, note: str | None = None) -> None:
+    """يسجّل درجة طالب في بند، ويرفض أي درجة تتجاوز ``item.max_mark``.
+
+    التحقق هنا لا في المسار: أي كاتب (مسار، مهمة، استيراد) يمرّ بهذه الدالة،
+    فلا تُخزَّن درجة 250 في بند عظماه 100 وتفسد النسب والتقارير.
+    """
+
     def _set():
         entry = GradeEntry.query.filter_by(student_id=student_id, grade_item_id=item.id).first()
         if entry:
@@ -134,6 +145,8 @@ def set_grade(student_id: int, item: GradeItem, mark, recorded_by=None, note: st
                 GradeEntry(student_id=student_id, grade_item_id=item.id, mark=mark, recorded_by=recorded_by, note=note)
             )
 
+    if mark is not None and item.max_mark is not None and Decimal(str(mark)) > Decimal(str(item.max_mark)):
+        raise GradeOutOfRange(str(item.max_mark))
     tx(_set)
 
 

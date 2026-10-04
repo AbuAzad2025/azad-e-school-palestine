@@ -3,14 +3,14 @@
 {% block content %}
 <div class="azad-section">
   <h1 class="page-title azad-title u-m-0">{{ _('إشعاراتي') }}</h1>
-  {% if items %}<form method="post" action="{{ url_for('notifications.read') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="azad-btn-outline" type="submit">{{ _('تحديد الكل كمقروء') }}</button></form>{% endif %}
+  {% if items %}<form method="post" action="{{ url_for('notifications.read') }}" data-testid="notifications-read-all"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="azad-btn-outline" type="submit">{{ _('تحديد الكل كمقروء') }}</button></form>{% endif %}
 </div>
 {% if items %}
-<div class="azad-list">
+<div class="azad-list" data-testid="notifications-list">
   {% for n in items %}
-  <div class="azad-item">
+  <div class="azad-item" data-testid="notification-item" data-notification-type="{{ n.type }}" data-notification-id="{{ n.id }}" data-notification-body="{{ n.body or '' }}">
     <div>
-      <div class="item-title">{{ n.title }} {% if not n.is_read %}<span class="azad-badge-variant azad-badge-variant--info">{{ _('جديد') }}</span>{% endif %}</div>
+      <div class="item-title" data-testid="notification-title">{{ n.title }} {% if not n.is_read %}<span class="azad-badge-variant azad-badge-variant--info">{{ _('جديد') }}</span>{% endif %}</div>
       {% if n.body %}<div class="item-meta u-mt-0-25">{{ n.body }}</div>{% endif %}
       <div class="item-meta"><span>{{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</span><span class="meta-chip">{{ n.type }}</span></div>
     </div>
@@ -19,6 +19,6 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">{{ _('لا إشعارات بعد.') }}</div>
+<div class="empty-state" data-testid="notifications-empty">{{ _('لا إشعارات بعد.') }}</div>
 {% endif %}
 {% endblock %}

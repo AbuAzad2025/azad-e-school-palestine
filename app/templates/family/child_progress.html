@@ -8,9 +8,10 @@
 <h1 class="page-title azad-title">{{ _('تقدم الطالب') }}</h1>
 <p class="page-subtitle">{{ _('متابعة تقدم الطالب في جميع صفوفه') }}</p>
 
-{% if memberships %}
+{% set visible_memberships = memberships|selectattr('class_room')|list %}
+{% if visible_memberships %}
 <div class="azad-list">
-    {% for m in memberships %}
+    {% for m in visible_memberships %}
     <div class="azad-item">
         <div>
             <div class="item-title">{{ m.class_room.name or m.class_room.subject.name_ar }}</div>

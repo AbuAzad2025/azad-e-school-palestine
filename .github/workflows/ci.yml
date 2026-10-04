@@ -361,6 +361,27 @@ jobs:
           TALISMAN_ENABLED: "0"
         run: flask db upgrade
 
+      - name: Set E2E credentials
+        # D4: no secret lives in the repository. The E2E job mints its own
+        # throwaway credentials and shares them through GITHUB_ENV, so the seed
+        # script, the app Playwright starts, and the specs all agree.
+        run: |
+          echo "E2E_PASSWORD=$(python -c 'import secrets; print(secrets.token_urlsafe(18))')" >> "$GITHUB_ENV"
+          echo "WHATSAPP_APP_SECRET=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> "$GITHUB_ENV"
+          echo "WHATSAPP_VERIFY_TOKEN=$(python -c 'import secrets; print(secrets.token_urlsafe(24))')" >> "$GITHUB_ENV"
+
+      - name: Seed E2E fixtures
+        # The suite asserts on real rows (a subscription, a mark, an attendance
+        # row) instead of mocking them, so the database needs fixtures first.
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-e2e-key
+          FLASK_APP: run.py
+          APP_ENV: testing
+          TALISMAN_ENABLED: "0"
+        run: python scripts/seed_e2e.py
+
       - name: Run E2E
         env:
           PYTHONPATH: .
@@ -371,7 +392,10 @@ jobs:
           TALISMAN_ENABLED: "0"
           SESSION_COOKIE_SECURE: "0"
           TESTING: "1"
-          WTF_CSRF_ENABLED: "0"
+          # CSRF stays on: Flask-WTF guards the JSON endpoints exactly as it
+          # guards forms, and a webhook route that forgets its exemption fails
+          # only when this is enabled.
+          WTF_CSRF_ENABLED: "1"
           EMAIL_ENABLED: "0"
         run: npx playwright test --reporter=list
 
