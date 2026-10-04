@@ -246,6 +246,12 @@ jobs:
                   "NOSUPERUSER NOBYPASSRLS CREATEROLE"
               )
               cur.execute("GRANT CONNECT ON DATABASE azad_test TO azad_app")
+              # CREATE on the *database*, not just the schema: creating a
+              # trusted extension such as citext (PG13+ needs no superuser,
+              # but still a privilege) is checked at the database level, and
+              # without this `flask db upgrade` dies on the very first
+              # migration with "permission denied to create extension citext".
+              cur.execute("GRANT CREATE ON DATABASE azad_test TO azad_app")
               cur.execute("ALTER SCHEMA public OWNER TO azad_app")
           conn.close()
           print("created azad_app: owns the schema, cannot bypass RLS")
@@ -460,6 +466,9 @@ jobs:
                   "NOSUPERUSER NOBYPASSRLS CREATEROLE"
               )
               cur.execute("GRANT CONNECT ON DATABASE azad_test TO azad_app")
+              # CREATE on the database is what lets the migrations install
+              # citext; schema ownership alone is not enough for it.
+              cur.execute("GRANT CREATE ON DATABASE azad_test TO azad_app")
               cur.execute("ALTER SCHEMA public OWNER TO azad_app")
           conn.close()
           print("created azad_app: owns the schema, cannot bypass RLS")
