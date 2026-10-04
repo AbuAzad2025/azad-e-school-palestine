@@ -11,7 +11,7 @@
 <div class="quiz-header">
   <div>
     <h1 class="page-title azad-title">{{ quiz.title }}</h1>
-    <p class="page-subtitle">{{ _('المحاولة') }} {{ attempt.attempt_no }} — {{ quiz.questions|length }} {{ _('سؤالاً') }}</p>
+    <p class="page-subtitle">{{ _('المحاولة') }} {{ attempt.attempt_no }} — {{ questions|length }} {{ _('سؤالاً') }}</p>
   </div>
   <div class="quiz-timer" id="quiz-timer" data-duration-min="{{ quiz.duration_min or 0 }}" aria-live="polite">
     {{ icon('clock') }} <span>--:--</span>
@@ -22,12 +22,12 @@
   <div class="quiz-progress__track" aria-hidden="true">
     <div class="quiz-progress__bar" id="quiz-progress-bar"></div>
   </div>
-  <div class="quiz-progress__text" id="quiz-progress-text">{{ _('0 من %(total)d تمت الإجابة عليه', total=quiz.questions|length) }}</div>
+  <div class="quiz-progress__text" id="quiz-progress-text">{{ _('0 من %(total)d تمت الإجابة عليه', total=questions|length) }}</div>
 </div>
 
 <form method="post" action="{{ url_for('assessment.attempt_submit', attempt_id=attempt.id) }}" id="quiz-form" data-attempt-id="{{ attempt.id }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  {% for q in quiz.questions %}
+  {% for q in questions %}
   <div class="azad-card quiz-card" data-question-index="{{ loop.index0 }}">
     <fieldset class="quiz-fieldset">
       <legend class="quiz-legend u-flex u-items-center u-gap-md">
@@ -39,10 +39,11 @@
       </legend>
     {% if q.type == 'mcq' %}
       {% set saved = answers.get(q.id) %}
-      {% for item in (q.options.get("items", []) if q.options else []) %}
+      {% for item in options_in_display_order(q, attempt) %}
         {% set idx = loop.index0 %}
+        {# المحفوظ بالفهرس الأصلي؛ idx هنا فهرس العرض — فنترجمه قبل المقارنة #}
         <label class="quiz-option">
-          <input type="radio" name="q_{{ q.id }}" value="{{ idx }}" {% if saved and saved.answer.index == idx %}checked{% endif %}>
+          <input type="radio" name="q_{{ q.id }}" value="{{ idx }}" {% if saved and saved.answer.index == option_index_to_original(q, attempt, idx) %}checked{% endif %}>
           <span>{{ item.label }}. {{ item.text }}</span>
         </label>
       {% endfor %}

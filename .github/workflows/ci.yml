@@ -213,6 +213,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest-cov pytest-html
 
+      - name: Make the app role subject to RLS
+        # postgres:16 creates POSTGRES_USER as a SUPERUSER, and a superuser
+        # bypasses row-level security no matter what the policies say. Left
+        # that way, every test asserting a cross-tenant query is *blocked*
+        # would pass while the database was showing everything — the exact gap
+        # the RLS rollout exists to close would be invisible to CI.
+        #
+        # CREATEROLE is kept because tests/unit/test_core_security_gaps.py
+        # provisions its own minimal `rls_probe` login; NOBYPASSRLS is the part
+        # that actually matters. citext is a trusted extension since PG13, so
+        # migrations still run without superuser.
+        run: |
+          python - <<'PY'
+          import psycopg2
+
+          conn = psycopg2.connect(
+              host="localhost", user="postgres", password="azad_test", dbname="azad_test"
+          )
+          conn.autocommit = True
+          with conn.cursor() as cur:
+              cur.execute("ALTER ROLE azad_test NOSUPERUSER NOBYPASSRLS CREATEROLE")
+          conn.close()
+          print("azad_test is no longer a superuser")
+          PY
+
       - name: Run migrations
         env:
           PYTHONPATH: .
@@ -221,6 +246,56 @@ jobs:
           FLASK_APP: run.py
           TALISMAN_ENABLED: "0"
         run: flask db upgrade
+
+      - name: Verify RLS is actually enforced
+        # Asserts the premise the tests below depend on: the role cannot bypass
+        # RLS, and every table the rollout claims to cover is both protected and
+        # has a policy. If this ever passes on a bypassing role, the isolation
+        # tests below are vacuous and are reporting nothing.
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          SECRET_KEY: ci-test-key
+        run: |
+          python - <<'PY'
+          import os
+
+          from sqlalchemy import create_engine, text
+
+          engine = create_engine(os.environ["DATABASE_URL"])
+          expected = {
+              "announcements", "assignments", "attendance", "audit_logs",
+              "class_members", "grade_items", "lessons", "manual_payments",
+              "offline_downloads", "payment_receipts", "student_progress",
+              "subscriptions", "units", "user_role_links", "video_progress",
+              "wallets", "wallet_transactions",
+          }
+          with engine.connect() as conn:
+              is_super, bypass = conn.execute(
+                  text("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
+              ).one()
+              assert not is_super, "test role is a superuser: RLS is not enforced"
+              assert not bypass, "test role has BYPASSRLS: RLS is not enforced"
+              protected = {
+                  row[0]
+                  for row in conn.execute(
+                      text(
+                          "SELECT c.relname FROM pg_class c "
+                          "JOIN pg_namespace n ON n.oid = c.relnamespace "
+                          "WHERE n.nspname = 'public' AND c.relrowsecurity"
+                      )
+                  )
+              }
+              with_policy = {
+                  row[0]
+                  for row in conn.execute(
+                      text("SELECT tablename FROM pg_policies WHERE schemaname = 'public'")
+                  )
+              }
+          assert not (expected - protected), f"RLS not enabled on {sorted(expected - protected)}"
+          assert not (expected - with_policy), f"no policy on {sorted(expected - with_policy)}"
+          print(f"RLS enforced on {len(protected)} tables; all {len(expected)} rollout targets covered")
+          PY
 
       - name: Run tests
         env:
@@ -351,6 +426,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+
+      - name: Make the app role subject to RLS
+        # Same reason as the `test` job: the container's POSTGRES_USER is a
+        # superuser, so without this the E2E suite would run against a database
+        # that ignores the policies it is meant to exercise end to end.
+        run: |
+          python - <<'PY'
+          import psycopg2
+
+          conn = psycopg2.connect(
+              host="localhost", user="postgres", password="azad_test", dbname="azad_test"
+          )
+          conn.autocommit = True
+          with conn.cursor() as cur:
+              cur.execute("ALTER ROLE azad_test NOSUPERUSER NOBYPASSRLS CREATEROLE")
+          conn.close()
+          print("azad_test is no longer a superuser")
+          PY
 
       - name: Run migrations
         env:

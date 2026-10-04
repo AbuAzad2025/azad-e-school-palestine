@@ -69,6 +69,11 @@ class QuizAttempt(PKMixin, db.Model):
     submitted_at = db.Column(db.DateTime(timezone=True))
     score: Mapped[float | None] = mapped_column(Numeric(6, 2))
     status: Mapped[str] = mapped_column(String(12), default="in_progress", nullable=False)
+    # ترتيب العرض frozen لهذه المحاولة: {"questions": [id, ...],
+    # "options": {"<question_id>": [original_option_index, ...]}}. يُخزَّن على
+    # المحاولة لا على الاختبار، فيبقى الاختبار كما كتبه المعلم، وتبقى كل
+    # محاولة ثابتة الترتيب لنفسها (تحديث الصفحة لا يخلط الخيارات تحت يد الطالب).
+    display_order: Mapped[dict | None] = mapped_column(JSONB)
 
     answers: Mapped[list[Answer]] = relationship(back_populates="attempt", cascade="all, delete-orphan")
     student: Mapped[User] = relationship("User")

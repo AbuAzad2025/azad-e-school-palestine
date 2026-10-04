@@ -4,6 +4,7 @@ P1-05/06/11: قيد جزئي على المحاولات المفتوحة، قفل
 وفرض مؤقت الاختبار من الخادم (مع مهلة سماح قابلة للضبط).
 """
 
+import random
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -79,6 +80,89 @@ def delete_question(question: Question) -> None:
     tx(_del)
 
 
+def build_display_order(questions: list[Question], seed: str, shuffle: bool) -> dict | None:
+    """يبني ترتيب عرض المحاولة من بذرة ثابتة — أو ``None`` بلا خلط،
+
+    ماذا يفعل: يعيد ``{"questions": [...], "options": {...}}`` إن كان ``shuffle`` مفعّلً،
+    و ``None`` معطّل، وقيمته مشتقة من البذرة وحدها.
+
+    لماذا ثابت ولس عشوائي: ``random`` العامي يغيّر الترتيب في كل طلب، فيتغيّر ترتيب
+    الخيارات بين التحميل والتحديث ويختار الطالب إجابة عن التي ظهرت أمامه.
+    البذرة ثابتة لكل محاولة، فالعرض ثابت، وكل محاولة جديدة تأخذ ترتيباً مختلفاً
+    لأن (``quiz_id`` و ``student_id`` و ``attempt_no``) مختلفة.
+
+    لماذا لا نلمس الاختبار: ``quiz.questions`` يبقى بترتيب المعلّم؛
+    الخلط منظور على المحاولة فقط.
+    """
+    if not shuffle or len(questions) < 2:
+        return None
+
+    rng = random.Random(seed)
+    ordered = list(questions)
+    rng.shuffle(ordered)
+
+    options: dict[str, list[int]] = {}
+    for question in ordered:
+        items = (question.options or {}).get("items") or []
+        if question.type == "mcq" and len(items) > 1:
+            permutation = list(range(len(items)))
+            rng.shuffle(permutation)
+            options[str(question.id)] = permutation
+    return {"questions": [q.id for q in ordered], "options": options}
+
+
+def questions_in_display_order(attempt: QuizAttempt) -> list[Question]:
+    """أسئلة المحاولة بترتيب العرض.
+
+    لا يغيّر ``quiz.questions`` ولا يستعلم: الترتيب مخزّن على المحاولة، والرسم
+    يسير به كما هو. محاولة أُنشئت قبل عمود ``display_order`` (أو اختبار بلا
+    خلط) ترجع الترتيب الأصلي كما هو.
+    """
+    questions = list(attempt.quiz.questions)
+    order = (attempt.display_order or {}).get("questions") or []
+    if not order:
+        return questions
+    by_id = {q.id: q for q in questions}
+    ordered = [by_id[qid] for qid in order if qid in by_id]
+    # سؤال أُضيف إلى الاختبار بعد بدء المحاولة لا يختفي من الامتحان
+    ordered.extend(q for q in questions if q.id not in set(order))
+    return ordered
+
+
+def options_in_display_order(question: Question, attempt: QuizAttempt) -> list[dict]:
+    """خيارات MCQ بترتيب العرض، أو بترتيبها الأصلي بلا خلط."""
+    items = (question.options or {}).get("items") or []
+    permutation = ((attempt.display_order or {}).get("options") or {}).get(str(question.id))
+    if not permutation:
+        return list(items)
+    return [items[i] for i in permutation if 0 <= i < len(items)]
+
+
+def option_index_to_original(question: Question, attempt: QuizAttempt, displayed: int) -> int:
+    """يترجم فهرس الخيار المعروض إلى فهرسه الأصلي.
+
+    الإجابة تُخزَّن بالفهرس الأصلي ليبقى ``correct_answer`` سؤالًا واحداً
+    صالحاً لكل ترتيب عرض: تصحيح المحاولة لا يعرف شيئاً عن الخلط ولا يحتاج أن
+    يعرفه.
+    """
+    permutation = option_permutation(attempt, question.id)
+    if not permutation:
+        return displayed
+    if 0 <= displayed < len(permutation):
+        return permutation[displayed]
+    return displayed
+
+
+def option_permutation(attempt: QuizAttempt, question_id: int) -> list[int]:
+    """خلطة خيارات سؤال في هذه المحاولة، أو قائمة فارغة بلا خلط.
+
+    المفتاح هو معرّف السؤال نفسه، فلا يحتاج الحفظ إلى تحميل أسئلة الاختبار —
+    مسح ``attempt.quiz.questions`` لكل إجابة يجعل حفظ محاولة كاملة بتكلفة
+    عدد الأسئلة مضروباً في عددها.
+    """
+    return ((attempt.display_order or {}).get("options") or {}).get(str(question_id), [])
+
+
 def start_attempt(quiz: Quiz, student_id: int) -> tuple[QuizAttempt | None, str | None]:
     """
     محاولة جديدة (مع احترام عدد المحاولات المسموح). يعيد محاولة جارية قائمة إن وجدت.
@@ -98,6 +182,11 @@ def start_attempt(quiz: Quiz, student_id: int) -> tuple[QuizAttempt | None, str 
             attempt_no=used + 1,
             status="in_progress",
             started_at=datetime.now(UTC),
+        )
+        attempt.display_order = build_display_order(
+            list(quiz.questions),
+            seed=f"{quiz.id}:{student_id}:{used + 1}",
+            shuffle=quiz.shuffle,
         )
         db.session.add(attempt)
         return attempt
@@ -131,11 +220,22 @@ def deadline_exceeded(attempt: QuizAttempt) -> bool:
 def save_answer(attempt: QuizAttempt, question_id: int, answer) -> None:
     """
     يحفظ إجابة سؤال — P1-11: يرفض أي حفظ بعد انتهاء وقت الاختبار من الخادم.
+
+    فهرس خيار MCQ القادم من النموذج هو **فهرس العرض**؛ يُترجم هنا إلى الفهرس
+    الأصلي قبل التخزين، فيبقى ``correct_answer`` مرجعاً واحداً مستقلاً عن
+    الخلط. الترجمة في الخدمة لا في المسار، فلا يوجد مسار حفظ يجاوزها.
     """
     if attempt.status != "in_progress":
         raise TxError(_("هذه المحاولة مُسلَّمة بالفعل."))
     if deadline_exceeded(attempt):
         raise TxError(_("انتهى وقت الاختبار — لم يُقبل حفظ إجابات جديدة."))
+
+    if isinstance(answer, dict) and answer.get("index") is not None:
+        permutation = option_permutation(attempt, question_id)
+        if permutation:
+            displayed = int(answer["index"])
+            if 0 <= displayed < len(permutation):
+                answer = {**answer, "index": permutation[displayed]}
 
     def _save():
         row = Answer.query.filter_by(attempt_id=attempt.id, question_id=question_id).first()

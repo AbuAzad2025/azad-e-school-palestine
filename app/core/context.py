@@ -184,6 +184,12 @@ def can_view_class(class_room) -> bool:
 def register(app):
     from app.core.labels import status_label
 
+    # خلط الخيارات: القالب يعرض خيارات المحاولة بترتيب العرض
+    # من خليطة الأسئلة على المحاولة، ومع هذا يعرض المخطط بفهرسه.
+    from app.services.assessment import option_index_to_original, options_in_display_order
+
+    app.jinja_env.globals["options_in_display_order"] = options_in_display_order
+    app.jinja_env.globals["option_index_to_original"] = option_index_to_original
     app.jinja_env.globals["status_label"] = status_label
     app.jinja_env.globals["icon"] = icon
     app.jinja_env.globals["has_role"] = has_role

@@ -15,6 +15,7 @@ from app.services.assessment import (
     get_attempt,
     grade_essay,
     list_quizzes,
+    questions_in_display_order,
     save_answer,
     start_attempt,
     submit_attempt,
@@ -185,7 +186,14 @@ def attempt_do(attempt_id):
     if not can_view_class(class_room, current_user):
         abort(403)
     answers = {a.question_id: a for a in attempt.answers}
-    return render_template("assessment/attempt.html", attempt=attempt, quiz=quiz, answers=answers)
+    return render_template(
+        "assessment/attempt.html",
+        attempt=attempt,
+        quiz=quiz,
+        answers=answers,
+        # ترتيب العرض مخزّن على المحاولة: الخلط لا يغيّر quiz.questions
+        questions=questions_in_display_order(attempt),
+    )
 
 
 @bp.post("/attempt/<int:attempt_id>/save")

@@ -72,12 +72,66 @@ _TENANT_TABLES: list[str] = [
     "offline_downloads",
     "manual_payments",
     "payment_receipts",
+    "wallets",
+    "wallet_transactions",
 ]
+
+# Tables scoped by the acting user rather than by tenant.
+#
+# ``user_role_links`` is the table that *derives* the user's school, so a
+# school-scoped policy would be circular — the query that resolves the tenant
+# would be filtered by the tenant it is resolving. It is therefore scoped by
+# ``app.current_user_id``, and ``audit_logs`` follows the same rule: a row
+# records what *one* actor did, so each user reads their own trail and
+# ``super_admin`` reads everything.
+#
+# The comparison is on ``::text`` on purpose: ``current_setting`` of an unset
+# custom GUC returns ``''``, and ``''::bigint`` raises ``invalid input syntax``
+# for every row of the table. Text comparison is total, so an unset variable
+# simply matches nothing instead of exploding. PostgreSQL does not guarantee the
+# evaluation order of the ``OR`` branches, so the safe form must be the one in
+# both branches.
+_USER_SCOPED_TABLES: list[str] = ["user_role_links", "audit_logs"]
 
 # Tables that reference school_id via a JOIN through another table
 # (indirect tenancy — RLS policy uses subquery)
 _INDIRECT_TENANT_TABLES: dict[str, str] = {
     # Table: school_id derivation SQL
+    #
+    # Most of these predate a school_id column: they hang off ``classes`` (or
+    # a table that does), and RLS used to skip them with a warning, which left
+    # attendance, grades and billing with a single line of defence. The path
+    # below restores the database-level floor without duplicating school_id
+    # across the schema — a copied column drifts the moment a class moves.
+    "announcements": "SELECT c.school_id FROM classes c WHERE c.id = announcements.class_id",
+    "assignments": "SELECT c.school_id FROM classes c WHERE c.id = assignments.class_id",
+    "attendance": "SELECT c.school_id FROM classes c WHERE c.id = attendance.class_id",
+    "class_members": "SELECT c.school_id FROM classes c WHERE c.id = class_members.class_id",
+    "grade_categories": "SELECT c.school_id FROM classes c WHERE c.id = grade_categories.class_id",
+    "grade_items": "SELECT c.school_id FROM classes c WHERE c.id = grade_items.class_id",
+    "lessons": "SELECT c.school_id FROM classes c WHERE c.id = lessons.class_id",
+    "lesson_attachments": (
+        "SELECT c.school_id FROM classes c JOIN units u ON u.class_id = c.id "
+        "JOIN lessons l ON l.unit_id = u.id WHERE l.id = lesson_attachments.lesson_id"
+    ),
+    "rubric_criteria": ("SELECT t.school_id FROM rubric_templates t WHERE t.id = rubric_criteria.template_id"),
+    "student_progress": "SELECT c.school_id FROM classes c WHERE c.id = student_progress.class_id",
+    "subscriptions": "SELECT c.school_id FROM classes c WHERE c.id = subscriptions.class_id",
+    "units": "SELECT c.school_id FROM classes c WHERE c.id = units.class_id",
+    "video_progress": "SELECT c.school_id FROM classes c WHERE c.id = video_progress.class_id",
+    "offline_downloads": (
+        "SELECT c.school_id FROM classes c JOIN units u ON u.class_id = c.id "
+        "JOIN lessons l ON l.unit_id = u.id WHERE l.id = offline_downloads.lesson_id"
+    ),
+    "manual_payments": (
+        "SELECT c.school_id FROM classes c JOIN subscriptions s ON s.class_id = c.id "
+        "WHERE s.id = manual_payments.subscription_id"
+    ),
+    "payment_receipts": (
+        "SELECT c.school_id FROM classes c JOIN subscriptions s ON s.class_id = c.id "
+        "JOIN manual_payments mp ON mp.subscription_id = s.id "
+        "WHERE mp.id = payment_receipts.manual_payment_id"
+    ),
     "quiz_attempts": (
         "SELECT c.school_id FROM classes c JOIN quizzes q ON q.class_id = c.id WHERE q.id = quiz_attempts.quiz_id"
     ),
@@ -226,11 +280,55 @@ def enable_rls_on_indirect_table(table_name: str, subquery: str) -> bool:
     return True
 
 
+def enable_rls_on_user_scoped_table(table_name: str) -> bool:
+    """Enable RLS for a table scoped by the acting user, not by tenant.
+
+    Used for ``user_role_links`` (the table the tenant is derived from — a
+    school policy there is circular) and ``audit_logs`` (a row records what one
+    actor did). ``super_admin`` keeps full visibility.
+
+    The identity comparison uses ``::text`` so an unset ``app.current_user_id``
+    (empty string) matches nothing instead of raising ``invalid input syntax``
+    for every row — and it cannot be pushed into the ``OR``'s other branch,
+    because PostgreSQL does not promise to evaluate ``OR`` left to right.
+
+    Returns True when a policy was (re)created, False when skipped.
+    """
+    if not _table_exists(table_name):
+        logger.warning("rls_skipped", table=table_name, reason="table does not exist")
+        return False
+
+    db.session.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY"))
+    db.session.execute(text(f"ALTER TABLE {table_name} FORCE ROW LEVEL SECURITY"))
+
+    policy_name = f"tenant_isolation_{table_name}"
+    db.session.execute(text(f"DROP POLICY IF EXISTS {policy_name} ON {table_name}"))
+    db.session.execute(
+        text(
+            f"""
+            CREATE POLICY {policy_name} ON {table_name}
+                FOR ALL
+                USING (
+                    current_setting('app.is_super_admin', true) = '1'
+                    OR user_id::text = current_setting('app.current_user_id', true)
+                )
+                WITH CHECK (
+                    current_setting('app.is_super_admin', true) = '1'
+                    OR user_id::text = current_setting('app.current_user_id', true)
+                )
+        """
+        )
+    )
+    logger.info("rls_policy_created_user_scoped", table=table_name, policy=policy_name)
+    return True
+
+
 def enable_all_rls_policies() -> None:
     """Enable RLS on all tenant-scoped tables.  Call from Alembic migration.
 
     Tables lacking a school_id column (schema decision pending) are skipped
     with a warning instead of crashing the whole migration/upgrade.
+
     """
     enabled: list[str] = []
     skipped: list[str] = []
@@ -240,6 +338,9 @@ def enable_all_rls_policies() -> None:
     for table, subquery in _INDIRECT_TENANT_TABLES.items():
         (enabled if enable_rls_on_indirect_table(table, subquery) else skipped).append(table)
 
+    for table in _USER_SCOPED_TABLES:
+        (enabled if enable_rls_on_user_scoped_table(table) else skipped).append(table)
+
     db.session.commit()
     logger.info("all_rls_policies_enabled", enabled=len(enabled), skipped=len(skipped))
     if skipped:
@@ -248,7 +349,7 @@ def enable_all_rls_policies() -> None:
 
 def disable_all_rls_policies() -> None:
     """Disable RLS on all tables.  Used for rollback migration."""
-    all_tables = _TENANT_TABLES + list(_INDIRECT_TENANT_TABLES.keys())
+    all_tables = _TENANT_TABLES + list(_INDIRECT_TENANT_TABLES.keys()) + _USER_SCOPED_TABLES
     for table in all_tables:
         policy_name = f"tenant_isolation_{table}"
         try:

@@ -34,16 +34,32 @@ def current_school_id() -> int | None:
 def set_tenant_for_request() -> None:
     """Set PostgreSQL session variable for RLS at the start of each request.
 
-    Called from app.before_request. Sets app.current_school_id and
-    app.is_super_admin so that RLS policies can evaluate them.
+    Called from app.before_request. Sets app.current_school_id, app.is_super_admin
+    and app.current_user_id so that RLS policies can evaluate them.
     Uses SET LOCAL so variables auto-reset on transaction end.
+
+    ``app.current_user_id`` exists for one reason: ``user_role_links`` is the
+    table that *derives* the user's school, so a school-scoped policy on it
+    would be circular (the query that resolves the tenant would be filtered by
+    the tenant it is resolving). Its policy is therefore user-scoped, and the
+    anonymous case sets ``'0'`` rather than leaving the variable unset — an
+    unset custom GUC reads back as ``''``, which is not a valid bigint.
     """
     from sqlalchemy import text
 
     from app.extensions import db
 
     try:
-        if not current_user.is_authenticated:
+        # Order matters: ``app.current_user_id`` is set FIRST, because
+        # ``User.school_id`` is derived from ``user_role_links`` — a table whose
+        # own policy keys on this variable. Reading the school before the id is
+        # set would return no links and quietly pin every request to school 0.
+        authenticated = current_user.is_authenticated
+        db.session.execute(
+            text("SET LOCAL app.current_user_id = :uid"),
+            {"uid": str(current_user.id if authenticated else 0)},
+        )
+        if not authenticated:
             db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
             db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
         elif current_user.role == UserRole.super_admin:

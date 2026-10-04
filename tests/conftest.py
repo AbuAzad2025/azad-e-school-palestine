@@ -294,6 +294,40 @@ def _ensure_phase2_schema(db_engine):
         db_engine.session.rollback()
 
 
+# The shared fixtures below write across every tenant at once — one school,
+# one class, one quiz — which is exactly what the RLS policies forbid. The
+# database role that owns these tables is not exempt from FORCEd RLS, so without
+# these variables every insert fails with "new row violates row-level security
+# policy", a message that points at the schema rather than at the test setup.
+#
+# Pinned on `connect` rather than set once on the session: `tx()` commits and
+# returns the connection to the pool, so the next statement may land on a
+# different one with the variables unset. A single earlier attempt set them on
+# one session and failed inside `start_attempt` for exactly that reason.
+TEST_BYPASS_RLS_SQL = (
+    "SELECT set_config('app.is_super_admin', '1', false), "
+    "set_config('app.current_school_id', '0', false), "
+    "set_config('app.current_user_id', '0', false)"
+)
+
+
+def _pin_rls_bypass_on_connect() -> None:
+    """Run `TEST_BYPASS_RLS_SQL` on every DBAPI connection the pool opens."""
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+
+    def _on_connect(dbapi_connection, _record):
+        previous = dbapi_connection.autocommit
+        dbapi_connection.autocommit = True
+        try:
+            with dbapi_connection.cursor() as cur:
+                cur.execute(TEST_BYPASS_RLS_SQL)
+        finally:
+            dbapi_connection.autocommit = previous
+
+    event.listen(Engine, "connect", _on_connect)
+
+
 @pytest.fixture(scope="session")
 def app():
     a = create_app()
@@ -305,6 +339,7 @@ def app():
     # Production config has rate limiting on; tests do many logins per minute
     # (auth.login is limited to 5/min) which would 429 and break auth flows.
     a.config["RATELIMIT_ENABLED"] = False
+    _pin_rls_bypass_on_connect()
     with a.app_context():
         from sqlalchemy import text
 
@@ -313,6 +348,8 @@ def app():
         _db.session.commit()
         _db.create_all()
         _ensure_phase2_schema(_db)
+        _db.session.execute(text(TEST_BYPASS_RLS_SQL))
+        _db.session.commit()
     yield a
 
 
