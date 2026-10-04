@@ -214,22 +214,23 @@ jobs:
           pip install -r requirements.txt pytest-cov pytest-html
 
       - name: Make the app role subject to RLS
-        # postgres:16 creates POSTGRES_USER as a SUPERUSER, and a superuser
+        # The container's POSTGRES_USER is a superuser, and a superuser
         # bypasses row-level security no matter what the policies say. Left
         # that way, every test asserting a cross-tenant query is *blocked*
-        # would pass while the database was showing everything — the exact gap
-        # the RLS rollout exists to close would be invisible to CI.
+        # passes while the database is showing everything — the exact gap the
+        # RLS rollout exists to close would be invisible to CI.
         #
-        # Connect as `azad_test` itself, because that is the role the container
-        # makes superuser: the stock `postgres` role has no password set when
-        # POSTGRES_USER is overridden, so logging in as `postgres` fails. Only a
-        # superuser may clear the SUPERUSER attribute, so the role has to demote
-        # itself.
+        # The role cannot simply be demoted: PostgreSQL refuses to clear
+        # SUPERUSER from the bootstrap user ("The bootstrap user must have the
+        # SUPERUSER attribute"), and the stock `postgres` role has no password
+        # once POSTGRES_USER is overridden. So the suite runs as a separate
+        # role that owns the schema but is neither a superuser nor BYPASSRLS.
         #
+        # It must be created *before* the migrations so it owns every table
+        # they create — no follow-up GRANT needed, and nothing to forget.
         # CREATEROLE is kept because tests/unit/test_core_security_gaps.py
-        # provisions its own minimal `rls_probe` login; NOBYPASSRLS is the part
-        # that actually matters. citext is a trusted extension since PG13, so
-        # migrations still run without superuser.
+        # provisions its own minimal `rls_probe` login. citext is a trusted
+        # extension since PG13, so migrations work without superuser.
         run: |
           python - <<'PY'
           import psycopg2
@@ -239,27 +240,21 @@ jobs:
           )
           conn.autocommit = True
           with conn.cursor() as cur:
-              cur.execute("ALTER ROLE azad_test NOSUPERUSER NOBYPASSRLS CREATEROLE")
+              cur.execute("DROP ROLE IF EXISTS azad_app")
+              cur.execute(
+                  "CREATE ROLE azad_app LOGIN PASSWORD 'azad_app' "
+                  "NOSUPERUSER NOBYPASSRLS CREATEROLE"
+              )
+              cur.execute("GRANT CONNECT ON DATABASE azad_test TO azad_app")
+              cur.execute("ALTER SCHEMA public OWNER TO azad_app")
           conn.close()
-
-          # Prove it took effect on a fresh connection — the demotion is
-          # useless if the tests still connect as a bypassing role.
-          conn = psycopg2.connect(
-              host="localhost", user="azad_test", password="azad_test", dbname="azad_test"
-          )
-          with conn.cursor() as cur:
-              cur.execute("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
-              is_super, bypass = cur.fetchone()
-          conn.close()
-          assert not is_super, "azad_test is still a superuser"
-          assert not bypass, "azad_test still holds BYPASSRLS"
-          print("azad_test demoted: RLS is now enforced for the test suite")
+          print("created azad_app: owns the schema, cannot bypass RLS")
           PY
 
       - name: Run migrations
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_app:azad_app@localhost:5432/azad_test
           SECRET_KEY: ci-test-key
           FLASK_APP: run.py
           TALISMAN_ENABLED: "0"
@@ -272,7 +267,7 @@ jobs:
         # tests below are vacuous and are reporting nothing.
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_app:azad_app@localhost:5432/azad_test
           SECRET_KEY: ci-test-key
         run: |
           python - <<'PY'
@@ -318,7 +313,7 @@ jobs:
       - name: Run tests
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_app:azad_app@localhost:5432/azad_test
           SECRET_KEY: ci-test-key-not-for-production
           FLASK_APP: run.py
           TALISMAN_FORCE_HTTPS: "0"
@@ -447,9 +442,9 @@ jobs:
 
       - name: Make the app role subject to RLS
         # Same reason as the `test` job: the container's POSTGRES_USER is a
-        # superuser, so without this the E2E suite would run against a database
-        # that ignores the policies it is meant to exercise end to end. Connects
-        # as `azad_test` because that is the role made superuser here.
+        # superuser, so without this the E2E suite runs against a database that
+        # ignores the policies it is meant to exercise end to end. Created
+        # before the migrations so it owns everything they build.
         run: |
           python - <<'PY'
           import psycopg2
@@ -459,15 +454,21 @@ jobs:
           )
           conn.autocommit = True
           with conn.cursor() as cur:
-              cur.execute("ALTER ROLE azad_test NOSUPERUSER NOBYPASSRLS CREATEROLE")
+              cur.execute("DROP ROLE IF EXISTS azad_app")
+              cur.execute(
+                  "CREATE ROLE azad_app LOGIN PASSWORD 'azad_app' "
+                  "NOSUPERUSER NOBYPASSRLS CREATEROLE"
+              )
+              cur.execute("GRANT CONNECT ON DATABASE azad_test TO azad_app")
+              cur.execute("ALTER SCHEMA public OWNER TO azad_app")
           conn.close()
-          print("azad_test demoted: RLS is now enforced for the E2E suite")
+          print("created azad_app: owns the schema, cannot bypass RLS")
           PY
 
       - name: Run migrations
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_app:azad_app@localhost:5432/azad_test
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           TALISMAN_ENABLED: "0"
@@ -487,7 +488,7 @@ jobs:
         # row) instead of mocking them, so the database needs fixtures first.
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_app:azad_app@localhost:5432/azad_test
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           APP_ENV: testing
@@ -497,7 +498,7 @@ jobs:
       - name: Run E2E
         env:
           PYTHONPATH: .
-          DATABASE_URL: postgresql+psycopg2://azad_test:azad_test@localhost:5432/azad_test
+          DATABASE_URL: postgresql+psycopg2://azad_app:azad_app@localhost:5432/azad_test
           SECRET_KEY: ci-e2e-key
           FLASK_APP: run.py
           APP_ENV: testing
