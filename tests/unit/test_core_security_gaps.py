@@ -84,13 +84,26 @@ class TestRLSPolicyDDL:
 
     def test_enable_rls_on_table_skips_missing_school_id(self, app):
         """Regression: announcements traces tenancy via classes (no school_id
-        column) — the builder must skip it, not crash with UndefinedColumn."""
-        from app.core.rls import enable_rls_on_table
+        column) — the school_id builder must skip it, not crash with UndefinedColumn.
+
+        What matters here is only that the *direct* builder declines the table.
+        It used to also assert the table ended up with no policy at all, which
+        was the whole point back when announcements was simply unprotected: it
+        now gets a real policy built by enable_rls_on_indirect_table through the
+        classes join, so that assertion no longer describes the schema.
+        """
+        from app.core.rls import enable_rls_on_indirect_table, enable_rls_on_table
 
         with app.app_context():
             assert enable_rls_on_table("announcements") is False
             app.extensions["sqlalchemy"].session.commit()
-        assert "tenant_isolation_announcements" not in self._policies(app, "announcements")
+
+        with app.app_context():
+            from app.core.rls import _INDIRECT_TENANT_TABLES
+
+            assert enable_rls_on_indirect_table("announcements", _INDIRECT_TENANT_TABLES["announcements"]) is True
+            app.extensions["sqlalchemy"].session.commit()
+        assert "tenant_isolation_announcements" in self._policies(app, "announcements")
 
     def test_enable_rls_on_table_is_idempotent(self, app):
         from app.core.rls import enable_rls_on_table
@@ -182,8 +195,10 @@ class TestRLSPolicyDDL:
 class TestRLSBehavioralIsolation:
     """The policy must actually block cross-tenant rows for a non-superuser.
 
-    Both app roles (postgres locally, azad_test in CI) are superusers, which
-    bypass RLS — so the probe connects through a dedicated minimal role.
+    The app role used to be a superuser (postgres locally, azad_test in CI)
+    and so bypassed RLS outright — CI demotes it now, but the probe still
+    connects through its own minimal login so the assertion holds whichever
+    role the suite happens to run as.
     """
 
     PROBE = "rls_probe"

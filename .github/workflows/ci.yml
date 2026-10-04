@@ -220,6 +220,12 @@ jobs:
         # would pass while the database was showing everything — the exact gap
         # the RLS rollout exists to close would be invisible to CI.
         #
+        # Connect as `azad_test` itself, because that is the role the container
+        # makes superuser: the stock `postgres` role has no password set when
+        # POSTGRES_USER is overridden, so logging in as `postgres` fails. Only a
+        # superuser may clear the SUPERUSER attribute, so the role has to demote
+        # itself.
+        #
         # CREATEROLE is kept because tests/unit/test_core_security_gaps.py
         # provisions its own minimal `rls_probe` login; NOBYPASSRLS is the part
         # that actually matters. citext is a trusted extension since PG13, so
@@ -229,13 +235,25 @@ jobs:
           import psycopg2
 
           conn = psycopg2.connect(
-              host="localhost", user="postgres", password="azad_test", dbname="azad_test"
+              host="localhost", user="azad_test", password="azad_test", dbname="azad_test"
           )
           conn.autocommit = True
           with conn.cursor() as cur:
               cur.execute("ALTER ROLE azad_test NOSUPERUSER NOBYPASSRLS CREATEROLE")
           conn.close()
-          print("azad_test is no longer a superuser")
+
+          # Prove it took effect on a fresh connection — the demotion is
+          # useless if the tests still connect as a bypassing role.
+          conn = psycopg2.connect(
+              host="localhost", user="azad_test", password="azad_test", dbname="azad_test"
+          )
+          with conn.cursor() as cur:
+              cur.execute("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user")
+              is_super, bypass = cur.fetchone()
+          conn.close()
+          assert not is_super, "azad_test is still a superuser"
+          assert not bypass, "azad_test still holds BYPASSRLS"
+          print("azad_test demoted: RLS is now enforced for the test suite")
           PY
 
       - name: Run migrations
@@ -430,19 +448,20 @@ jobs:
       - name: Make the app role subject to RLS
         # Same reason as the `test` job: the container's POSTGRES_USER is a
         # superuser, so without this the E2E suite would run against a database
-        # that ignores the policies it is meant to exercise end to end.
+        # that ignores the policies it is meant to exercise end to end. Connects
+        # as `azad_test` because that is the role made superuser here.
         run: |
           python - <<'PY'
           import psycopg2
 
           conn = psycopg2.connect(
-              host="localhost", user="postgres", password="azad_test", dbname="azad_test"
+              host="localhost", user="azad_test", password="azad_test", dbname="azad_test"
           )
           conn.autocommit = True
           with conn.cursor() as cur:
               cur.execute("ALTER ROLE azad_test NOSUPERUSER NOBYPASSRLS CREATEROLE")
           conn.close()
-          print("azad_test is no longer a superuser")
+          print("azad_test demoted: RLS is now enforced for the E2E suite")
           PY
 
       - name: Run migrations

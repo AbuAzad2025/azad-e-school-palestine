@@ -311,10 +311,20 @@ TEST_BYPASS_RLS_SQL = (
 )
 
 
-def _pin_rls_bypass_on_connect() -> None:
-    """Run `TEST_BYPASS_RLS_SQL` on every DBAPI connection the pool opens."""
+def _pin_rls_bypass_on_connect(engine) -> None:
+    """Run `TEST_BYPASS_RLS_SQL` on every DBAPI connection this engine opens.
+
+    Scoped to the application's own engine on purpose. A class-level listener
+    on `Engine` also fires for the throwaway engines some tests build — most
+    importantly the `rls_probe` login in
+    ``tests/unit/test_core_security_gaps.py``, which exists precisely to prove
+    a *non-bypassing* role is blocked. Handing that probe
+    ``app.is_super_admin = '1'`` made its policies pass everything, and the
+    isolation assertion failed with "cross-tenant row leaked through RLS" —
+    the listener would have quietly disarmed the very check it exists to keep
+    honest.
+    """
     from sqlalchemy import event
-    from sqlalchemy.engine import Engine
 
     def _on_connect(dbapi_connection, _record):
         previous = dbapi_connection.autocommit
@@ -325,7 +335,7 @@ def _pin_rls_bypass_on_connect() -> None:
         finally:
             dbapi_connection.autocommit = previous
 
-    event.listen(Engine, "connect", _on_connect)
+    event.listen(engine, "connect", _on_connect)
 
 
 @pytest.fixture(scope="session")
@@ -339,8 +349,10 @@ def app():
     # Production config has rate limiting on; tests do many logins per minute
     # (auth.login is limited to 5/min) which would 429 and break auth flows.
     a.config["RATELIMIT_ENABLED"] = False
-    _pin_rls_bypass_on_connect()
     with a.app_context():
+        # Inside the context: flask-sqlalchemy resolves `.engine` from
+        # `current_app`, so calling it outside raises rather than returning.
+        _pin_rls_bypass_on_connect(_db.engine)
         from sqlalchemy import text
 
         _guard_dev_database()
