@@ -198,9 +198,16 @@ _USER_OWNED_TABLES: list[str] = ["class_members", "subscriptions"]
 # school isolation that lets them read the page they are acting on. Each arm
 # names the actor, so it grants nothing about anybody else's row: the grade a
 # teacher writes back still needs the tenant arm, and stays denied here.
+#
+# The f-strings below interpolate only module-level constants and a column
+# name chosen from this file's own dictionaries — never request data — which
+# is the same shape every other policy string in this module already has.
+# The ``# nosec B608`` on the returns marks that: bandit cannot know where the
+# interpolated names come from, and CI treats a medium-severity finding as
+# fatal.
 def _attempt_owned_arm(table: str) -> str:
     return (
-        f"EXISTS (SELECT 1 FROM quiz_attempts qa WHERE qa.id = {table}.attempt_id "
+        f"EXISTS (SELECT 1 FROM quiz_attempts qa WHERE qa.id = {table}.attempt_id "  # nosec B608
         f"AND qa.student_id::text = current_setting('app.current_user_id', true))"
     )
 
@@ -212,7 +219,7 @@ def _subscription_owned_arm(table: str, fk: str) -> str:
     }[fk]
     join = "" if fk == "subscription_id" else " JOIN manual_payments mp ON mp.subscription_id = s.id"
     return (
-        f"EXISTS (SELECT 1 FROM subscriptions s{join} WHERE {hops} "
+        f"EXISTS (SELECT 1 FROM subscriptions s{join} WHERE {hops} "  # nosec B608
         f"AND s.user_id::text = current_setting('app.current_user_id', true))"
     )
 

@@ -48,6 +48,7 @@ def _set_active_class_ids() -> None:
     from app.core.rls import _CLASS_IDS_GUC
     from app.extensions import db
 
+    # المُعرِّف فقط يُقحم في السلسلة — ثابت من app/core/rls.py وليس مدخلات مستخدم.
     db.session.execute(
         text(
             f"""
@@ -55,8 +56,8 @@ def _set_active_class_ids() -> None:
             FROM class_members
             WHERE user_id::text = current_setting('app.current_user_id', true)
               AND status = 'active'
-            """
-        )
+            """  # nosec B608
+        ),
     )
 
 
