@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
 from app.core.i18n import _
+from app.core.rls import platform_scope
 from app.extensions import db
 from app.models.class_room import ClassMember, ClassRoom
 from app.models.school import Grade, School, Subject
@@ -215,7 +216,14 @@ def get_or_create_system_school() -> School:
                 db.session.add(Grade(school_id=s.id, grade_level=level, name_ar=f"صف {level}"))
         return s
 
-    return tx(_create)
+    # The seed rows belong to the platform, not to a tenant: the caller is
+    # often an anonymous registration whose app.current_school_id is 0, and
+    # RLS refuses the twelve grades inserts with "new row violates row-level
+    # security policy" -- a message that points at the schema rather than at
+    # a request that had no tenant to begin with. The scope elevates this
+    # operation, not this data, so the policies stay exactly as strict.
+    with platform_scope():
+        return tx(_create)
 
 
 def is_individual_user(user) -> bool:

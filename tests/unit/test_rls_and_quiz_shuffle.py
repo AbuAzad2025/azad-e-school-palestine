@@ -21,6 +21,7 @@ from app.core.rls import (
     _INDIRECT_TENANT_TABLES,
     _TENANT_TABLES,
     _USER_SCOPED_TABLES,
+    _USER_SCOPED_WITH_TENANT,
 )
 from app.extensions import db
 from sqlalchemy import text
@@ -182,10 +183,549 @@ def test_user_role_links_is_not_tenant_scoped():
     If someone "fixes" it by scoping it like every other table, login breaks:
     ``User.school_id`` reads this table, so the query that resolves the school
     would be filtered by the school it is resolving.
+
+    It is registered in its own list rather than in ``_TENANT_TABLES``: it is
+    scoped by the acting user *and* by the tenant, and the second arm only
+    widens visibility inside a tenant the user arm has already resolved.
     """
-    assert "user_role_links" in _USER_SCOPED_TABLES
+    assert "user_role_links" in _USER_SCOPED_WITH_TENANT
     assert "user_role_links" not in _TENANT_TABLES
     assert "user_role_links" not in _INDIRECT_TENANT_TABLES
+
+
+class TestUserRoleLinksTenantArm:
+    """A tenant's members must be able to read each other's role links.
+
+    ``User.school_id`` and ``assert_user_belongs_to_accessible_school`` both
+    read the *target* user's links, not the caller's. Scoping the table to the
+    acting user alone therefore leaves every colleague with an empty set, and
+    ``/api/v1/users/<id>`` answers 403 for a student in the caller's own
+    school.
+    """
+
+    @pytest.fixture
+    def same_school_colleagues(self, app):
+        """Two schools; school A has two members, school B has one."""
+        return {"a": _make_school_with_class(app, "a"), "b": _make_school_with_class(app, "b")}
+
+    def test_colleague_in_same_school_is_visible(self, app, same_school_colleagues):
+        from app.models.user import User, UserRole, UserRoleLink
+
+        a = same_school_colleagues["a"]
+        with app.app_context():
+            extra = User(
+                email=f"colleague-{a['school_id']}@test.org",
+                password_hash="x",
+                role=UserRole.student,
+                locale="ar",
+            )
+            db.session.add(extra)
+            db.session.flush()
+            db.session.add(
+                UserRoleLink(
+                    user_id=extra.id,
+                    school_id=a["school_id"],
+                    role=UserRole.student,
+                    is_active=True,
+                )
+            )
+            db.session.commit()
+            colleague_id = extra.id
+            own_id = a["student_id"]
+
+        sql = f"SELECT user_id FROM user_role_links WHERE user_id IN ({own_id}, {colleague_id}) ORDER BY user_id"
+        seen = [row[0] for row in _run_as_tenant(app, a["school_id"], own_id, sql)]
+
+        assert seen == sorted([own_id, colleague_id]), (
+            f"a member of school A must see the other member's role link; saw {seen}"
+        )
+
+    def test_other_tenants_links_stay_hidden(self, app, same_school_colleagues):
+        """The tenant arm must widen inside one school only."""
+        a, b = same_school_colleagues["a"], same_school_colleagues["b"]
+        sql = f"SELECT count(*) FROM user_role_links WHERE school_id = {b['school_id']}"
+        leaked = _run_as_tenant(app, a["school_id"], a["student_id"], sql)[0][0]
+        assert leaked == 0, "school B's role links leaked into school A's session"
+
+
+def _run_as_individual(app, system_school_id: int, user_id: int, class_ids: str, sql: str):
+    """Run one statement with the variables an individual subscriber's request sets.
+
+    Mirrors ``set_tenant_for_request``: the class list and the individual flag
+    are set alongside the school, and the school is the *system* school — the
+    one the individual actually has a role link to.
+    """
+    with app.app_context():
+        db.session.execute(text("SET LOCAL app.current_user_id = :uid"), {"uid": str(user_id)})
+        db.session.execute(text("SET LOCAL app.current_class_ids = :cls"), {"cls": class_ids})
+        db.session.execute(text("SET LOCAL app.is_individual = '1'"))
+        db.session.execute(text("SET LOCAL app.current_school_id = :sid"), {"sid": str(system_school_id)})
+        db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
+        result = db.session.execute(text(sql)).all()
+        db.session.rollback()
+        return result
+
+
+class TestHybridTenancyClassArm:
+    """An individual must reach the school they subscribed to, and nothing else.
+
+    The hybrid feature and RLS disagreed about what a tenant is: an individual
+    holds a role link only to the system school, so the single
+    ``app.current_school_id`` hid every page of the feature they pay for. The
+    fix added a second value — ``app.current_class_ids``, the classes the actor
+    is an active member of.
+
+    Widening a tenant policy is the kind of change that looks like a feature
+    and behaves like a hole, so each arm is pinned here with the case it must
+    NOT open: reads stay inside the enrolled classes, writes stay inside the
+    tenant, and the cross-school catalogue reach stays behind
+    ``app.is_individual``.
+    """
+
+    @pytest.fixture
+    def hybrid(self, app):
+        """One host school with a public and a private class; one subscriber."""
+        from app.core.db import tx
+        from app.core.security import hash_password
+        from app.models.assessment import Quiz
+        from app.models.billing import Subscription, SubscriptionPlan
+        from app.models.class_room import ClassMember, ClassRoom
+        from app.models.content import Lesson, Unit
+        from app.models.gradebook import Assignment
+        from app.models.school import Grade, School, Subject
+        from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
+
+        with app.app_context():
+            system = School(name_ar="rls system", domain="rls-system.example.com", is_system=True, is_active=True)
+            tx(db.session.add, system)
+            db.session.flush()
+            host = School(name_ar="rls host", domain="rls-host.example.com", is_active=True)
+            tx(db.session.add, host)
+            db.session.flush()
+            subject = Subject(code="RLSH", name_ar="math")
+            tx(db.session.add, subject)
+            db.session.flush()
+            grade = Grade(school_id=host.id, grade_level=1, name_ar="first")
+            tx(db.session.add, grade)
+            db.session.flush()
+
+            subscriber = User(
+                email="subscriber@rls.example.com",
+                name_ar="subscriber",
+                role=UserRole.student,
+                password_hash=hash_password(RLS_TEST_PASSWORD),
+                approval_status=UserApprovalStatus.approved,
+                is_active=True,
+                is_verified=True,
+                is_individual=True,
+            )
+            tx(db.session.add, subscriber)
+            db.session.flush()
+            tx(
+                db.session.add,
+                UserRoleLink(user_id=subscriber.id, school_id=system.id, role=UserRole.student, is_active=True),
+            )
+            db.session.flush()
+
+            public = ClassRoom(
+                school_id=host.id,
+                subject_id=subject.id,
+                grade_id=grade.id,
+                name="open",
+                join_code="HYBOPEN",
+                is_public=True,
+                is_active=True,
+            )
+            private = ClassRoom(
+                school_id=host.id,
+                subject_id=subject.id,
+                grade_id=grade.id,
+                name="closed",
+                join_code="HYBCLOSD",
+                is_public=False,
+                is_active=True,
+            )
+            tx(db.session.add, public)
+            tx(db.session.add, private)
+            db.session.flush()
+
+            enrolled_unit = Unit(class_id=public.id, title="unit-a")
+            tx(db.session.add, enrolled_unit)
+            db.session.flush()
+            private_unit = Unit(class_id=private.id, title="unit-b")
+            tx(db.session.add, private_unit)
+            db.session.flush()
+
+            enrolled_lesson = Lesson(class_id=public.id, unit_id=enrolled_unit.id, title="lesson-a")
+            tx(db.session.add, enrolled_lesson)
+            private_lesson = Lesson(class_id=private.id, unit_id=private_unit.id, title="lesson-b")
+            tx(db.session.add, private_lesson)
+            db.session.flush()
+
+            # A second enrolled class that is NOT public: the class row itself
+            # is only reachable through the membership arm, never through the
+            # catalogue gate, which is what makes it a test of the arm.
+            enrolled_closed = ClassRoom(
+                school_id=host.id,
+                subject_id=subject.id,
+                grade_id=grade.id,
+                name="closed-enrolled",
+                join_code="HYBCLOSE",
+                is_public=False,
+                is_active=True,
+            )
+            tx(db.session.add, enrolled_closed)
+            db.session.flush()
+
+            assignment = Assignment(class_id=public.id, title="homework", max_mark=10)
+            quiz = Quiz(class_id=public.id, title="quiz", attempts_allowed=1, created_by=None)
+            plan = SubscriptionPlan(school_id=host.id, class_id=public.id, name="plan", plan="annual", price=100)
+            other_student = User(
+                email="other@rls.example.com",
+                name_ar="other",
+                role=UserRole.student,
+                password_hash=hash_password(RLS_TEST_PASSWORD),
+                approval_status=UserApprovalStatus.approved,
+                is_active=True,
+                is_verified=True,
+            )
+            tx(db.session.add, assignment)
+            tx(db.session.add, quiz)
+            tx(db.session.add, plan)
+            tx(db.session.add, other_student)
+            db.session.flush()
+            other_subscription = Subscription(
+                user_id=other_student.id,
+                plan_id=plan.id,
+                class_id=public.id,
+                price=100,
+                status="pending",
+            )
+            tx(db.session.add, other_subscription)
+            db.session.flush()
+
+            tx(
+                db.session.add,
+                ClassMember(class_id=public.id, user_id=subscriber.id, status="active"),
+            )
+            tx(
+                db.session.add,
+                ClassMember(class_id=enrolled_closed.id, user_id=subscriber.id, status="active"),
+            )
+            db.session.commit()
+            return {
+                "system_school_id": system.id,
+                "host_school_id": host.id,
+                "subscriber_id": subscriber.id,
+                "public_class_id": public.id,
+                "private_class_id": private.id,
+                "enrolled_private_class_id": enrolled_closed.id,
+                "enrolled_lesson_id": enrolled_lesson.id,
+                "private_lesson_id": private_lesson.id,
+                "assignment_id": assignment.id,
+                "quiz_id": quiz.id,
+                "plan_id": plan.id,
+                "other_student_id": other_student.id,
+                "other_subscription_id": other_subscription.id,
+            }
+
+    def test_enrolled_class_content_is_readable(self, app, hybrid):
+        """The whole point: the lesson they subscribed to must not be hidden."""
+        seen = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["public_class_id"]),
+            f"SELECT id FROM lessons WHERE id = {hybrid['enrolled_lesson_id']}",
+        )
+        assert [r[0] for r in seen] == [hybrid["enrolled_lesson_id"]]
+
+    def test_class_not_joined_stays_hidden(self, app, hybrid):
+        """Enrolling in one class must not open every class of that school."""
+        seen = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["public_class_id"]),
+            f"SELECT id FROM lessons WHERE id = {hybrid['private_lesson_id']}",
+        )
+        assert seen == [], "a lesson in an un-enrolled foreign class became visible"
+
+    def test_empty_class_list_opens_nothing(self, app, hybrid):
+        """Without the membership list the tenant still stands alone."""
+        seen = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            "",
+            f"SELECT id FROM lessons WHERE id = {hybrid['enrolled_lesson_id']}",
+        )
+        assert seen == [], "the class arm widened with an empty membership list"
+
+    def test_membership_does_not_grant_write_access(self, app, hybrid):
+        """Read access to a class is not authority to author inside it.
+
+        The class arm is on ``USING`` only. If it ever reaches ``WITH CHECK``, a
+        student could insert their own lessons into a paid class.
+        """
+        with app.app_context():
+            from sqlalchemy.exc import DBAPIError
+
+            with pytest.raises(DBAPIError) as caught:
+                _run_as_individual(
+                    app,
+                    hybrid["system_school_id"],
+                    hybrid["subscriber_id"],
+                    str(hybrid["public_class_id"]),
+                    f"INSERT INTO lessons (class_id, title, status) "
+                    f"VALUES ({hybrid['public_class_id']}, 'injected', 'draft')",
+                )
+            assert "row-level security" in str(caught.value)
+
+    def test_public_catalogue_is_not_reachable_by_school_tenants(self, app, hybrid):
+        """``app.is_individual`` is the gate on cross-school catalogue reads.
+
+        Without it every school would see every other school's public classes.
+        """
+        host = hybrid["host_school_id"]
+        other = _make_school_with_class(app, "catalogue")
+        seen = _run_as_tenant(
+            app,
+            other["school_id"],
+            other["student_id"],
+            f"SELECT count(*) FROM classes WHERE id = {hybrid['public_class_id']}",
+        )
+        assert seen[0][0] == 0, (
+            f"school {other['school_id']} saw a public class of school {host} without carrying the individual flag"
+        )
+
+    def test_individual_may_browse_the_public_catalogue(self, app, hybrid):
+        """The flag opens the catalogue, and only public rows."""
+        rows = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            "",
+            f"SELECT id FROM classes WHERE id IN ({hybrid['public_class_id']}, {hybrid['private_class_id']})",
+        )
+        assert [r[0] for r in rows] == [hybrid["public_class_id"]]
+
+    def test_own_membership_rows_are_visible_without_a_tenant(self, app, hybrid):
+        """``class_members`` carries a user arm, which is what makes this non-circular.
+
+        The membership list is derived from this table *before* the tenant is
+        set, so it must be reachable as the actor's own rows.
+        """
+        seen = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            "",
+            f"SELECT class_id FROM class_members WHERE user_id = {hybrid['subscriber_id']}",
+        )
+        assert {r[0] for r in seen} == {hybrid["public_class_id"], hybrid["enrolled_private_class_id"]}
+
+    def test_other_users_memberships_are_not_visible(self, app, hybrid):
+        """The user arm is the actor's own rows and nobody else's."""
+        other = _make_school_with_class(app, "notmine")
+        leaked = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["public_class_id"]),
+            f"SELECT count(*) FROM class_members WHERE user_id = {other['student_id']}",
+        )
+        assert leaked[0][0] == 0, "another student's membership leaked into the subscriber's session"
+
+    def test_the_class_row_itself_is_reachable_by_membership(self, app, hybrid):
+        """``m.class_room`` must not be ``None`` for a class the actor is in.
+
+        ``class_members`` is reachable by its own user arm, so the membership
+        renders — and then the class it points at is filtered away, because
+        ``classes`` was only reachable through the tenant or the public
+        catalogue gate. The page then dies on ``cp.class_room.name``.
+        """
+        seen = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["enrolled_private_class_id"]),
+            f"SELECT id FROM classes WHERE id = {hybrid['enrolled_private_class_id']}",
+        )
+        assert [r[0] for r in seen] == [hybrid["enrolled_private_class_id"]]
+
+    def test_the_class_row_is_not_reachable_without_the_membership(self, app, hybrid):
+        """The control for the arm above: same class, empty membership list.
+
+        The class is not public, so if this is visible the arm is keyed on
+        something other than the membership.
+        """
+        seen = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            "",
+            f"SELECT id FROM classes WHERE id = {hybrid['enrolled_private_class_id']}",
+        )
+        assert seen == [], "a non-public class of a foreign school opened without a membership"
+
+    def test_student_may_submit_their_own_homework(self, app, hybrid):
+        """Writing inside an enrolled class is the other half of reading it."""
+        rows = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["public_class_id"]),
+            "INSERT INTO submissions (assignment_id, student_id, body) "
+            f"VALUES ({hybrid['assignment_id']}, {hybrid['subscriber_id']}, 'mine') RETURNING id",
+        )
+        assert len(rows) == 1
+
+    def test_student_may_not_submit_for_another_student(self, app, hybrid):
+        """The actor-owned arm names the actor — otherwise it is a forgery channel."""
+        with app.app_context():
+            from sqlalchemy.exc import DBAPIError
+
+            with pytest.raises(DBAPIError) as caught:
+                _run_as_individual(
+                    app,
+                    hybrid["system_school_id"],
+                    hybrid["subscriber_id"],
+                    str(hybrid["public_class_id"]),
+                    "INSERT INTO submissions (assignment_id, student_id, body) "
+                    f"VALUES ({hybrid['assignment_id']}, {hybrid['other_student_id']}, 'forged')",
+                )
+            assert "row-level security" in str(caught.value)
+
+    def test_student_may_start_their_own_quiz_attempt(self, app, hybrid):
+        """Same shape one table along: the attempt and the logs hung off it.
+
+        Both statements share one transaction, because the arm on
+        ``proctoring_logs`` reaches the actor through the attempt row and an
+        attempt from a rolled-back transaction is no longer there.
+        """
+        rows = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["public_class_id"]),
+            "INSERT INTO quiz_attempts (quiz_id, student_id, attempt_no, status) "
+            f"VALUES ({hybrid['quiz_id']}, {hybrid['subscriber_id']}, 1, 'in_progress'); "
+            "INSERT INTO proctoring_logs (attempt_id, event_type) "
+            f"SELECT id, 'tab_switch' FROM quiz_attempts WHERE quiz_id = {hybrid['quiz_id']} "
+            f"AND student_id = {hybrid['subscriber_id']} RETURNING id",
+        )
+        assert len(rows) == 1
+
+    def test_student_may_not_start_an_attempt_for_another_student(self, app, hybrid):
+        with app.app_context():
+            from sqlalchemy.exc import DBAPIError
+
+            with pytest.raises(DBAPIError) as caught:
+                _run_as_individual(
+                    app,
+                    hybrid["system_school_id"],
+                    hybrid["subscriber_id"],
+                    str(hybrid["public_class_id"]),
+                    "INSERT INTO quiz_attempts (quiz_id, student_id, attempt_no, status) "
+                    f"VALUES ({hybrid['quiz_id']}, {hybrid['other_student_id']}, 1, 'in_progress')",
+                )
+            assert "row-level security" in str(caught.value)
+
+    def test_student_may_pay_their_own_subscription(self, app, hybrid):
+        """The subscription and its payment are two writes on the same path."""
+        rows = _run_as_individual(
+            app,
+            hybrid["system_school_id"],
+            hybrid["subscriber_id"],
+            str(hybrid["public_class_id"]),
+            "INSERT INTO subscriptions (user_id, plan_id, class_id, price, currency, status, source) "
+            f"VALUES ({hybrid['subscriber_id']}, {hybrid['plan_id']}, {hybrid['public_class_id']}, "
+            "100, 'ILS', 'pending', 'manual'); "
+            "INSERT INTO manual_payments (subscription_id, reference, amount, status) "
+            f"SELECT id, 'REF-RLS', 100, 'pending' FROM subscriptions "
+            f"WHERE user_id = {hybrid['subscriber_id']} AND class_id = {hybrid['public_class_id']} RETURNING id",
+        )
+        assert len(rows) == 1
+
+    def test_student_may_not_pay_another_students_subscription(self, app, hybrid):
+        """The arm reaches through the subscription, so somebody else's is denied."""
+        with app.app_context():
+            from sqlalchemy.exc import DBAPIError
+
+            with pytest.raises(DBAPIError) as caught:
+                _run_as_individual(
+                    app,
+                    hybrid["system_school_id"],
+                    hybrid["subscriber_id"],
+                    str(hybrid["public_class_id"]),
+                    "INSERT INTO manual_payments (subscription_id, reference, amount, status) "
+                    f"VALUES ({hybrid['other_subscription_id']}, 'REF-X', 100, 'pending')",
+                )
+            assert "row-level security" in str(caught.value)
+
+
+def test_every_registered_table_is_actually_protected(app):
+    """The registry and the database must agree, table for table.
+
+    A table in a registry with no policy in the database is silent, total
+    isolation failure: nothing errors, the table simply stops being defended.
+    Checking the registry alone cannot catch it, and neither can counting
+    policies — ``build_all_policy_ddl`` declining a table in one loop while a
+    later loop covers it makes the "skipped" list larger than the gap.
+    """
+    import re
+
+    from app.core.rls import (
+        _DIRECT_CLASS_ID_COLUMNS,
+        _INDIRECT_TENANT_TABLES,
+        _TENANT_TABLES,
+        _USER_SCOPED_TABLES,
+        _USER_SCOPED_WITH_TENANT,
+        build_all_policy_ddl,
+    )
+
+    registered = (
+        set(_TENANT_TABLES) | set(_INDIRECT_TENANT_TABLES) | set(_USER_SCOPED_TABLES) | set(_USER_SCOPED_WITH_TENANT)
+    )
+    statements, _declined = None, None
+    with app.app_context():
+        statements, _declined = build_all_policy_ddl()
+        built = {
+            re.search(r"CREATE POLICY \S+ ON (\w+)", s).group(1)
+            for s in statements
+            if s.strip().startswith("CREATE POLICY")
+        }
+        inspector = db.inspect(db.session.get_bind())
+        existing = set(inspector.get_table_names())
+        rows = db.session.execute(
+            text(
+                """
+                SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
+                FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'public' AND c.relkind = 'r'
+                """
+            )
+        ).all()
+        policies = {
+            r[0]
+            for r in db.session.execute(
+                text(
+                    "SELECT tablename FROM pg_policies WHERE schemaname = 'public'",
+                )
+            ).all()
+        }
+        forced = {r[0] for r in rows if r[1] and r[2]}
+
+    in_schema = registered & existing
+    assert built == in_schema, (
+        "the code builds a different set of policies than the registry claims "
+        f"to protect: only-code={sorted(built - in_schema)} "
+        f"only-schema={sorted(in_schema - built)}"
+    )
+    assert policies == in_schema, f"a registered table has no policy in the database: {sorted(in_schema - policies)}"
+    assert in_schema <= forced, f"row-level security is not FORCED on: {sorted(in_schema - forced)}"
+    assert _DIRECT_CLASS_ID_COLUMNS.keys() <= registered
 
 
 def test_indirect_policies_reference_existing_tables(app):
@@ -255,12 +795,24 @@ class TestRLSBlocksCrossTenant:
                 _run_as_tenant(app, a["school_id"] + 999, a["teacher_id"], f"SELECT count(*) FROM {table}")[0][0] == 0
             )
 
-    def test_role_links_are_visible_only_to_their_owner(self, app, two_schools):
-        a = two_schools["a"]
+    def test_role_links_are_scoped_to_the_tenant(self, app, two_schools):
+        """A member sees their own links plus their own school's — never another's.
+
+        Scoping to the acting user alone broke ``User.school_id`` for every
+        colleague, so the tenant arm was added. What still has to hold is the
+        boundary that matters: school A must not see school B's links.
+        """
+        a, b = two_schools["a"], two_schools["b"]
         own = _run_as_tenant(app, a["school_id"], a["teacher_id"], "SELECT count(*) FROM user_role_links")[0][0]
-        others = _run_as_tenant(app, a["school_id"], a["student_id"], "SELECT count(*) FROM user_role_links")[0][0]
-        assert own == 1, "a user must resolve their own role links (login depends on it)"
-        assert others == 1, "the student sees only their own link, not the teacher's"
+        assert own == 2, "school A's two members must both be visible to a member of school A"
+
+        foreign = _run_as_tenant(
+            app,
+            a["school_id"],
+            a["student_id"],
+            f"SELECT count(*) FROM user_role_links WHERE school_id = {b['school_id']}",
+        )[0][0]
+        assert foreign == 0, "school B's role links leaked into school A's session"
 
     def test_super_admin_bypass_still_crosses_tenants(self, app, two_schools):
         """The existing escape hatch must keep working — it is not a bug to fix."""
@@ -281,8 +833,13 @@ class TestRLSBlocksCrossTenant:
 
         Unset would read back as '', and '' compared as text matches nothing
         rather than raising, which is why the policies use ::text.
+
+        The school is ``'0'`` for anonymous too (``set_tenant_for_request`` sets
+        it explicitly), and no school has that id — so the tenant arm on
+        ``user_role_links`` matches nothing and the assertion below still holds
+        once that arm exists.
         """
-        rows = _run_as_tenant(app, two_schools["a"]["school_id"], 0, "SELECT count(*) FROM user_role_links")
+        rows = _run_as_tenant(app, 0, 0, "SELECT count(*) FROM user_role_links")
         assert rows[0][0] == 0
 
 

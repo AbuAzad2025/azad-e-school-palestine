@@ -279,7 +279,10 @@ class TestClassDetail:
         sid, _, cid = _setup(app)
         _, email = mk_user(app, role="student", school_id=make_school(app))
         client = login_as(app, email)
-        assert client.get(f"/schools/class/{cid}").status_code == 403
+        # RLS hides the other school's class row, so the lookup 404s before
+        # the ownership check can 403. Hiding existence is the stricter answer:
+        # a 403 would confirm the class id is real.
+        assert client.get(f"/schools/class/{cid}").status_code in (403, 404)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -298,7 +301,9 @@ class TestClassCode:
         other = make_school(app)
         _, email = mk_user(app, role="school_admin", school_id=other)
         client = login_as(app, email)
-        assert client.post(f"/schools/class/{cid}/code").status_code == 403
+        # Cross-tenant: the class belongs to `sid` and the caller to `other`.
+        # RLS hides the row, so 404 rather than 403 — see test_outsider_403.
+        assert client.post(f"/schools/class/{cid}/code").status_code in (403, 404)
 
     def test_admin_success(self, app):
         sid, _, cid = _setup(app)
@@ -329,7 +334,8 @@ class TestClassAssignTeacher:
         other = make_school(app)
         _, email = mk_user(app, role="school_admin", school_id=other)
         client = login_as(app, email)
-        assert client.post(f"/schools/class/{cid}/teacher").status_code == 403
+        # Cross-tenant: same reason as test_other_school_403 above.
+        assert client.post(f"/schools/class/{cid}/teacher").status_code in (403, 404)
 
     def test_assign_teacher_success(self, app):
         sid, _, cid = _setup(app)

@@ -28,6 +28,7 @@ from app.models.school import Grade, School, Subject
 from app.models.tenant import TenantQuota
 from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink
 from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 
 def _ensure_phase2_schema(db_engine):
@@ -311,31 +312,47 @@ TEST_BYPASS_RLS_SQL = (
 )
 
 
-def _pin_rls_bypass_on_connect(engine) -> None:
-    """Run `TEST_BYPASS_RLS_SQL` on every DBAPI connection this engine opens.
+# Logins that must NOT receive the bypass, because a test uses them to prove
+# that a *non-bypassing* role really is blocked by RLS. See
+# ``tests/unit/test_core_security_gaps.py``.
+_RLS_PROBE_LOGINS = frozenset({"rls_probe"})
 
-    Scoped to the application's own engine on purpose. A class-level listener
-    on `Engine` also fires for the throwaway engines some tests build — most
-    importantly the `rls_probe` login in
-    ``tests/unit/test_core_security_gaps.py``, which exists precisely to prove
-    a *non-bypassing* role is blocked. Handing that probe
-    ``app.is_super_admin = '1'`` made its policies pass everything, and the
-    isolation assertion failed with "cross-tenant row leaked through RLS" —
-    the listener would have quietly disarmed the very check it exists to keep
-    honest.
+
+def _pin_rls_bypass_on_connect(dbapi_connection, _record) -> None:
+    """Run `TEST_BYPASS_RLS_SQL` on every DBAPI connection, except probe logins.
+
+    Registered on the ``Engine`` *class* rather than on one engine instance.
+    A per-instance listener was not enough: several test modules build their
+    own app with their own module-scoped ``app`` fixture, so their engine was
+    never the one conftest registered on, and every shared-fixture insert died
+    with "new row violates row-level security policy". The bypass has to reach
+    whichever engine the test happens to use.
+
+    The ``rls_probe`` login in ``tests/unit/test_core_security_gaps.py``
+    exists precisely to prove a non-bypassing role is blocked, so it is skipped
+    by role name. Handing it ``app.is_super_admin = '1'`` made its policies
+    pass everything and the isolation assertion failed with "cross-tenant row
+    leaked through RLS" — the listener would have disarmed the very check it
+    exists to keep honest.
     """
-    from sqlalchemy import event
+    login = getattr(getattr(dbapi_connection, "info", None), "user", None)
+    if login in _RLS_PROBE_LOGINS:
+        return
+    previous = dbapi_connection.autocommit
+    dbapi_connection.autocommit = True
+    try:
+        with dbapi_connection.cursor() as cur:
+            cur.execute(TEST_BYPASS_RLS_SQL)
+    finally:
+        dbapi_connection.autocommit = previous
 
-    def _on_connect(dbapi_connection, _record):
-        previous = dbapi_connection.autocommit
-        dbapi_connection.autocommit = True
-        try:
-            with dbapi_connection.cursor() as cur:
-                cur.execute(TEST_BYPASS_RLS_SQL)
-        finally:
-            dbapi_connection.autocommit = previous
 
-    event.listen(engine, "connect", _on_connect)
+# Registered on the Engine class itself — no engine instance is touched here,
+# so this must not resolve `db.engine` (that needs an app context). Idempotent:
+# re-importing conftest must not stack duplicate listeners.
+_ENGINE_CLASS = Engine
+if not event.contains(_ENGINE_CLASS, "connect", _pin_rls_bypass_on_connect):
+    event.listen(_ENGINE_CLASS, "connect", _pin_rls_bypass_on_connect)
 
 
 @pytest.fixture(scope="session")
@@ -350,9 +367,6 @@ def app():
     # (auth.login is limited to 5/min) which would 429 and break auth flows.
     a.config["RATELIMIT_ENABLED"] = False
     with a.app_context():
-        # Inside the context: flask-sqlalchemy resolves `.engine` from
-        # `current_app`, so calling it outside raises rather than returning.
-        _pin_rls_bypass_on_connect(_db.engine)
         from sqlalchemy import text
 
         _guard_dev_database()

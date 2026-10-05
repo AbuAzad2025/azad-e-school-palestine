@@ -31,11 +31,41 @@ def current_school_id() -> int | None:
     return current_user.school_id
 
 
+def _set_active_class_ids() -> None:
+    """Publish the actor's active classes for the hybrid-tenancy RLS arm.
+
+    An individual subscriber holds no role link to the school that owns the
+    class they paid for, so ``app.current_school_id`` alone hides it. The class
+    ids they *are* enrolled in are what the content-graph policies need.
+
+    Read from ``class_members`` before the school variable is set, which is
+    safe and not circular precisely because that policy carries a
+    ``user_id`` arm: the rows are visible as the actor's own, never as
+    the tenant's.
+    """
+    from sqlalchemy import text
+
+    from app.core.rls import _CLASS_IDS_GUC
+    from app.extensions import db
+
+    db.session.execute(
+        text(
+            f"""
+            SELECT set_config('{_CLASS_IDS_GUC}', COALESCE(string_agg(class_id::text, ','), ''), true)
+            FROM class_members
+            WHERE user_id::text = current_setting('app.current_user_id', true)
+              AND status = 'active'
+            """
+        )
+    )
+
+
 def set_tenant_for_request() -> None:
     """Set PostgreSQL session variable for RLS at the start of each request.
 
-    Called from app.before_request. Sets app.current_school_id, app.is_super_admin
-    and app.current_user_id so that RLS policies can evaluate them.
+    Called from app.before_request. Sets app.current_user_id,
+    app.current_class_ids, app.is_individual, app.current_school_id and
+    app.is_super_admin so that RLS policies can evaluate them.
     Uses SET LOCAL so variables auto-reset on transaction end.
 
     ``app.current_user_id`` exists for one reason: ``user_role_links`` is the
@@ -47,6 +77,7 @@ def set_tenant_for_request() -> None:
     """
     from sqlalchemy import text
 
+    from app.core.rls import _INDIVIDUAL_GUC
     from app.extensions import db
 
     try:
@@ -54,11 +85,15 @@ def set_tenant_for_request() -> None:
         # ``User.school_id`` is derived from ``user_role_links`` — a table whose
         # own policy keys on this variable. Reading the school before the id is
         # set would return no links and quietly pin every request to school 0.
+        # The class list is derived next for the same reason: it is read from
+        # ``class_members`` before the tenant narrows the session.
         authenticated = current_user.is_authenticated
         db.session.execute(
             text("SET LOCAL app.current_user_id = :uid"),
             {"uid": str(current_user.id if authenticated else 0)},
         )
+        db.session.execute(text(f"SET LOCAL {_INDIVIDUAL_GUC} = '0'"))
+        db.session.execute(text("SET LOCAL app.current_class_ids = ''"))
         if not authenticated:
             db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
             db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
@@ -66,6 +101,11 @@ def set_tenant_for_request() -> None:
             db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
             db.session.execute(text("SET LOCAL app.is_super_admin = '1'"))
         else:
+            db.session.execute(
+                text(f"SET LOCAL {_INDIVIDUAL_GUC} = :val"),
+                {"val": "1" if current_user.is_individual else "0"},
+            )
+            _set_active_class_ids()
             school_id = current_user.school_id or 0
             db.session.execute(
                 text("SET LOCAL app.current_school_id = :sid"),

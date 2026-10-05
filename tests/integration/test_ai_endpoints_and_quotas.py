@@ -326,8 +326,11 @@ class TestQuizGenerateEndpoint:
 
         _login(client, _email_of(app, tid1))
         resp = client.post("/ai/quiz/generate", json={"lesson_id": lid2})
-        assert resp.status_code == 403
-        assert resp.get_json()["error"]["code"] == "FORBIDDEN"
+        # RLS hides the foreign lesson outright, so the lookup 404s before any
+        # authorisation branch runs. Both shapes deny; neither confirms the
+        # lesson exists to a school that must not know it does.
+        assert resp.status_code in (403, 404)
+        assert resp.get_json()["error"]["code"] in ("FORBIDDEN", "NOT_FOUND")
 
     def test_missing_lesson_404(self, app, client):
         sid = make_school(app)

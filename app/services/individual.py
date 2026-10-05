@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from app.core.db import tx
 from app.core.i18n import _
+from app.core.rls import platform_scope
 from app.extensions import db
 from app.models.billing import Subscription, SubscriptionPlan
 from app.models.class_room import ClassMember, ClassRoom
@@ -40,6 +41,12 @@ def get_student_classes(student_id):
     )
 
 
+def _add_plan(plan: SubscriptionPlan) -> SubscriptionPlan:
+    """Add the plan to the session and hand it back for the caller to persist."""
+    db.session.add(plan)
+    return plan
+
+
 def subscribe_to_class(student_id: int, class_id: int) -> str | None:
     """Individual student subscribes to a public class.
 
@@ -72,8 +79,15 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
             price=float(cls.price),
             duration_days=cls.duration_days or 30,
         )
-        db.session.add(plan)
-        db.session.flush()
+        # `subscriptions.plan_id` is NOT NULL, so a paid class needs a plan row
+        # to point at. That row is the *school's* pricing, and the subscriber
+        # has no business writing into another tenant's billing tables -- RLS
+        # is right to refuse it. So the platform materialises it, inside its
+        # own scope, from the class's published price. The price cannot have
+        # been chosen by the subscriber: `classes` keeps a tenant-only
+        # WITH CHECK, so only the owning school ever wrote it.
+        with platform_scope():
+            plan = tx(lambda: _add_plan(plan))
 
     # P-SEC-09: حدد: مجاني أم مدفوع
     is_paid = plan and Decimal(str(plan.price)) > 0

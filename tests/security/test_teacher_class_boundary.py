@@ -45,22 +45,34 @@ class TestTeacherOtherClassDenied:
     def test_cannot_view_other_class_lessons(self, app, teacher_a_persona, class_b):
         _, client = teacher_a_persona
         resp = client.get(f"/classes/{class_b}/lessons", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
     def test_cannot_view_other_class_assignments(self, app, teacher_a_persona, class_b):
         _, client = teacher_a_persona
         resp = client.get(f"/classes/{class_b}/assignments", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
     def test_cannot_view_other_class_gradebook(self, app, teacher_a_persona, class_b):
         _, client = teacher_a_persona
         resp = client.get(f"/classes/{class_b}/gradebook", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
     def test_cannot_create_lesson_in_other_class(self, app, teacher_a_persona, class_b):
         _, client = teacher_a_persona
         resp = client.post(f"/classes/{class_b}/lessons", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
     def test_cannot_create_assignment_in_other_class(self, app, teacher_a_persona, class_b):
         _, client = teacher_a_persona
@@ -69,7 +81,10 @@ class TestTeacherOtherClassDenied:
             data={"title": "واجب محاول", "max_mark": 10},
             follow_redirects=False,
         )
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
 
 class TestTeacherAdminDenied:
@@ -107,7 +122,10 @@ class TestTeacherCrossTenantDenied:
     def test_cannot_access_other_tenant_class(self, app, teacher_a_persona, class_b):
         _, client = teacher_a_persona
         resp = client.get(f"/classes/{class_b}/lessons", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
 
 class TestTeacherGradeStudentInOwnClass:

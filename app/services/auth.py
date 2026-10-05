@@ -7,6 +7,7 @@ from flask_login import current_user
 
 from app.core.db import tx
 from app.core.i18n import _
+from app.core.rls import platform_scope
 from app.core.security import check_password_reuse, hash_password, validate_password_policy, verify_password
 from app.core.tokens import make_reset_token, read_reset_token
 from app.extensions import db
@@ -227,4 +228,10 @@ def register_individual(
 
         return user
 
-    return tx(_create), None
+    # Linking a brand-new individual to the system school is a platform
+    # action, not a tenant one: the user does not exist yet, so no policy
+    # can legitimately match them, and an anonymous registration carries no
+    # tenant at all. Without this the whole route 500s with "new row
+    # violates row-level security policy for table user_role_links".
+    with platform_scope():
+        return tx(_create), None

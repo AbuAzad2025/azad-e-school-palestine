@@ -75,6 +75,13 @@ def _login(client, app, email, password="TestPass123!"):
 
 
 def _user(app, role="student", **kw):
+    """Create a user, optionally linked to a school.
+
+    ``school_id`` matters: tenancy is resolved from ``user_role_links``, not
+    from ``users.role``. A user with no link resolves to school 0, and every
+    tenant-scoped row their request touches is then invisible to them — the
+    export route 404s rather than 403s, which reads like a routing bug.
+    """
     with app.app_context():
         u = User(
             email=kw.get("email", _email()),
@@ -86,6 +93,9 @@ def _user(app, role="student", **kw):
         )
         _db.session.add(u)
         _db.session.commit()
+        if school_id := kw.get("school_id"):
+            _db.session.add(UserRoleLink(user_id=u.id, school_id=school_id, role=UserRole(role)))
+            _db.session.commit()
         return u.id
 
 
@@ -527,7 +537,7 @@ class TestExportRoutes:
         sid = _school(app)
         gid = _grade(app, sid)
         subjid = _subject(app)
-        tid = _user(app, "teacher")
+        tid = _user(app, "teacher", school_id=sid)
         cid = _class(app, sid, gid, subjid, tid)
         _login(client, app, _get_email(app, tid))
         resp = client.get(f"/export/{cid}/students")

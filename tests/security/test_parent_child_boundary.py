@@ -137,7 +137,10 @@ class TestParentCrossTenantDenied:
     def test_cannot_access_other_tenant_class(self, app, parent_a_persona, class_b):
         _, client = parent_a_persona
         resp = client.get(f"/classes/{class_b}/lessons", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
     def test_cannot_generate_family_code_for_other_student(
         self, app, parent_a_persona, student_b_persona

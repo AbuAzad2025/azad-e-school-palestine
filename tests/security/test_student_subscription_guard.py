@@ -32,12 +32,18 @@ class TestStudentUnenrolledClassDenied:
     def test_cannot_view_other_class_lessons(self, app, student_a_persona, class_b):
         _, client = student_a_persona
         resp = client.get(f"/classes/{class_b}/lessons", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
     def test_cannot_view_other_class_assignments(self, app, student_a_persona, class_b):
         _, client = student_a_persona
         resp = client.get(f"/classes/{class_b}/assignments", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
 
 class TestStudentAdminDenied:
@@ -106,7 +112,10 @@ class TestStudentCrossTenantDenied:
     def test_cannot_access_other_tenant_class(self, app, student_a_persona, class_b):
         _, client = student_a_persona
         resp = client.get(f"/classes/{class_b}/lessons", follow_redirects=False)
-        assert resp.status_code == 403
+        # 403 when the role check rejects the actor; 404 when RLS already hid
+        # the other tenant's row before that check ran. Both deny the access,
+        # and 404 does not confirm the class exists.
+        assert resp.status_code in (403, 404)
 
 
 class TestStudentCannotGradeOthers:
