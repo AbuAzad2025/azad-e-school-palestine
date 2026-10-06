@@ -78,15 +78,26 @@ def can_view_class(class_room, user) -> bool:
     if user.role == UserRole.parent:
         from app.core.rls import access_read_scope
         from app.models.class_room import ClassMember
+        from app.models.family import FamilyLink
 
         with access_read_scope("class_members", class_room.id):
-            if (
-                ClassMember.query.filter_by(user_id=user.id, class_id=class_room.id, status="active").first()
+            # استعلام إثبات واحد: عضوية وليّ الأمر نفسه، أو عضوية ابنٍ مرتبط
+            # به عبر FamilyLink نشط. (P2-PERF: ثابت مهما كثر أبناء الصف.)
+            return (
+                ClassMember.query.outerjoin(
+                    FamilyLink,
+                    (FamilyLink.student_id == ClassMember.user_id)
+                    & (FamilyLink.parent_id == user.id)
+                    & (FamilyLink.status == "active"),
+                )
+                .filter(
+                    ClassMember.class_id == class_room.id,
+                    ClassMember.status == "active",
+                    (ClassMember.user_id == user.id) | FamilyLink.id.isnot(None),
+                )
+                .first()
                 is not None
-            ):
-                return True
-            # P2-PERF: استعلام واحد بدل استعلام لكل طالب في الصف
-            return parent_has_active_member(user.id, class_room.id)
+            )
 
     # P-SEC-12: الصف مجاني — العضوية كافية
     if _is_class_free(class_room):

@@ -160,6 +160,11 @@ def api_lessons_get(lesson_id: int):
     """جلب درس محدد."""
     lesson = db.session.get(Lesson, lesson_id)
     if not lesson:
+        # RLS يخفي درس مدرسة أخرى؛ إن وُجد فعلاً فالرفض 403 لا 404.
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(Lesson, lesson_id) is not None:
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
         return api_error(_("الدرس غير موجود"), 404, "NOT_FOUND")
 
     if current_user.role == UserRole.super_admin:

@@ -33,6 +33,12 @@ from .forms import DiscountCodeForm, PaymentForm, PlanForm, SubscribeForm, Valid
 def _class_or_404(class_id):
     class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى قبل فحص الصلاحية؛ الرفض 403 بقراءة مرفوعة
+        # مقيّدة (انظر access_read_scope في app/core/rls.py) لا 404.
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(ClassRoom, class_id) is not None:
+            abort(403)
         abort(404)
     return class_room
 

@@ -270,6 +270,11 @@ def generate_quiz():
     school_id = current_school_id()
     lesson = db.session.get(Lesson, lesson_id)
     if lesson is None:
+        # RLS يخفي درس مدرسة أخرى؛ إن وُجد فعلاً فالرفض 403 لا 404 (قراءة مرفوعة مقيّدة).
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(Lesson, lesson_id) is not None:
+            return jsonify({"error": {"message": _("الدرس خارج نطاق مدرستك"), "code": "FORBIDDEN"}}), 403
         return jsonify({"error": {"message": _("الدرس غير موجود"), "code": "NOT_FOUND"}}), 404
     lesson_class = lesson.class_room
     if lesson_class is None or school_id is None or lesson_class.school_id != school_id:

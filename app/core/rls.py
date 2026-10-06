@@ -669,6 +669,29 @@ def enable_all_rls_policies() -> None:
 _platform_scope = threading.local()
 
 
+_ELEVATE_SQL = text(
+    """
+    SELECT set_config('app.is_super_admin', '1', true),
+           set_config('app.current_school_id', '0', true),
+           set_config(:class_ids_guc, '', true)
+    """  # nosec B608 — أسماء GUCs ثوابت، القيم حرفية
+)
+
+
+def _elevate_now() -> None:
+    """ارفع السياق في المعاملة الجارية — عبارة واحدة بدل ثلاث.
+
+    كل استعلام إضافي هنا يدفع من ميزانيات الاستعلامات المحدودة
+    (test_query_budget_services وغيرها)، والثلاثة كانت دائماً تصدر معاً.
+    """
+    db.session.execute(_ELEVATE_SQL, {"class_ids_guc": _CLASS_IDS_GUC})
+
+
+def _session_in_transaction() -> bool:
+    """هل للجلسة الحقيقية معاملة مفتوحة؟ (scoped_session لا يكشفها مباشرة)"""
+    return bool(db.session().in_transaction())
+
+
 @contextmanager
 def platform_scope() -> Iterator[None]:
     """Run a block as the platform rather than as any tenant.
@@ -679,9 +702,10 @@ def platform_scope() -> Iterator[None]:
     depth = getattr(_platform_scope, "depth", 0)
     _platform_scope.depth = depth + 1
     try:
-        db.session.execute(text("SET LOCAL app.is_super_admin = '1'"))
-        db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
-        db.session.execute(text(f"SET LOCAL {_CLASS_IDS_GUC} = ''"))
+        # معاملة مفتوحة لا تُعيد إشعال after_begin — ارفع يدوياً بعبارة واحدة.
+        # معاملة جديدة يغطيها _repin_platform_scope عند البدء.
+        if _session_in_transaction():
+            _elevate_now()
         yield
     finally:
         _platform_scope.depth = depth
@@ -699,8 +723,16 @@ def _repin_platform_scope(session, transaction, connection) -> None:
     """Re-apply the elevation to every transaction begun inside the scope."""
     if not getattr(_platform_scope, "depth", 0):
         return
-    connection.execute(text("SET LOCAL app.is_super_admin = '1'"))
-    connection.execute(text("SET LOCAL app.current_school_id = '0'"))
+    connection.execute(
+        text(
+            """
+            SELECT set_config('app.is_super_admin', '1', true),
+                   set_config('app.current_school_id', '0', true),
+                   set_config(:class_ids_guc, '', true)
+            """  # nosec B608 — أسماء GUCs ثوابت، القيم حرفية
+        ),
+        {"class_ids_guc": _CLASS_IDS_GUC},
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -757,9 +789,8 @@ def access_read_scope(table: str, row_id: int) -> Iterator[None]:
     depth = getattr(_platform_scope, "depth", 0)
     _platform_scope.depth = depth + 1
     try:
-        db.session.execute(text("SET LOCAL app.is_super_admin = '1'"))
-        db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
-        db.session.execute(text(f"SET LOCAL {_CLASS_IDS_GUC} = ''"))
+        if _session_in_transaction():
+            _elevate_now()
         yield
     finally:
         _platform_scope.depth = depth
