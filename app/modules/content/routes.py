@@ -34,6 +34,13 @@ def _class_or_404(class_id):
 
     class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى قبل فحص الصلاحية؛ الرفض الصريح 403 يحتاج
+        # قراءة مرفوعة مقيّدة (انظر access_read_scope في app/core/rls.py).
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(ClassRoom, class_id)
+        if foreign is not None:
+            abort(403)
         abort(404)
     return class_room
 
@@ -181,7 +188,14 @@ def attachment_youtube(class_id, lesson_id):
 @bp.post("/attachments/<int:att_id>/delete")
 @login_required
 def attachment_delete(att_id):
-    att = db.get_or_404(LessonAttachment, att_id)
+    att = db.session.get(LessonAttachment, att_id)
+    if att is None:
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(LessonAttachment, att_id)
+        if foreign is not None:
+            abort(403)
+        abort(404)
     class_room = _class_or_404(att.lesson.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
@@ -238,6 +252,13 @@ def lesson_import(lesson_id):
     # Verify source lesson is accessible to the user
     source_lesson = get_lesson(lesson_id)
     if not source_lesson:
+        # درس مدرسة أخرى يخفيه RLS؛ ارفض 403 بقراءة مرفوعة إن وُجد فعلاً.
+        from app.core.rls import get_for_access_check
+        from app.models.content import Lesson
+
+        foreign = get_for_access_check(Lesson, lesson_id)
+        if foreign is not None:
+            abort(403)
         abort(404)
     source_class = _class_or_404(source_lesson.class_id)
     if not can_view_class(source_class, current_user):

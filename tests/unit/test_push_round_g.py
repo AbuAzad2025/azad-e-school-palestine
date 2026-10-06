@@ -724,7 +724,7 @@ class TestBillingRoutes:
             from app.services.billing import create_discount_code
 
             create_discount_code(sid, code, "خصم تحقق", "percentage", 15, max_uses=5)
-        _, client = persona(app, "student")
+        _, client = persona(app, "student", school_id=sid)  # كود المدرسة يُرى لطلابها فقط تحت RLS
         resp = client.post("/billing/validate-code", data={"code": code, "plan_id": plan_id})
         assert resp.status_code == 200
         payload = resp.get_json()

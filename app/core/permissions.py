@@ -48,6 +48,22 @@ def any_role(*roles: UserRole):
 # ═══════════════════════════════════════════════════════════════════════════
 
 
+def _fetch_class_for_guard(class_id):
+    """جلب الصف للحرس — مع تمييز «مخفي بـ RLS» عن «غير موجود».
+
+    الصفّ المخفي هو صفّ مدرسة أخرى يوجد فعلاً؛ الحرسان أدناه يجب أن يرفضا
+    403 لا 404 حتى لا يكشف استقصاء المعرّفات أي شيء. القراءة المرفوعة
+    مقيّدة — انظر access_read_scope في app/core/rls.py.
+    """
+    from app.core.rls import get_for_access_check
+    from app.models.class_room import ClassRoom
+
+    class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+    if class_room is not None:
+        return class_room
+    return get_for_access_check(ClassRoom, class_id)
+
+
 def class_access_required(fn):
     """@login_required + can_view_class(class_room, current_user).
 
@@ -60,13 +76,12 @@ def class_access_required(fn):
     @login_required
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        from app.models.class_room import ClassRoom
         from app.services.access import can_view_class
 
         class_id = kwargs.get("class_id") or (_req.view_args or {}).get("class_id")
         if class_id is None:
             abort(400)
-        class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+        class_room = _fetch_class_for_guard(class_id)
         if class_room is None:
             abort(404)
         if not can_view_class(class_room, current_user):
@@ -88,13 +103,12 @@ def class_teach_required(fn):
     @login_required
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        from app.models.class_room import ClassRoom
         from app.services.access import can_teach_class
 
         class_id = kwargs.get("class_id") or (_req.view_args or {}).get("class_id")
         if class_id is None:
             abort(400)
-        class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+        class_room = _fetch_class_for_guard(class_id)
         if class_room is None:
             abort(404)
         if not can_teach_class(class_room, current_user):

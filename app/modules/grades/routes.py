@@ -35,9 +35,32 @@ from . import bp
 from .forms import AssignmentForm, CategoryForm, GradeItemForm, GradeSubmissionForm, SubmissionForm
 
 
+def _class_or_404_or_hidden(class_id):
+    """جلب الصف أو None إن كان مقصياً بـ RLS (صفّ مدرسة أخرى).
+
+    الوالد قد يملك حق قراءة كشف درجات ابنه في صفّ لمدرسة لا صلة له بها،
+    لذا لا يجوز هنا الرفض 403 تلقائياً — القرار لـ can_view_class في المسار.
+    """
+    from app.core.rls import get_for_access_check
+
+    class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+    if class_room:
+        return class_room
+    return get_for_access_check(ClassRoom, class_id)
+
+
 def _class_or_404(class_id):
+    """الاسم التاريخي — للمسارات التي قرارها can_teach_class الفوري
+    (معلم/مشرف)، وهم لا يصلون لصفّ لا يرونه أصلاً، فـ 404 هنا آمن:
+    الصفّ المخفي عنهم هو صفّ غير مدرستهم لا صفّ يملكون حقه أصلاً."""
     class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى؛ الرفض 403 بقراءة مرفوعة إن وُجد.
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(ClassRoom, class_id)
+        if foreign is not None:
+            abort(403)
         abort(404)
     return class_room
 
@@ -332,7 +355,9 @@ def attendance_save(class_id, class_room=None):
 @bp.get("/<int:class_id>/report-card/<int:student_id>")
 @login_required
 def report_card(class_id, student_id):
-    class_room = _class_or_404(class_id)
+    class_room = _class_or_404_or_hidden(class_id)
+    if class_room is None:
+        abort(404)
     if not can_view_class(class_room, current_user):
         abort(403)
     if current_user.role == UserRole.student and current_user.id != student_id:
@@ -346,7 +371,9 @@ def report_card(class_id, student_id):
 @bp.get("/<int:class_id>/report-card/<int:student_id>/pdf")
 @login_required
 def report_card_pdf(class_id, student_id):
-    class_room = _class_or_404(class_id)
+    class_room = _class_or_404_or_hidden(class_id)
+    if class_room is None:
+        abort(404)
     if not can_view_class(class_room, current_user):
         abort(403)
     if current_user.role == UserRole.student and current_user.id != student_id:

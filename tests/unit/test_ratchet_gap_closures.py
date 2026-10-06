@@ -62,14 +62,13 @@ class TestAppFactoryFallbacks:
         handler = None
         for fn in app.after_request_funcs[None]:
             name = getattr(fn, "__name__", "") or getattr(getattr(fn, "func", None), "__name__", "")
-            if name == "_track_response_end":
+            if name == "_apply_csp_nonce":
                 handler = fn
                 break
         assert handler is not None
         with app.test_request_context():
             from flask import g
 
-            g._request_start = 0.0
             g.csp_nonce = "abc123"
             resp = app.response_class("<html></html>")
             resp.headers["Content-Security-Policy"] = "script-src 'self' 'nonce-{CSP_NONCE}'"

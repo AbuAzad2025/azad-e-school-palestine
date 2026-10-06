@@ -265,7 +265,14 @@ def validate_code():
 @bp.get("/invoices/<int:subscription_id>")
 @login_required
 def invoice_view(subscription_id):
-    sub = db.get_or_404(Subscription, subscription_id)
+    sub = db.session.get(Subscription, subscription_id)
+    if sub is None:
+        # اشتراك مدرسة أخرى يخفيه RLS؛ ارفض 403 بقراءة مرفوعة إن وُجد فعلاً.
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(Subscription, subscription_id) is not None:
+            abort(403)
+        abort(404)
     class_room = _class_or_404(sub.class_id)
     if not is_member(class_room, current_user):
         abort(403)
@@ -285,7 +292,13 @@ def invoice_view(subscription_id):
 @bp.get("/invoices/<int:subscription_id>/pdf")
 @login_required
 def invoice_pdf(subscription_id):
-    sub = db.get_or_404(Subscription, subscription_id)
+    sub = db.session.get(Subscription, subscription_id)
+    if sub is None:
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(Subscription, subscription_id) is not None:
+            abort(403)
+        abort(404)
     class_room = _class_or_404(sub.class_id)
     if not is_member(class_room, current_user):
         abort(403)

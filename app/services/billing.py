@@ -358,7 +358,10 @@ def create_discount_code(
             max_uses=max_uses,
             expiry_date=expiry_date,
             applicable_plan_ids=applicable_plan_ids,
-            school_id=school_id_limit,
+            # الكود يُنسب للمدرسة الطالبة؛ وschool_id_limit يضيّق النطاق أكثر
+            # إن مُرّر. كتابة None هنا كانت تُسقط كل كود خارج نطاق أي مدرسة —
+            # وسياسة RLS ترفض السطر لأن ذراع المدرسة لا تطابق فارغاً.
+            school_id=school_id if school_id_limit is None else school_id_limit,
         )
         db.session.add(dc)
         return dc

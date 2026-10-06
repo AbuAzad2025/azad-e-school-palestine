@@ -8,6 +8,7 @@ from flask import session
 from flask_login import current_user, login_user, logout_user
 
 from app.core.db import tx
+from app.core.rls import platform_scope
 from app.extensions import db
 from app.models.system import AuditLog
 from app.models.user import User, UserRole
@@ -44,7 +45,12 @@ def _log(impersonator: User, action: str, target: User) -> None:
             )
         )
 
-    tx(_insert)
+    # دفتر التدقيق يسجّل هوية المشروع الحقيقي بينما متغيّر الجلسة
+    # app.current_user_id يبقى هوية المنتحَل — فتردّ سياسة RLS على audit_logs
+    # الكتابة بما أنها تقيّد السطر بالفاعل. الرفع هنا مشروعي: هذه الكتابة
+    # مقتصرة على super_admin، وهي الجزء الأساسي من مساءلته.
+    with platform_scope():
+        tx(_insert)
 
 
 def start_impersonation(target: User) -> str | None:

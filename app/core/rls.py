@@ -703,6 +703,114 @@ def _repin_platform_scope(session, transaction, connection) -> None:
     connection.execute(text("SET LOCAL app.current_school_id = '0'"))
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# Access-check reads — the 403 vs 404 contract
+# ══════════════════════════════════════════════════════════════════════════
+#
+# Several routes deny with 403 *after* inspecting a row that belongs to
+# another school: "this class exists, but it is not yours". RLS hides that
+# row before the route can look at it, so the route answers 404 — wrong
+# status, and worse, the same status an attacker probing ids would get for
+# ids that really do not exist. Hiding the row is the database doing its
+# job; the route just needs a deliberate, narrow way to look at the row it
+# is about to pass judgement on.
+#
+# ``access_read_scope`` is that way, and its rules are what keep it from
+# becoming a hole:
+#
+#   • read-only — every statement inside runs under a transaction that is
+#     rolled back on exit, so no elevated write can slip through;
+#   • one row, by primary key, from a allow-listed table — the caller passes
+#     the id it was given in the URL, and the model it maps to; nothing the
+#     user controls beyond that pair;
+#   • logging — every use is recorded, so an elevated read that never
+#     terminates in a deny/allow decision would show up in review.
+
+_ACCESS_READ_TABLES = frozenset(
+    {
+        "academic_events",
+        "classes",
+        "class_members",
+        "discount_codes",
+        "lesson_attachments",
+        "lessons",
+        "quiz_attempts",
+        "quizzes",
+        "subscription_plans",
+        "subscriptions",
+        "units",
+    }
+)
+
+
+@contextmanager
+def access_read_scope(table: str, row_id: int) -> Iterator[None]:
+    """Allow one tenant-filtered read of a foreign row for a 403 decision.
+
+    The block must end in ``abort(403)`` or in a normal grant — nothing
+    else. See the block comment above for why this exists and what bounds
+    it.
+    """
+    if table not in _ACCESS_READ_TABLES:
+        raise ValueError(f"access_read_scope: الجدول {table!r} ليس ضمن القائمة المسموحة")
+    logger.info("rls_access_read", table=table, row_id=row_id)
+    depth = getattr(_platform_scope, "depth", 0)
+    _platform_scope.depth = depth + 1
+    try:
+        db.session.execute(text("SET LOCAL app.is_super_admin = '1'"))
+        db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
+        db.session.execute(text(f"SET LOCAL {_CLASS_IDS_GUC} = ''"))
+        yield
+    finally:
+        _platform_scope.depth = depth
+        if depth == 0:
+            try:
+                db.session.rollback()
+            except Exception:  # noqa: BLE001 — إسقاط الارتفاع لا يجوز أن يفشل الطلب
+                logger.exception("platform_rls_scope_reset_failed")
+
+
+def get_for_access_check(model, row_id: int):
+    """Fetch one row by pk for a route-level 403 decision, or None.
+
+    ``model`` must map to a table in ``_ACCESS_READ_TABLES``. Column values
+    already loaded stay readable after the rollback (the row is expunged
+    first), but *lazy* relationships do not — a model that needs them at
+    decision or render time declares ``_access_check_eager`` with the
+    relationship names; they are joined-loaded (and expunged) here.
+    """
+    table = getattr(model, "__tablename__", None)
+    if table not in _ACCESS_READ_TABLES:
+        raise ValueError(f"get_for_access_check: الجدول {table!r} ليس ضمن القائمة المسموحة")
+    with access_read_scope(table, row_id):
+        eager = tuple(getattr(model, "_access_check_eager", ()) or ())
+        if eager:
+            from sqlalchemy import select
+            from sqlalchemy.orm import joinedload
+
+            stmt = select(model).where(model.id == row_id)
+            if hasattr(model, "deleted_at"):
+                stmt = stmt.where(model.deleted_at.is_(None))
+            stmt = stmt.options(*(joinedload(getattr(model, rel)) for rel in eager))
+            row = db.session.execute(stmt).scalar_one_or_none()
+        else:
+            row = db.session.get(model, row_id)
+        if row is not None:
+            db.session.expunge(row)
+            # أفرغ العلاقات المحمّلة مسبقاً أيضاً — وإلا expiry الـ rollback
+            # يعيد تحميلها من الجلسة تحت GUCs عادية فيفشل الوصول مجدداً.
+            for rel in eager:
+                child = getattr(row, rel, None)
+                if child is not None:
+                    try:
+                        db.session.expunge(child)
+                    except Exception:  # noqa: BLE001 — إسقاط الارتفاع لا يجوز أن يفشل القرار
+                        logger.debug("access_check_expunge_child_failed", table=table, rel=rel)
+        # مطلوب: عدم ترحيل الـ rollback أعلاه إلى الكائن المرتجع بعد expunge.
+        db.session.rollback()
+        return row
+
+
 def disable_all_rls_policies() -> None:
     """Disable RLS on all tables.  Used for rollback migration."""
     all_tables = _TENANT_TABLES + list(_INDIRECT_TENANT_TABLES.keys()) + _USER_SCOPED_TABLES + _USER_SCOPED_WITH_TENANT

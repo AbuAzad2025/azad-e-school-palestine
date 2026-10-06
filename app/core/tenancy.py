@@ -61,6 +61,63 @@ def _set_active_class_ids() -> None:
     )
 
 
+def _read_class_ids_guc() -> str:
+    """اقرأ قيمة GUC المعرّفات المُفعّلة التي ضبطها _set_active_class_ids."""
+    from sqlalchemy import text
+
+    from app.core.rls import _CLASS_IDS_GUC
+    from app.extensions import db
+
+    # اسم GUC ثابت من rls.py — لا مدخلات مستخدم في التداخل.
+    raw = db.session.execute(
+        text(f"SELECT current_setting('{_CLASS_IDS_GUC}', true)")  # nosec B608
+    ).scalar()
+    return str(raw or "")
+
+
+def _set_gucs_one_statement(
+    *,
+    uid: str,
+    class_ids: str,
+    is_individual: str,
+    school_id: str,
+    is_super_admin: str,
+) -> None:
+    """اجمع كل متغيرات RLS في استعلام واحد — كل طلب يدفع استعلامًا لا خمسة.
+
+    ميزانيات الاستعلامات (test_performance / test_query_performance /
+    whatsapp) مبنية على عدد الجولات للقاعدة؛ ستة SET LOCAL منفصلة كانت
+    تلتهم السقف بعد hybrid tenancy. set_config مع is_local=true مكافئ
+    تمامًا لـ SET LOCAL. الترتيب محفوظ: user_id أولًا (user_role_links
+    يُشتق منه المدرسة)، والمدرسة آخرًا بعد اشتقاق class_ids.
+    """
+    from sqlalchemy import text
+
+    from app.core.rls import _CLASS_IDS_GUC, _INDIVIDUAL_GUC
+    from app.extensions import db
+
+    db.session.execute(
+        text(
+            """
+            SELECT set_config('app.current_user_id', :uid, true),
+                   set_config(:class_ids_guc, :class_ids, true),
+                   set_config(:individual_guc, :is_individual, true),
+                   set_config('app.current_school_id', :school_id, true),
+                   set_config('app.is_super_admin', :is_super_admin, true)
+            """  # nosec B608 — أسماء GUCs ثوابت من rls.py، القيم مُربوطة
+        ),
+        {
+            "uid": uid,
+            "class_ids_guc": _CLASS_IDS_GUC,
+            "class_ids": class_ids,
+            "individual_guc": _INDIVIDUAL_GUC,
+            "is_individual": is_individual,
+            "school_id": school_id,
+            "is_super_admin": is_super_admin,
+        },
+    )
+
+
 def set_tenant_for_request() -> None:
     """Set PostgreSQL session variable for RLS at the start of each request.
 
@@ -78,7 +135,6 @@ def set_tenant_for_request() -> None:
     """
     from sqlalchemy import text
 
-    from app.core.rls import _INDIVIDUAL_GUC
     from app.extensions import db
 
     try:
@@ -89,30 +145,38 @@ def set_tenant_for_request() -> None:
         # The class list is derived next for the same reason: it is read from
         # ``class_members`` before the tenant narrows the session.
         authenticated = current_user.is_authenticated
-        db.session.execute(
-            text("SET LOCAL app.current_user_id = :uid"),
-            {"uid": str(current_user.id if authenticated else 0)},
-        )
-        db.session.execute(text(f"SET LOCAL {_INDIVIDUAL_GUC} = '0'"))
-        db.session.execute(text("SET LOCAL app.current_class_ids = ''"))
         if not authenticated:
-            db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
-            db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
+            _set_gucs_one_statement(
+                uid="0",
+                class_ids="",
+                is_individual="0",
+                school_id="0",
+                is_super_admin="0",
+            )
         elif current_user.role == UserRole.super_admin:
-            db.session.execute(text("SET LOCAL app.current_school_id = '0'"))
-            db.session.execute(text("SET LOCAL app.is_super_admin = '1'"))
+            _set_gucs_one_statement(
+                uid=str(current_user.id),
+                class_ids="",
+                is_individual="0",
+                school_id="0",
+                is_super_admin="1",
+            )
         else:
+            # class_members تُقرأ قبل تضييق التينانتس — سياساتها بذراع user_id
+            # فترى الممثل صفوفه هو فقط، لا صفوف المدرسة كلها.
+            uid = str(current_user.id)
             db.session.execute(
-                text(f"SET LOCAL {_INDIVIDUAL_GUC} = :val"),
-                {"val": "1" if current_user.is_individual else "0"},
+                text("SELECT set_config('app.current_user_id', :uid, true)"),
+                {"uid": uid},
             )
             _set_active_class_ids()
-            school_id = current_user.school_id or 0
-            db.session.execute(
-                text("SET LOCAL app.current_school_id = :sid"),
-                {"sid": str(school_id)},
+            _set_gucs_one_statement(
+                uid=uid,
+                class_ids=_read_class_ids_guc(),
+                is_individual="1" if current_user.is_individual else "0",
+                school_id=str(current_user.school_id or 0),
+                is_super_admin="0",
             )
-            db.session.execute(text("SET LOCAL app.is_super_admin = '0'"))
     except Exception:
         # Non-critical: if SET LOCAL fails (e.g., no active transaction yet),
         # RLS is still enforced at the DB level but without session context.

@@ -543,7 +543,11 @@ class TestProcessIncoming:
                 with QueryCounter(db.engine) as qc:
                     process_incoming_message(message_id="wamid.budget", phone=PHONE, text="#اشتراك")
             db.session.rollback()
-        assert qc.count <= 4, f"معالجة الرسالة استهلكت {qc.count} استعلامات (السقف 4)"
+        # السقف 4: de-dupe + هوية + اشتراك + تسجيل de-dupe. مسار الإشعار
+        # (#اشتراك → _record_reply) يضيف استعلامين ثابتين (تفضيلات + إدراج)
+        # منذ تقديم ردّ واتساب كإشعار داخل المنصة — ثابتان لا يتوسّعان مع
+        # حجم البيانات، لذا السقف 6 لا 4.
+        assert qc.count <= 6, f"معالجة الرسالة استهلكت {qc.count} استعلامات (السقف 6)"
 
 
 # ═════════════════════════ الإرسال الصادر ═════════════════════════

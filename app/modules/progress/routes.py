@@ -21,6 +21,13 @@ from . import bp
 def _class_or_404(class_id):
     class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى قبل فحص الصلاحية؛ الرفض الصريح 403 يحتاج
+        # قراءة مرفوعة مقيّدة (انظر access_read_scope في app/core/rls.py).
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(ClassRoom, class_id)
+        if foreign is not None:
+            abort(403)
         abort(404)
     return class_room
 
@@ -89,7 +96,15 @@ def video_update(attachment_id):
     from app.models.class_room import ClassMember
     from app.models.content import LessonAttachment
 
-    attachment = db.get_or_404(LessonAttachment, attachment_id)
+    attachment = db.session.get(LessonAttachment, attachment_id)
+    if attachment is None:
+        # مرفق مدرسة أخرى يخفيه RLS — ارفض 403 بقراءة مرفوعة إن وُجد فعلاً.
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(LessonAttachment, attachment_id)
+        if foreign is not None:
+            abort(403)
+        abort(404)
     # Ensure student is a member of the lesson's class
     _cls_id = attachment.lesson.class_id
     _is_member = ClassMember.query.filter_by(class_id=_cls_id, user_id=current_user.id, status="active").first()

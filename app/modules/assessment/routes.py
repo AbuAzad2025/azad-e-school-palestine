@@ -40,6 +40,13 @@ from .forms import QuestionForm, QuizForm
 def _class_or_404(class_id):
     class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى قبل فحص الصلاحية؛ الرفض الصريح 403 يحتاج
+        # قراءة مرفوعة مقيّدة (انظر access_read_scope في app/core/rls.py).
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(ClassRoom, class_id)
+        if foreign is not None:
+            abort(403)
         abort(404)
     return class_room
 
@@ -156,7 +163,14 @@ def question_delete(question_id):
 @bp.get("/quizzes/<int:quiz_id>/attempt")
 @login_required
 def attempt_start(quiz_id):
-    quiz = db.get_or_404(Quiz, quiz_id)
+    quiz = db.session.get(Quiz, quiz_id)
+    if quiz is None:
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(Quiz, quiz_id)
+        if foreign is not None:
+            abort(403)
+        abort(404)
     class_room = _class_or_404(quiz.class_id)
     if not can_view_class(class_room, current_user):
         abort(403)
@@ -177,7 +191,14 @@ def attempt_start(quiz_id):
 @login_required
 def attempt_do(attempt_id):
     attempt = get_attempt(attempt_id)
-    if not attempt or attempt.student_id != current_user.id:
+    if not attempt:
+        # محاولة مدرسة أخرى تخفيها RLS — نفس مبرّر attempt_result أعلاه.
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(QuizAttempt, attempt_id) is not None:
+            abort(403)
+        abort(404)
+    if attempt.student_id != current_user.id:
         abort(403)
     quiz = attempt.quiz
     if attempt.status != "in_progress":
@@ -283,6 +304,12 @@ def _parse_answer(question, raw: str):
 def attempt_result(attempt_id):
     attempt = get_attempt(attempt_id)
     if not attempt:
+        # محاولة طالب آخر (مدرسة أخرى) يخفيها ذراع الممثل في RLS؛
+        # الرفض 403 بقراءة مرفوعة إن وُجدت المحاولة فعلاً.
+        from app.core.rls import get_for_access_check
+
+        if get_for_access_check(QuizAttempt, attempt_id) is not None:
+            abort(403)
         abort(404)
     class_room = _class_or_404(attempt.quiz.class_id)
     is_owner = attempt.student_id == current_user.id
@@ -512,8 +539,16 @@ def proctor_log(attempt_id):
 def quiz_stats(quiz_id):
     from app.models.assessment import Quiz
 
-    quiz = db.get_or_404(Quiz, quiz_id)
-    class_room = db.get_or_404(ClassRoom, quiz.class_id)
+    quiz = db.session.get(Quiz, quiz_id)
+    if quiz is None:
+        # اختبار مدرسة أخرى يخفيه RLS؛ ارفض 403 بقراءة مرفوعة إن وُجد.
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(Quiz, quiz_id)
+        if foreign is not None:
+            abort(403)
+        abort(404)
+    class_room = _class_or_404(quiz.class_id)
     if not can_teach_class(class_room, current_user):
         abort(403)
 

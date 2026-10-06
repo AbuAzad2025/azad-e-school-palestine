@@ -172,6 +172,13 @@ def class_detail(class_id):
 
     class_room = db_get_class(class_id)
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى قبل can_view_class؛ ارفض 403 بقراءة مرفوعة.
+        from app.core.rls import get_for_access_check
+        from app.models.class_room import ClassRoom as _CR
+
+        foreign = get_for_access_check(_CR, class_id)
+        if foreign is not None:
+            abort(403)
         abort(404)
     # وصول موحّد عبر can_view_class: عضو الصف (مجاني) أو مشترك نشط (مدفوع)،
     # معلم/مشرف نفس المدرسة، وليّ أمر طالب عضو، أو super_admin
@@ -202,6 +209,14 @@ def db_get_class(class_id):
 def class_code(class_id):
     class_room = db_get_class(class_id)
     if not class_room:
+        # RLS يخفي صفّ مدرسة أخرى قبل المقارنة؛ الرفض الصريح 403 يحتاج قراءة
+        # مرفوعة مقيّدة (انظر access_read_scope في app/core/rls.py).
+        from app.core.rls import get_for_access_check
+        from app.models.class_room import ClassRoom as _CR
+
+        foreign = get_for_access_check(_CR, class_id)
+        if foreign is not None and current_user.role != UserRole.super_admin:
+            abort(403)
         abort(404)
     if current_school_id() != class_room.school_id and current_user.role != UserRole.super_admin:
         abort(403)
@@ -222,6 +237,12 @@ def class_assign_teacher(class_id):
 
     class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     if not class_room:
+        # نفس مبرر class_code أعلاه: الصفّ الأجنبي يُحجب بـ RLS قبل المقارنة.
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(ClassRoom, class_id)
+        if foreign is not None and current_user.role != UserRole.super_admin:
+            abort(403)
         abort(404)
     if current_school_id() != class_room.school_id and current_user.role != UserRole.super_admin:
         abort(403)

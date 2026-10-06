@@ -71,14 +71,22 @@ def can_view_class(class_room, user) -> bool:
 
     # P-SEC-14: وليّ الأمر — إشراف قراءة فقط على صفوف أبنائه.
     # نموذج الربط الفعلي: وليّ الأمر عضو نشط في صفّ ابنه، أو مرتبط عبر FamilyLink
-    # بطالب عضو نشط. الصلاحية مشتقة من عضوية الابن نفسه.
+    # بطالب عضو نشط. الصلاحية مشتقة من عضوية الابن نفسه. وليّ الأمر بلا رابط
+    # مدرسة فيُقيَّد بـ RLS عن صفّ المدرسة نفسه، لذا كلا استعلامي الإثبات
+    # هنا يمرّان عبر قراءة مرفوعة مقيّدة — تعيدان عضوية ابنه فقط ولا تكشفان
+    # شيئاً عن صفّ غير صفّه (فلترة class_id تبقى في WHERE).
     if user.role == UserRole.parent:
+        from app.core.rls import access_read_scope
         from app.models.class_room import ClassMember
 
-        if ClassMember.query.filter_by(user_id=user.id, class_id=class_room.id, status="active").first() is not None:
-            return True
-        # P2-PERF: استعلام واحد بدل استعلام لكل طالب في الصف
-        return parent_has_active_member(user.id, class_room.id)
+        with access_read_scope("class_members", class_room.id):
+            if (
+                ClassMember.query.filter_by(user_id=user.id, class_id=class_room.id, status="active").first()
+                is not None
+            ):
+                return True
+            # P2-PERF: استعلام واحد بدل استعلام لكل طالب في الصف
+            return parent_has_active_member(user.id, class_room.id)
 
     # P-SEC-12: الصف مجاني — العضوية كافية
     if _is_class_free(class_room):

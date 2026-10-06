@@ -15,6 +15,8 @@ from .mixins import PKMixin, SoftDeleteMixin
 
 class ClassRoom(PKMixin, SoftDeleteMixin, db.Model):
     __tablename__ = "classes"
+    # حمّل هذه العلاقات مُسبقًا في get_for_access_check — بعد expunge لا تحميل كسول.
+    _access_check_eager = ("subject", "grade", "teacher")
     __table_args__ = (
         UniqueConstraint("school_id", "subject_id", "grade_id", "semester", name="uq_class_subject_grade_semester"),
     )

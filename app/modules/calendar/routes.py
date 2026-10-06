@@ -65,7 +65,16 @@ def event_delete(event_id):
     from app.core.tenancy import current_school_id
     from app.models.calendar import AcademicEvent
 
-    event = db.get_or_404(AcademicEvent, event_id)
+    event = db.session.get(AcademicEvent, event_id)
+    if event is None:
+        # RLS يخفي حدث المدرسة الأخرى قبل المقارنة؛ الرفض 403 بقراءة مرفوعة
+        # مقيّدة (انظر access_read_scope في app/core/rls.py).
+        from app.core.rls import get_for_access_check
+
+        foreign = get_for_access_check(AcademicEvent, event_id)
+        if foreign is not None and current_user.role != UserRole.super_admin:
+            abort(403)
+        abort(404)
     # school_admin can only delete events in their own school
     if current_user.role == UserRole.school_admin:
         if event.school_id != current_school_id():
