@@ -193,7 +193,8 @@ def _seed(password: str) -> tuple[dict[str, int], str]:
         _save(FamilyLink(parent_id=parent.id, student_id=student.id, status="active"))
 
     today = date.today()
-    if not Attendance.query.filter_by(class_id=class_id, student_id=student.id, date=today).first():
+    attendance_rows = Attendance.query.filter_by(class_id=class_id, student_id=student.id, date=today).all()
+    if not attendance_rows:
         _save(
             Attendance(
                 class_id=class_id,
@@ -204,6 +205,16 @@ def _seed(password: str) -> tuple[dict[str, int], str]:
                 recorded_by=teacher.id,
             )
         )
+    else:
+        # إعادة التهيئة تعيد المزامنة إلى القيم المزروعة وتنظف المكررات:
+        # اختبارات سابقة (خاصة اختبار تعديل المعلم الذي قد يُقتل في منتصف
+        # مهلته دون أن يكمل استرجاعه) تلوّث الصف أو تضاعفه — والمخطط بلا
+        # قيد تفرد (class_id, student_id, date) فالسويت الحتمي هو الضمانة.
+        attendance_rows[0].status = "present"
+        attendance_rows[0].note = "حضور مسجَّل مسبقاً"
+        for extra in attendance_rows[1:]:
+            db.session.delete(extra)
+        _save(attendance_rows[0])
 
     unit = Unit.query.filter_by(class_id=class_id).first()
     if unit is None:

@@ -677,6 +677,25 @@ _ELEVATE_SQL = text(
     """  # nosec B608 — أسماء GUCs ثوابت، القيم حرفية
 )
 
+# أسماء متغيرات سياق الطلب الخمسة التي يضبطها set_tenant_for_request.
+_REQUEST_GUC_NAMES = (
+    "app.current_user_id",
+    "app.current_class_ids",
+    "app.is_individual",
+    "app.current_school_id",
+    "app.is_super_admin",
+)
+
+_RESTORE_SQL = text(
+    """
+    SELECT set_config('app.current_user_id', :uid, true),
+           set_config('app.current_class_ids', :class_ids, true),
+           set_config('app.is_individual', :individual, true),
+           set_config('app.current_school_id', :school_id, true),
+           set_config('app.is_super_admin', :super_admin, true)
+    """  # nosec B608 — أسماء GUCs ثوابت، القيم من لقطة سياق الطلب
+)
+
 
 def _elevate_now() -> None:
     """ارفع السياق في المعاملة الجارية — عبارة واحدة بدل ثلاث.
@@ -692,6 +711,85 @@ def _session_in_transaction() -> bool:
     return bool(db.session().in_transaction())
 
 
+def _request_guc_snapshot() -> dict[str, str]:
+    """لقطة سياق الطلب — تُؤخذ قبل الترقية لا بعدها.
+
+    المصدر الأول flask.g — set_tenant_for_request يكتب القيم التي ضبطها
+    فلا استعلام إضافي في الطلبات الحقيقية. إن لم توجد اللقطة والمعاملة
+    مفتوحة تُقرأ من القاعدة (قيم ما قبل الترقية). بلا معاملة فالحالة
+    الفعلية «غير مضبوط» فتُلقط كقيم فارغة.
+    """
+    empty = {name: "" for name in _REQUEST_GUC_NAMES}
+    try:
+        from flask import g, has_app_context
+
+        if has_app_context():
+            cached = getattr(g, "_rls_request_gucs", None)
+            if cached is not None:
+                return dict(cached)
+    except Exception:  # noqa: BLE001 — اللقطة لا يجوز أن تُسقط الاستدعاء
+        logger.debug("rls_request_guc_snapshot_fallback")
+    if _session_in_transaction():
+        return _read_gucs_from_db() or empty
+    return empty
+
+
+def _request_gucs_from_flask() -> dict[str, str] | None:
+    """لقطة سياق الطلب من flask.g فقط — بلا أي استعلام.
+
+    آمنة للاستدعاء داخل مستمع after_begin: القراءة من القاعدة هناك
+    تفتح جولة وبلورة معاملات جديّة بلا نهاية. لا لقطة (سياقات بلا
+    before_request — بذور، عمال خلفيون، اختبارات خدمات) ⇒ None
+    والمنادي لا يلمس المعاملة.
+    """
+    try:
+        from flask import g, has_app_context
+
+        if has_app_context():
+            cached = getattr(g, "_rls_request_gucs", None)
+            if cached is not None:
+                return dict(cached)
+    except Exception:  # noqa: BLE001 — اللقطة لا يجوز أن تُسقط بدء المعاملة
+        pass
+    return None
+
+
+def _read_gucs_from_db() -> dict[str, str] | None:
+    """اقرأ قيم GUCs الخمسة الحالية بعبارة واحدة، أو None إن فشلت القراءة."""
+    try:
+        row = db.session.execute(
+            text(
+                "SELECT current_setting('app.current_user_id', true), "
+                "current_setting('app.current_class_ids', true), "
+                "current_setting('app.is_individual', true), "
+                "current_setting('app.current_school_id', true), "
+                "current_setting('app.is_super_admin', true)"
+            )
+        ).one()
+        return dict(zip(_REQUEST_GUC_NAMES, (str(v or "") for v in row), strict=True))
+    except Exception:  # noqa: BLE001 — قاعدة غير متاحة: أعدها للقيم الافتراضية
+        return None
+
+
+def _restore_request_gucs(snapshot: dict[str, str]) -> None:
+    """أعد ضبط سياق الطلب من لقطة مؤخذة قبل الترقية لا بعدها.
+
+    البديل الأصحّ عن rollback: القراءة المرفوعة SELECT فقط فلا شيء يُرمى،
+    بينما rollback ينهي معاملة الطلب فيمحو كل GUCs الطلب (SET LOCAL) ويترك
+    بقية الطلب بلا سياق — أي استعلام لاحق يفشل مغلقاً (fail-closed).
+    """
+    db.session.execute(
+        _RESTORE_SQL,
+        {
+            "uid": snapshot["app.current_user_id"],
+            "class_ids": snapshot["app.current_class_ids"],
+            "individual": snapshot["app.is_individual"],
+            "school_id": snapshot["app.current_school_id"],
+            "super_admin": snapshot["app.is_super_admin"],
+        },
+    )
+
+
 @contextmanager
 def platform_scope() -> Iterator[None]:
     """Run a block as the platform rather than as any tenant.
@@ -701,6 +799,7 @@ def platform_scope() -> Iterator[None]:
     """
     depth = getattr(_platform_scope, "depth", 0)
     _platform_scope.depth = depth + 1
+    snap = _request_guc_snapshot()  # قبل الترقية — لا بعدها
     try:
         # معاملة مفتوحة لا تُعيد إشعال after_begin — ارفع يدوياً بعبارة واحدة.
         # معاملة جديدة يغطيها _repin_platform_scope عند البدء.
@@ -716,22 +815,46 @@ def platform_scope() -> Iterator[None]:
                 db.session.rollback()
             except Exception:
                 logger.exception("platform_rls_scope_reset_failed")
+            try:
+                # الـ rollback يمحو GUCs الطلب أيضاً — أعدها فوراً حتى لا يكمل
+                # الطلب بلا سياق (فشل مغلق لكل استعلام لاحق).
+                _restore_request_gucs(snap)
+            except Exception:  # noqa: BLE001 — الإسقاط لا يجوز أن يفشل الطلب
+                logger.exception("platform_scope_restore_failed")
 
 
 @event.listens_for(db.session, "after_begin")
 def _repin_platform_scope(session, transaction, connection) -> None:
-    """Re-apply the elevation to every transaction begun inside the scope."""
-    if not getattr(_platform_scope, "depth", 0):
+    """أعد تثبيت السياق في كل معاملة جديدة للجلسة.
+
+    GUCs الطلب تُضبط SET LOCAL — تنتمي لمعاملة واحدة وتموت معها عند
+    commit. الطلب الواحد يفتح معاملات متعددة (كل ``tx()`` واحدة)، فما
+    بعد أول commit كان يعمل بلا سياق إطلاقاً: كتابة الحضور تُرسى ثم
+    ``audit()`` يفتح معاملة ثانية تُرفض سياسة user_id عليها — 500 للصفحة
+    كلها رغم نجاح الكتابة نفسها. إعادة التثبيت من لقطة flask.g (بلا
+    استعلام) تُرجع الدعوة: كل معاملة للطلب تحمل سياقه.
+
+    داخل نطاق المنصة يرتفع السياق كما قبل؛ بلا لقطة (بذور، عمال
+    خلفيون) يبقى السلوك القديم — من يضبط GUCs بنفسه يحمل مسؤوليتها.
+    """
+    if getattr(_platform_scope, "depth", 0):
+        connection.execute(
+            _ELEVATE_SQL,
+            {"class_ids_guc": _CLASS_IDS_GUC},
+        )
+        return
+    snap = _request_gucs_from_flask()
+    if snap is None:
         return
     connection.execute(
-        text(
-            """
-            SELECT set_config('app.is_super_admin', '1', true),
-                   set_config('app.current_school_id', '0', true),
-                   set_config(:class_ids_guc, '', true)
-            """  # nosec B608 — أسماء GUCs ثوابت، القيم حرفية
-        ),
-        {"class_ids_guc": _CLASS_IDS_GUC},
+        _RESTORE_SQL,
+        {
+            "uid": snap["app.current_user_id"],
+            "class_ids": snap["app.current_class_ids"],
+            "individual": snap["app.is_individual"],
+            "school_id": snap["app.current_school_id"],
+            "super_admin": snap["app.is_super_admin"],
+        },
     )
 
 
@@ -793,12 +916,15 @@ def access_read_scope(table: str, row_id: int) -> Iterator[None]:
             _elevate_now()
         yield
     finally:
+        # المعاملة المرفوعة لا يصح أن تكمل الطلب: داخل النطاق قراءات
+        # فقط (حروست مسار 403)، فالترمية للأمان لا لتنظيف. المعاملة
+        # التالية للطلب يعيد مستمع after_begin رسمها بسياق الطلب من
+        # لقطة flask.g — بلا استعلام استرجاع إضافي (ميزانيتا الحروست).
+        try:
+            db.session.rollback()
+        except Exception:
+            logger.exception("access_read_scope_reset_failed")
         _platform_scope.depth = depth
-        if depth == 0:
-            try:
-                db.session.rollback()
-            except Exception:  # noqa: BLE001 — إسقاط الارتفاع لا يجوز أن يفشل الطلب
-                logger.exception("platform_rls_scope_reset_failed")
 
 
 def get_for_access_check(model, row_id: int):
@@ -837,8 +963,10 @@ def get_for_access_check(model, row_id: int):
                         db.session.expunge(child)
                     except Exception:  # noqa: BLE001 — إسقاط الارتفاع لا يجوز أن يفشل القرار
                         logger.debug("access_check_expunge_child_failed", table=table, rel=rel)
-        # مطلوب: عدم ترحيل الـ rollback أعلاه إلى الكائن المرتجع بعد expunge.
-        db.session.rollback()
+        # الترمية بعد الخروج من النطاق: rollback ينهي المعاملة فيبدأ
+        # مستمع after_begin معاملة جديدة — فيرسم سياق الطلب فورها.
+        # بالترمية داخل النطاق لبدأت المعاملة التالية قبل الاسترجاع
+        # وترسيت بسياق الارتفاع لا بسياق الطلب.
         return row
 
 

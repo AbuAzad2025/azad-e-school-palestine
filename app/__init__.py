@@ -163,10 +163,21 @@ def create_app(config_class=Config):
             response.headers.setdefault("X-Content-Type-Options", "nosniff")
             response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
             response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
-            response.headers.setdefault(
-                "Content-Security-Policy",
-                "default-src 'self'; frame-ancestors 'none'",
-            )
+            # CSP الاحتياطي يجب أن يحمل nonce الطلب نفسه: القوالب تُصدر
+            # سكربتات/أنماط nonce مضمنة (P2-03)، وheader بلا nonce يحجبها
+            # كلها ويفسد الصفحات في البيئات التي تعطّل Talisman عمداً (E2E).
+            nonce = getattr(g, "csp_nonce", "")
+            if nonce:
+                response.headers.setdefault(
+                    "Content-Security-Policy",
+                    "default-src 'self'; frame-ancestors 'none'; "
+                    f"script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'",
+                )
+            else:
+                response.headers.setdefault(
+                    "Content-Security-Policy",
+                    "default-src 'self'; frame-ancestors 'none'",
+                )
             return response
 
     from . import models  # noqa: F401

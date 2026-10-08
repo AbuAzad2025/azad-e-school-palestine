@@ -118,6 +118,54 @@ def _set_gucs_one_statement(
     )
 
 
+def _snapshot_request_gucs() -> None:
+    """لقطة سياق الطلب في flask.g — تُكتب قبل ضبط الـGUCs لا بعدها.
+
+    مستمع `after_begin` يعيد تثبيت السياق في بداية كل معاملة، بما فيه
+    معاملة `set_config` نفسها، فأي لقطة تُكتب بعده فخاية: معاملة الضبط
+    تشتغل بقيم طلب سابق (فارغة في طلب أول) ثم تُستبدل اللقطة بعد رفعها.
+
+    شرط الاستدعاء: ``app.current_user_id`` مضبوط *قبل* هذه الدالة في
+    المستخدم المصادَق — القراءات هنا كسولة (`current_user.school_id`
+    يستنتج من user_role_links باستعلام حقيقي)، وهي أول معاملة يفتحها
+    الطلب فستقيّم سياساتها بسياق الممثل إن ضُبط uid قبلها، وبقيم فارغة
+    (تعيد لا شيء) إن لم يُضبط. تُستدعى دائماً بعد ضبط uid — انظر
+    set_tenant_for_request.
+    """
+    from flask import g
+
+    try:
+        authenticated = current_user.is_authenticated
+        if authenticated and current_user.role == UserRole.super_admin:
+            snapshot = {
+                "app.current_user_id": str(current_user.id),
+                "app.current_class_ids": "",
+                "app.is_individual": "0",
+                "app.current_school_id": "0",
+                "app.is_super_admin": "1",
+            }
+        elif authenticated:
+            snapshot = {
+                "app.current_user_id": str(current_user.id),
+                "app.current_class_ids": "",  # يُحدثها after_begin ليقرأها class_members
+                "app.is_individual": "1" if current_user.is_individual else "0",
+                "app.current_school_id": str(current_user.school_id or 0),
+                "app.is_super_admin": "0",
+            }
+        else:
+            snapshot = {
+                "app.current_user_id": "0",
+                "app.current_class_ids": "",
+                "app.is_individual": "0",
+                "app.current_school_id": "0",
+                "app.is_super_admin": "0",
+            }
+        g._rls_request_gucs = snapshot
+    except Exception:
+        # لا لقطة = after_begin لا يلمس المعاملة — المضبط يدوياً يحمل مسؤوليته.
+        pass
+
+
 def set_tenant_for_request() -> None:
     """Set PostgreSQL session variable for RLS at the start of each request.
 
@@ -138,13 +186,29 @@ def set_tenant_for_request() -> None:
     from app.extensions import db
 
     try:
-        # Order matters: ``app.current_user_id`` is set FIRST, because
-        # ``User.school_id`` is derived from ``user_role_links`` — a table whose
-        # own policy keys on this variable. Reading the school before the id is
-        # set would return no links and quietly pin every request to school 0.
-        # The class list is derived next for the same reason: it is read from
-        # ``class_members`` before the tenant narrows the session.
+        # uid أولاً في المستخدم المصادَق: القراءات الكسولة التي تليه
+        # (`current_user.school_id` من user_role_links) هي ما يفتح معاملة
+        # الطلب، وسياساتها بذراع user_id — بلا المعرف تعيد لا شيء وتُلقط
+        # school_id=None في لقطة الطلب كلّه، فيُخفى الصف عن صاحبه (403). أخزّن
+        # uid الآن، واللقطة تُؤخذ بعده فتعمل الاستعلامات الكسولة بسياقه.
         authenticated = current_user.is_authenticated
+        if authenticated:
+            uid = str(current_user.id)
+        else:
+            uid = "0"
+        # uid أولاً في المستخدم المصادَق: القراءات الكسولة (``current_user.school_id``
+        # من user_role_links) هي التي تفتح معاملة الطلب، وسياساتها بذراع user_id
+        # تعيد لا شيء إذا لم تكن التعريفات السابقة جاهزة — فيُخفى الصف عن صاحبه
+        # (403). نضع uid الآن، واللقطة تلتفت لما بعد، فتعمل الاستعلامات بسياقه.
+        db.session.execute(
+            text("SELECT set_config('app.current_user_id', :uid, true)"),
+            {"uid": uid},
+        )
+        # اللقطة بعد ضبط uid: القيم التي يقرؤها after_begin لكل معاملة لاحقة.
+        # `current_class_ids` هنا فارغ عمداً مازال، ويُملأ بعد الضبط في الفرع
+        # غير المشرف (hy rid ten ant)؛ الشرف يتجاهل الفارغ — ويرث المالك/الطالب
+        # من سياقه بواسطة school_id/SUPER_ADMIN.
+        _snapshot_request_gucs()
         if not authenticated:
             _set_gucs_one_statement(
                 uid="0",
@@ -164,24 +228,31 @@ def set_tenant_for_request() -> None:
         else:
             # class_members تُقرأ قبل تضييق التينانتس — سياساتها بذراع user_id
             # فترى الممثل صفوفه هو فقط، لا صفوف المدرسة كلها.
-            uid = str(current_user.id)
-            db.session.execute(
-                text("SELECT set_config('app.current_user_id', :uid, true)"),
-                {"uid": uid},
-            )
             _set_active_class_ids()
+            class_ids = _read_class_ids_guc()
             _set_gucs_one_statement(
                 uid=uid,
-                class_ids=_read_class_ids_guc(),
+                class_ids=class_ids,
                 is_individual="1" if current_user.is_individual else "0",
                 school_id=str(current_user.school_id or 0),
                 is_super_admin="0",
             )
+            # اللقطة النهائية بالقيم الحقيقية — بعد الضبط تماماً، قبل أي
+            # معاملة لاحقة للطلب، ولا استعلام إضافي هنا.
+            from flask import g as _g
+
+            _g._rls_request_gucs = {
+                "app.current_user_id": uid,
+                "app.current_class_ids": class_ids,
+                "app.is_individual": "1" if current_user.is_individual else "0",
+                "app.current_school_id": str(current_user.school_id or 0),
+                "app.is_super_admin": "0",
+            }
     except Exception:
         # Non-critical: if SET LOCAL fails (e.g., no active transaction yet),
         # RLS is still enforced at the DB level but without session context.
         # scope_by_school() in Python is the primary guard.
-        pass
+        return
 
 
 def get_school_or_404(school_id: int) -> School:
