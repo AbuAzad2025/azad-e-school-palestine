@@ -90,7 +90,10 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
             plan = tx(lambda: _add_plan(plan))
 
     # P-SEC-09: حدد: مجاني أم مدفوع
-    is_paid = plan and Decimal(str(plan.price)) > 0
+    # السعر يُقرأ كسلسلة ثابتة هنا، لا لاحقاً من الكائن: بعد commit تُقيد
+    # الكائنات ORM، وإعادة تحميل كسول قد تمرّ بإطار تينانت لا يرى صفّ
+    # الخطة فترمي ObjectDeletedError على الخادم الحقيقي (RLS مُجبر).
+    is_paid = bool(plan) and Decimal(str(getattr(plan, "price", 0) or 0)) > 0
 
     def _subscribe():
         if is_paid:

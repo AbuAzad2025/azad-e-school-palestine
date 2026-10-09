@@ -123,7 +123,11 @@ def generate_report_card(student_id: int, class_id: int) -> dict:
     from app.models.user import User
 
     student = db.session.get(User, student_id)
-    class_room = db.session.get(ClassRoom, class_id)
+    # لا db.session.get هنا: مسار الطلب مقصّى بالتينانت، فالصف المرئي
+    # عبر ذراع الوصول (وليّ أمر/فرد مشترك) قد يكون مخفياً هنداً
+    # ويرسيل None → قالب ينهار على .subject. المسار أثبت الرؤية
+    # بالفعل (can_view_class) — النسخة مرّت إليه تكفي.
+    class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     grade_data = calculate_student_grade(student_id, class_id)
 
     completed_lessons = StudentProgress.query.filter_by(
