@@ -82,7 +82,7 @@ def create_app(config_class=Config):
     # السياسة من نواة Flask لكل طلب (واحد، لا خمسة) — يمرّ المتغيرات
     # بـ SET LOCAL في أسفل المعاملة، فلا تظلّ معدّلة على الاتصال.
     if app.config.get("TALISMAN_ENABLED", True):
-        talisman = Talisman(
+        Talisman(
             app,
             force_https=app.config.get("TALISMAN_FORCE_HTTPS", True),
             strict_transport_security=app.config.get("TALISMAN_STRICT_TRANSPORT_SECURITY", True),
@@ -95,6 +95,7 @@ def create_app(config_class=Config):
             session_cookie_http_only=app.config.get("SESSION_COOKIE_HTTPONLY", True),
             session_cookie_samesite=app.config.get("SESSION_COOKIE_SAMESITE", "Lax"),
         )
+
         # bolt-on: يكتب Talisman رؤوسه في after_request (أولوية مرتفعة)
         # يُستدعى بعد _apply_csp_nonce، فيحلّ محلّها إذا لم تُكتب.
         @app.after_request
@@ -107,7 +108,8 @@ def create_app(config_class=Config):
             else:
                 # لا يكتب مسار التفعيل إطلاقاً متغيرين من متغيرات السياق (FAIL-HARD):
                 # المتغيرات الثالثة (GUCs) تكفي للـ RLS + spawnpool.
-                if isinstance(response.headers.get("X-Content-Type-Options"), str) and response.headers.get("X-Content-Type-Options") == "nosniff":
+                xcto = response.headers.get("X-Content-Type-Options")
+                if isinstance(xcto, str) and xcto == "nosniff":
                     return response
                 response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
             return response
