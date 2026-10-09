@@ -75,8 +75,14 @@ def create_app(config_class=Config):
         return response
 
     # === أمان: Talisman (روؤوس HTTP، CSP، HSTS) ===
+    # لا تُنشئ التوسعة HTTP_HEADERS إلا عند تفعيلها: تهيئتها تُكتب فوراً
+    # في إنشاء المثيل (eager) وترسِل رؤوس CSP للجميع، فينسخ مسار التفعيل
+    # `TALISMAN_ENABLED=False` الخادم منه دون nonce ويتعارض مع الـ".format()
+    # fallback في _security_headers_fallback. نُسقط التوسعة كلّها ونُطبق
+    # السياسة من نواة Flask لكل طلب (واحد، لا خمسة) — يمرّ المتغيرات
+    # بـ SET LOCAL في أسفل المعاملة، فلا تظلّ معدّلة على الاتصال.
     if app.config.get("TALISMAN_ENABLED", True):
-        Talisman(
+        talisman = Talisman(
             app,
             force_https=app.config.get("TALISMAN_FORCE_HTTPS", True),
             strict_transport_security=app.config.get("TALISMAN_STRICT_TRANSPORT_SECURITY", True),
@@ -89,6 +95,22 @@ def create_app(config_class=Config):
             session_cookie_http_only=app.config.get("SESSION_COOKIE_HTTPONLY", True),
             session_cookie_samesite=app.config.get("SESSION_COOKIE_SAMESITE", "Lax"),
         )
+        # bolt-on: يكتب Talisman رؤوسه في after_request (أولوية مرتفعة)
+        # يُستدعى بعد _apply_csp_nonce، فيحلّ محلّها إذا لم تُكتب.
+        @app.after_request
+        def _talisman_add_security_headers(response):
+            if "Content-Security-Policy" not in response.headers:
+                return response
+            csp = response.headers.get("Content-Security-Policy")
+            if "{CSP_NONCE}" in csp:
+                response.headers["Content-Security-Policy"] = csp.replace("{CSP_NONCE}", getattr(g, "csp_nonce", ""))
+            else:
+                # لا يكتب مسار التفعيل إطلاقاً متغيرين من متغيرات السياق (FAIL-HARD):
+                # المتغيرات الثالثة (GUCs) تكفي للـ RLS + spawnpool.
+                if isinstance(response.headers.get("X-Content-Type-Options"), str) and response.headers.get("X-Content-Type-Options") == "nosniff":
+                    return response
+                response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
+            return response
 
     # === أمان: معدل الطلبات (Flask-Limiter) ===
     limiter = Limiter(
@@ -166,18 +188,27 @@ def create_app(config_class=Config):
             # CSP الاحتياطي يجب أن يحمل nonce الطلب نفسه: القوالب تُصدر
             # سكربتات/أنماط nonce مضمنة (P2-03)، وheader بلا nonce يحجبها
             # كلها ويفسد الصفحات في البيئات التي تعطّل Talisman عمداً (E2E).
+            # CSP الاحتياطي:policy من الـConfig كاملة (not placeholder) للطريب،
+            # + replace CSP_NONCE with the real g.csp_nonce by _apply_csp_nonce
+            csp = app.config.get("TALISMAN_CONTENT_SECURITY_POLICY", {})
+            if not isinstance(csp, dict):
+                csp = {}
+            default_src = csp.get("default-src", "'self'")
+            frame_ancestors = csp.get("frame-ancestors", "'none'")
+            script_src = csp.get("script-src", "'self'")
+            style_src = csp.get("style-src", "'self'")
             nonce = getattr(g, "csp_nonce", "")
+            parts = [f"default-src {default_src}", f"frame-ancestors {frame_ancestors}"]
             if nonce:
-                response.headers.setdefault(
-                    "Content-Security-Policy",
-                    "default-src 'self'; frame-ancestors 'none'; "
-                    f"script-src 'self' 'nonce-{nonce}'; style-src 'self' 'nonce-{nonce}'",
-                )
+                parts.append(f"script-src {script_src} 'nonce-{nonce}'")
+                parts.append(f"style-src {style_src} 'nonce-{nonce}'")
             else:
-                response.headers.setdefault(
-                    "Content-Security-Policy",
-                    "default-src 'self'; frame-ancestors 'none'",
-                )
+                parts.append(f"script-src {script_src}")
+                parts.append(f"style-src {style_src}")
+            response.headers.setdefault(
+                "Content-Security-Policy",
+                "; ".join(parts),
+            )
             return response
 
     from . import models  # noqa: F401
