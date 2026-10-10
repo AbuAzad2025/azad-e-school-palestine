@@ -417,6 +417,15 @@ class TestGradesRoutes:
         _, stranger_client = persona_from(app, stranger)
         assert stranger_client.get(f"/classes/{cid}/report-card/{uid}").status_code == 403
 
+        # S6/تثبيت تعاقد الإصلاح: الصف الذي أثبت المسار رؤيته هو نفسه
+        # الصف الموجود في قاعدة البيانات — فحص حالة لا محاكاة.
+        from app.models.class_room import ClassRoom as _CR
+
+        with app.app_context():
+            from app.extensions import db as _db
+
+            assert _db.session.get(_CR, cid) is not None
+
     def test_report_card_pdf_teacher(self, app):
         sid, cid, tid = setup_class(app, teacher=True)
         uid = make_user(app, role="student", school_id=sid)
