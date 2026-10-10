@@ -5,13 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0f766e">
 <title>{{ _('أنت غير متصل — أزاد') }}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
+{# Minified brand bundle: this page's inline block consumes --bg/--text/--muted/
+   --azad-gradient/--radius-full, which brand.css defines, so the sheet is
+   load-bearing here. The prebuilt bundle is what the service worker precaches,
+   so the offline paint is one cached request instead of a blocking miss. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dist/brand.min.css') }}">
 <style nonce="{{ g.csp_nonce }}">
-  /* Offline-capable page: must render with zero external asset deps.
-     Tokens mirror pure-pages.css; kept minimal and self-contained because
-     the app CSS may itself be unreachable while offline. */
+  /* Offline-capable page: kept minimal and self-contained because the app CSS
+     may itself be unreachable while offline. Only the tokens it really needs
+     are relied on from the brand bundle above. */
   body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:"Cairo","Tajawal",sans-serif;background:var(--bg);color:var(--text);text-align:center;padding:2rem;}
   .box{max-width:400px;}
+  .icon-big{font-size:4rem;margin-bottom:1rem;line-height:1;}
   h1{font-size:2rem;margin-bottom:1rem;background:var(--azad-gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
   p{color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
   .btn{display:inline-block;padding:.7rem 1.5rem;background:var(--azad-gradient);color:#fff;border-radius:var(--radius-full);text-decoration:none;font-weight:600;border:none;cursor:pointer;font-size:1rem;font-family:inherit;transition:filter .2s;}

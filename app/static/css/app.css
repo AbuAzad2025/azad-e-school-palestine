@@ -1339,10 +1339,20 @@ html[data-theme="dark"] select option { background: #111a2b; color: #e2e8f0; }
   pointer-events: none;
 }
 
-/* Scroll-reveal: hide elements until they enter the viewport */
+/* Scroll-reveal: hide elements until they enter the viewport.
+   index.js only toggles these classes; both states live here so the reveal is
+   not a runtime stylesheet parse and needs no CSP nonce.
+   The revealed state is one class more specific than the hidden one instead of
+   `!important`: the rule the JS used to inject pinned `transform` on every
+   revealed card, which cancelled the hover lift polish.css gives
+   `.azad-stat-card`. */
 .azad-scroll-hidden {
   opacity: 0;
   transform: translateY(12px);
+}
+.azad-scroll-hidden.azad-in-view {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 
@@ -2086,15 +2096,6 @@ html {
   }
   .nav-links a:hover { background: transparent; }
   .admin-nav-item:hover { background: transparent; color: var(--text); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }
 
 /* ═══════════════════════════════════
@@ -3414,16 +3415,6 @@ body.nav-open {
    Motion preferences — respect reduced-motion.
 ═══════════════════════════════════════════ */
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
 /* ═══════════════════════════════════════════
    Visible focus indicators — WCAG 2.1 AAA
 ═══════════════════════════════════════════ */
@@ -4041,16 +4032,6 @@ textarea:focus,
    Motion preferences — respect reduced-motion.
 ═══════════════════════════════════════════ */
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
 
 /* ═══════════════════════════════════════════
    Visible focus indicators — WCAG 2.1 AAA
@@ -4237,7 +4218,22 @@ textarea:focus,
   contain-intrinsic-size: auto 200px;
 }
 
+/* Reduced motion — one copy for the whole sheet.
+   This reset used to appear three times in this file. Every declaration in it
+   is `!important` on the same universal selector with the same value, so the
+   extra copies could not change a computed value — they only added bytes to
+   every page. (brand.css keeps its own: that sheet also ships standalone to
+   the offline page.) */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .azad-card,
   .azad-stat-card,
   .azad-item,

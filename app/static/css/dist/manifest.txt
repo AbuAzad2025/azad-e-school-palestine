@@ -1,6 +1,6 @@
 # Auto-generated CSS manifest — do not edit manually
 
-app.min.css: e704c7dfe5e7
+app.min.css: bc36c9c84135
 landing.min.css: dd7db1d15532
 brand.min.css: 4610c34df507
-ai-chat.min.css: 6a35a6a6ac02
+ai-chat.min.css: fb899d409948

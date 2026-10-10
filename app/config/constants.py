@@ -24,10 +24,8 @@ ATTENDANCE_NOTE_MAX_LEN = 1000
 
 AUTODISMIT_FLASH_MS = 5000
 
-# Scroll-reveal defaults (must stay in sync with the small inline <style> the
-# templates inject for `.azad-in-view` — see Agent 7 work on residual <style>).
-SCROLL_REVEAL_THRESHOLD = 0.1
-SCROLL_REVEAL_ROOT_MARGIN = "0px 0px -40px 0px"
+# Scroll-reveal defaults live with the code that uses them (the observer
+# options in app/static/js/index.js) and the reveal state in app/static/css/app.css.
 
 # ── Icon sprite ──────────────────────────────────────────────────────────────
 

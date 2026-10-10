@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ _('مساعد ذكي') }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{# The chat screen's own stylesheet. It was built (and precached by the service
+   worker) but never linked from this template, so .ai-chat-container and the
+   whole sidebar/history layout rendered with the app shell only. The bundle is
+   the app shell plus ai-chat.css, so it replaces base.html's shell link rather
+   than stacking on top of it — see tests/test_css_architecture.py. #}
+{% block app_stylesheet %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dist/ai-chat.min.css') }}">
+{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
 {% endblock %}

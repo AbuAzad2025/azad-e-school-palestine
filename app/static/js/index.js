@@ -62,6 +62,12 @@ function initAdminDrawer() {
 /**
  * Fade-in cards and stat cards as they enter the viewport using IntersectionObserver.
  * Gracefully degrades when IntersectionObserver is unavailable.
+ *
+ * Toggles classes only: `.azad-scroll-hidden` / `.azad-in-view` are declared in
+ * app.css, so the reveal costs no stylesheet parse at runtime and needs no CSP
+ * nonce. The rule there is deliberately not `!important` — the injected version
+ * it replaces pinned `transform` on every revealed card, which silently killed
+ * the hover lift the polish layer gives `.azad-stat-card`.
  * @returns {void}
  */
 function initScrollAnimations() {
@@ -75,7 +81,10 @@ function initScrollAnimations() {
         }
       });
     },
-    { threshold: 0.1, rootMargin: "0px 0px -40px 0px" },
+    {
+      threshold: 0.1,
+      rootMargin: "0px 0px -40px 0px",
+    },
   );
 
   document
@@ -86,15 +95,6 @@ function initScrollAnimations() {
       el.classList.add("azad-scroll-hidden");
       observer.observe(el);
     });
-
-  if (!document.getElementById("azad-scroll-styles")) {
-    const style = document.createElement("style");
-    style.id = "azad-scroll-styles";
-    style.setAttribute("nonce", window.AzadCSPNonce || "");
-    style.textContent =
-      ".azad-in-view { opacity: 1 !important; transform: translateY(0) !important; }";
-    document.head.appendChild(style);
-  }
 }
 
 /**
@@ -170,7 +170,7 @@ function initPwaBanner() {
  */
 function initServiceWorker() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/static/sw.js?v=4").catch(() => {});
+    navigator.serviceWorker.register("/static/sw.js?v=5").catch(() => {});
   }
 }
 

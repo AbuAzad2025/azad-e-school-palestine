@@ -54,17 +54,17 @@ def _referenced_static_names() -> set[str]:
             continue
         for m in re.findall(r"['\"]((?:css|js|img|fonts|uploads)/[^'\"]+)['\"]", txt):
             referenced.add(m)
-    # 3. Service worker precache + navigation fallback (paths like /offline)
+    # 3. Service worker precache (paths look like "/static/js/core/api.js")
     sw = STATIC_DIR / "sw.js"
     if sw.exists():
         sw_txt = sw.read_text(encoding="utf-8")
         referenced.add("sw.js")
-        # Precache entries look like "/static/js/core/api.js" or "/offline"
         for m in re.findall(r'"([^"]+)"', sw_txt):
             if m.startswith("/static/"):
                 referenced.add(m[len("/static/") :])
-            elif m == "/offline":
-                referenced.add("offline.html")
+        # "/offline" is a route, not a file under app/static — it is not a
+        # static reference and must not be recorded as one (recording it as
+        # offline.html is what hid the stale copy of that template here).
     # 4. JS module graph (index.js static + dynamic imports)
     for jsf in (STATIC_DIR / "js").rglob("*.js"):
         txt = jsf.read_text(encoding="utf-8")
@@ -82,6 +82,15 @@ def _referenced_static_names() -> set[str]:
     # 6. Build sources (source css feeds dist/*.min.css loaded by templates)
     for distf in DIST_DIR.glob("*.min.css"):
         referenced.add(f"css/{distf.name.replace('.min.css', '.css')}")
+    # 6b. Bundle inputs. A stylesheet is live if it is inlined into a bundle
+    # that a template serves, even when no template names it directly — base.css
+    # and polish.css are only ever reached that way now.
+    build = _build_module()
+    for spec in build.BUNDLES.values():
+        for rel in spec["sources"]:
+            referenced.add(f"css/{rel}")
+    for rel in build.COMPANIONS:
+        referenced.add(f"css/{rel}")
     return referenced
 
 
@@ -141,6 +150,35 @@ class TestBEMNaming:
                     if len(parts) > 4:
                         failures.append(f"{path.name}: deep selector: {selector[:80]}")
         assert not failures, "\n".join(failures[:20])
+
+
+class TestMotionPolicy:
+    """prefers-reduced-motion is honoured once per sheet, not four times.
+
+    The universal reset is all-`!important` and value-identical wherever it
+    appears, so extra copies cannot change a computed value — they only add
+    bytes to every page. One copy per sheet is the contract.
+    """
+
+    _RESET = re.compile(
+        r"@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*"
+        r"\*,\s*\*::before,\s*\*::after\s*\{"
+    )
+
+    def test_universal_reduced_motion_reset_is_declared_at_most_once(self):
+        offenders = []
+        for path in _css_files():
+            content = re.sub(r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/", "", path.read_text(encoding="utf-8"), flags=re.DOTALL)
+            count = len(self._RESET.findall(content))
+            if count > 1:
+                offenders.append(f"{path.name}: {count} copies")
+        assert not offenders, "Duplicate reduce-motion resets: " + ", ".join(offenders)
+
+    def test_offline_page_still_gets_a_reset(self):
+        """templates/offline.html links the standalone brand bundle, so the
+        reduced-motion contract has to survive in brand.css on its own."""
+        brand = (CSS_DIR / "brand.css").read_text(encoding="utf-8")
+        assert "prefers-reduced-motion" in brand
 
 
 class TestNoImportantOveruse:
@@ -257,6 +295,50 @@ class TestBuildPipeline:
             if f".{cls}" not in css
         ]
         assert not purged, f"Runtime-reachable classes were purged: {purged}"
+
+    def test_committed_bundles_match_a_fresh_build(self, tmp_path, monkeypatch):
+        """The dist artifacts are committed and served, so they can go stale.
+
+        Build into a temporary directory instead of dist/ — running the real
+        build here would overwrite the very file being checked, and the check
+        would pass forever after the first run.
+        """
+        module = _build_module()
+        monkeypatch.setattr(module, "DIST_DIR", tmp_path)
+        module.build()
+        stale = []
+        for name in ("app.min.css", "landing.min.css", "brand.min.css", "ai-chat.min.css", "manifest.txt"):
+            fresh = (tmp_path / name).read_bytes()
+            committed = (DIST_DIR / name).read_bytes()
+            if fresh != committed:
+                stale.append(name)
+        assert not stale, (
+            "Committed bundles do not match scripts/build_css.py output "
+            f"({', '.join(stale)}). Run: python scripts/build_css.py"
+        )
+
+    def test_shell_templates_load_the_prebuilt_bundle(self, built_bundles):
+        """Every page entry links its own bundle, and only that bundle.
+
+        The pipeline used to build and commit dist/*.min.css while no template
+        referenced it, so every page shipped the sources instead: five
+        blocking requests and ~35% more bytes. The AI chat screen is checked
+        here too because it was the page that never loaded its own stylesheet
+        at all (the shell bundle covers the shell, not ai-chat.css).
+        """
+        expected = {
+            "base.html": "css/dist/app.min.css",
+            "landing.html": "css/dist/landing.min.css",
+            "offline.html": "css/dist/brand.min.css",
+            "ai/chat.html": "css/dist/ai-chat.min.css",
+        }
+        for rel, bundle in expected.items():
+            refs = _asset_refs(TEMPLATES_DIR / rel)
+            assert bundle in refs, f"{rel} does not load {bundle} (loads {refs})"
+            # One bundle per page: a second one would re-declare every token and
+            # double the blocking bytes rather than override the shell.
+            bundles = [r for r in refs if r.startswith("css/dist/")]
+            assert bundles == [bundle], f"{rel} loads more than one bundle: {bundles}"
 
     def test_every_template_stylesheet_is_bundled_or_a_companion(self, built_bundles):
         """No template may link a stylesheet that no bundle covers (it would

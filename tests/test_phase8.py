@@ -117,10 +117,19 @@ def test_sw_has_cache_strategy(client):
 
 
 def test_offline_page_accessible(client):
-    r = client.get("/static/offline.html")
+    """The PWA fallback is the /offline route, not a static copy of it.
+
+    This used to fetch /static/offline.html, which served the *template source*
+    raw: the assertion matched the Arabic text sitting inside `{{ _('…') }}`,
+    so it passed while shipping unrendered Jinja (and a stylesheet href of
+    `{{ url_for(...) }}`) to anyone who requested it. The static duplicate is
+    gone; this asserts the served page is actually rendered.
+    """
+    r = client.get("/offline")
     assert r.status_code == 200
     html = r.get_data(as_text=True)
-    assert "offline" in html.lower() or "غير متصل" in html
+    assert "غير متصل" in html
+    assert "{{" not in html, "offline page served unrendered Jinja"
 
 
 def test_base_html_has_manifest_link(client, app):

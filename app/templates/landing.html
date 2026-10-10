@@ -15,11 +15,9 @@
 <script nonce="{{ g.csp_nonce }}">
 (function(){var t=localStorage.getItem("azad-theme")||"system";var dark=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light";})();
 </script>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/polish.css') }}">
+{# One prebuilt bundle: brand + theme + base + landing + polish, in the same
+   cascade order the separate <link>s had. See scripts/build_css.py. #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dist/landing.min.css') }}">
 <link rel="canonical" href="{{ url_for('main.index', _external=True) }}">
 
 </head>

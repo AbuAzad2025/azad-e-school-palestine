@@ -48,11 +48,17 @@
   });
 </script>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/brand.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/polish.css') }}">
+{# One prebuilt bundle per page, not five source stylesheets.
+   css/dist/app.min.css is brand + theme + base + app + polish in exactly the
+   cascade order these <link>s had, with @imports inlined, unreachable class
+   rules purged and the result minified (scripts/build_css.py). CI rebuilds it
+   and the image build ships it, so the committed artifact is what is served:
+   one blocking request and ~35% fewer bytes than the five sources.
+   Pages that need a different shell (the AI chat screen) override this block
+   with their own bundle instead of adding a second one. #}
+{% block app_stylesheet %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dist/app.min.css') }}">
+{% endblock %}
 {% block head %}{% endblock %}
   {% if config.PLAUSIBLE_SCRIPT_URL %}
   <script defer data-domain="{{ config.PLAUSIBLE_SCRIPT_URL }}" src="https://plausible.io/js/script.js"></script>

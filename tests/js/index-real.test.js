@@ -145,15 +145,13 @@ describe("Index - initScrollAnimations (actual module)", () => {
     delete window.IntersectionObserver;
   });
 
-  it("creates style element for azad-in-view", () => {
+  it("does not build a stylesheet at runtime", () => {
+    // .azad-scroll-hidden / .azad-in-view are declared in app.css: toggling
+    // classes must not cost a <style> parse or a CSP nonce lookup.
+    document.body.innerHTML = '<div class="azad-card">Card</div>';
     initScrollAnimations();
-    expect(document.getElementById("azad-scroll-styles")).toBeTruthy();
-  });
-
-  it("does not duplicate style element", () => {
-    initScrollAnimations();
-    initScrollAnimations();
-    expect(document.querySelectorAll("#azad-scroll-styles").length).toBe(1);
+    expect(document.querySelectorAll("style").length).toBe(0);
+    expect(document.head.querySelector("style")).toBeNull();
   });
 
   it("handles IntersectionObserver not available", () => {
@@ -172,14 +170,6 @@ describe("Index - initScrollAnimations (actual module)", () => {
     expect(observeSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("does not create duplicate style on second call", () => {
-    initScrollAnimations();
-    initScrollAnimations();
-    const styles = document.querySelectorAll("#azad-scroll-styles");
-    expect(styles.length).toBe(1);
-    expect(styles[0].textContent).toContain("azad-in-view");
-  });
-
   it("marks cards scroll-hidden (reveal via .azad-in-view CSS)", () => {
     document.body.innerHTML = '<div class="azad-card">Card</div>';
     initScrollAnimations();
@@ -187,6 +177,14 @@ describe("Index - initScrollAnimations (actual module)", () => {
     // JS only toggles classes; opacity/transform live in app.css (CSP-safe)
     expect(card.classList.contains("azad-scroll-hidden")).toBe(true);
     expect(card.classList.contains("azad-in-view")).toBe(false);
+  });
+
+  it("is idempotent across repeated calls", () => {
+    document.body.innerHTML = '<div class="azad-card">Card</div>';
+    initScrollAnimations();
+    initScrollAnimations();
+    expect(document.querySelectorAll("style").length).toBe(0);
+    expect(document.querySelectorAll(".azad-scroll-hidden").length).toBe(1);
   });
 });
 
@@ -291,7 +289,7 @@ describe("Index - initServiceWorker (actual module)", () => {
     });
 
     initServiceWorker();
-    expect(registerMock).toHaveBeenCalledWith("/static/sw.js?v=4");
+    expect(registerMock).toHaveBeenCalledWith("/static/sw.js?v=5");
   });
 
   it("does nothing when serviceWorker not available", () => {
