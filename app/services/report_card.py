@@ -116,8 +116,14 @@ def _letter_grade(score: float) -> str:
     return "راسب"
 
 
-def generate_report_card(student_id: int, class_id: int) -> dict:
-    """تقرير شامل لطالب في صف معين."""
+def generate_report_card(student_id: int, class_id: int, class_room=None) -> dict:
+    """تقرير شامل لطالب في صف معين.
+
+    Args:
+        class_room: كائن ClassRoom أثبت المسار رؤيته عبر ذراع الوصول —
+            مرّره لتفادي إعادة الاستعلام المقصّى بالتينانت التي قد تحجب
+            الصف (فرد مشترك/وليّ أمر) فترسل None وينهار القالب على .subject.
+    """
     from app.models.class_room import ClassRoom
     from app.models.progress import StudentProgress
     from app.models.user import User
@@ -126,8 +132,9 @@ def generate_report_card(student_id: int, class_id: int) -> dict:
     # لا db.session.get هنا: مسار الطلب مقصّى بالتينانت، فالصف المرئي
     # عبر ذراع الوصول (وليّ أمر/فرد مشترك) قد يكون مخفياً هنداً
     # ويرسيل None → قالب ينهار على .subject. المسار أثبت الرؤية
-    # بالفعل (can_view_class) — النسخة مرّت إليه تكفي.
-    class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
+    # بالفعل (can_view_class) — النسخة تُمرّر إليه إن توفرت.
+    if class_room is None:
+        class_room = ClassRoom.query.filter_by(id=class_id, deleted_at=None).first()
     grade_data = calculate_student_grade(student_id, class_id)
 
     completed_lessons = StudentProgress.query.filter_by(
@@ -261,14 +268,18 @@ def build_report_card_story(
     story_table(story, summary_rows, [70 * mm, 50 * mm], font)
 
 
-def render_report_card_pdf(student_id: int, class_id: int) -> bytes | None:
+def render_report_card_pdf(student_id: int, class_id: int, class_room=None) -> bytes | None:
     """بطاقة درجات PDF حقيقية عبر reportlab (لا HTML وسيط).
+
+    Args:
+        class_room: نسخة ClassRoom أثبت المسار رؤيتها — يُمرّر إلى
+            generate_report_card لتفادي حجبها بإطار التينانت (RLS).
 
     Returns:
         bytes الخام عند النجاح؛ None إذا لم يوجد الطالب/الصف أو فشل البناء.
     """
     try:
-        data = generate_report_card(student_id, class_id)
+        data = generate_report_card(student_id, class_id, class_room=class_room)
         if not data.get("student") or not data.get("class_room"):
             return None
 

@@ -364,7 +364,7 @@ def report_card(class_id, student_id):
         abort(403)
     from app.services.report_card import generate_report_card
 
-    data = generate_report_card(student_id, class_id)
+    data = generate_report_card(student_id, class_id, class_room=class_room)
     return render_template("grades/report_card.html", **data)
 
 
@@ -386,7 +386,7 @@ def report_card_pdf(class_id, student_id):
     from app.services.report_card import render_report_card_pdf
     from flask import Response
 
-    pdf = render_report_card_pdf(student_id, class_id)
+    pdf = render_report_card_pdf(student_id, class_id, class_room=class_room)
     if pdf is None:
         flash(_("تعذر إنشاء ملف PDF."), "danger")
         return redirect(url_for("grades.report_card", class_id=class_id, student_id=student_id))
