@@ -263,13 +263,20 @@ def join_class_individual(student_id: int, class_id: int) -> tuple[ClassMember |
             return None, _("الصف ممتلئ.")
 
     # P-SEC-04: فحص: هل الصف يتطلب اشتراكاً مدفوعاً؟
+    # السعر يُقرأ كسلائم قبل أي commit لاحق: بعد الـcommit تُقيد الكائنات
+    # وإعادة تحميلها تأتي بإطار تينانت يخفي صفّ الخطة فترمي ObjectDeletedError
+    # تحت RLS مُجبر — 500 كان يظهر على الخادم الحقيقي فقط لا محلياً.
     plan = SubscriptionPlan.query.filter_by(class_id=cls.id, is_active=True).first()
-    if plan and Decimal(str(plan.price)) > 0:
-        return None, _(
-            "هذا الصف مدفوع (%(price)s %(currency)s). يجب الاشتراك والدفع أولاً عبر صفحة الاشتراك.",
-            price=plan.price,
-            currency=plan.currency,
-        )
+    if plan is not None:
+        plan_price = float(plan.price)
+        plan_currency = plan.currency
+        if Decimal(str(plan_price)) > 0:
+            return None, _(
+                "هذا الصف مدفوع (%(price)s %(currency)s). يجب الاشتراك والدفع أولاً عبر صفحة الاشتراك.",
+                price=plan_price,
+                currency=plan_currency,
+            )
+        # خطة مجانية موجودة — اشتراك مجاني يشير إليها في المعاملة أدناه.
 
     def _join():
         db.session.add(ClassMember(class_id=cls.id, user_id=user.id, status="active", joined_at=db.func.now()))

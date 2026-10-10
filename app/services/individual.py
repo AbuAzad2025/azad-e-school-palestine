@@ -41,10 +41,11 @@ def get_student_classes(student_id):
     )
 
 
-def _add_plan(plan: SubscriptionPlan) -> SubscriptionPlan:
-    """Add the plan to the session and hand it back for the caller to persist."""
+def _persist_plan(plan: SubscriptionPlan) -> int:
+    """Persist the plan and return its id before the commit expires the object."""
     db.session.add(plan)
-    return plan
+    db.session.flush()
+    return plan.id
 
 
 def subscribe_to_class(student_id: int, class_id: int) -> str | None:
@@ -69,16 +70,22 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
         if current_count >= cls.max_students:
             return _("الكورس ممتلئ.")
 
-    plan = SubscriptionPlan.query.filter_by(class_id=cls.id, is_active=True).first()
-    if not plan and cls.price:
-        plan = SubscriptionPlan(
-            school_id=cls.school_id,
-            class_id=cls.id,
-            name=f"اشتراك {cls.name or cls.subject.name_ar}",
-            plan="individual",
-            price=float(cls.price),
-            duration_days=cls.duration_days or 30,
-        )
+    # كل القيم تُلتقط كسلائم *قبل* أي commit: commit الـ tx() يُقيد
+    # كائنات ORM، وإعادة تحميلها لاحقاً تأتي بإطار تينانت لا يرى صفّ
+    # الخطة (مدرسة أخرى) فترمي ObjectDeletedError تحت RLS مُجبر —
+    # وهذا هو الـ500 الذي كان يظهر على الخادم الحقيقي فقط لا محلياً.
+    cls_id = cls.id
+    cls_price = float(cls.price) if cls.price else 0.0
+    cls_currency = cls.currency
+    cls_duration = cls.duration_days or 30
+
+    plan = SubscriptionPlan.query.filter_by(class_id=cls_id, is_active=True).first()
+    plan_id: int | None = None
+    plan_price: float | None = None
+    if plan is not None:
+        plan_id = plan.id
+        plan_price = float(plan.price)
+    elif cls_price:
         # `subscriptions.plan_id` is NOT NULL, so a paid class needs a plan row
         # to point at. That row is the *school's* pricing, and the subscriber
         # has no business writing into another tenant's billing tables -- RLS
@@ -86,14 +93,22 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
         # own scope, from the class's published price. The price cannot have
         # been chosen by the subscriber: `classes` keeps a tenant-only
         # WITH CHECK, so only the owning school ever wrote it.
+        plan = SubscriptionPlan(
+            school_id=cls.school_id,
+            class_id=cls_id,
+            name=f"اشتراك {cls.name}",
+            plan="individual",
+            price=cls_price,
+            duration_days=cls_duration,
+        )
+        # المعرف يُقرأ *داخل* معاملة الكتابة (flush قبل commit) — بعد
+        # الـcommit لا يعاد تحميله بإطار تينانت يخفي الصف.
         with platform_scope():
-            plan = tx(lambda: _add_plan(plan))
+            plan_id = tx(lambda: _persist_plan(plan))
+        plan_price = cls_price
 
-    # P-SEC-09: حدد: مجاني أم مدفوع
-    # السعر يُقرأ كسلسلة ثابتة هنا، لا لاحقاً من الكائن: بعد commit تُقيد
-    # الكائنات ORM، وإعادة تحميل كسول قد تمرّ بإطار تينانت لا يرى صفّ
-    # الخطة فترمي ObjectDeletedError على الخادم الحقيقي (RLS مُجبر).
-    is_paid = bool(plan) and Decimal(str(getattr(plan, "price", 0) or 0)) > 0
+    # P-SEC-09: حدد: مجاني أم مدفوع — من القيم السلمية الملتقَطة لا الكائن.
+    is_paid = plan_price is not None and Decimal(str(plan_price)) > 0
 
     def _subscribe():
         if is_paid:
@@ -102,10 +117,10 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
             db.session.add(
                 Subscription(
                     user_id=student_id,
-                    plan_id=plan.id,
-                    class_id=cls.id,
-                    price=float(cls.price or 0),
-                    currency=cls.currency,
+                    plan_id=plan_id,
+                    class_id=cls_id,
+                    price=cls_price,
+                    currency=cls_currency,
                     start_at=None,
                     end_at=None,
                     status="pending",
@@ -114,18 +129,18 @@ def subscribe_to_class(student_id: int, class_id: int) -> str | None:
             )
         else:
             # P-SEC-09: مجاني — تفعيل فوري
-            db.session.add(ClassMember(class_id=cls.id, user_id=student_id, status="active", joined_at=db.func.now()))
-            if plan:
+            db.session.add(ClassMember(class_id=cls_id, user_id=student_id, status="active", joined_at=db.func.now()))
+            if plan_id is not None:
                 now = datetime.now(UTC)
                 db.session.add(
                     Subscription(
                         user_id=student_id,
-                        plan_id=plan.id,
-                        class_id=cls.id,
+                        plan_id=plan_id,
+                        class_id=cls_id,
                         price=0,
-                        currency=cls.currency,
+                        currency=cls_currency,
                         start_at=now,
-                        end_at=now + timedelta(days=cls.duration_days or 30),
+                        end_at=now + timedelta(days=cls_duration),
                         status="active",
                         source="individual",
                     )
