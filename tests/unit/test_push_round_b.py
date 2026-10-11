@@ -469,8 +469,20 @@ class TestWebhookProcessing:
             sub = _db.session.get(Subscription, sub_id)
             svc._create_ledger_entry(sub, Decimal("120.00"), PaymentGateway.PAYTABS)
             _db.session.expire_all()
+            # D1: الدفتر صف جديد خالد في wallet_transactions — لا تعديل للسجل التاريخي
+            from app.models.wallet import WalletTransaction
+
+            entry = (
+                WalletTransaction.query.filter_by(reference_type="subscription", reference_id=sub_id)
+                .order_by(WalletTransaction.id.desc())
+                .first()
+            )
+            assert entry is not None
+            assert entry.transaction_type == "subscription_credit"
+            assert entry.amount == Decimal("120.00")
+            assert "paytabs" in entry.idempotency_key
             pay = ManualPayment.query.filter_by(subscription_id=sub_id).order_by(ManualPayment.id.desc()).first()
-            assert pay.gateway == "paytabs"
+            assert pay.gateway is None, "دفعة تاريخية أُعيدت كتابتها"
 
     def test_cleanup_expired_intents(self, app):
         from app.services.payments import get_payment_service

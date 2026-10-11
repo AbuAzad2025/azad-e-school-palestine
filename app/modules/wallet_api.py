@@ -211,12 +211,6 @@ def wallet_transfer():
     if not dest_user_id:
         return api_error(_("dest_user_id مطلوب"), 400, "VALIDATION_ERROR")
 
-    # D7: لا تحويل إلى/من مستخدم خارج نطاق المدرسة
-    if not _user_in_school(int(dest_user_id), int(school_id)):
-        return api_error(_("المستخدم المستلم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
-    if int(source_user_id) != int(current_user.id) and not _user_in_school(int(source_user_id), int(school_id)):
-        return api_error(_("المستخدم المرسل ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
-
     amount = _parse_amount(str(body.get("amount") or ""))
     if amount is None:
         return api_error(_("مبلغ غير صالح"), 400, "VALIDATION_ERROR")
@@ -224,6 +218,14 @@ def wallet_transfer():
     idempotency_key = (body.get("idempotency_key") or "").strip()
     if not idempotency_key:
         return api_error(_("idempotency_key مطلوب (UUID)"), 400, "VALIDATION_ERROR")
+
+    # D7: لا تحويل إلى/من مستخدم خارج نطاق المدرسة — بعد التحقق من المدخلات
+    # (فشل المدخل يبقى 400) وقبل أي إنشاء محفظة (وإلا تُنبَث محفظة لطالب
+    # من مدرسة أخرى داخل هذه المدرسة).
+    if not _user_in_school(int(dest_user_id), int(school_id)):
+        return api_error(_("المستخدم المستلم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
+    if int(source_user_id) != int(current_user.id) and not _user_in_school(int(source_user_id), int(school_id)):
+        return api_error(_("المستخدم المرسل ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
 
     description = (body.get("description") or _("تحويل محفظة")).strip()
 
@@ -291,10 +293,6 @@ def wallet_deposit():
     if not target_user_id:
         return api_error(_("user_id مطلوب"), 400, "VALIDATION_ERROR")
 
-    # D7: لا إيداع لمستخدم خارج نطاق المدرسة — pre-check قبل أي إنشاء محفظة
-    if not _user_in_school(int(target_user_id), int(school_id)):
-        return api_error(_("المستخدم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
-
     amount = _parse_amount(str(body.get("amount") or ""))
     if amount is None or amount <= 0:
         return api_error(_("مبلغ غير صالح"), 400, "VALIDATION_ERROR")
@@ -302,6 +300,11 @@ def wallet_deposit():
     idempotency_key = (body.get("idempotency_key") or "").strip()
     if not idempotency_key:
         return api_error(_("idempotency_key مطلوب (UUID)"), 400, "VALIDATION_ERROR")
+
+    # D7: لا إيداع لمستخدم خارج نطاق المدرسة — بعد التحقق من المدخلات
+    # (فشل المدخل يبقى 400) وقبل أي إنشاء محفظة.
+    if not _user_in_school(int(target_user_id), int(school_id)):
+        return api_error(_("المستخدم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
 
     # إيداع أدمن = رصيد خارجي يدخل النظام (source NULL) — ضمان وجود المحفظة
     wallet, w_err = wallet_service.get_or_create_wallet(school_id, int(target_user_id))

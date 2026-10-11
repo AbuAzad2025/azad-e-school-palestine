@@ -5,7 +5,7 @@ import shutil
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from app.core.db import tx
+from app.core.db import TxError, tx
 from app.core.permissions import _has_any, role_required
 from app.extensions import db
 from app.models.ai import AiUsageLog
@@ -1270,8 +1270,9 @@ def review_payout(payout_id, result):
 
     المعرف موجود أولاً (404 مسار خاطئ لا كائن مفقود في DB)، ثم طلب القفل
     داخل tx() يفشل بـ TxError واضحة على حالة مغلوطة لا Key باردة.
+    ``tx`` يُستدعى من مساحة الوحدة (لا استيراد داخل الدالة) حتى يبقى
+    قابلاً للاستبدال/القياس من الاختبارات بواجهة ``app.modules.admin.routes.tx``.
     """
-    from app.core.db import TxError, tx
     from app.models.tutoring import TutorCommission, TutorPayout
 
     # التحقق من الوجود أولاً (404 مسار خاطئ) — ثم القفل داخل tx()

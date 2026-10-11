@@ -463,13 +463,20 @@ class TestWalletApi:
         )
         assert c.post("/api/v1/wallet/deposits", json={"user_id": 1, "amount": "5"}).status_code == 400
 
-        # student transfers part of the balance to classmate
         c2 = app.test_client()
         login(c2, env["student"][1])
+        # D7: مستلم من مدرسة أخرى → 403 (لا تُكتب محفظة داخل هذه المدرسة)
+        cross = c2.post(
+            "/api/v1/wallet/transfers",
+            json={"dest_user_id": env["outsider"][0], "amount": "5", "idempotency_key": f"x-{_uid()}"},
+        )
+        assert cross.status_code == 403
+
+        # student transfers part of the balance to a same-school user
         r2 = c2.post(
             "/api/v1/wallet/transfers",
             json={
-                "dest_user_id": env["outsider"][0],
+                "dest_user_id": env["admin"][0],
                 "amount": "40",
                 "idempotency_key": f"t-{_uid()}",
                 "description": "help",

@@ -249,7 +249,7 @@ class PayTabsGateway(PaymentGatewayBase):
             if metadata
             else "Azad E-School Payment",
             "cart_currency": currency,
-            "cart_amount": str(_money(amount)),  # D2: quantized 2-dp decimal string, no float drift
+            "cart_amount": float(_money(amount)),  # D2: amount quantized to 2 dp first, never a raw drift-prone value
             "callback": self.config.get("callback_url") or os.getenv("PAYTABS_CALLBACK_URL"),
             "return": self.config.get("return_url") or os.getenv("PAYTABS_RETURN_URL"),
         }
@@ -728,19 +728,8 @@ class PaymentService:
             query = query.filter(
                 db.or_(
                     User.role == UserRole.super_admin,
-                    # Fallback أدمِن المنصة: حساب إداري بلا أي رابط مدرسة
-                    # نشط ( UserRoleLink ) — حساب منصّي (بيئة الاختبارات
-                    # وأدمِنة المنصة الفعليون) يتلقى التنبيه بدون تعيين مدرسة.
-                    # A cross-tenant leak stays impossible: a platform admin
-                    # with no school links is not bound to any tenant.
-                    db.and_(
-                        User.role == UserRole.school_admin,
-                        # Fallback admin a-man-down: no active school link at
-                        # all ⇒ platform-level admin account (tests and real
-                        # platform admins). Cross-tenant leak impossible:
-                        # unlinked admins belong to no tenant.
-                        ~User.role_links.any(),
-                    ),
+                    # لا استثناء لحساب إداري بلا روابط: مشرف بلا دور نشط في
+                    # هذه المدرسة لا يرى ماليّتها (وإلا لرأى كل مدارس النظام).
                     User.id.in_(
                         db.session.query(UserRoleLink.user_id).filter(
                             UserRoleLink.school_id == school_id,

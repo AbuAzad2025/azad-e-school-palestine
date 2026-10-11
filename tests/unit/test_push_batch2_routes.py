@@ -535,8 +535,9 @@ class TestWalletApi:
         assert r1.status_code == 200 and r2.status_code == 200
 
     def test_transfer_success_and_guards(self, app):
-        _, admin, a_email, stud, s_email = self._wallet_users(app)
+        sid, admin, a_email, stud, s_email = self._wallet_users(app)
         other = mk_user(app, "student", school_id=make_school(app))
+        classmate = mk_user(app, "student", school_id=sid)
         client = login_as(app, (stud, s_email))
         # transferring from someone else's wallet → 403
         forbidden = client.post(
@@ -555,11 +556,17 @@ class TestWalletApi:
             json={"source_user_id": stud, "amount": "5", "idempotency_key": uuid.uuid4().hex},
         )
         assert bad.status_code == 400
-        # fund own wallet via admin deposit, then transfer
+        # D7: تحويل لمستخدم من مدرسة أخرى → 403 (لا تُنبَث محفظة داخل هذه المدرسة)
+        cross = client.post(
+            "/api/v1/wallet/transfers",
+            json={"dest_user_id": other[0], "amount": "5", "idempotency_key": uuid.uuid4().hex},
+        )
+        assert cross.status_code == 403
+        # fund own wallet via admin deposit, then transfer to an in-school classmate
         ac = login_as(app, (admin, a_email))
         ac.post("/api/v1/wallet/deposits", json={"user_id": stud, "amount": "50", "idempotency_key": uuid.uuid4().hex})
         ok = client.post(
             "/api/v1/wallet/transfers",
-            json={"dest_user_id": other[0], "amount": "10", "idempotency_key": uuid.uuid4().hex},
+            json={"dest_user_id": classmate[0], "amount": "10", "idempotency_key": uuid.uuid4().hex},
         )
         assert ok.status_code == 200

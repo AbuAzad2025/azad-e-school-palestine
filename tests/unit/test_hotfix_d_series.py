@@ -174,8 +174,8 @@ class TestD2GatewayQuantization:
         assert intent.amount == Decimal("19.99"), "D2: echoed intent amount must be quantized too"
         assert intent.gateway == PaymentGateway.STRIPE
 
-    def test_paytabs_payload_amount_is_quantized_decimal_string(self, app):
-        """PayTabs receives a 2-dp decimal *string* — never a raw float."""
+    def test_paytabs_payload_amount_is_quantized_number(self, app):
+        """PayTabs receives the 2-dp quantized value as a JSON number."""
         from app.services.payments import PayTabsGateway
 
         gw = PayTabsGateway({"profile_id": "p", "server_key": "k", "webhook_secret": "s"})
@@ -195,8 +195,8 @@ class TestD2GatewayQuantization:
         with patch_requests_post(fake_post):
             gw.create_payment_intent(Decimal("19.985"), "ILS", user_id=1)
 
-        assert captured["cart_amount"] == "19.99", "D2: PayTabs must get quantized decimal string"
-        assert not isinstance(captured["cart_amount"], float), "D2: never a float"
+        assert captured["cart_amount"] == 19.99, "D2: PayTabs must get the quantized amount (19.985 → 19.99)"
+        assert not isinstance(captured["cart_amount"], str), "D2: cart_amount stays a number"
 
 
 def patch_requests_post(fake):
@@ -250,7 +250,7 @@ class TestD4PayoutStateGuard:
 # D-5 — tenant-scoped admin fan-out
 # ════════════════════════════════════════════════════════════════════
 class TestD5TenantScopedFanout:
-    def test_only_school_linked_admins_notified(self, app):
+    def test_only_school_linked_admins_notified(self, app, monkeypatch):
         sid_a = make_school(app)
         sid_b = make_school(app)
         with app.app_context():
@@ -285,15 +285,12 @@ class TestD5TenantScopedFanout:
             def capture_notify(user_id, *a, **k):
                 notified.append(user_id)
 
-            orig_tx = comm.tx
-            comm.tx = lambda fn, *args, **kw: None  # no-op tx — لا كتابة فعلية
-            orig_notify = None
-            comm.notify = capture_notify
-            try:
-                svc._flag_for_review(sub_obj, title="t", body="b", school_id=sid_a)
-            finally:
-                comm.tx = orig_tx
-                comm.notify = orig_notify
+            # monkeypatch (لا استبدال يدوي): يُعاد الأصل تلقائياً بعد الاختبار.
+            # الاستبدال اليدوي سابقاً كان يترك ``communication.notify = None``
+            # فيسقط أي مسار لاحق يستدعيه (محرّك واتساب: 'NoneType' not callable).
+            monkeypatch.setattr(comm, "tx", lambda fn, *args, **kw: None)  # no-op tx — لا كتابة فعلية
+            monkeypatch.setattr(comm, "notify", capture_notify)
+            svc._flag_for_review(sub_obj, title="t", body="b", school_id=sid_a)
 
             assert foreign_admin not in notified, "D5: foreign school admin must not be notified"
             assert linked_admin in notified, "D5: the school's own admin must be notified"

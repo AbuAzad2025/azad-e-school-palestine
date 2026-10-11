@@ -316,6 +316,17 @@ class TestGatewayVerification:
 class TestAmountMismatchBlocksActivation:
     """التكامل: webhook بمبلغ لا يطابق سعر الخطة ⇒ مراجعة يدوية بلا تفعيل."""
 
+    @staticmethod
+    def _school_of(app, sub_id):
+        """مدرسة الاشتراك (عبر صفّه) — لربط المشرف بالنطاق الصحيح في D5."""
+        from app.extensions import db
+        from app.models.billing import Subscription
+        from app.models.class_room import ClassRoom
+
+        with app.app_context():
+            sub = db.session.get(Subscription, sub_id)
+            return db.session.get(ClassRoom, sub.class_id).school_id
+
     def _subscription(self, app, price="500.00", currency="ILS"):
         from app.extensions import db
         from app.models.billing import Subscription, SubscriptionPlan
@@ -354,8 +365,9 @@ class TestAmountMismatchBlocksActivation:
         from app.services.payments import PaymentService
         from tests.conftest import make_user
 
-        make_user(app, role="school_admin")  # يجب أن يصل إشعار المراجعة
         sub_id = self._subscription(app, price="500.00")
+        # مشرف مرتبط بمدرسة الاشتراك تحديداً يجب أن يصل إشعار المراجعة (D5)
+        make_user(app, role="school_admin", school_id=self._school_of(app, sub_id))
         payload = {
             "metadata": {"subscription_id": str(sub_id)},
             "cart_amount": "1.00",
@@ -400,8 +412,8 @@ class TestAmountMismatchBlocksActivation:
         from app.services.payments import PaymentService
         from tests.conftest import make_user
 
-        make_user(app, role="school_admin")
         sub_id = self._subscription(app, price="500.00")
+        make_user(app, role="school_admin", school_id=self._school_of(app, sub_id))
         payload = {
             "metadata": {"subscription_id": str(sub_id)},
             "cart_amount": "500.00",

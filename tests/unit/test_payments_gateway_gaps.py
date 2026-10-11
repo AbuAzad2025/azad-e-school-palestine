@@ -678,8 +678,22 @@ class TestPaymentService:
                 Decimal("50"),
                 PaymentGateway.WHATSAPP,
             )
+            # D1: التفعيل يسجّل صفاً جديداً خالداً في دفتر wallet_transactions
+            from app.models.wallet import WalletTransaction
+
+            entry = (
+                WalletTransaction.query.filter_by(reference_type="subscription", reference_id=sub_id)
+                .order_by(WalletTransaction.id.desc())
+                .first()
+            )
+            assert entry is not None, "لا صف دفتر للتفعيل"
+            assert entry.transaction_type == "subscription_credit"
+            assert entry.amount == Decimal("50.00")
+            assert entry.source_wallet_id is None  # تدفق خارجي (لا محفظة مصدر)
+            assert "whatsapp" in entry.idempotency_key
+            # D1: سجل الدفع التاريخي لا يُعاد كتابته
             payment = db.session.get(ManualPayment, pay_id)
-            assert payment.gateway == "whatsapp"
+            assert payment.gateway is None, "دفعة تاريخية أُعيدت كتابتها"
             assert payment.amount == 50.0
 
     def test_cleanup_expired_intents_returns_zero(self):
