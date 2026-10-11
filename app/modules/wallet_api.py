@@ -35,6 +35,22 @@ def _school_id_for_admin_scope() -> int | None:
     return getattr(current_user, "school_id", None)
 
 
+def _user_in_school(user_id: int, school_id: int) -> bool:
+    """D7: هل المستخدم طرف في هذه المدرسة بدور نشط؟
+
+    الفحص الجوهري: مشرف المدرسة (A) كان يستطيع إنشاء محفظة لمستخدم من
+    مدرسة (B) داخل (A) وإيداعها — التينانتس تقنيًا سليمًا (الصف يحمل
+    school_id = A) لكنها بقايا مالك لطالب لا صلة له بالمدرسة. يفحص
+    ``user_role_links`` نفس الجدول الذي تعتمده RLS (دور نشط). super_admin
+    يتخطى الفحص لأنه فوق التينانتس (نفس دلالة ‎current_school_id()‎).
+    """
+    from app.models.user import UserRoleLink
+
+    if current_user.role == UserRole.super_admin:
+        return True
+    return UserRoleLink.query.filter_by(user_id=user_id, school_id=school_id, is_active=True).first() is not None
+
+
 def _parse_amount(raw: str | None) -> Decimal | None:
     if raw is None:
         return None
@@ -195,6 +211,12 @@ def wallet_transfer():
     if not dest_user_id:
         return api_error(_("dest_user_id مطلوب"), 400, "VALIDATION_ERROR")
 
+    # D7: لا تحويل إلى/من مستخدم خارج نطاق المدرسة
+    if not _user_in_school(int(dest_user_id), int(school_id)):
+        return api_error(_("المستخدم المستلم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
+    if int(source_user_id) != int(current_user.id) and not _user_in_school(int(source_user_id), int(school_id)):
+        return api_error(_("المستخدم المرسل ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
+
     amount = _parse_amount(str(body.get("amount") or ""))
     if amount is None:
         return api_error(_("مبلغ غير صالح"), 400, "VALIDATION_ERROR")
@@ -268,6 +290,10 @@ def wallet_deposit():
     target_user_id = body.get("user_id")
     if not target_user_id:
         return api_error(_("user_id مطلوب"), 400, "VALIDATION_ERROR")
+
+    # D7: لا إيداع لمستخدم خارج نطاق المدرسة — pre-check قبل أي إنشاء محفظة
+    if not _user_in_school(int(target_user_id), int(school_id)):
+        return api_error(_("المستخدم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
 
     amount = _parse_amount(str(body.get("amount") or ""))
     if amount is None or amount <= 0:

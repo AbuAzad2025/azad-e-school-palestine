@@ -7,12 +7,14 @@ import hashlib
 import os
 import secrets
 from datetime import UTC
+from decimal import Decimal
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from app.core.db import TxError, tx
 from app.core.i18n import _
+from app.core.logging import get_logger
 from app.extensions import db
 from app.models.tutoring import (
     TutorCommission,
@@ -23,6 +25,13 @@ from app.models.tutoring import (
     TutorReview,
 )
 from app.models.user import UserRole
+
+logger = get_logger(__name__)
+
+# أنواع معاملات دفتر المحفظة (P7) المستعملة هنا — تصدير لأغراض الاختبار.
+# الدفع الوارد من الطالب خارج المنصة يمثّل تدفقًا خارجيًا داخل النظام.
+TX_INFLOW_TYPE = "tutor_session_credit"
+TX_TUTOR_COMMISSION = "tutor_commission"  # نوع P7 — يحاكي الثابت في wallet_service
 
 
 def _invite_code() -> str:
@@ -523,9 +532,16 @@ def get_tutor_earnings(tutor_id: int) -> dict:
 
 
 def create_commission_record(session: TutoringSession) -> TutorCommission | None:
-    """ينشئ سجل عمولة عند اكتمال الجلسة.
+    """ينشئ سجل عمولة عند اكتمال الجلسة — **مع إدخال دفتر المحفظة** (P7).
 
     P0-10: FOR UPDATE + فحص مزدوج لمنع إنشاء عمولة مكررة تحت التزامن.
+
+    التكامل (سدًّا للفجوة الجدولية المعزولة): إضافة لوصول وجود سجل --
+    كل عملية إنشاء عمولة تؤدي الآن إلى إدخال دفتر واقعي في المحفظة
+    (معاملة زيادة ``tutor_commission``): شبكة قيمة الأساس إلى شبكة
+    المحفظة للحساب (مزيل مزدوج: خادم حقيقي لا رصيد). إدخال الدفتر
+    استثناء مقصود (فجورة أو مال لا يكفي): سجل العمولة نفسه دائمًا
+    يُنشأ — لا تنهار نهاية الجلسة لسؤال: محفظة غير موجودة.
     """
     if session.status not in ("completed", "ended"):
         return None
@@ -554,9 +570,90 @@ def create_commission_record(session: TutoringSession) -> TutorCommission | None
             tutor_net=net,
         )
         db.session.add(c)
+        _append_commission_ledger(locked, amount_dec=Decimal(str(amount)), commission_dec=Decimal(str(commission)))
         return c
 
     return tx(_create)
+
+
+def _append_commission_ledger(locked: TutoringSession, *, amount_dec: Decimal, commission_dec: Decimal) -> None:
+    """سجّل الدفعة في دفتر المحفظة (أنواع P7 ``tutor_commission``) — داخل tx() الحالي.
+
+    القيد المزدوج لجلسة مكتملة، كساقين:
+        1. تكوين صافي: تدفق خارجي إلى محفظة المعلم (source NULL) — قيمة
+           الجلسة داخلت المنصة من الطالب (يُدفع خارجيًا).
+        2. عمولة المنصة: سحب عمولة من حساب المعلم إلى خارج النظام
+           (destination NULL) — النوع P7 ``tutor_commission`` تحديدًا.
+    مجموع الأثر الصافي: صافي المعلم المحفوظ في سجل العمولة — بلا
+    حساب "منصة" مخترع: القيود للخارج ممثلة بجانب NULL (نفس الممثّل الذي
+    يستخدمه ``admin_credit`` للإيداع الإداري).
+
+    الفشل ليس فادحًا: سجل العمولة سبق أن أُنشئ (والجلسة مكتملة). النقص
+    يُسجّل لا يُرفع — إنهاء جلسة لا يجب أن ينهار لأن المحفظة غير موجودة.
+    """
+    from app.models.wallet import Wallet, WalletTransaction
+    from app.services.wallet_service import _generate_tx_hash, _money
+
+    school_id = getattr(locked.tutor, "school_id", None)
+    if not school_id:
+        logger.info(
+            "commission_ledger_skipped_no_school",
+            session_id=locked.id,
+            tutor_id=locked.tutor_id,
+        )
+        return
+
+    wallet = db.session.query(Wallet).filter_by(school_id=school_id, user_id=locked.tutor_id).with_for_update().first()
+    if wallet is None:
+        logger.info("commission_ledger_skipped_no_wallet", session_id=locked.id, tutor_id=locked.tutor_id)
+        return
+
+    _money(amount_dec - commission_dec)  # صافي المعلم محفوظ في سجل العمولة — غير مستخدم هنا
+    commission_dec = _money(commission_dec)
+    amount_dec = _money(amount_dec)
+    base_key = f"tutoring_session:{locked.id}"  # مفاتيح مستقرة — إعادة الاستدعاء لا تكرر
+
+    # 1) التدفق الخارجي الداخل إلى محفظة المعلم (source NULL)
+    inflow_exists = WalletTransaction.query.filter_by(idempotency_key=f"{base_key}:inflow").first()
+    if not inflow_exists:
+        db.session.add(
+            WalletTransaction(
+                school_id=school_id,
+                source_wallet_id=None,
+                destination_wallet_id=wallet.id,
+                amount=amount_dec,
+                currency=wallet.currency,
+                transaction_type=TX_INFLOW_TYPE,
+                transaction_hash=_generate_tx_hash(school_id, None, wallet.id, amount_dec, TX_INFLOW_TYPE),
+                idempotency_key=f"{base_key}:inflow",
+                description=f"جلسة خصوصية #{locked.id} — قبض المعلم",
+                reference_type="tutoring_session",
+                reference_id=locked.id,
+                status="completed",
+            )
+        )
+        wallet.balance = _money(wallet.balance + amount_dec)
+
+    # 2) عمولة المنصة (نوع P7 tutor_commission) — سحب إلى الخارج
+    commission_exists = WalletTransaction.query.filter_by(idempotency_key=f"{base_key}:commission").first()
+    if not commission_exists:
+        db.session.add(
+            WalletTransaction(
+                school_id=school_id,
+                source_wallet_id=wallet.id,
+                destination_wallet_id=None,
+                amount=commission_dec,
+                currency=wallet.currency,
+                transaction_type=TX_TUTOR_COMMISSION,
+                transaction_hash=_generate_tx_hash(school_id, wallet.id, None, commission_dec, TX_TUTOR_COMMISSION),
+                idempotency_key=f"{base_key}:commission",
+                description=f"عمولة المنصة ({COMMISSION_RATE}%) على جلسة #{locked.id}",
+                reference_type="tutoring_session",
+                reference_id=locked.id,
+                status="completed",
+            )
+        )
+        wallet.balance = _money(wallet.balance - commission_dec)
 
 
 def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, str | None]:

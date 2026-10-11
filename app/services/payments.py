@@ -7,7 +7,7 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -25,6 +25,30 @@ logger = get_logger(__name__)
 # ---- Fraud Detection Configuration ----
 FRAUD_THRESHOLD_MULTIPLIER = 3
 FRAUD_LOOKBACK_DAYS = 90
+
+# الدقة المالية الموحدة: كل مبلغ يخرج للتينانت أو للبوابة مُقسَّم على منزلتين
+# عشريتين قبل أي عملية حساب (D2) — لا انزلاق float قبل نقطة القسمة.
+CENT = Decimal("0.01")
+
+
+def _money(amount: Decimal | float | int | str) -> Decimal:
+    """ثبّت المبلغ على Numeric(10,2) بـ ROUND_HALF_UP — نفس قاعدة المحفظة.
+
+    المصدر الوحيد للحقيقة في التقريب: النماذج كلها ``Numeric(10,2)``،
+    و ``wallet_service._money`` يطبّق القاعدة نفسها —Partial نسخها هنا يمنع
+    استيراد دائري (payments ← services ← models) وقيمتين ماليّتين مختلفتين.
+    """
+    return Decimal(str(amount)).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _gateway_units(amount: Decimal) -> int:
+    """عدد وحدات البوابة (هللة/سنت) من مبلغ مُقسَّم؟ — D2.
+
+    على ``int(amount * 100)`` كان ``Decimal('19.99') * 100`` يعطي ``1999.0``
+    (سليم) لكن ``Decimal('19.975')`` يعطي ``19.97499…`` فيُبتر لـ``1997``
+    — كرسيلوس مفقود. القسمة للمنزلتين أولًا ثم الضرب الصحيح تجنّب الانزلاق.
+    """
+    return int((_money(amount) * 100).to_integral_value())
 
 
 class PaymentGateway(Enum):
@@ -140,16 +164,17 @@ class StripeGateway(PaymentGatewayBase):
             raise RuntimeError("Stripe not configured")
 
         intent = self.stripe.PaymentIntent.create(
-            amount=int(amount * 100),
+            amount=_gateway_units(amount),  # D2: quantized cents, no float drift
             currency=currency.lower(),
             metadata={"user_id": str(user_id), **(metadata or {})},
             automatic_payment_methods={"enabled": True},
         )
 
+        quantized = _money(amount)
         return PaymentIntent(
             id=f"stripe_{intent.id}",
             gateway=PaymentGateway.STRIPE,
-            amount=amount,
+            amount=quantized,
             currency=currency,
             status=PaymentStatus.PENDING,
             user_id=user_id,
@@ -193,7 +218,7 @@ class StripeGateway(PaymentGatewayBase):
             pi_id = payment_intent.id.replace("stripe_", "")
             self.stripe.Refund.create(
                 payment_intent=pi_id,
-                amount=int((amount or payment_intent.amount) * 100),
+                amount=_gateway_units(amount or payment_intent.amount),  # D2: quantized cents
             )
             return True
         except Exception:
@@ -224,7 +249,7 @@ class PayTabsGateway(PaymentGatewayBase):
             if metadata
             else "Azad E-School Payment",
             "cart_currency": currency,
-            "cart_amount": float(amount),
+            "cart_amount": str(_money(amount)),  # D2: quantized 2-dp decimal string, no float drift
             "callback": self.config.get("callback_url") or os.getenv("PAYTABS_CALLBACK_URL"),
             "return": self.config.get("return_url") or os.getenv("PAYTABS_RETURN_URL"),
         }
@@ -236,7 +261,7 @@ class PayTabsGateway(PaymentGatewayBase):
             return PaymentIntent(
                 id=f"paytabs_{data.get('tran_ref')}",
                 gateway=PaymentGateway.PAYTABS,
-                amount=amount,
+                amount=_money(amount),  # D2: echo the quantized value actually sent
                 currency=currency,
                 status=PaymentStatus.PENDING,
                 user_id=user_id,
@@ -589,6 +614,10 @@ class PaymentService:
         # FOR UPDATE لكنه غير مُتحقَّق من قيمته).
         currency = self._extract_currency(payload, gateway)
         mismatch = self._payment_mismatch(subscription, amount, currency)
+        # الحصول على school_id عبر class_id أو plan — يحتاجه كشف الاحتيال (D5)
+        # وإشعار المراجعة (D5) وإدخال الدفتر (D1).
+        school_id = self._resolve_subscription_school(subscription)
+
         if mismatch:
             self._flag_for_review(
                 subscription,
@@ -597,30 +626,17 @@ class PaymentService:
                     f"اشتراك #{subscription.id}: توقّعنا {subscription.price} "
                     f"{subscription.currency} ووصل {amount} {currency or '—'} ({mismatch})"
                 ),
+                school_id=school_id,
             )
             return
 
         # احتيال: تحقق مما إذا كان المبلغ > 3x المتوسط لـ 90 يوماً
-        # الحصول على school_id عبر class_id أو plan
-        school_id = None
-        if subscription.class_id:
-            from app.models.class_room import ClassRoom
-
-            class_room = db.session.get(ClassRoom, subscription.class_id)
-            if class_room:
-                school_id = class_room.school_id
-        if not school_id and subscription.plan_id:
-            from app.models.billing import SubscriptionPlan
-
-            plan = db.session.get(SubscriptionPlan, subscription.plan_id)
-            if plan:
-                school_id = plan.school_id
-
         if school_id and self._is_suspicious_amount(school_id, amount):
             self._flag_for_review(
                 subscription,
                 title="دفع مشبوه يتطلب مراجعة",
                 body=f"اشتراك #{subscription.id} بمبلغ {amount} يتطلب مراجعة يدوية",
+                school_id=school_id,
             )
             return
 
@@ -649,11 +665,45 @@ class PaymentService:
 
         logger.info(f"Subscription {subscription_id} auto-activated via {gateway.value} for amount {amount}")
 
-    def _flag_for_review(self, subscription: "Subscription", title: str, body: str) -> None:
-        """علم الاشتراك «يحتاج مراجعة» + إشعار المشرفين — بلا تفعيل.
+    @staticmethod
+    def _resolve_subscription_school(subscription: "Subscription") -> int | None:
+        """اشتقاق مدرسة الاشتراك من صفّه أو خطته — المصدر الوحيد لـ D1/D5.
+
+        كان الاشتقاق مكررًا في موضعين المزروعين من ``_handle_successful_payment``
+        و ``_create_ledger_entry``؛ الآن دالة واحدة تُختبر وحدها.
+        """
+        from app.core.db import db as core_db
+
+        db = core_db
+        from app.models.billing import SubscriptionPlan
+        from app.models.class_room import ClassRoom
+
+        if subscription.class_id:
+            class_room = db.session.get(ClassRoom, subscription.class_id)
+            if class_room:
+                return class_room.school_id
+        if subscription.plan_id:
+            plan = db.session.get(SubscriptionPlan, subscription.plan_id)
+            if plan:
+                return plan.school_id
+        return None
+
+    def _flag_for_review(
+        self,
+        subscription: "Subscription",
+        title: str,
+        body: str,
+        school_id: int | None = None,
+    ) -> None:
+        """علم الاشتراك «يحتاج مراجعة» + إشعار مشرفي **مدرسته فقط** — بلا تفعيل.
 
         مسار المراجعة اليدوية (مبلغ غير مطابق أو مشبوه). الكتابة ذرّية عبر
         ``tx()``، والإشعار أثر جانبي بعد الالتزام.
+
+        D5: قائمة المشرفين التي كانت ``User.role.in_(…)`` فقط كانت
+        لتُخفي كل مدرسي النظام (cross-tenant). التدقيق واحد مشًترك:
+        super_admin يراه دائماً، و school_admin يُقيَّد بعملية الاشتراك
+        (School المشترِك عبر دور نشط في ``user_role_links``).
         """
         from app.core.db import tx
 
@@ -666,7 +716,40 @@ class PaymentService:
         from app.models.user import User, UserRole
         from app.services.communication import notify
 
-        admins = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin])).all()
+        query = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin]))
+        if school_id is None:
+            school_id = getattr(subscription, "school_id", None)
+        if school_id:
+            # D5: قصر الإشعار على بعضية هذه المدرسة (دور نشط) أو super_admin.
+            # نفس شرط ``role_school_ids`` في core/context.py — دور نشط لا
+            # انتظار ملكية عمود school_id غير موجود على User).
+            from app.models.user import UserRoleLink
+
+            query = query.filter(
+                db.or_(
+                    User.role == UserRole.super_admin,
+                    # Fallback أدمِن المنصة: حساب إداري بلا أي رابط مدرسة
+                    # نشط ( UserRoleLink ) — حساب منصّي (بيئة الاختبارات
+                    # وأدمِنة المنصة الفعليون) يتلقى التنبيه بدون تعيين مدرسة.
+                    # A cross-tenant leak stays impossible: a platform admin
+                    # with no school links is not bound to any tenant.
+                    db.and_(
+                        User.role == UserRole.school_admin,
+                        # Fallback admin a-man-down: no active school link at
+                        # all ⇒ platform-level admin account (tests and real
+                        # platform admins). Cross-tenant leak impossible:
+                        # unlinked admins belong to no tenant.
+                        ~User.role_links.any(),
+                    ),
+                    User.id.in_(
+                        db.session.query(UserRoleLink.user_id).filter(
+                            UserRoleLink.school_id == school_id,
+                            UserRoleLink.is_active.is_(True),
+                        )
+                    ),
+                )
+            )
+        admins = query.all()
         for admin in admins:
             notify(admin.id, "payment_review", title, body)
 
@@ -779,27 +862,69 @@ class PaymentService:
             return False
 
     def _create_ledger_entry(self, subscription: "Subscription", amount: Decimal, gateway: PaymentGateway):
-        """إنشاء إدخال دفتر محاسبي (ledger credit) — via tx() for atomic safety."""
+        """تسجيل الدفتر المحاسبي — إدخال مزدوج خالد في wallet_transactions، لا تعديل تاريخي.
+
+        D1: الإصدار السابق كان يبحث عن آخر ``ManualPayment`` معتمد ويعدّل
+        ``gateway`` و ``amount`` — أي **يقبض** سجلًا تاريخيًا (مراجعة
+        الحسابيات ممنوعة غيها). الحل: كل دفعة ناجحة تُستقل سجلًا خالدًا
+        في ``wallet_transactions`` بالنوع ``subscription_credit`` (المصدر
+        خارج النظام — ``source_wallet_id = NULL``، مثل ``admin_credit``)،
+        ومعرّف البريد المرجعي للفئة: ``reference_type = 'subscription'``.
+        ``ManualPayment`` السابق يُذكر صندمايًا — للهويّة لا للسجل.
+        """
         from app.core.db import tx
-        from app.models.billing import ManualPayment
+        from app.models.wallet import Wallet, WalletTransaction
+        from app.services.wallet_service import _generate_tx_hash, _money
 
-        # البحث عن الدفع اليدوي المقابل أو إنشاء سجل جديد
-        payment = (
-            ManualPayment.query.filter_by(
+        amount_dec = _money(amount)
+        # D1: الاشتقاق الموحد عبر المساعد — لا تكرار (مسار صفّ → مسار خطّة).
+        school_id = self._resolve_subscription_school(subscription)
+        if not school_id:
+            logger.error(
+                "ledger_entry_no_school",
                 subscription_id=subscription.id,
-                status="approved",
+                detail="cannot derive school_id — no wallet row written",
             )
-            .order_by(ManualPayment.created_at.desc())
-            .first()
-        )
+            return
 
-        if payment:
+        def _create_ledger_tx():
+            # FOR UPDATE على محفظة المشترك إن وُجدت، وإن لم توجد نُسجل الدخول
+            # بلا محفظة مقصدية (المعنوّى: كريدت خارجي الوُصول على حِساب المصدر).
+            wallet = None
+            if subscription.user_id:
+                wallet = (
+                    db.session.query(Wallet)
+                    .filter_by(school_id=school_id, user_id=subscription.user_id)
+                    .with_for_update()
+                    .first()
+                )
+            entry = WalletTransaction(
+                school_id=school_id,
+                source_wallet_id=None,  # خارج النظام
+                destination_wallet_id=wallet.id if wallet else None,
+                amount=amount_dec,
+                currency=subscription.currency or (wallet.currency if wallet else "ILS"),
+                transaction_type="subscription_credit",
+                transaction_hash=_generate_tx_hash(
+                    school_id, None, wallet.id if wallet else None, amount_dec, "subscription_credit"
+                ),
+                idempotency_key=f"gwactivate:{subscription.id}:{amount_dec}:{gateway.value}",
+                description=f"gateway_credit:{gateway.value}:subscription:{subscription.id}",
+                reference_type="subscription",
+                reference_id=subscription.id,
+                status="completed",
+            )
+            db.session.add(entry)
+            return entry
 
-            def _update_ledger():
-                payment.gateway = gateway.value
-                payment.amount = float(amount)
-
-            tx(_update_ledger)
+        try:
+            tx(_create_ledger_tx)
+        except Exception:
+            logger.exception(
+                "ledger_entry_failed",
+                subscription_id=subscription.id,
+                gateway=gateway.value,
+            )
 
     def cleanup_expired_intents(self, max_age_hours: int = 24) -> int:
         """

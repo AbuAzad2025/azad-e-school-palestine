@@ -1266,24 +1266,39 @@ def payouts_queue():
 @login_required
 @role_required(UserRole.super_admin)
 def review_payout(payout_id, result):
-    """اعتماد أو رفض طلب سحب"""
+    """اعتماد أو رفض طلب سحب — D4: قفل صف + فحص الحالة داخل tx().
+
+    المعرف موجود أولاً (404 مسار خاطئ لا كائن مفقود في DB)، ثم طلب القفل
+    داخل tx() يفشل بـ TxError واضحة على حالة مغلوطة لا Key باردة.
+    """
+    from app.core.db import TxError, tx
     from app.models.tutoring import TutorCommission, TutorPayout
 
-    payout = db.get_or_404(TutorPayout, payout_id)
-
+    # التحقق من الوجود أولاً (404 مسار خاطئ) — ثم القفل داخل tx()
+    db.get_or_404(TutorPayout, payout_id)
     if result == "approve":
 
         def _approve_payout():
-            payout.status = "approved"
-            payout.reviewed_by = current_user.id
-            payout.reviewed_at = db.func.now()
+            # P0-10/D4: قفل صفّ الدفع داخل tx() — رفض مزدوج/اعتماد مزدوج
+            # يفشل واحدٌ منهما رسالة مستخدم (TxError) لا طفْ مسار.
+            locked: TutorPayout | None = db.session.query(TutorPayout).filter_by(id=payout_id).with_for_update().first()
+            if not locked:
+                raise TxError(_("طلب السحب غير موجود."))
+            if locked.status != "pending":
+                raise TxError(_("تمت مراجعة طلب السحب مسبقاً."))
+            locked.status = "approved"
+            locked.reviewed_by = current_user.id
+            locked.reviewed_at = db.func.now()
             # Mark corresponding commissions as withdrawn
-            commissions = TutorCommission.query.filter_by(tutor_id=payout.tutor_id, status="pending").all()
+            commissions = TutorCommission.query.filter_by(tutor_id=locked.tutor_id, status="pending").all()
             for c in commissions:
                 c.status = "withdrawn"
 
         try:
             tx(_approve_payout)
+        except TxError as exc:
+            flash(str(exc), "warning")
+            return redirect(url_for("admin.payouts_queue"))
         except Exception:  # noqa: BLE001
             current_app.logger.exception("admin_payout_approve_failed")
             flash(_("فشل اعتماد طلب السحب"), "danger")
@@ -1292,13 +1307,21 @@ def review_payout(payout_id, result):
     elif result == "reject":
 
         def _reject_payout():
-            payout.status = "rejected"
-            payout.reviewed_by = current_user.id
-            payout.reviewed_at = db.func.now()
-            payout.note = request.form.get("note", "")
+            locked: TutorPayout | None = db.session.query(TutorPayout).filter_by(id=payout_id).with_for_update().first()
+            if not locked:
+                raise TxError(_("طلب السحب غير موجود."))
+            if locked.status != "pending":
+                raise TxError(_("تمت مراجعة طلب السحب مسبقاً."))
+            locked.status = "rejected"
+            locked.reviewed_by = current_user.id
+            locked.reviewed_at = db.func.now()
+            locked.note = request.form.get("note", "")
 
         try:
             tx(_reject_payout)
+        except TxError as exc:
+            flash(str(exc), "warning")
+            return redirect(url_for("admin.payouts_queue"))
         except Exception:  # noqa: BLE001
             current_app.logger.exception("admin_payout_reject_failed")
             flash(_("فشل رفض طلب السحب"), "danger")
