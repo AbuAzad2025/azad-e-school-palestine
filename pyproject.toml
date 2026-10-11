@@ -31,7 +31,6 @@ exclude = [
   "tests",
   ".venv",
   "node_modules",
-  "deprecated/sphinx\\.py",
 ]
 
 [[tool.mypy.overrides]]

@@ -647,13 +647,13 @@ class TestPayouts:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# revenue_routes.py (0% → مغطى)
+# لوحة تتبع الإيرادات (/admin/revenue)
 # ═══════════════════════════════════════════════════════════════════════════
 
 
-class TestRevenueRoutesModule:
-    def test_dashboard_via_module(self, app):
-        """المسار مُعرّف في revenue_routes.py أيضاً — نضمن تغطيته."""
+class TestRevenueDashboard:
+    def test_dashboard_renders(self, app):
+        """لوحة الإيرادات مُعرّفة في admin/routes.py — نضمن استجابتها."""
         _, email = mk_user(app, role="super_admin")
         client = login_as(app, email)
         assert client.get("/admin/revenue?days=365").status_code == 200

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # ===== Python =====
 __pycache__/
@@ -42,8 +43,7 @@ Thumbs.db
 
 # ===== Node / Biome =====
 node_modules/
-# npm/pnpm lockfiles — JS tooling artifacts; not committed for this project
-package-lock.json
+# package-lock.json IS committed: CI runs `npm ci`, which requires it.
 pnpm-lock.yaml
 yarn.lock
 messages.pot
@@ -67,3 +67,7 @@ tests/e2e/.seed.json
 pytest_out.txt
 fix_class_path.sql
 *.sql.tmp
+
+# ===== Outputs of ad-hoc dev scripts (regenerated on each run) =====
+scripts/translation_results.txt
+.benchmarks/

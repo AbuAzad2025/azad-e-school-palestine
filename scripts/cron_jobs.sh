@@ -11,8 +11,6 @@ export BACKUP_RETENTION_DAYS=30
 export MAX_BACKUPS=50
 export BACKUP_COMPRESS=1
 export BACKUP_NOTIFY_WEBHOOK=https://your-webhook-url
-export TEST_DB_NAME=azad_e_school_test_restore
-export DATABASE_URL=postgresql+psycopg2://postgres:password@localhost:5432/azad_e_school
 
 # ============================================================
 # BACKUP JOBS
@@ -24,8 +22,8 @@ export DATABASE_URL=postgresql+psycopg2://postgres:password@localhost:5432/azad_
 # Hourly backup (optional, for critical data)
 # 0 * * * * /path/to/venv/bin/python /path/to/scripts/backup.py >> /var/log/azad_backup_hourly.log 2>&1
 
-# Weekly restore test - Sunday 3:00 AM
-0 3 * * 0 /path/to/venv/bin/python /path/to/scripts/test_restore.py >> /var/log/azad_restore_test.log 2>&1
+# Weekly restore verification runs in CI, not here:
+# .github/workflows/restore-verify.yml → scripts/restore_verify.py (Sunday 03:00 UTC)
 
 # Monthly cleanup - 1st of month 4:00 AM
 0 4 1 * * /path/to/venv/bin/python -c "
