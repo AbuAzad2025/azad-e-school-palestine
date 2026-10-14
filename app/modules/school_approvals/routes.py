@@ -1,5 +1,6 @@
 """مسارات موافقات المدرسة — للمشرفين والسوبر أدمن"""
 
+from app.core import flash_error
 from app.core.permissions import role_required
 from app.models.user import UserRole
 from app.services.communication import audit
@@ -36,7 +37,7 @@ def approve(link_id):
 
     success, error = approve_user_role_link(link_id, current_user.id)
     if error:
-        flash(error, "danger")
+        flash_error(error, "danger")
     else:
         flash(_("تم قبول المستخدم بنجاح."), "success")
         audit(
@@ -61,7 +62,7 @@ def reject(link_id):
     reason = request.form.get("reason", "").strip() or None
     success, error = reject_user_role_link(link_id, current_user.id, reason)
     if error:
-        flash(error, "danger")
+        flash_error(error, "danger")
     else:
         flash(_("تم رفض المستخدم."), "warning")
         audit(

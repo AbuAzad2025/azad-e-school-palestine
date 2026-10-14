@@ -22,6 +22,7 @@ from collections import Counter
 
 from flask import current_app
 
+from app.core.errors import safe_message
 from app.core.logging import get_logger
 from app.extensions import db
 
@@ -375,9 +376,10 @@ def query_school_rag_tutor(
             "confidence": "high" if len(chunks) >= 3 else "medium",
             "method": "rag",
         }, None
-    except Exception as exc:
+    except Exception:
+        # D5: التفصيل في السجل فقط — العميل يأخذ رسالة آمنة (لا نص مزوّد LLM)
         logger.exception("rag_llm_query_failed", school_id=school_id)
-        return None, f"AI query failed: {exc}"
+        return None, safe_message(503)
 
 
 def _fallback_llm_query(
@@ -395,7 +397,8 @@ def _fallback_llm_query(
             "method": "direct_llm",
         }, None
     except Exception as exc:
-        return None, f"AI query failed: {exc}"
+        logger.warning("rag_fallback_llm_failed", error=str(exc)[:200], error_type=type(exc).__name__)
+        return None, safe_message(503)
 
 
 def _call_llm_with_context(question: str, context: str, school_id: int) -> str:

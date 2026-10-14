@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{# صفحة الأخطاء العامة — تُستعمل لأي رمز بلا قالب مخصص (400/405/415/409/422/503…)
+   حتى لا تسقط على صفحة Werkzeug الإنجليزية. الرسالة تصل عربية من
+   app/core/errors.py (STATUS_MESSAGES) ومترجمة بلغة الطلب. #}
+{% block title %}{{ _('حدث خطأ') }} {{ code }} — {{ _('منصة مدرسة أزاد الإلكترونية') }}{% endblock %}
+{% block content %}
+<div class="error-page" role="alert" aria-labelledby="error-code-generic">
+  <div class="error-page__icon" aria-hidden="true">
+    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+  </div>
+  <h1 class="error-page__code" id="error-code-generic">{{ code }}</h1>
+  <h2 class="error-page__title">{{ _('حدث خطأ') }}</h2>
+  <p class="error-page__message">{{ message }}</p>
+  {% if hint %}
+  {# الخطوة التالية المضلّلة: إجراء قابل للتنفيذ، وليس عاتوًا تقنيًا. #}
+  <p class="error-page__hint"><strong>{{ _('ماذا تفعل الآن؟') }}</strong> {{ hint }}</p>
+  {% endif %}
+  {% if request_id %}
+  <p class="error-page__hint">{{ _('رقم المتابعة: %(ref)s', ref=request_id) }}</p>
+  {% endif %}
+  <div class="error-page__actions">
+    <a class="azad-btn azad-btn-lg" href="{{ url_for('main.index') }}">
+      {{ icon('home') }} {{ _('العودة إلى الرئيسية') }}
+    </a>
+    <a class="azad-btn-outline azad-btn-lg" data-error-refresh href="#">
+      {{ icon('refresh') }} {{ _('إعادة التحميل') }}
+    </a>
+  </div>
+</div>
+{% endblock %}

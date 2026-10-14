@@ -1,5 +1,6 @@
 """مسارات التقييم: قائمة اختبارات، إنشاء، محاولة، نتائج، تصحيح مقالي."""
 
+from app.core import flash_error
 from app.core.db import TxError, tx
 from app.core.permissions import class_access_required, class_teach_required, role_required
 from app.extensions import db
@@ -232,7 +233,7 @@ def attempt_save(attempt_id):
             save_answer(attempt, question.id, _parse_answer(question, value))
         except TxError as exc:
             # P1-11: رفض الحفظ بعد انتهاء وقت الاختبار من الخادم
-            flash(_(str(exc)), "warning")
+            flash_error(str(exc), "warning")
             timed_out = True
             break
     if not timed_out:

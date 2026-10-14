@@ -280,7 +280,8 @@ class TestLLMWithContext:
             ):
                 result, err = _fallback_llm_query("س", 1, 2)
         assert result is None
-        assert "AI query failed" in err
+        # D5: لا نص استثناء/مزوّد في الرسالة التي تُعرض للمستخدم
+        assert "AI query failed" not in err and "dead" not in err
 
 
 class TestRAGIngestEmbeddingPath:
@@ -413,6 +414,7 @@ class TestGenerateQuizPipeline:
             assert quiz is None and "محتوى" in err
 
     def test_llm_exception_reported(self, app):
+        from app.core.errors import looks_technical
         from app.services.quiz_ai_service import generate_quiz_from_lesson
 
         sid = make_school(app)
@@ -421,7 +423,8 @@ class TestGenerateQuizPipeline:
             with patch("app.services.quiz_ai_service._call_llm", side_effect=RuntimeError("api down")):
                 quiz, err = generate_quiz_from_lesson(lid)
             assert quiz is None
-            assert "LLM API error" in err
+            assert "LLM API error" not in err and "api down" not in err
+            assert not looks_technical(err)
 
     def test_unparseable_llm_response(self, app):
         from app.services.quiz_ai_service import generate_quiz_from_lesson

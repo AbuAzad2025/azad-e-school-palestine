@@ -13,6 +13,10 @@
   <h2 class="error-page__title">{{ _('خطأ داخلي') }}</h2>
   <p class="error-page__message">{{ _('حدث خطأ غير متوقع في الخادم.') }}</p>
   <p class="error-page__hint">{{ _('إذا استمرت المشكلة، يرجى التواصل مع الدعم الفني') }}</p>
+  {% if request_id %}
+  {# معرّف المتابعة: يربط ما رآه المستخدم بما في السجل، ولا يكشف أي تفصيل داخلي. #}
+  <p class="error-page__hint">{{ _('رقم المتابعة: %(ref)s', ref=request_id) }}</p>
+  {% endif %}
   <div class="error-page__actions">
     <a class="azad-btn azad-btn-lg" href="{{ url_for('main.index') }}">
       {{ icon('home') }} {{ _('العودة إلى الرئيسية') }}

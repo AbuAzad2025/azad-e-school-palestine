@@ -239,7 +239,14 @@ class TestRagQueryEndpoint:
             _login(client, _email_of(app, tid))
             resp = client.post("/ai/rag/query", json={"question": "قانون أوم"})
             assert resp.status_code == 502  # structured error, not a crash
-            assert resp.get_json()["error"]["code"] == "RAG_QUERY_FAILED"
+            body = resp.get_json()
+            assert body["error"]["code"] == "RAG_QUERY_FAILED"
+            # D5: رسالة المستخدم آمنة — لا اسم استثناء ولا نص مزوّد LLM
+            from app.core.errors import looks_technical, standard_message
+
+            message = body["error"]["message"]
+            assert message == standard_message(503)
+            assert "LLM down" not in message and not looks_technical(message)
 
 
 # ═══════════════════════════════════════════════════════════════════════════

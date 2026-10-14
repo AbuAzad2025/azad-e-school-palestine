@@ -16,6 +16,7 @@ from typing import Any
 from flask import current_app
 
 from app.core.db import TxError, tx
+from app.core.errors import safe_message
 from app.core.i18n import _
 from app.core.logging import get_logger
 from app.extensions import db
@@ -102,9 +103,10 @@ def generate_quiz_from_lesson(
     # Step 3: Call LLM
     try:
         raw_response = _call_llm(prompt)
-    except Exception as exc:
+    except Exception:
+        # D5: نص الاستثناء لا يخرج للعميل — رسالة آمنة والتفصيل في السجل
         logger.exception("quiz_generation_llm_failed", lesson_id=lesson_id)
-        return None, f"LLM API error: {exc}"
+        return None, safe_message(503)
 
     # Step 4: Parse response
     questions_data = _parse_llm_response(raw_response)
@@ -150,9 +152,9 @@ def generate_quiz_from_lesson(
 
     except TxError as exc:
         return None, str(exc)
-    except Exception as exc:
+    except Exception:
         logger.exception("quiz_generation_db_error", lesson_id=lesson_id)
-        return None, f"Database error: {exc}"
+        return None, safe_message(503)
 
 
 def _normalize_question(q: dict) -> dict:

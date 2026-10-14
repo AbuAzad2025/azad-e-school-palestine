@@ -5,6 +5,7 @@ import shutil
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+from app.core import flash_error
 from app.core.db import TxError, tx
 from app.core.permissions import _has_any, role_required
 from app.extensions import db
@@ -1298,7 +1299,7 @@ def review_payout(payout_id, result):
         try:
             tx(_approve_payout)
         except TxError as exc:
-            flash(str(exc), "warning")
+            flash_error(str(exc), "warning")
             return redirect(url_for("admin.payouts_queue"))
         except Exception:  # noqa: BLE001
             current_app.logger.exception("admin_payout_approve_failed")
@@ -1321,7 +1322,7 @@ def review_payout(payout_id, result):
         try:
             tx(_reject_payout)
         except TxError as exc:
-            flash(str(exc), "warning")
+            flash_error(str(exc), "warning")
             return redirect(url_for("admin.payouts_queue"))
         except Exception:  # noqa: BLE001
             current_app.logger.exception("admin_payout_reject_failed")

@@ -6,8 +6,13 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import text
 
 from app.core.db import tx
+from app.core.errors import safe_message
+from app.core.i18n import _
+from app.core.logging import get_logger
 from app.extensions import db
 from app.models.system import HealthCheck
+
+logger = get_logger(__name__)
 
 
 def check_database() -> dict:
@@ -17,8 +22,11 @@ def check_database() -> dict:
         latency = int((time.monotonic() - start) * 1000)
         return {"component": "database", "status": "healthy", "latency_ms": latency, "message": None}
     except Exception as e:
+        # D5: رسالة الصحة تُعرض في الواجهة وتُحفظ في الجدول — لا نص مزوّد
+        # قاعدة بيانات فيها؛ التفصيل يبقى في سجل الخادم وحده.
         latency = int((time.monotonic() - start) * 1000)
-        return {"component": "database", "status": "down", "latency_ms": latency, "message": str(e)}
+        logger.warning("health_check_database_failed", error=str(e)[:200], error_type=type(e).__name__)
+        return {"component": "database", "status": "down", "latency_ms": latency, "message": safe_message(503)}
 
 
 def check_disk() -> dict:
@@ -30,7 +38,8 @@ def check_disk() -> dict:
         status = "healthy" if free_gb > 1.0 else ("degraded" if free_gb > 0.1 else "down")
         return {"component": "disk", "status": status, "latency_ms": 0, "message": f"{free_gb:.1f} GB free"}
     except Exception as e:
-        return {"component": "disk", "status": "down", "latency_ms": 0, "message": str(e)}
+        logger.warning("health_check_disk_failed", error=str(e)[:200], error_type=type(e).__name__)
+        return {"component": "disk", "status": "down", "latency_ms": 0, "message": _("تعذّر قراءة مساحة القرص.")}
 
 
 def record_health(result: dict) -> HealthCheck:

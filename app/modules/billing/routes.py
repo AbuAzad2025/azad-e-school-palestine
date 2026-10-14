@@ -1,6 +1,6 @@
 """مسارات الاشتراكات والدفع اليدوي"""
 
-from app.core import class_access_required, class_teach_required, role_required
+from app.core import class_access_required, class_teach_required, flash_error, role_required
 from app.core.db import TxError
 from app.extensions import db
 from app.models.billing import ManualPayment, Subscription
@@ -168,7 +168,7 @@ def review(payment_id, result):
             sub = approve_payment(payment, reviewer_id=current_user.id)
         except TxError as exc:
             db.session.rollback()
-            flash(_(str(exc)), "warning")
+            flash_error(str(exc), "warning")
             return redirect(url_for("billing.admin"))
         notify(sub.user_id, "subscription", _("فعّل اشتراكك"), str(sub.end_at))
         from app.services.email import send_payment_approved_email
@@ -189,7 +189,7 @@ def review(payment_id, result):
             reject_payment(payment, reviewer_id=current_user.id)
         except TxError as exc:
             db.session.rollback()
-            flash(_(str(exc)), "warning")
+            flash_error(str(exc), "warning")
             return redirect(url_for("billing.admin"))
         notify(payment.subscription.user_id, "subscription", _("رُفض دفعك — راجع البيانات."))
         from app.services.email import send_payment_rejected_email

@@ -16,7 +16,6 @@ from flask import (
     g,
     jsonify,
     redirect,
-    render_template,
     request,
     url_for,
 )
@@ -28,15 +27,13 @@ from flask_login import current_user
 from flask_mail import Message
 from flask_talisman import Talisman
 from sqlalchemy import text as sql_text
-from werkzeug.exceptions import HTTPException, Unauthorized
+from werkzeug.exceptions import Unauthorized
 
 from config import Config
 
-from .core.logging import configure_structlog, correlation_id_middleware, get_logger
+from .core.logging import configure_structlog, correlation_id_middleware
 from .core.openapi import init_swagger
 from .extensions import babel, csrf, db, login_manager, mail, migrate
-
-logger = get_logger(__name__)
 
 _response_times: deque[int] = deque(maxlen=1000)
 
@@ -477,38 +474,16 @@ def create_app(config_class=Config):
     def grades_alias():
         return redirect(url_for("auth.login"), code=302)
 
-    @app.errorhandler(401)
-    def unauthorized(e):
-        # طلبات API/health ترجع 401 JSON؛ متصفحات HTML تُوجَّه لصفحة الدخول
-        if request.path.startswith(("/api/", "/health")) or not request.accept_mimetypes.accept_html:
-            return jsonify({"error": "unauthorized"}), 401
-        return redirect(url_for("auth.login"))
+    # ════════════════════════════════════════════════════════════
+    # معالجات الأخطاء — نقطة واحدة في app/core/errors.py
+    # ════════════════════════════════════════════════════════════
+    # كانت هنا ستة معالجات متفرقة، وكان أي خطأ غير متوقع في مسار API
+    # يعطي قالب HTML، وكانت رموز بلا قالب (405/415) تسقط على صفحة Werkzeug
+    # الإنجليزية. التسجيل الآن من النواة: رسائل عربية واحدة، تنقية موحّدة،
+    # ومعرّف متابعة في كل ردّ خطأ (والتفاصيل في السجل فقط).
+    from .core.errors import register_error_handlers
 
-    @app.errorhandler(404)
-    def not_found(e):
-        return render_template("errors/404.html"), 404
-
-    @app.errorhandler(403)
-    def forbidden(e):
-        return render_template("errors/403.html"), 403
-
-    @app.errorhandler(429)
-    def ratelimit_exceeded(e):
-        return render_template("errors/429.html"), 429
-
-    @app.errorhandler(500)
-    def server_error(e):
-        db.session.rollback()
-        return render_template("errors/500.html"), 500
-
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        # أخطاء HTTP المقصودة (401/403/404...) تمر لمعالجاتها — لا تُحوَّل إلى 500
-        if isinstance(e, HTTPException):
-            return e
-        logger.exception("Unhandled exception: %s", e)
-        db.session.rollback()
-        return render_template("errors/500.html"), 500
+    register_error_handlers(app)
 
     @app.template_filter("currencyformat")
     def _format_currency(value, currency: str = "ILS") -> str:

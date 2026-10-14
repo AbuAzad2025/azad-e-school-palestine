@@ -494,7 +494,11 @@ class TestHybridRag:
                 res, err = query_school_rag_tutor(sid, 1, "ما هي الإكجار؟")
                 assert res is None
                 assert err is not None
-                assert "no llm" in err
+                # D5: نص الاستثناء يبقى في السجل — الرسالة المعروضة آمنة
+                from app.core.errors import looks_technical
+
+                assert "no llm" not in err
+                assert not looks_technical(err)
 
     def test_fallback_when_no_chunks_and_no_llm(self, app):
         from app.services.rag_service import query_school_rag_tutor

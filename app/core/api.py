@@ -27,9 +27,10 @@ from typing import Any
 
 from flask import jsonify
 
+from app.core.errors import API_VERSION, error_payload
 from app.core.logging import get_correlation_id
 
-API_VERSION = "v1"
+__all__ = ["API_VERSION", "api_error", "api_paginated", "api_response"]
 
 
 def api_response(data: Any, status: int = 200, meta: dict[str, Any] | None = None) -> tuple[Any, int]:
@@ -51,19 +52,16 @@ def api_error(
     code: str | None = None,
     details: dict[str, Any] | None = None,
 ) -> tuple[Any, int]:
-    """بناء استجابة خطأ API بتنسيق موحّد."""
-    body = {
-        "error": {
-            "code": code or f"ERR_{status}",
-            "message": message,
-            "details": details or {},
-        },
-        "meta": {
-            "version": API_VERSION,
-            "request_id": get_correlation_id(),
-        },
-    }
-    return jsonify(body), status
+    """بناء استجابة خطأ API بتنسيق موحّد.
+
+    الشكل يُبنى في ``app/core/errors.error_payload`` — المصدر الوحيد له،
+    فيصل المعالج العام هنا على نفس الشكل الذي يُنتجه أي مسار آخر.
+
+    الرمز الافتراضي يبقى ``ERR_{status}`` كما كان: مسارات الـ API تمرّر رموزها
+    الصريحة، وعقد الشكل الموحّد قائم عليه اختبار — الجديد هنا هو التنقية ومعرّف
+    المتابعة، لا تغيير الرموز.
+    """
+    return jsonify(error_payload(status, message=message, code=code or f"ERR_{status}", details=details)), status
 
 
 def api_paginated(

@@ -1,6 +1,6 @@
 """مسارات المحتوى: دروس + وحدات + مرفقات (وصول مقيّد بأعضاء الصف)"""
 
-from app.core import TxError
+from app.core import TxError, flash_error
 from app.core.db import db
 from app.core.permissions import class_access_required, class_teach_required
 from app.models.content import LessonAttachment
@@ -165,7 +165,8 @@ def attachment_upload(class_id, lesson_id):
             add_attachment(lesson, form.file.data, title=form.title.data)
             flash(_("تم رفع المرفق."), "success")
         except TxError as exc:
-            flash(_(str(exc)), "danger")
+            # D5: نفس تنقية رسائل الـ API تنطبق على تنبيهات الواجهة
+            flash_error(str(exc), "danger")
     return redirect(url_for("content.lesson_detail", class_id=class_id, lesson_id=lesson_id))
 
 

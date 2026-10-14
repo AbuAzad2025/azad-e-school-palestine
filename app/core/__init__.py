@@ -10,6 +10,17 @@ from .cache import get as cache_get
 from .cache import set as cache_set
 from .context import register as register_context
 from .db import TxError, tx, tx_on_commit
+from .errors import (
+    API_VERSION,
+    correlation_id,
+    error_payload,
+    flash_error,
+    looks_technical,
+    map_exception,
+    register_error_handlers,
+    safe_message,
+    standard_message,
+)
 from .i18n import _
 from .labels import status_label
 from .logging import get_correlation_id, get_logger
@@ -41,6 +52,7 @@ from .uploads import allowed_extension, save_upload
 
 __all__ = [
     "_",
+    "API_VERSION",
     "TxError",
     "allowed_extension",
     "blank_pdf_document",
@@ -49,7 +61,15 @@ __all__ = [
     "cache_delete",
     "cache_get",
     "cache_set",
+    "correlation_id",
+    "error_payload",
+    "flash_error",
     "font_readiness",
+    "looks_technical",
+    "map_exception",
+    "register_error_handlers",
+    "safe_message",
+    "standard_message",
     "get_correlation_id",
     "get_logger",
     "get_school_or_404",

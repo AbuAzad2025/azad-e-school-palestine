@@ -1,5 +1,6 @@
 """مسارات API للذكاء الاصطناعي — Streaming SSE endpoints"""
 
+from app.core.errors import safe_message
 from app.core.permissions import require_ai_quota, role_required
 from app.extensions import db
 from app.models.user import UserRole
@@ -231,7 +232,9 @@ def rag_query():
 
     result, err = query_school_rag_tutor(school_id, current_user.id, question)
     if err or result is None:
-        return jsonify({"error": {"message": err or _("فشل الاستعلام"), "code": "RAG_QUERY_FAILED"}}), 502
+        # الحدود تُنقّى هنا أيضاً: أي نص تقني من الخدمة لا يصل للعميل (D5)
+        message = safe_message(502, err or _("فشل الاستعلام"))
+        return jsonify({"error": {"message": message, "code": "RAG_QUERY_FAILED"}}), 502
     return jsonify(result)
 
 
@@ -287,7 +290,8 @@ def generate_quiz():
         created_by=current_user.id,
     )
     if quiz is None:
-        return jsonify({"error": {"message": err or _("فشل التوليد"), "code": "QUIZ_GENERATION_FAILED"}}), 502
+        message = safe_message(502, err or _("فشل التوليد"))
+        return jsonify({"error": {"message": message, "code": "QUIZ_GENERATION_FAILED"}}), 502
 
     return jsonify(
         {

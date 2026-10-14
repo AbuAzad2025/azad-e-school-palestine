@@ -644,7 +644,8 @@ _QUESTIONS = [
 
 class TestQuizAiGaps:
     def test_generate_llm_error_returns_message(self, app):
-        """فشل LLM يعيد رسالة واضحة (مسار يقود إلى أذرع الحفظ)."""
+        """فشل LLM يعيد رسالة واضحة بلا نصّ الاستثناء (D5)."""
+        from app.core.errors import looks_technical
         from app.services import quiz_ai_service as qmod
         from app.services.quiz_ai_service import generate_quiz_from_lesson
 
@@ -659,7 +660,8 @@ class TestQuizAiGaps:
             ):
                 quiz, err = generate_quiz_from_lesson(lid, created_by=tid)
                 assert quiz is None
-                assert "LLM API error" in err
+                assert "LLM API error" not in err and "api down" not in err
+                assert not looks_technical(err)
 
     def test_generate_tx_error_returns_message(self, app):
         """أسطر 151-152: TxError أثناء الحفظ الذري → (None, رسالة)."""
@@ -682,7 +684,12 @@ class TestQuizAiGaps:
                 assert err == "db boom"
 
     def test_generate_unexpected_db_error_returns_message(self, app):
-        """أسطر 154-155: استثناء غير متوقع أثناء الحفظ → 'Database error: ...'."""
+        """أسطر 154-155: استثناء غير متوقع أثناء الحفظ → رسالة آمنة بلا تفصيل.
+
+        كان السطر يُعيد ``f"Database error: {exc}"`` — أي نصّ مزوّد القاعدة
+        للمستخدم. الآن المطلوب هو رسالة عربية معيارية، والتفصيل في السجل.
+        """
+        from app.core.errors import looks_technical
         from app.services import quiz_ai_service as qmod
         from app.services.quiz_ai_service import generate_quiz_from_lesson
 
@@ -698,7 +705,9 @@ class TestQuizAiGaps:
             ):
                 quiz, err = generate_quiz_from_lesson(lid, created_by=tid)
                 assert quiz is None
-                assert err is not None and err.startswith("Database error")
+                assert err is not None
+                assert "Database error" not in err and "conn reset" not in err
+                assert not looks_technical(err)
 
     def test_parse_llm_response_embedded_json_array(self, app):
         """سطر 286: استخراج مصفوفة JSON مضمّنة، وNone عند غياب أي JSON."""

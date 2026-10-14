@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 
+from app.core.errors import safe_message
 from app.core.i18n import _
 from app.core.logging import get_logger
 from app.extensions import db
@@ -289,7 +290,13 @@ Return JSON: {{"score": int (0-10), "strengths": [string], "improvements": [stri
             return result
 
         except Exception as e:
-            return {"error": str(e), "fallback": self._mock_grade(question_type, correct_answer)}
+            # D5: تفصيل الاستثناء يبقى في السجل — العميل يأخذ رسالة آمنة قابلة للتنفيذ
+            log.warning("suggest_grade_failed", error=str(e)[:200], error_type=type(e).__name__)
+            return {
+                "error": safe_message(503),
+                "error_code": "AI_GRADE_FAILED",
+                "fallback": self._mock_grade(question_type, correct_answer),
+            }
 
     def _mock_grade(self, question_type: str, correct_answer) -> dict:
         """Fallback mock grading when API unavailable."""
@@ -351,7 +358,11 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
             return questions[:count]
 
         except Exception as e:
-            return [{"error": str(e)}] + self._mock_generate_questions(topic, count, types)
+            # D5: نفس القاعدة — لا نص استثناء للعميل، التفصيل في السجل
+            log.warning("generate_questions_failed", error=str(e)[:200], error_type=type(e).__name__)
+            return [{"error": safe_message(503), "error_code": "AI_GENERATE_FAILED"}] + self._mock_generate_questions(
+                topic, count, types
+            )
 
     def _mock_generate_questions(self, topic: str, count: int, types: list[str]) -> list[dict]:
         questions = []
@@ -492,7 +503,9 @@ Each question: {{"type": "mcq|true_false|essay", "prompt": string, "options": di
             async for chunk in self._real_stream(messages, session.id):
                 yield chunk
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            # D5: التدفّق (SSE) منفذ تسريب مثل أي ردّ آخر — الرسالة تُنقّى هنا أيضاً
+            log.warning("ask_question_stream_failed", error=str(e)[:200], error_type=type(e).__name__)
+            yield f"data: {json.dumps({'error': safe_message(503), 'code': 'AI_STREAM_FAILED'})}\n\n"
             yield "data: [DONE]\n\n"
 
     async def ask_question(

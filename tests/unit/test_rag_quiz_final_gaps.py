@@ -154,7 +154,11 @@ class TestDenseHybridRetrieval:
             with patch.object(rag, "_call_llm_with_context", side_effect=RuntimeError("LLM exploded")):
                 result, err = rag.query_school_rag_tutor(sid, 1, "الدورة الدموية")
             assert result is None
-            assert err is not None and "AI query failed" in err
+            assert err is not None
+            assert "LLM exploded" not in err and "AI query failed" not in err
+            from app.core.errors import looks_technical
+
+            assert not looks_technical(err)
 
     def test_fallback_llm_success_contract(self, app, rag_school):
         import app.services.rag_service as rag
@@ -175,7 +179,8 @@ class TestDenseHybridRetrieval:
         with app.app_context():
             with patch.object(rag, "_call_llm_with_context", side_effect=RuntimeError("down")):
                 result, err = rag.query_school_rag_tutor(sid, 1, "سؤال")
-            assert result is None and "AI query failed" in err
+            assert result is None
+            assert err is not None and "AI query failed" not in err and "down" not in err
 
     def test_llm_context_with_api_key_posts_request(self, app, monkeypatch):
         import app.services.rag_service as rag
@@ -246,6 +251,7 @@ class TestQuizPipelineErrorBranches:
             assert "قيد قاعدة بيانات" in err
 
     def test_generic_db_exception_reported(self, app):
+        from app.core.errors import looks_technical
         from app.services.quiz_ai_service import generate_quiz_from_lesson
 
         sid = make_school(app)
@@ -259,7 +265,9 @@ class TestQuizPipelineErrorBranches:
                 with patch("app.services.quiz_ai_service.tx", side_effect=RuntimeError("connection lost")):
                     quiz, err = generate_quiz_from_lesson(lid, created_by=teacher)
             assert quiz is None
-            assert "Database error" in err
+            # D5: لا نص محرّك قاعدة البيانات في الرسالة المعروضة للمستخدم
+            assert "Database error" not in err and "connection lost" not in err
+            assert not looks_technical(err)
 
 
 class TestParseAndHelpers:
