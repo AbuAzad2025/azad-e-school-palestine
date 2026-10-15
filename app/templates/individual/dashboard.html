@@ -11,6 +11,28 @@
   <a href="{{ url_for('ai.chat') }}" class="azad-btn-outline">{{ icon('sparkles') }} {{ _('محادثة AI') }}</a>
 </div>
 
+{% if pending_subs %}
+{# AZ-P0-01: اشتراكات بانتظار الدفع — زر واحد يقود إلى صفحة الدفع الفعلية #}
+<section class="pending-subscriptions" aria-labelledby="pending-subscriptions-title">
+  <h2 id="pending-subscriptions-title" class="section-title">{{ icon('wallet') }} {{ _('اشتراكات بانتظار الدفع') }}</h2>
+  <div class="cards-grid">
+    {% for s in pending_subs %}
+    {% call azad_card(s.class_room.name or s.class_room.subject.name_ar, '', 'book') %}
+      <div class="card-content">
+        <div>
+          <div class="card-meta">
+            {{ _('%(price)s %(currency)s', price=s.price, currency=s.currency) }}
+            · {{ _('أُنشئ في %(date)s', date=s.created_at.strftime('%Y-%m-%d')) }}
+          </div>
+        </div>
+        <a href="{{ url_for('billing.class_billing', class_id=s.class_id) }}" class="azad-btn azad-btn-primary azad-btn-sm">{{ icon('wallet') }} {{ _('أكمل الدفع') }}</a>
+      </div>
+    {% endcall %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {% if memberships %}
 <div class="cards-grid">
   {% for m in memberships %}
@@ -27,6 +49,9 @@
   {% endcall %}
   {% endfor %}
 </div>
+{% elif pending_subs %}
+{# كل الكورسات بانتظار الدفع — لا فراغ مضلل ولا حالة خالية بلا معنى #}
+<p class="page-subtitle">{{ _('اشتراكاتك أعلاه بانتظار الدفع — أكمل الدفع لتفعيل الكورس.') }}</p>
 {% else %}
 {{ azad_empty_state(
     _('لم تسجل في أي كورس بعد'),

@@ -1,12 +1,12 @@
 """مسارات الاشتراكات والدفع اليدوي"""
 
-from app.core import class_access_required, class_teach_required, flash_error, role_required
+from app.core import class_teach_required, flash_error, role_required
 from app.core.db import TxError
 from app.extensions import db
 from app.models.billing import ManualPayment, Subscription
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
-from app.services.access import can_teach_class
+from app.services.access import can_pay_class, can_teach_class
 from app.services.billing import (
     approve_payment,
     create_discount_code,
@@ -18,9 +18,11 @@ from app.services.billing import (
     record_manual_payment,
     reject_payment,
     subscribe,
+    subscription_payment_summary,
     validate_discount_code,
 )
 from app.services.communication import audit, notify
+from app.services.family import is_parent_of, list_children
 from app.services.schools import is_member
 from flask import abort, flash, redirect, render_template, url_for
 from flask_babel import _
@@ -28,6 +30,41 @@ from flask_login import current_user, login_required
 
 from . import bp
 from .forms import DiscountCodeForm, PaymentForm, PlanForm, SubscribeForm, ValidateDiscountForm
+
+
+def _linked_children_ids() -> list[int]:
+    """أبناء وليّ الأمر الحالي المرتبطون برابط نشط (AZ-P0-03)."""
+    if current_user.role != UserRole.parent:
+        return []
+    return [link.student_id for link in list_children(current_user.id)]
+
+
+def _class_payee(class_room):
+    """صاحب الاشتراك الذي تُعرض دفعته في هذه الصفحة — الطالب نفسه أو ابن وليّ الأمر (
+    AZ-P0-03).
+
+    الأهلية نفسها التي أفحصها ``can_pay_class``: اشتراكات الأبناء المرتبطين في
+    هذا الصف فقط — طلب طالب غير مرتبط لا يفتح الباب، وفلترة ``user_id``
+    تبقى في ``WHERE`` فلا بعث أي رسالة أخرى تحت سياق هذا الطلب.
+    """
+    if current_user.role == UserRole.student:
+        return current_user
+    student_ids = _linked_children_ids()
+    if not student_ids:
+        return None
+    sub = (
+        Subscription.query.filter(Subscription.user_id.in_(student_ids), Subscription.class_id == class_room.id)
+        .order_by(Subscription.created_at.asc())
+        .first()
+    )
+    return sub.user if sub is not None else None
+
+
+def _invoice_can_view(class_room, sub) -> bool:
+    """مالك الاشتراك نفسه، أو وليّ أمر مرتبط به رابط نشط (AZ-P0-03)."""
+    if is_member(class_room, current_user):
+        return True
+    return current_user.role == UserRole.parent and is_parent_of(current_user.id, sub.user_id)
 
 
 def _class_or_404(class_id):
@@ -44,19 +81,29 @@ def _class_or_404(class_id):
 
 
 @bp.get("/<int:class_id>")
-@class_access_required
-def class_billing(class_id, class_room=None):
+@login_required
+def class_billing(class_id):
     # P3-15: انتهاء الاشتراكات انتقل لمهمة CLI دورية (flask expire-subscriptions)
+    # AZ-P0-01: الحارس هنا can_pay_class لا can_view_class — صاحب اشتراك
+    # معلّق (لا عضوية فعّالة) يجب أن يفتح صفحة الدفع لإكمال الحلقة.
+    # AZ-P0-03: وليّ الأمر المرتبط يفتح صفحة الدفع لصفّ ابنه (ذراع الوالد في
+    # can_pay_class) — المحتوى التعليمي يبقى للطالب، فيلاصق P-SEC-13.
+    class_room = _class_or_404(class_id)
+    if not can_pay_class(class_room, current_user):
+        abort(403)
     plans = list_plans(class_id=class_id)
+    payee = _class_payee(class_room)
     my_sub = None
-    if current_user.role == UserRole.student:
-        subs = list_subscriptions(user_id=current_user.id, class_id=class_id)
+    if payee is not None:
+        subs = list_subscriptions(user_id=payee.id, class_id=class_id)
         my_sub = subs[0] if subs else None
     return render_template(
         "billing/class_billing.html",
         class_room=class_room,
         plans=plans,
         my_sub=my_sub,
+        payee=payee,
+        children=list_children(current_user.id) if current_user.role == UserRole.parent else [],
         can_teach=can_teach_class(class_room, current_user),
         plan_form=PlanForm(),
         sub_form=SubscribeForm(),
@@ -86,21 +133,43 @@ def plan_create(class_id, class_room=None):
     return redirect(url_for("billing.class_billing", class_id=class_id))
 
 
+def _resolve_payee(class_room, form) -> tuple[int | None, int | None]:
+    """(صاحب الاشتراك، الدافع) من دور الفاعل وصيغة الطلب — أو رفض بـ None.
+
+    الطالب: اشتراكه هو بعد جواز عضوية الصف (حاجز ``is_member`` السابق
+    يبقى كله). وليّ الأمر: ``student_id`` من الصيغة، والمرفوض إن لم يكن
+    مرتبطاً به رابط نشط — التحقق عبر ``is_parent_of`` مباشرة لا عبر
+    معرّف مُعاد من نتيجة معرفية أخرى (AZ-P0-03). غير المرتبط — وسيطاً
+    أي دور آخر — يعيد None فترفع مساراتها 403.
+    """
+    if current_user.role == UserRole.student:
+        if not is_member(class_room, current_user):
+            return None, None
+        return current_user.id, None
+    if current_user.role == UserRole.parent:
+        student_id = form.student_id.data
+        if student_id is None or not is_parent_of(current_user.id, student_id):
+            return None, None
+        return student_id, current_user.id
+    return None, None
+
+
 @bp.post("/<int:class_id>/subscribe")
 @login_required
 def subscribe_route(class_id, class_room=None):
     class_room = _class_or_404(class_id)
-    if current_user.role != UserRole.student:
-        abort(403)
-    if not is_member(class_room, current_user):
-        abort(403)
+    # AZ-P0-03: الدافع طالب (اشتراكه هو) أو وليّ أمر مرتبط (دفعاً عن ابنه).
+    # أي دور آخر — أو وليّ أمر غير مرتبط بالطالب المُمرَّر — 403.
     form = SubscribeForm()
+    payee_id, payer_id = _resolve_payee(class_room, form)
+    if payee_id is None:
+        abort(403)
     if form.validate_on_submit():
         plan = get_plan(form.plan_id.data)
         if not plan or (plan.class_id not in (None, class_id)):
             flash(_("خطة غير صالحة."), "danger")
         else:
-            sub, error = subscribe(current_user.id, plan, class_id)
+            sub, error = subscribe(payee_id, plan, class_id, payer_id=payer_id)
             if error:
                 flash(_(error), "danger")
             elif sub is not None:
@@ -121,9 +190,17 @@ def subscribe_route(class_id, class_room=None):
 def payment_create(subscription_id):
     sub = db.get_or_404(Subscription, subscription_id)
     class_room = _class_or_404(sub.class_id)
-    if not is_member(class_room, current_user):
-        abort(403)
-    if sub.user_id != current_user.id:
+    # AZ-P0-01: مالك الاشتراك وحده يمكنه فتح صف الدفع — لا فحوص وسيطة. الدفع
+    # دائماً على اشتراك الزائر نفسه فشرط المالك يكفي، والمفتاح العابر
+    # (غير المالك) يظل 403 كما سبق، وRLS يخفي اشتراكات المدارس الأخرى بـ 404.
+    # AZ-P0-03: المالك نفسه (طالب) أو وليّ أمر مرتبط به — غير المرتبط يظل
+    # 403، ولا يُنشأ أي صف دفع (تظهر بعد الحاجز لا قبله).
+    payer_id: int | None = None
+    if sub.user_id == current_user.id:
+        payer_id = None  # الدافع هو المالك نفسه — النموذج السائد يبقى سليماً
+    elif current_user.role == UserRole.parent and is_parent_of(current_user.id, sub.user_id):
+        payer_id = current_user.id
+    else:
         abort(403)
     form = PaymentForm()
     if form.validate_on_submit():
@@ -133,6 +210,7 @@ def payment_create(subscription_id):
             amount=form.amount.data,
             note=form.note.data,
             receipt_file=form.receipt.data,
+            payer_id=payer_id,
         )
         if error:
             flash(_(error), "danger")
@@ -280,9 +358,8 @@ def invoice_view(subscription_id):
             abort(403)
         abort(404)
     class_room = _class_or_404(sub.class_id)
-    if not is_member(class_room, current_user):
+    if not _invoice_can_view(class_room, sub):
         abort(403)
-    from app.services.billing import subscription_payment_summary
     from app.services.invoice import generate_invoice_number
 
     summary = subscription_payment_summary(subscription_id)
@@ -306,7 +383,7 @@ def invoice_pdf(subscription_id):
             abort(403)
         abort(404)
     class_room = _class_or_404(sub.class_id)
-    if not is_member(class_room, current_user):
+    if not _invoice_can_view(class_room, sub):
         abort(403)
     from app.services.invoice import render_invoice_pdf
     from flask import Response

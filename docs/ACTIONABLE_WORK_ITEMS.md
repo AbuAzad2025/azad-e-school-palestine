@@ -91,6 +91,11 @@
 
 ## AZ-P0-03 — تمكين ولي الأمر من الدفع لابنه + كشف حساب الأسرة
 
+**الحالة:** مُنفَّذ — ترقية `r1s2t3u4v5w6_family_payer_billing`، ومسارات `billing`،
+و`family/index`، واختبارات `TestParentPaysForChild` و`TestFamilyPayerMigration` في
+`tests/integration/test_subscription_flows.py`. انحدارات المفتاح الأجنبي الجديد
+(جوين بحث `/api/v1/search` الغامض وتسمية WCAG للحقل) أُغلقت — انظر CHANGELOG.
+
 **الوصف:** كل مسارات الدفع مقيّدة بدور الطالب (`role_required(UserRole.student)` في `billing.subscribe_route`) و`payment_create` تشترط `sub.user_id == current_user.id` → ولي الأمر (دور كامل موجود!) لا يستطيع الدفع لابنه، ولا توجد أي شاشة رسوم للأسرة. قوالب `app/templates/family/` أربعة فقط: `index`، `generate_code`، `child_grades`، `child_progress`.
 
 **نطاق الإصلاح (يحتاج قرار تصميم قبل التنفيذ):**

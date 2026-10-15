@@ -123,12 +123,29 @@ def class_join():
             flash(_("رمز انضمام غير صالح."), "danger")
         else:
             error = join_class(class_room, current_user)
-            if error:
-                flash(_(error), "danger")
-            else:
+            if error is None:
                 audit("class.join", "class_members", class_room.id)
                 flash(_("تم الانضمام للصف."), "success")
                 return redirect(url_for("schools.class_detail", class_id=class_room.id))
+            from app.services.access import paid_plan_for
+
+            if paid_plan_for(class_room) is not None:
+                # AZ-P0-02: رسالة «اشترك أولاً» كانت نصًا بلا مخرج — الآن
+                # تحمل رابطًا فعليًا لصفحة الاشتراك. الرابط من url_for والنص
+                # من كتالوج الترجمة؛ لا مدخل مستخدم في الرسالة فلا HTML مسوب.
+                from markupsafe import Markup
+
+                flash(
+                    Markup('%(text)s <a class="azad-link" href="%(href)s">%(label)s</a>')
+                    % {
+                        "text": _(error),
+                        "href": url_for("billing.class_billing", class_id=class_room.id),
+                        "label": _("افتح صفحة الدفع"),
+                    },
+                    "danger",
+                )
+            else:
+                flash(_(error), "danger")
     return render_template("schools/join.html", form=form)
 
 
@@ -182,14 +199,19 @@ def class_detail(class_id):
         abort(404)
     # وصول موحّد عبر can_view_class: عضو الصف (مجاني) أو مشترك نشط (مدفوع)،
     # معلم/مشرف نفس المدرسة، وليّ أمر طالب عضو، أو super_admin
-    from app.services.access import can_view_class
+    # AZ-P0-02: مالك اشتراك معلّق (can_pay_class) يدخل صفحة التفاصيل ليرى
+    # بانر الاشتراك بدل طريق 403 مسدود — لكن المحتى محجوب عنه وP-SEC-13
+    # كما هو: قائمة الأعضاء لا تُجلب أصلاً ورمز الانضمام يُخفى في القالب.
+    from app.services.access import can_pay_class, can_view_class
 
-    if not can_view_class(class_room, current_user):
+    can_view = can_view_class(class_room, current_user)
+    if not can_view and not can_pay_class(class_room, current_user):
         abort(403)
     return render_template(
         "schools/class_detail.html",
         class_room=class_room,
-        members=get_class_members(class_room),
+        members=get_class_members(class_room) if can_view else [],
+        can_view_content=can_view,
     )
 
 

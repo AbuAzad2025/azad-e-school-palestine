@@ -31,6 +31,9 @@ class PlanForm(FlaskForm):
 
 class SubscribeForm(FlaskForm):
     plan_id = HiddenField(validators=[DataRequired()])
+    # AZ-P0-03: وليّ الأمر مرّر معرّف ابنه عند الاشتراك نيابةً عنه — يتحقق
+    # منه المسار عبر is_parent_of لا يثق به وحده.
+    student_id = IntegerField(validators=[Optional()])
     submit = SubmitField(_("اشترك"))
 
 

@@ -48,6 +48,9 @@ class Subscription(PKMixin, db.Model):
     )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    # AZ-P0-03: هوية الدافع حين لا يكون صاحب الاشتراك هو من يدفع (وليّ الأمر).
+    # NULL = الدافع هو المالك نفسه (الطالب) — لا دلالة إضافية لـ NULL.
+    payer_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("subscription_plans.id"), nullable=False, index=True)
     class_id: Mapped[int] = mapped_column(ForeignKey("classes.id"), nullable=False, index=True)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -61,7 +64,8 @@ class Subscription(PKMixin, db.Model):
     auto_activated_at = db.Column(db.DateTime(timezone=True))
 
     payments: Mapped[list[ManualPayment]] = relationship(back_populates="subscription", cascade="all, delete-orphan")
-    user: Mapped[User] = relationship("User")
+    user: Mapped[User] = relationship("User", foreign_keys=[user_id])
+    payer: Mapped[User | None] = relationship("User", foreign_keys=[payer_id])
     plan: Mapped[SubscriptionPlan] = relationship("SubscriptionPlan")
     class_room: Mapped[ClassRoom] = relationship("ClassRoom", foreign_keys=[class_id])
 
@@ -70,6 +74,8 @@ class ManualPayment(PKMixin, db.Model):
     __tablename__ = "manual_payments"
 
     subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"), nullable=False, index=True)
+    # AZ-P0-03: من أرسل الدفع فعلياً — الطالب نفسه (NULL) أو وليّ أمره المرتبط.
+    payer_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
     reference: Mapped[str] = mapped_column(Text, nullable=False)  # رقم مرجع التحويل
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     note: Mapped[str | None] = mapped_column(Text)
@@ -79,6 +85,7 @@ class ManualPayment(PKMixin, db.Model):
     gateway: Mapped[str | None] = mapped_column(String(20))  # stripe/paytabs/cashu/manual
 
     subscription: Mapped[Subscription] = relationship(back_populates="payments")
+    payer: Mapped[User | None] = relationship("User", foreign_keys=[payer_id])
     receipts: Mapped[list[PaymentReceipt]] = relationship(back_populates="payment", cascade="all, delete-orphan")
 
 

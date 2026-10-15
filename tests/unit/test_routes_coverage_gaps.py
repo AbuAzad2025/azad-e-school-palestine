@@ -309,6 +309,138 @@ class TestSettingsSaveFailure:
         assert "فشل حفظ الإعدادات".encode() in resp.data
 
 
+# ═════════════════════════════════════════════════════════════════════
+# AZ-P0-02 — ربط صفحة اشتراك صفوف المدرسة (class_detail + join_class)
+# ═════════════════════════════════════════════════════════════════════
+
+
+class TestClassSubscriptionPageLinking:
+    """صاحب اشتراك معلّق يصل لصفحة تفاصيل الصف ويرى زر الاشتراك فعلاً،
+
+    ولا يرى قائمة الأعضاء ولا رمز الانضمام؛ المشترك النشط بلا زر؛
+    ورسالة الرفض عند الانضمام لصف مدفوع تحمل رابطاً فعلياً /billing/<id>.
+    """
+
+    def _make_paid_class(self, app, price="100.00"):
+        """مدرسة + صف + خطة مدفوعة نشطة — يعيد (sid, cid)."""
+        from decimal import Decimal
+
+        from app.extensions import db
+        from app.models.billing import SubscriptionPlan
+
+        sid = make_school(app)
+        with app.app_context():
+            gid = make_grade(app, sid)
+            cid = make_class(app, sid, gid, make_subject(app))
+            db.session.add(
+                SubscriptionPlan(
+                    school_id=sid,
+                    class_id=cid,
+                    name="خطة سنوية",
+                    plan="annual",
+                    price=Decimal(price),
+                    currency="ILS",
+                    is_active=True,
+                )
+            )
+            db.session.commit()
+            return sid, cid
+
+    def _make_sub(self, app, sid, cid, student_id, status):
+        """اشتراك بحالة محددة لطالب في صف مدفوع — يعيد رقم الاشتراك."""
+        from decimal import Decimal
+
+        from app.extensions import db
+        from app.models.billing import Subscription, SubscriptionPlan
+
+        with app.app_context():
+            plan_id = SubscriptionPlan.query.filter_by(class_id=cid).first().id
+            sub = Subscription(
+                user_id=student_id,
+                plan_id=plan_id,
+                class_id=cid,
+                price=Decimal("100.00"),
+                currency="ILS",
+                status=status,
+            )
+            db.session.add(sub)
+            db.session.commit()
+            return sub.id
+
+    def _login(self, client, app, role, school_id=None, uid=None):
+        """دخول مستخدم موجود (uid) أو إنشاء جديد — المهم: صاحب الاشتراك
+        هو نفسه من يسجّل الدخول، وإلا لا يراه RLS (ذراع user_id)."""
+        if uid is None:
+            uid, _ = _mk(app, role, school_id=school_id)
+        with app.app_context():
+            from app.extensions import db
+            from app.models.user import User
+
+            email = db.session.get(User, uid).email
+        client.post("/auth/login", data={"email": email, "password": "TestPass123!"}, follow_redirects=True)
+        return uid
+
+    def test_pending_payer_sees_subscribe_banner_not_members(self, client, app):
+        """صاحب اشتراك معلّق: زر اشتراك فعلي + /billing/<id>، واسم طالب آخر غائب."""
+        sid, cid = self._make_paid_class(app)
+        other_id = make_user(app, role="student", school_id=sid)
+        make_class_member(app, cid, other_id, status="active")
+        with app.app_context():
+            from app.extensions import db as _db
+            from app.models.user import User
+
+            other_name = _db.session.get(User, other_id).name_ar
+
+        student_id = make_user(app, role="student", school_id=sid)
+        self._make_sub(app, sid, cid, student_id, status="pending")
+        self._login(client, app, "student", school_id=sid, uid=student_id)
+
+        resp = client.get(f"/schools/class/{cid}")
+        assert resp.status_code == 200
+        body = resp.data.decode("utf-8")
+        assert f"/billing/{cid}" in body
+        assert "اشترك الآن" in body
+        # لا تسريب المحتوى قبل الدفع: لا اسم طالب آخر ولا رمز انضمام الصف
+        assert other_name not in body
+        assert "رمز الانضمام" not in body
+
+    def test_active_subscriber_has_no_subscribe_button(self, client, app):
+        """مشترك نشط: يرى أعضاء الصف ولا زر اشتراك (لا زر معطّل)."""
+        sid, cid = self._make_paid_class(app)
+        student_id = make_user(app, role="student", school_id=sid)
+        self._make_sub(app, sid, cid, student_id, status="active")
+        make_class_member(app, cid, student_id, status="active")
+        self._login(client, app, "student", school_id=sid, uid=student_id)
+
+        resp = client.get(f"/schools/class/{cid}")
+        assert resp.status_code == 200
+        body = resp.data.decode("utf-8")
+        assert f"/billing/{cid}" not in body
+        assert "اشترك الآن" not in body
+
+    def test_join_paid_class_message_carries_link(self, client, app):
+        """محاولة الانضمام لصف مدفوع برمز: الرسالة تحمل رابط /billing/<id>."""
+        sid, cid = self._make_paid_class(app)
+        with app.app_context():
+            from app.extensions import db
+            from app.models.class_room import ClassRoom
+
+            join_code = db.session.get(ClassRoom, cid).join_code
+        self._login(client, app, "student", school_id=sid)
+
+        resp = client.post("/schools/classes/join", data={"code": join_code})
+        assert resp.status_code == 200
+        body = resp.data.decode("utf-8")
+        assert f"/billing/{cid}" in body
+
+    def test_class_detail_anonymous_redirects_to_login(self, client, app):
+        """الزائر المجهول لا يكسر: التحويل لتسجيل الدخول بلا قالب محطوم."""
+        _, cid = self._make_paid_class(app)
+        resp = client.get(f"/schools/class/{cid}")
+        assert resp.status_code == 302
+        assert "/auth/login" in resp.headers["Location"]
+
+
 class TestPayoutDecisionFailures:
     def _make_payout(self, app):
         from decimal import Decimal

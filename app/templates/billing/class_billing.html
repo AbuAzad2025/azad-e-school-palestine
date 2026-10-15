@@ -14,7 +14,10 @@
 
 {% if my_sub %}
 <div class="azad-card u-mb-1" data-testid="current-subscription">
-  <h2 class="billing-card-title">{{ _('اشتراكك الحالي') }}</h2>
+  <h2 class="billing-card-title">
+    {#- AZ-P0-03: وليّ الأمر يرى اشتراك ابنه — التسمية تتبع صاحب الحساب -#}
+    {% if payee and payee.id == current_user.id %}{{ _('اشتراكك الحالي') }}{% else %}{{ _('اشتراك الطالب') }}{% endif %}
+  </h2>
   <div class="item-meta billing-meta">
     <span class="badge-status badge-{{ 'ok' if my_sub.status == 'active' else ('warn' if my_sub.status == 'pending' else ('info' if my_sub.status == 'pending_review' else 'err')) }}" data-testid="current-subscription-status">{{ status_label('subscription_status', my_sub.status) }}</span>
     <span>{{ _('الخطة:') }} {{ my_sub.plan.name }}</span>
@@ -34,11 +37,23 @@
       <div class="item-title" data-testid="plan-name">{{ p.name }} <span class="meta-chip">{{ p.plan }}</span></div>
       <div class="item-meta"><span><bdi>{{ p.price }}</bdi> <bdi>{{ p.currency }}</bdi></span></div>
     </div>
-    {% if current_user.role == 'student' and (not my_sub or my_sub.status != 'active') %}
+    {#- AZ-P0-03: الاشتراك لطالب أو لابن وليّ أمر مرتبط (دفعاً نيابةً عنه) -#}
+    {% if current_user.role in ['student', 'parent'] and (not my_sub or my_sub.status != 'active') %}
     <div class="item-actions">
       <form method="post" action="{{ url_for('billing.subscribe_route', class_id=class_room.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="plan_id" value="{{ p.id }}">
+        {% if current_user.role == 'parent' and children is defined %}
+          {% if children|length > 1 and not my_sub %}
+          {#- AZ-P0-03 / WCAG 3.3.2: للحقل اسم مفهوم — المعرّف فريد لكل خطة #}
+          <label class="sr-only" for="payee-{{ p.id }}">{{ _('اختر الطالب') }}</label>
+          <select name="student_id" id="payee-{{ p.id }}" class="azad-field__select" data-testid="payee-select">
+            {% for c in children %}<option value="{{ c.student_id }}">{{ c.student.name_ar or c.student.email }}</option>{% endfor %}
+          </select>
+          {% elif children %}
+          <input type="hidden" name="student_id" value="{{ payee.id if payee is not none else children[0].student_id }}">
+          {% endif %}
+        {% endif %}
         <button class="azad-btn" type="submit" data-testid="plan-subscribe">{{ _('اشترك') }}</button>
       </form>
     </div>
@@ -66,7 +81,7 @@
 </div>
 {% endif %}
 
-{% if current_user.role == 'student' and my_sub and my_sub.status == 'pending' %}
+{% if my_sub and my_sub.status == 'pending' and payee is not none %}
 <div class="azad-section"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
 <div class="azad-card">
   <p class="form-hint u-mb-0-75">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>

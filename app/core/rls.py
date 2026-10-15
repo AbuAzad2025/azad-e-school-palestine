@@ -355,6 +355,12 @@ def build_all_policy_ddl(bind=None) -> tuple[list[str], list[str]]:
             write_arms.append(_user_id_arm())
         if actor_arm := _ACTOR_OWNED_WRITE_ARMS.get(table):
             write_arms.append(actor_arm)
+            # الذراع نفسها للقراءة لا للكتابة وحدها: ORM يولد
+            # INSERT ... RETURNING، وPostgreSQL يفحص الصفوف المعادة بـ
+            # USING كذلك — صاحب اشتراك بلا تينانت (الطالب الفردي) كان
+            # يجتاز WITH CHECK ثم يُرفض على USING فيرمي 503 (AZ-P0-01).
+            # الذراع مقيدة بمالك الاشتراك فلا تكشف صفاً لغيره.
+            read_arms.append(actor_arm)
         statements += build_policy_ddl(table, tenant_expr, read_arms, write_arms)
 
     for table in _USER_SCOPED_TABLES:

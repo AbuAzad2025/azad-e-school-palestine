@@ -103,3 +103,57 @@ def get_parent(student_id: int) -> User | None:
     if link:
         return db.session.get(User, link.parent_id)
     return None
+
+
+def billing_by_student(parent_id: int) -> dict[int, list[dict]]:
+    """كشف حساب الأسرة — اشتراكات كل ابن مع رصيد المتبقي (AZ-P0-03).
+
+    القيم:exprybط مقيدة بأبناء وليّ الأمر المرتبطين برابط نشط:
+    استعلام الاشتراكات بـ ``user_id IN (أبنائنا)`` فحساب لا يظهر فيه
+    طلب أسرة أخرى. الأرصدة تُشتق في استعلامين لا استعلام لكل اشتراك.
+
+    يعيد ``{student_id: [entry, ...]}`` حيث كل entry:
+    ``subscription`` (مع class_room وplan محمّلين)، ``balance`` (Decimal)،
+    و``approved_count`` (عدد الدفعات المعتمدة — لرابط الفاتورة).
+    """
+    from sqlalchemy import func, select
+    from sqlalchemy.orm import joinedload
+
+    from app.models.billing import ManualPayment, Subscription
+    from app.services import billing
+
+    links = list_children(parent_id)
+    student_ids = [link.student_id for link in links]
+    if not student_ids:
+        return {}
+
+    subs = (
+        Subscription.query.options(
+            joinedload(Subscription.plan),
+            joinedload(Subscription.class_room),
+        )
+        .filter(Subscription.user_id.in_(student_ids))
+        .order_by(Subscription.created_at.desc())
+        .all()
+    )
+    if not subs:
+        return {}
+    sub_ids = [sub.id for sub in subs]
+    balances = billing.subscription_balances(sub_ids)
+    approved_counts: dict[int, int] = {}
+    for sid, count in db.session.execute(
+        select(ManualPayment.subscription_id, func.count())
+        .where(ManualPayment.subscription_id.in_(sub_ids), ManualPayment.status == "approved")
+        .group_by(ManualPayment.subscription_id)
+    ).all():
+        approved_counts[int(sid)] = int(count)
+    by_student: dict[int, list[dict]] = {}
+    for sub in subs:
+        by_student.setdefault(sub.user_id, []).append(
+            {
+                "subscription": sub,
+                "balance": balances.get(sub.id, sub.price),
+                "approved_count": approved_counts.get(sub.id, 0),
+            }
+        )
+    return by_student

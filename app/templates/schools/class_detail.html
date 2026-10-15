@@ -19,10 +19,28 @@
   </div>
 </div>
 
+{% if not can_view_content %}
+{# AZ-P0-02: مالك اشتراك معلّق — بانر اشتراك بزر فعلي؛ لا قائمة أعضاء ولا رمز
+   انضمام ولا عدّاد عضو حتى لا يتسريب أي شيء عن الصف قبل الدفع #}
+<div class="azad-card">
+  <div class="azad-card__header">
+    <h2 class="azad-card__title">{{ _('الاشتراك والدفع') }}</h2>
+    <span class="meta-chip">{{ _('معلّق') }}</span>
+  </div>
+  <div class="azad-card__body">
+    <p class="page-subtitle">{{ _('هذا الصف مدفوع — يُفتح محتواه بعد اعتماد الدفع.') }}</p>
+    <a class="azad-btn azad-btn-primary" href="{{ url_for('billing.class_billing', class_id=class_room.id) }}">
+      {{ icon('wallet') }} {{ _('اشترك الآن / أكمل الدفع') }}
+    </a>
+  </div>
+</div>
+{% else %}
 <div class="stats-grid">
   {{ azad_stat_card(members|length, _('طالباً'), 'users', 'blue') }}
   {{ azad_stat_card(class_room.join_code, _('رمز الانضمام'), 'key', 'green', href=url_for('schools.class_join', join_code=class_room.join_code)) }}
 </div>
+
+{% endif %}
 
 {% if is_admin or (class_room.teacher and class_room.teacher_id == current_user.id) %}
 <div class="azad-card">
@@ -47,6 +65,7 @@
 </div>
 {% endif %}
 
+{% if can_view_content %}
 <div class="azad-card">
   <div class="azad-card__header">
     <h2 class="azad-card__title">{{ _('الأعضاء') }}</h2>
@@ -61,4 +80,5 @@
     {{ azad_table(headers=member_headers, rows=member_rows, empty_title=_('لا يوجد أعضاء'), empty_icon='users') }}
   </div>
 </div>
+{% endif %}
 {% endblock %}

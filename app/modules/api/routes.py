@@ -437,7 +437,15 @@ def api_search():
     # Subscriptions
     # NOTE: explicit ON clause required — Subscription.class_id is nullable and
     # an implicit join(ClassRoom) resolves to a cartesian ON FALSE, matching zero rows.
-    sub_q = Subscription.query.join(SubscriptionPlan).join(User).join(ClassRoom, ClassRoom.id == Subscription.class_id)
+    # AZ-P0-03: `subscriptions` now carries two FKs to `users` (user_id = owner,
+    # payer_id = whoever funded it), so an implicit `join(User)` is ambiguous and
+    # raises AmbiguousForeignKeysError. The search joins the subscription OWNER
+    # explicitly — same semantics as before payer_id existed.
+    sub_q = (
+        Subscription.query.join(SubscriptionPlan)
+        .join(User, Subscription.user_id == User.id)
+        .join(ClassRoom, ClassRoom.id == Subscription.class_id)
+    )
 
     if current_user.role == UserRole.super_admin:
         pass

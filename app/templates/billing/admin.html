@@ -11,6 +11,8 @@
       <div class="item-meta">
         <span><bdi>{{ p.amount }}</bdi> <bdi>{{ p.subscription.currency }}</bdi></span>
         <span>{{ _('الخطة:') }} {{ p.subscription.plan.name }}</span>
+        {#- AZ-P0-03: هوية الدافع تُنلى في مراجعة الأدمن (وليّ الأمر إن موّل عن ابنه) -#}
+        {% if p.payer %}<span data-testid="review-payer">{{ _('الدافع:') }} {{ p.payer.name_ar or p.payer.email }}</span>{% endif %}
         {% if p.note %}<span>{{ p.note }}</span>{% endif %}
       </div>
     </div>

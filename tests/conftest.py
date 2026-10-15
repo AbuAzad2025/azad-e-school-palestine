@@ -374,6 +374,14 @@ def app():
         _db.session.commit()
         _db.create_all()
         _ensure_phase2_schema(_db)
+        # السياسات تُبنى من المنشئ الحي في app.core.rls عند كل جلسة اختبار:
+        # القابلة session-scoped تبقى سياساتها من جولة سابقاً س تمامًا، وأي
+        # تعديل في الأذرع (مثلاً ذراع مالك الدفع لـ INSERT..RETURNING) لا
+        # يظهر إلا عند الزرع الصريح. الاختبارات مجازة bypass في conftest
+        # نفسها فيتماسك التسجيل مع الإنتاج (ترحيلات Alembic تبنى من نفس المنشئ).
+        from app.core.rls import enable_all_rls_policies
+
+        enable_all_rls_policies()
         _db.session.execute(text(TEST_BYPASS_RLS_SQL))
         _db.session.commit()
     yield a

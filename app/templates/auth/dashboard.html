@@ -102,7 +102,10 @@
   {# ═══ Student Dashboard ═══ #}
   <div class="azad-section">
     <h2>{{ _('صفوفي') }}</h2>
+    {# AZ-P0-02: نقطة اكتشاف للصفوف غير المشترك بها — الكاتالسؤال لا يؤدي إلى
+       صفحات الاشتراك /billing/<id> عبر تدفّق الاشتراك #}
     <a class="azad-btn azad-btn-sm" href="{{ url_for('schools.class_join') }}">+ {{ _('انضمام برمز') }}</a>
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('individual.catalog') }}">{{ _('تصفّح الكورسات المتاحة') }}</a>
   </div>
   {% if memberships %}
   <div class="azad-list">

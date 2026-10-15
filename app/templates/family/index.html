@@ -42,6 +42,25 @@
                 <button type="submit" class="azad-btn-outline azad-btn-sm u-text-danger">{{ _('إلغاء الربط') }}</button>
             </form>
         </div>
+        {% set fees = fees_by_student.get(link.student_id, []) %}
+        {% if fees %}
+        <div class="family-fees" data-testid="family-fees">
+            <div class="item-title u-mt-1"><strong>{{ _('الرسوم والاشتراكات') }}</strong></div>
+            {% for entry in fees %}
+            {% set sub = entry.subscription %}
+            <div class="item-meta family-fee-row u-mt-0-5" data-testid="family-fee-row">
+                <span class="badge-status badge-{{ 'ok' if sub.status == 'active' else ('warn' if sub.status in ('pending', 'pending_review') else 'err') }}" data-testid="family-fee-status">{{ status_label('subscription_status', sub.status) }}</span>
+                <span data-testid="family-fee-class">{{ sub.class_room.name or sub.class_room.id }}</span>
+                <span data-testid="family-fee-balance">{{ _('المتبقي:') }} <bdi>{{ entry.balance }}</bdi> <bdi>{{ sub.currency }}</bdi></span>
+                {% if sub.status in ('pending', 'pending_review') %}
+                <a class="azad-btn azad-btn-sm" data-testid="family-pay-link" href="{{ url_for('billing.class_billing', class_id=sub.class_id) }}">{{ _('أكمل الدفع') }}</a>
+                {% elif entry.approved_count %}
+                <a class="azad-btn-outline azad-btn-sm" data-testid="family-invoice-link" href="{{ url_for('billing.invoice_view', subscription_id=sub.id) }}">{{ _('الفاتورة') }}</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     {% endfor %}
 </div>

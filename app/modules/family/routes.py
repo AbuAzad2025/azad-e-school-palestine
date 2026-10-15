@@ -2,7 +2,7 @@
 
 from app.core.permissions import parent_of_required, role_required
 from app.models.user import UserRole
-from app.services.family import generate_link_code, link_parent, list_children, remove_link
+from app.services.family import billing_by_student, generate_link_code, link_parent, list_children, remove_link
 from flask import flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
@@ -16,7 +16,14 @@ from .forms import LinkCodeForm
 @role_required(UserRole.parent)
 def index():
     children = list_children(current_user.id)
-    return render_template("family/index.html", children=children, link_form=LinkCodeForm())
+    # AZ-P0-03: كشف حساب الأسرة — لكل ابن اشتراكاته وحالتها والمتبقي عليها.
+    fees_by_student = billing_by_student(current_user.id)
+    return render_template(
+        "family/index.html",
+        children=children,
+        fees_by_student=fees_by_student,
+        link_form=LinkCodeForm(),
+    )
 
 
 @bp.post("/link")

@@ -15,6 +15,7 @@ the same rules without needing a live request.
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import TypeVar
@@ -78,8 +79,9 @@ def _setup_school(app, name: str = "مدرسة الاختبار"):
         }
 
 
-def _make_class(app, *, school_id, grade_id, subject_id, teacher_id,
-                is_public=False, price=0, duration_days=30, join_code=None):
+def _make_class(
+    app, *, school_id, grade_id, subject_id, teacher_id, is_public=False, price=0, duration_days=30, join_code=None
+):
     """Create a class and return its ID."""
     import secrets
 
@@ -101,16 +103,24 @@ def _make_class(app, *, school_id, grade_id, subject_id, teacher_id,
         return cr.id
 
 
-def _make_student(app, *, school_id=None, email=None, name=None):
-    """Create a student user. Optionally link to a school."""
+def _make_student(app, *, school_id=None, email=None, name=None, is_individual=False, password=None):
+    """Create a student user. Optionally link to a school.
+
+    ``is_individual=True`` يحاكي المسجّل عبر بوابة التسجيل فرديًا (بلا مدرسة) —
+    وهو ما يضبط GUC ``app.is_individual`` في طلباته ليرى كتالوغ الكورسات العامة
+    واشتراكاته هو فقط تحت RLS. ``password`` يمنح كلمة مرور حقيقية لدخول HTTP.
+    """
     with app.app_context():
+        from app.core.security import hash_password
+
         u = User(
             email=email or f"student-{db.session.query(User).count() + 1}@test.com",
             name_ar=name or "طالب اختبار",
             role=UserRole.student,
-            password_hash="pbkdf2:sha256:placeholder",
+            password_hash=hash_password(password) if password else "pbkdf2:sha256:placeholder",
             approval_status="approved",
             is_active=True,
+            is_individual=is_individual,
         )
         db.session.add(u)
         db.session.flush()
@@ -187,9 +197,13 @@ class TestFreeClassFlow:
         ids = _setup_school(app, "مدرسة مجانية")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=0,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=0,
         )
         _make_lesson(app, class_id)
 
@@ -210,18 +224,20 @@ class TestFreeClassFlow:
         ids = _setup_school(app, "مدرسة فردية مجانية")
         student_id = _make_student(app)
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=0,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=0,
         )
 
         with app.app_context():
             error = individual.subscribe_to_class(student_id, class_id)
             assert error is None
 
-            member = ClassMember.query.filter_by(
-                class_id=class_id, user_id=student_id
-            ).first()
+            member = ClassMember.query.filter_by(class_id=class_id, user_id=student_id).first()
             assert member is not None
             assert member.status == "active"
 
@@ -229,9 +245,13 @@ class TestFreeClassFlow:
         ids = _setup_school(app, "مدرسة مكررة")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=0,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=0,
         )
 
         with app.app_context():
@@ -244,16 +264,18 @@ class TestFreeClassFlow:
         ids = _setup_school(app, "مدرسة عضوية مجانية")
         student_id = _make_student(app)
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=0,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=0,
         )
 
         with app.app_context():
             assert individual.subscribe_to_class(student_id, class_id) is None
-            member = ClassMember.query.filter_by(
-                class_id=class_id, user_id=student_id, status="active"
-            ).first()
+            member = ClassMember.query.filter_by(class_id=class_id, user_id=student_id, status="active").first()
             assert member is not None
 
 
@@ -269,13 +291,21 @@ class TestPaidClassApprovalFlow:
         ids = _setup_school(app, "مدرسة مدفوعة")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=200, duration_days=60,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=200,
+            duration_days=60,
         )
         plan_id = _make_plan(
-            app, school_id=ids["school"], class_id=class_id,
-            price=200, duration_days=60,
+            app,
+            school_id=ids["school"],
+            class_id=class_id,
+            price=200,
+            duration_days=60,
         )
         _make_lesson(app, class_id, "درس مدفوع")
 
@@ -285,9 +315,7 @@ class TestPaidClassApprovalFlow:
             plan = _assert(db.session.get(SubscriptionPlan, plan_id))
 
             assert not schools.is_member(cls, user)
-            assert Subscription.query.filter_by(
-                user_id=student_id, class_id=class_id
-            ).count() == 0
+            assert Subscription.query.filter_by(user_id=student_id, class_id=class_id).count() == 0
 
             sub, err = billing.subscribe(student_id, plan, class_id)
             assert err is None
@@ -305,9 +333,7 @@ class TestPaidClassApprovalFlow:
             assert approved_sub.start_at is not None
             assert approved_sub.end_at is not None
 
-            member = ClassMember.query.filter_by(
-                class_id=class_id, user_id=student_id
-            ).first()
+            member = ClassMember.query.filter_by(class_id=class_id, user_id=student_id).first()
             assert member is not None
             assert member.status == "active"
 
@@ -321,9 +347,13 @@ class TestPaidClassApprovalFlow:
         ids = _setup_school(app, "مدرسة التقسيط")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=300,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=300,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=300)
 
@@ -352,9 +382,13 @@ class TestPaidClassApprovalFlow:
         ids = _setup_school(app, "مدرسة صفرية")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=100)
 
@@ -370,16 +404,18 @@ class TestPaidClassApprovalFlow:
         ids = _setup_school(app, "مدرسة اعتماد مزدوج")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=100)
 
         with app.app_context():
-            sub, payment = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "DOUBLE"
-            )
+            sub, payment = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "DOUBLE")
 
             billing.approve_payment(payment, reviewer_id=1)
 
@@ -401,17 +437,19 @@ class TestPaidClassRejectionFlow:
         ids = _setup_school(app, "مدرسة رفض")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=150,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=150,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=150)
 
         with app.app_context():
             cls = _get_class(app, class_id)
-            sub, payment = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 150, "REJ-001"
-            )
+            sub, payment = _subscribe_and_pay(app, student_id, plan_id, class_id, 150, "REJ-001")
             assert sub.status == "pending"
 
             billing.reject_payment(payment, reviewer_id=1)
@@ -422,9 +460,7 @@ class TestPaidClassRejectionFlow:
             db.session.refresh(sub)
             assert sub.status == "cancelled"
 
-            member = ClassMember.query.filter_by(
-                class_id=class_id, user_id=student_id
-            ).first()
+            member = ClassMember.query.filter_by(class_id=class_id, user_id=student_id).first()
             assert member is None
 
             assert not access._has_valid_subscription(student_id, class_id)
@@ -435,16 +471,18 @@ class TestPaidClassRejectionFlow:
         ids = _setup_school(app, "مدرسة رفض مكرر")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=100)
 
         with app.app_context():
-            sub, payment = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "REJ-2X"
-            )
+            sub, payment = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "REJ-2X")
             billing.reject_payment(payment, reviewer_id=1)
 
             from app.core.db import TxError
@@ -456,9 +494,13 @@ class TestPaidClassRejectionFlow:
         ids = _setup_school(app, "مدرسة إعادة الاشتراك")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=100)
 
@@ -467,17 +509,13 @@ class TestPaidClassRejectionFlow:
             cls = _get_class(app, class_id)
 
             # First attempt — rejected
-            sub1, pay1 = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "REJ-A"
-            )
+            sub1, pay1 = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "REJ-A")
             billing.reject_payment(pay1, reviewer_id=1)
             assert not access._has_valid_subscription(student_id, class_id)
             assert not schools.is_member(cls, user)
 
             # Second attempt — approved
-            sub2, pay2 = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "APR-B"
-            )
+            sub2, pay2 = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "APR-B")
             billing.approve_payment(pay2, reviewer_id=1)
             assert access._has_valid_subscription(student_id, class_id)
             assert schools.is_member(cls, user)
@@ -495,19 +533,25 @@ class TestSubscriptionExpiryFlow:
         ids = _setup_school(app, "مدرسة انتهاء")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100, duration_days=30,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
+            duration_days=30,
         )
         plan_id = _make_plan(
-            app, school_id=ids["school"], class_id=class_id,
-            price=100, duration_days=30,
+            app,
+            school_id=ids["school"],
+            class_id=class_id,
+            price=100,
+            duration_days=30,
         )
 
         with app.app_context():
-            sub, payment = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "EXP-001"
-            )
+            sub, payment = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "EXP-001")
             billing.approve_payment(payment, reviewer_id=1)
 
             db.session.refresh(sub)
@@ -531,19 +575,25 @@ class TestSubscriptionExpiryFlow:
         ids = _setup_school(app, "مدرسة مستقبلية")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100, duration_days=365,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
+            duration_days=365,
         )
         plan_id = _make_plan(
-            app, school_id=ids["school"], class_id=class_id,
-            price=100, duration_days=365,
+            app,
+            school_id=ids["school"],
+            class_id=class_id,
+            price=100,
+            duration_days=365,
         )
 
         with app.app_context():
-            sub, payment = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "FUT-001"
-            )
+            sub, payment = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "FUT-001")
             billing.approve_payment(payment, reviewer_id=1)
 
             db.session.refresh(sub)
@@ -560,16 +610,18 @@ class TestSubscriptionExpiryFlow:
         ids = _setup_school(app, "مدرسة بدون نهاية")
         student_id = _make_student(app, school_id=ids["school"])
         class_id = _make_class(
-            app, school_id=ids["school"], grade_id=ids["grade"],
-            subject_id=ids["subject"], teacher_id=ids["teacher"],
-            is_public=True, price=100,
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
         )
         plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=100)
 
         with app.app_context():
-            sub, payment = _subscribe_and_pay(
-                app, student_id, plan_id, class_id, 100, "NONE-001"
-            )
+            sub, payment = _subscribe_and_pay(app, student_id, plan_id, class_id, 100, "NONE-001")
             billing.approve_payment(payment, reviewer_id=1)
 
             sub.end_at = None
@@ -599,9 +651,13 @@ class TestCrossTenantIsolation:
 
         student_a = _make_student(app, school_id=ids_a["school"])
         class_b = _make_class(
-            app, school_id=ids_b["school"], grade_id=ids_b["grade"],
-            subject_id=ids_b["subject"], teacher_id=ids_b["teacher"],
-            is_public=True, price=0,
+            app,
+            school_id=ids_b["school"],
+            grade_id=ids_b["grade"],
+            subject_id=ids_b["subject"],
+            teacher_id=ids_b["teacher"],
+            is_public=True,
+            price=0,
         )
 
         with app.app_context():
@@ -618,23 +674,29 @@ class TestCrossTenantIsolation:
         student = _make_student(app, school_id=ids_a["school"])
 
         class_b = _make_class(
-            app, school_id=ids_b["school"], grade_id=ids_b["grade"],
-            subject_id=ids_b["subject"], teacher_id=ids_b["teacher"],
-            is_public=True, price=100,
+            app,
+            school_id=ids_b["school"],
+            grade_id=ids_b["grade"],
+            subject_id=ids_b["subject"],
+            teacher_id=ids_b["teacher"],
+            is_public=True,
+            price=100,
         )
         plan_b = _make_plan(app, school_id=ids_b["school"], class_id=class_b, price=100)
 
         with app.app_context():
-            sub, payment = _subscribe_and_pay(
-                app, student, plan_b, class_b, 100, "X-TENANT"
-            )
+            sub, payment = _subscribe_and_pay(app, student, plan_b, class_b, 100, "X-TENANT")
             billing.approve_payment(payment, reviewer_id=1)
             assert access._has_valid_subscription(student, class_b)
 
             class_a = _make_class(
-                app, school_id=ids_a["school"], grade_id=ids_a["grade"],
-                subject_id=ids_a["subject"], teacher_id=ids_a["teacher"],
-                is_public=True, price=100,
+                app,
+                school_id=ids_a["school"],
+                grade_id=ids_a["grade"],
+                subject_id=ids_a["subject"],
+                teacher_id=ids_a["teacher"],
+                is_public=True,
+                price=100,
             )
             assert not access._has_valid_subscription(student, class_a)
 
@@ -647,8 +709,11 @@ class TestCrossTenantIsolation:
             assert teacher_a is not None
 
             cls_b_id = _make_class(
-                app, school_id=ids_b["school"], grade_id=ids_b["grade"],
-                subject_id=ids_b["subject"], teacher_id=ids_b["teacher"],
+                app,
+                school_id=ids_b["school"],
+                grade_id=ids_b["grade"],
+                subject_id=ids_b["subject"],
+                teacher_id=ids_b["teacher"],
             )
             cls_b = db.session.get(ClassRoom, cls_b_id)
             assert cls_b is not None
@@ -673,7 +738,8 @@ class TestCrossTenantIsolation:
             db.session.add(admin_a)
             db.session.flush()
             rl = UserRoleLink(
-                user_id=admin_a.id, school_id=ids_a["school"],
+                user_id=admin_a.id,
+                school_id=ids_a["school"],
                 role=UserRole.school_admin,
             )
             db.session.add(rl)
@@ -715,12 +781,18 @@ class TestCrossTenantIsolation:
         ids_b = _setup_school(app, "مدرسة ب عزل معلم")
 
         class_a_id = _make_class(
-            app, school_id=ids_a["school"], grade_id=ids_a["grade"],
-            subject_id=ids_a["subject"], teacher_id=ids_a["teacher"],
+            app,
+            school_id=ids_a["school"],
+            grade_id=ids_a["grade"],
+            subject_id=ids_a["subject"],
+            teacher_id=ids_a["teacher"],
         )
         class_b_id = _make_class(
-            app, school_id=ids_b["school"], grade_id=ids_b["grade"],
-            subject_id=ids_b["subject"], teacher_id=ids_b["teacher"],
+            app,
+            school_id=ids_b["school"],
+            grade_id=ids_b["grade"],
+            subject_id=ids_b["subject"],
+            teacher_id=ids_b["teacher"],
         )
 
         with app.app_context():
@@ -732,3 +804,502 @@ class TestCrossTenantIsolation:
             assert cls_a.teacher_id == ids_a["teacher"]
             assert cls_b.teacher_id == ids_b["teacher"]
             assert cls_a.teacher_id != cls_b.teacher_id
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  6. AZ-P0-01 — حلقة دفع الطالب الفردي (HTTP حقيقي عبر test_client)
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+class TestPendingSubscriptionLoop:
+    """AZ-P0-01: الاشتراك المعلّق ظاهر مع زر دفع قابل للفتح فعلاً.
+
+    هاتان الحالات تبني مساراً حقيقياً (طالب فرد عبر بوابة
+    التسجيل + test_client + تسجيل دخول) لأن الخلل الأصلي كان تنفيذيًا
+    في طبقة HTTP لا طبقة الخدمة: العضوية فقط كانت تُعرض، وحراز صفحة
+    الدفع يشترط اشتراكاً نشطاً (P-SEC-13) فتنغلق الحلقة بـ 403.
+    """
+
+    def _login(self, app, email: str):
+        client = app.test_client()
+        resp = client.post(
+            "/auth/login",
+            data={"email": email, "password": "TestPass123!"},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302, f"login failed for {email}: {resp.status_code}"
+        return client
+
+    def test_paid_subscribe_shows_pending_with_pay_button_and_no_membership(self, app):
+        """(أ) كورس مدفوع → pending بلا ClassMember + ظهوره في صفحة كورساتي."""
+        ids = _setup_school(app, "مدرسة الحلقة المدفوعة")
+        email = f"pend-a-{ids['school']}@test.com"
+        _make_student(app, email=email, name="طالب معلّق", is_individual=True, password="TestPass123!")
+        class_id = _make_class(
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=120,
+            duration_days=45,
+        )
+
+        client = self._login(app, email)
+        resp = client.post(f"/my/catalog/{class_id}/subscribe", follow_redirects=True)
+        assert resp.status_code == 200
+        # رسالة التعامل الحقيقية (مدفوع) لا رسالة الوصول الفوري
+        assert "بانتظار الدفع" in resp.get_data(as_text=True)
+
+        with app.app_context():
+            user_id = User.query.filter_by(email=email).one().id
+            sub = Subscription.query.filter_by(user_id=user_id, class_id=class_id).one()
+            assert sub.status == "pending"
+            assert (
+                ClassMember.query.filter_by(class_id=class_id, user_id=sub.user_id).count() == 0
+            )  # P-SEC-08: لا عضوية فعّالة قبل الدفع
+
+        page = client.get("/my/courses")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "اشتراكات بانتظار الدفع" in html
+        assert f"/billing/{class_id}" in html  # زر ضمني فعلي لا نص وصفي
+        assert "120.00" in html  # المبلغ ظاهر
+
+    def test_free_subscribe_has_no_pending_section(self, app):
+        """(ب) كورس مجاني → عضوية فعّالة + لا قسم معلّق على الإطلاق."""
+        ids = _setup_school(app, "مدرسة الحلقة المجانية")
+        email = f"pend-b-{ids['school']}@test.com"
+        _make_student(app, email=email, is_individual=True, password="TestPass123!")
+        class_id = _make_class(
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=0,
+        )
+
+        client = self._login(app, email)
+        assert client.post(f"/my/catalog/{class_id}/subscribe", follow_redirects=True).status_code == 200
+
+        with app.app_context():
+            user_id = User.query.filter_by(email=email).one().id
+            member = ClassMember.query.filter_by(class_id=class_id, user_id=user_id, status="active").one()
+            assert member is not None  # P-SEC-09: تفعيل فوري
+
+        page = client.get("/my/courses")
+        html = page.get_data(as_text=True)
+        assert page.status_code == 200
+        assert "اشتراكات بانتظار الدفع" not in html
+        assert "أكمل الدفع" not in html
+
+    def test_pending_student_opens_billing_page_and_records_payment(self, app):
+        """(ج) الحلقة مغلقة فعلاً: صفحة الدفع 200 (لا 403) + سجل دفع."""
+        ids = _setup_school(app, "مدرسة الحلقة المغلقة")
+        email = f"pend-c-{ids['school']}@test.com"
+        _make_student(app, email=email, is_individual=True, password="TestPass123!")
+        class_id = _make_class(
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
+        )
+
+        client = self._login(app, email)
+        client.post(f"/my/catalog/{class_id}/subscribe", follow_redirects=True)
+        # صفحة الدفع تفتح لصاحب الاشتراك المعلّق — كانت 403 قبل AZ-P0-01
+        billing_page = client.get(f"/billing/{class_id}")
+        assert billing_page.status_code == 200, f"expected billing page 200, got {billing_page.status_code}"
+
+        with app.app_context():
+            user_id = User.query.filter_by(email=email).one().id
+            sub_id = Subscription.query.filter_by(user_id=user_id, class_id=class_id).one().id
+
+        pay_resp = client.post(
+            f"/billing/subscriptions/{sub_id}/pay",
+            data={"reference": "TXN-PEND-01", "amount": "100.00"},
+            follow_redirects=False,
+        )
+        assert pay_resp.status_code == 302
+
+        with app.app_context():
+            from app.models.billing import ManualPayment
+
+            payment = ManualPayment.query.filter_by(subscription_id=sub_id).one()
+            assert payment.status == "pending"
+            assert payment.amount == Decimal("100.00")
+
+            # الاعتماد البشري يغلق الحلقة: تفعيل + عضوية + اختفاء القسم
+            approved_sub = billing.approve_payment(payment, reviewer_id=1)
+            assert approved_sub.status == "active"
+            assert ClassMember.query.filter_by(class_id=class_id, user_id=user_id, status="active").count() == 1
+
+        page = client.get("/my/courses")
+        html = page.get_data(as_text=True)
+        assert "اشتراكات بانتظار الدفع" not in html
+        assert "فتح" in html  # الكورس صار صفّاً مفتوحاً
+
+    def test_billing_page_denied_without_any_subscription(self, app):
+        """(د) طالب بلا أي اشتراك على صف مدفوع → 403 (لا ثغرة استقصاء)."""
+        ids = _setup_school(app, "مدرسة منع الاستقصاء")
+        email = f"pend-d-{ids['school']}@test.com"
+        _make_student(app, email=email, is_individual=True, password="TestPass123!")
+        class_id = _make_class(
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
+        )
+
+        client = self._login(app, email)
+        assert client.get(f"/billing/{class_id}").status_code == 403
+
+    def test_student_with_no_subscriptions_page_ok_without_pending_section(self, app):
+        """(هـ) طالب بلا أي اشتراك → 200 بلا قسم معلّق (حالة فراغ واضحة)."""
+        ids = _setup_school(app, "مدرسة الفراغ الواضح")
+        email = f"pend-e-{ids['school']}@test.com"
+        _make_student(app, email=email, is_individual=True, password="TestPass123!")
+
+        client = self._login(app, email)
+        page = client.get("/my/courses")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "اشتراكات بانتظار الدفع" not in html
+        assert "لم تسجل في أي كورس بعد" in html
+
+    def test_non_owner_of_pending_sub_cannot_pay(self, app):
+        """(و) شرط المالك المحدّث لا يوسّع الشقب: طالب آخر → 403 بلا صف دفع."""
+        ids = _setup_school(app, "مدرسة صاحب الدفع")
+        owner_email = f"pend-f-owner-{ids['school']}@test.com"
+        other_email = f"pend-f-other-{ids['school']}@test.com"
+        _make_student(app, email=owner_email, is_individual=True, password="TestPass123!")
+        _make_student(app, email=other_email, is_individual=True, password="TestPass123!")
+        class_id = _make_class(
+            app,
+            school_id=ids["school"],
+            grade_id=ids["grade"],
+            subject_id=ids["subject"],
+            teacher_id=ids["teacher"],
+            is_public=True,
+            price=100,
+        )
+
+        owner_client = self._login(app, owner_email)
+        owner_client.post(f"/my/catalog/{class_id}/subscribe", follow_redirects=True)
+
+        with app.app_context():
+            sub_id = (
+                Subscription.query.filter_by(
+                    user_id=User.query.filter_by(email=owner_email).one().id,
+                    class_id=class_id,
+                )
+                .one()
+                .id
+            )
+
+        other_client = self._login(app, other_email)
+        pay_resp = other_client.post(
+            f"/billing/subscriptions/{sub_id}/pay",
+            data={"reference": "NOT-MINE", "amount": "100.00"},
+            follow_redirects=False,
+        )
+        # عقد المستودع الصارم: صف لا يراه الفاعل عبر RLS يرد 404 (لا 403)
+        # حتى لا يُستدل بوجوده من رمز الرد — شرط المالك يظل حرزاً كاملاً.
+        assert pay_resp.status_code in (403, 404)
+
+        with app.app_context():
+            from app.models.billing import ManualPayment
+
+            assert ManualPayment.query.filter_by(subscription_id=sub_id).count() == 0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  6. AZ-P0-03 — وليّ أمر يدفع لابنه + كشف حساب الأسرة
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _make_parent(app, *, school_id=None):
+    """مستخدم بدور `parent` — برابط مدرسة اختياري (نمط يسري عبر RLS في الإنتاج)."""
+    with app.app_context():
+        from app.core.security import hash_password
+        from app.models.user import User, UserRole, UserRoleLink
+
+        u = User(
+            email=f"parent-{uuid.uuid4().hex[:10]}@test.com",
+            name_ar="وليّ أمر اختبار",
+            role=UserRole.parent,
+            password_hash=hash_password("TestPass123!"),
+            approval_status="approved",
+            is_active=True,
+        )
+        db.session.add(u)
+        db.session.flush()
+        if school_id:
+            db.session.add(UserRoleLink(user_id=u.id, school_id=school_id, role=UserRole.parent))
+        db.session.commit()
+        return u.id
+
+
+def _link_parent(app, parent_id, student_id):
+    """رابط أسرة نشط (مكافئ لما تُنتجه FamilyLinkCode عبر services/family)."""
+    with app.app_context():
+        from app.models.family import FamilyLink
+
+        db.session.add(FamilyLink(parent_id=parent_id, student_id=student_id, status="active"))
+        db.session.commit()
+
+
+def _login_http(app, email):
+    """عميل HTTP مصادَق بكلمة مرور حقيقية — لا اختراق للجلسة."""
+    client = app.test_client()
+    resp = client.post("/auth/login", data={"email": email, "password": "TestPass123!"})
+    assert resp.status_code in (200, 302), f"login for {email} failed: {resp.status_code}"
+    return client
+
+
+def _make_paid_class(app, name, price=100):
+    """صفّ مدفوع بخطة للسعر نفسه، وابن عضو فعّال فيه."""
+    ids = _setup_school(app, name)
+    class_id = _make_class(
+        app,
+        school_id=ids["school"],
+        grade_id=ids["grade"],
+        subject_id=ids["subject"],
+        teacher_id=ids["teacher"],
+        is_public=True,
+        price=price,
+    )
+    plan_id = _make_plan(app, school_id=ids["school"], class_id=class_id, price=price)
+    student_id = _make_student(app, school_id=ids["school"])
+    with app.app_context():
+        db.session.add(ClassMember(class_id=class_id, user_id=student_id, status="active"))
+        db.session.commit()
+    return ids, class_id, plan_id, student_id
+
+
+class TestParentPaysForChild:
+    """وليّ الأمر المرتبط يفتح صفحة الدفع لصفّ ابنه ويرسل دفعة يدوية باسمه,
+    وغير المرتبط يُمنع بـ 403 بلا أي صف دفع."""
+
+    def test_linked_parent_opens_pay_page_and_records_payment(self, app):
+        """(أ) اشتراك نيابة عن الابن + دفع باسمه — payer_id محفوظ بلا جمعتين."""
+        ids, class_id, plan_id, student_id = _make_paid_class(app, "مدرسة دفع الابن")
+        parent_id = _make_parent(app, school_id=ids["school"])
+        _link_parent(app, parent_id, student_id)
+
+        with app.app_context():
+            parent_email = db.session.get(User, parent_id).email
+
+        client = _login_http(app, parent_email)
+
+        # وليّ الأمر يفتح صفحة الدفع لصفّ ابنه (كانت 403 قبل AZ-P0-03)
+        assert client.get(f"/billing/{class_id}").status_code == 200
+
+        # اشتراك نيابةً عن الابن (وليس عن وليّ الأمر) وسيُنسب payer_id له
+        sub_resp = client.post(
+            f"/billing/{class_id}/subscribe",
+            data={"plan_id": plan_id, "student_id": student_id, "submit": "x"},
+            follow_redirects=False,
+        )
+        assert sub_resp.status_code == 302
+
+        with app.app_context():
+            sub = Subscription.query.filter_by(user_id=student_id, class_id=class_id).one()
+            assert sub.status == "pending"
+            assert sub.payer_id == parent_id, "هوية الدافع (وليّ الأمر) يجب أن تُحفظ على الاشتراك"
+            # الابن عضو فعّال من الإعداد (لم تدعِم الاشتراك عضوية جديدة)،
+            # ووليّ الأمر لا يحصل على عضوية إطلاقاً
+            assert ClassMember.query.filter_by(class_id=class_id, user_id=student_id).count() == 1
+            assert ClassMember.query.filter_by(class_id=class_id, user_id=parent_id).count() == 0
+            sub_id = sub.id
+
+        pay_page = client.get(f"/billing/{class_id}")
+        assert pay_page.status_code == 200
+        assert "إرسال الدفع اليدوي" in pay_page.get_data(as_text=True)
+
+        pay_resp = client.post(
+            f"/billing/subscriptions/{sub_id}/pay",
+            data={"reference": "PARENT-TXN-1", "amount": "100.00"},
+            follow_redirects=False,
+        )
+        assert pay_resp.status_code == 302
+
+        with app.app_context():
+            from app.models.billing import ManualPayment
+
+            payment = ManualPayment.query.filter_by(subscription_id=sub_id).one()
+            assert payment.payer_id == parent_id, "هوية الدافع يجب أن تُحفظ على صف الدفع"
+            assert payment.status == "pending"
+            # الاعتماد يفعّل اشتراك الابن — ووليّ الأمر لا يكسب وصولاً طالبياً
+            billing.approve_payment(payment, reviewer_id=1)
+            assert access._has_valid_subscription(student_id, class_id)
+            assert not access._has_valid_subscription(parent_id, class_id)
+            assert ClassMember.query.filter_by(class_id=class_id, user_id=parent_id).count() == 0
+
+    def test_unlinked_parent_gets_403_and_no_payment_rows(self, app):
+        """(ب) وليّ أمر غير مرتبط → 403 على الدفع والاشتراك، وعدد الصفوف ثابت."""
+        ids, class_id, plan_id, student_id = _make_paid_class(app, "مدرسة ولد غير مرتبط")
+        stranger_id = _make_parent(app, school_id=ids["school"])
+
+        with app.app_context():
+            stranger_email = db.session.get(User, stranger_id).email
+
+        client = _login_http(app, stranger_email)
+
+        pay_page = client.get(f"/billing/{class_id}")
+        assert pay_page.status_code == 403
+
+        pay_resp = client.post(
+            f"/billing/{class_id}/subscribe",
+            data={"plan_id": plan_id, "student_id": student_id, "submit": "x"},
+            follow_redirects=False,
+        )
+        assert pay_resp.status_code == 403
+
+        with app.app_context():
+            # الاشتراك يجب أن يكون ثابتاً ليتحقق شرط «لا صفوف دفع» — نبدأ به ونعدّه
+            plan = db.session.get(SubscriptionPlan, plan_id)
+            sub, err = billing.subscribe(student_id, plan, class_id)
+            assert err is None and sub is not None
+            sub_id = sub.id
+
+        stranger2 = _login_http(app, stranger_email)
+        pay_resp2 = stranger2.post(
+            f"/billing/subscriptions/{sub_id}/pay",
+            data={"reference": "STRANGER-TXN", "amount": "100.00"},
+            follow_redirects=False,
+        )
+        assert pay_resp2.status_code in (403, 404)
+
+        with app.app_context():
+            from app.models.billing import ManualPayment
+
+            assert ManualPayment.query.filter_by(subscription_id=sub_id).count() == 0
+            sub = db.session.get(Subscription, sub_id)
+            db.session.refresh(sub)
+            assert sub.payer_id is None, "لا يجوز أن يُنسب دفع الغريب إلى الطالب"
+
+    def test_family_statement_shows_child_fees_without_cross_family_leak(self, app):
+        """(ج) صفحة الأسرة تعرض رسوم الابن ورابط الدفع والفاتورة بلا تسريب أسرة أخرى."""
+        # أسرة أ — ابن 1 اشتراكه نشط ودفعه معتمد (فيظهر رابط الفاتورة)،
+        # وابن 2 اشتراكه معلّق (فيظهر رابط إكمال الدفع) — الاثنان لعليا نفسه
+        ids_a, class_a, plan_a_id, student_a = _make_paid_class(app, "مدرسة الأسرة أ")
+        parent_a = _make_parent(app, school_id=ids_a["school"])
+        _link_parent(app, parent_a, student_a)
+        student_a2 = _make_student(app, school_id=ids_a["school"])
+        _link_parent(app, parent_a, student_a2)
+
+        with app.app_context():
+            plan_a = db.session.get(SubscriptionPlan, plan_a_id)
+            sub_a, err = billing.subscribe(student_a, plan_a, class_a)
+            assert err is None and sub_a is not None
+            payment, err2 = billing.record_manual_payment(sub_a, reference="FA-PAY", amount=100, payer_id=parent_a)
+            assert err2 is None and payment is not None
+            billing.approve_payment(payment, reviewer_id=1)
+            sub_a_id = sub_a.id
+
+            sub_a2, err3 = billing.subscribe(student_a2, plan_a, class_a)
+            assert err3 is None and sub_a2 is not None
+
+        # أسرة ب — مدرسة وصف وابن مختلفان؛ اسمان فريدان للتأكد من غيابهما
+        ids_b, class_b, _, student_b = _make_paid_class(app, "مدرسة الأسرة ب*")
+        parent_b = _make_parent(app, school_id=ids_b["school"])
+        _link_parent(app, parent_b, student_b)
+        with app.app_context():
+            plan_b = SubscriptionPlan.query.filter_by(class_id=class_b).one()
+            sub_b, err = billing.subscribe(student_b, plan_b, class_b)
+            assert err is None and sub_b is not None
+            db.session.get(ClassRoom, class_b).name = "صفّ عائلة بِ الخاصة"
+            db.session.get(User, student_b).name_ar = "سميّ الرينى ب"
+            db.session.commit()
+            sub_b_id = sub_b.id
+
+        with app.app_context():
+            email_a = db.session.get(User, parent_a).email
+
+        client = _login_http(app, email_a)
+        page = client.get("/family/")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+
+        # رسوم الأسرة أ ظاهرة: قسم «الرسوم والاشتراكات» + رابط دفع فعلي للابن المعلّق
+        # + رابط فاتورة لاشتراك الابن المعتمد + المتبقي
+        assert "الرسوم والاشتراكات" in html
+        assert f"/billing/{class_a}" in html  # رابط الدفع الفعلي لا نص وصفي
+        assert f"/billing/invoices/{sub_a_id}" in html  # رابط الفاتورة بعد الاعتماد
+        assert "المتبقي:" in html
+
+        # لا تسريب بيانات الأسرة ب إطلاقاً: لا اسم ابنها، لا اسم صفّها، لا روابطها
+        assert "صفّ عائلة بِ الخاصة" not in html
+        assert "سميّ الرينى ب" not in html
+        assert f"/billing/{class_b}" not in html
+        assert f"/billing/invoices/{sub_b_id}" not in html
+
+
+class TestFamilyPayerMigration:
+    """تغطية ترقية المخطط (AZ-P0-03): flask db stamp/upgrade/downgrade على قاعدة الاختبار."""
+
+    def test_upgrade_downgrade_cycle(self, app):
+        from sqlalchemy import inspect, text
+
+        runner = app.test_cli_runner()
+
+        def _cols(table, engine):
+            return {c["name"] for c in inspect(engine).get_columns(table)}
+
+        with app.app_context():
+            engine = db.engine
+            # الحالة الأساس: قاعدة الاختبار مبنية بـ create_all فأعمدتها موجودة؛
+            # نثبّت الجدول alembic_version عند رأس ما قبل هذه المراجعة ثم نحوّل لنا.
+            stamp = runner.invoke(args=["db", "stamp", "q0r1s2t3u4v5"])
+            assert stamp.exit_code == 0, f"stamp failed: {stamp.output}"
+
+            up = runner.invoke(args=["db", "upgrade"])
+            assert up.exit_code == 0, f"upgrade failed: {up.output}"
+            assert "payer_id" in _cols("subscriptions", engine)
+            assert "payer_id" in _cols("manual_payments", engine)
+
+            down = runner.invoke(args=["db", "downgrade", "--", "-1"])
+            assert down.exit_code == 0, f"downgrade failed: {down.output}"
+            assert "payer_id" not in _cols("subscriptions", engine)
+            assert "payer_id" not in _cols("manual_payments", engine)
+
+            # إعادة الترقية ليجتمع مسار الاختبار الأخير على أعمدة موجودة
+            up2 = runner.invoke(args=["db", "upgrade"])
+            assert up2.exit_code == 0, f"re-upgrade failed: {up2.output}"
+            assert "payer_id" in _cols("subscriptions", engine)
+            assert "payer_id" in _cols("manual_payments", engine)
+
+            # والحالة تعمل عملياً: صف اشتراك بدافع وصف دفع بدافع يُكتبان ويُقرآن
+
+            ids, class_id, plan_id, student_id = _make_paid_class(app, "مدرسة ترحيل الدافع")
+            parent_id = _make_parent(app, school_id=ids["school"])
+            _link_parent(app, parent_id, student_id)
+            plan = db.session.get(SubscriptionPlan, plan_id)
+            sub, err = billing.subscribe(student_id, plan, class_id, payer_id=parent_id)
+            assert err is None and sub is not None
+            payment, perr = billing.record_manual_payment(sub, reference="MIG-1", amount=100, payer_id=parent_id)
+            assert perr is None and payment is not None
+
+            from app.models.billing import ManualPayment as _MP
+
+            db.session.refresh(_MP.query.filter_by(id=payment.id).one())
+            assert (
+                db.session.execute(text("SELECT payer_id FROM subscriptions WHERE id = :i"), {"i": sub.id}).scalar()
+                == parent_id
+            )
+            assert (
+                db.session.execute(
+                    text("SELECT payer_id FROM manual_payments WHERE id = :i"), {"i": payment.id}
+                ).scalar()
+                == parent_id
+            )

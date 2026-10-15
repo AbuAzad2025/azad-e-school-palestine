@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-14 08:55+0300\n"
+"POT-Creation-Date: 2026-10-15 20:51+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -84,9 +84,8 @@ msgid "الخدمة غير متاحة مؤقتاً. يرجى المحاولة ب
 msgstr "The service is temporarily unavailable. Please try again shortly."
 
 #: app/core/errors.py:152
-#, fuzzy
 msgid "راجع البيانات المدخلة ثم أعد الإرسال."
-msgstr "Please review the details and resubmit."
+msgstr "Review the entered data, then resubmit."
 
 #: app/core/errors.py:153
 msgid "سجّل الدخول من جديد ثم أعد المحاولة."
@@ -115,9 +114,8 @@ msgid "قلّص حجم الملف ثم أعد المحاولة."
 msgstr "Reduce the file size and try again."
 
 #: app/core/errors.py:159
-#, fuzzy
 msgid "استخدم صيغة ملف مدرجة في دليل المنصة."
-msgstr "Unsupported file type. Use a format listed in the platform guide."
+msgstr "Use a file format listed in the platform guide."
 
 #: app/core/errors.py:160
 msgid "صحّح الحقول المشار إليها ثم أعد الإرسال."
@@ -142,9 +140,10 @@ msgid "أعد المحاولة بعد دقائق؛ الخدمة تتعرض لض�
 msgstr "Try again in a few minutes; the service is under temporary load."
 
 #: app/core/errors.py:182
-#, fuzzy
 msgid "انتهت صلاحية جلسة طلبك. حدّث الصفحة لإصدار رمز أمان جديد ثم أعد المحاولة."
-msgstr "Your request session expired. Refresh the page to get a new security code and try again."
+msgstr ""
+"Your request session expired — refresh the page to issue a new security "
+"code, then try again."
 
 #: app/core/errors.py:358
 msgid "انتهت صلاحية الجلسة. حدّث الصفحة ثم حاول مجدداً."
@@ -299,7 +298,7 @@ msgstr "Your AI quota has been used up."
 #: app/modules/api/routes.py:167 app/modules/api/routes.py:177
 #: app/modules/api/routes.py:184 app/modules/api/routes.py:250
 #: app/modules/api/routes.py:355 app/modules/api/routes.py:361
-#: app/modules/api/routes.py:548 app/modules/wallet_api.py:96
+#: app/modules/api/routes.py:556 app/modules/wallet_api.py:96
 #: app/modules/wallet_api.py:98 app/modules/wallet_api.py:142
 msgid "غير مصرح بالوصول"
 msgstr "Access denied"
@@ -587,27 +586,27 @@ msgstr "Class not found"
 msgid "يجب إدخال حرفين على الأقل"
 msgstr "Please enter at least two characters"
 
-#: app/modules/api/routes.py:530
+#: app/modules/api/routes.py:538
 msgid "البريد وكلمة المرور مطلوبان"
 msgstr "Email and password are required"
 
-#: app/modules/api/routes.py:534
+#: app/modules/api/routes.py:542
 msgid "بيانات الدخول غير صحيحة"
 msgstr "Invalid credentials"
 
-#: app/modules/api/routes.py:543
+#: app/modules/api/routes.py:551
 msgid "المورد غير موجود"
 msgstr "Resource not found"
 
-#: app/modules/api/routes.py:553
+#: app/modules/api/routes.py:561
 msgid "غير مصادق عليه"
 msgstr "Unauthenticated"
 
-#: app/modules/api/routes.py:558
+#: app/modules/api/routes.py:566
 msgid "تم تجاوز الحد المسموح"
 msgstr "Rate limit exceeded"
 
-#: app/modules/api/routes.py:563
+#: app/modules/api/routes.py:571
 msgid "خطأ داخلي في الخادم"
 msgstr "Internal server error"
 
@@ -636,7 +635,7 @@ msgid "حفظ الاختبار"
 msgstr "Save quiz"
 
 #: app/modules/assessment/forms.py:22 app/modules/billing/forms.py:22
-#: app/modules/billing/forms.py:48 app/modules/calendar/forms.py:12
+#: app/modules/billing/forms.py:51 app/modules/calendar/forms.py:12
 #: app/modules/grades/forms.py:38 app/templates/admin/ai_usage.html:49
 #: app/templates/assessment/question_bank.html:19
 #: app/templates/billing/discount_list.html:18
@@ -918,20 +917,20 @@ msgstr "Subscription duration (days)"
 msgid "حفظ الخطة"
 msgstr "Save plan"
 
-#: app/modules/billing/forms.py:34 app/templates/billing/class_billing.html:42
+#: app/modules/billing/forms.py:37 app/templates/billing/class_billing.html:57
 msgid "اشترك"
 msgstr "Subscribe"
 
-#: app/modules/billing/forms.py:38
+#: app/modules/billing/forms.py:41
 msgid "رقم مرجع التحويل"
 msgstr "Transfer reference number"
 
-#: app/modules/billing/forms.py:39 app/templates/admin/payouts.html:11
+#: app/modules/billing/forms.py:42 app/templates/admin/payouts.html:11
 #: app/templates/billing/invoice.html:41
 msgid "المبلغ"
 msgstr "Amount"
 
-#: app/modules/billing/forms.py:40 app/modules/grades/forms.py:24
+#: app/modules/billing/forms.py:43 app/modules/grades/forms.py:24
 #: app/modules/tutoring/forms.py:36
 #: app/templates/grades/assignment_detail.html:46
 #: app/templates/grades/attendance.html:27
@@ -939,97 +938,97 @@ msgstr "Amount"
 msgid "ملاحظات"
 msgstr "Notes"
 
-#: app/modules/billing/forms.py:41
+#: app/modules/billing/forms.py:44
 msgid "صورة الإيصال (اختياري)"
 msgstr "Receipt image (optional)"
 
-#: app/modules/billing/forms.py:42
+#: app/modules/billing/forms.py:45
 msgid "إرسال الدفع للاعتماد"
 msgstr "Submit payment for approval"
 
-#: app/modules/billing/forms.py:46 app/modules/billing/forms.py:56
+#: app/modules/billing/forms.py:49 app/modules/billing/forms.py:59
 msgid "كود الخصم"
 msgstr "Discount code"
 
-#: app/modules/billing/forms.py:47 app/modules/contact/forms.py:10
+#: app/modules/billing/forms.py:50 app/modules/contact/forms.py:10
 #: app/services/export.py:20 app/templates/admin/certificates.html:16
 #: app/templates/admin/contact_inbox.html:10
 #: app/templates/admin/user_detail.html:23
 #: app/templates/admin/users_list.html:36
 #: app/templates/billing/discount_list.html:17
-#: app/templates/schools/class_detail.html:56
+#: app/templates/schools/class_detail.html:75
 msgid "الاسم"
 msgstr "Name"
 
-#: app/modules/billing/forms.py:48 app/templates/billing/discount_list.html:29
+#: app/modules/billing/forms.py:51 app/templates/billing/discount_list.html:29
 msgid "نسبة"
 msgstr "Percentage"
 
-#: app/modules/billing/forms.py:48 app/templates/billing/discount_list.html:29
+#: app/modules/billing/forms.py:51 app/templates/billing/discount_list.html:29
 msgid "مبلغ ثابت"
 msgstr "Fixed amount"
 
-#: app/modules/billing/forms.py:49 app/templates/billing/discount_list.html:19
+#: app/modules/billing/forms.py:52 app/templates/billing/discount_list.html:19
 msgid "القيمة"
 msgstr "Value"
 
-#: app/modules/billing/forms.py:50
+#: app/modules/billing/forms.py:53
 msgid "الحد الأقصى للاستخدام"
 msgstr "Maximum uses"
 
-#: app/modules/billing/forms.py:51
+#: app/modules/billing/forms.py:54
 msgid "تاريخ الانتهاء"
 msgstr "Expiry date"
 
-#: app/modules/billing/forms.py:52 app/templates/macros/forms.html:176
+#: app/modules/billing/forms.py:55 app/templates/macros/forms.html:176
 msgid "حفظ"
 msgstr "Save"
 
-#: app/modules/billing/forms.py:58
+#: app/modules/billing/forms.py:61
 msgid "تطبيق الكود"
 msgstr "Apply code"
 
-#: app/modules/billing/routes.py:85
+#: app/modules/billing/routes.py:132
 msgid "حُفظت الخطة."
 msgstr "Plan saved."
 
-#: app/modules/billing/routes.py:101
+#: app/modules/billing/routes.py:170
 msgid "خطة غير صالحة."
 msgstr "Invalid plan."
 
-#: app/modules/billing/routes.py:115
+#: app/modules/billing/routes.py:184
 msgid "أُنشئ اشتراكك. أرسل الدفع لتفعيله."
 msgstr "Your subscription was created. Submit payment to activate it."
 
-#: app/modules/billing/routes.py:149
+#: app/modules/billing/routes.py:227
 msgid "أُرسل الدفع للاعتماد اليدوي."
 msgstr "Payment submitted for manual approval."
 
-#: app/modules/billing/routes.py:173
+#: app/modules/billing/routes.py:251
 msgid "فعّل اشتراكك"
 msgstr "Activate your subscription"
 
-#: app/modules/billing/routes.py:186
+#: app/modules/billing/routes.py:264
 msgid "اعتُمد الدفع وفُعّل الاشتراك."
 msgstr "Payment approved and subscription activated."
 
-#: app/modules/billing/routes.py:194
+#: app/modules/billing/routes.py:272
 msgid "رُفض دفعك — راجع البيانات."
 msgstr "Your payment was rejected — please check the details."
 
-#: app/modules/billing/routes.py:207
+#: app/modules/billing/routes.py:285
 msgid "رُفض الدفع."
 msgstr "Payment rejected."
 
-#: app/modules/billing/routes.py:247
+#: app/modules/billing/routes.py:325
 msgid "تم إنشاء كود الخصم."
 msgstr "Discount code created."
 
-#: app/modules/billing/routes.py:265 app/modules/payments/routes.py:152
+#: app/modules/billing/routes.py:343 app/modules/payments/routes.py:152
 msgid "بيانات غير صالحة"
 msgstr "Invalid data"
 
-#: app/modules/billing/routes.py:316 app/modules/grades/routes.py:391
+#: app/modules/billing/routes.py:393 app/modules/grades/routes.py:391
 msgid "تعذر إنشاء ملف PDF."
 msgstr "Unable to generate PDF file."
 
@@ -1194,8 +1193,8 @@ msgstr "Video added."
 msgid "حُذف المرفق."
 msgstr "Attachment deleted."
 
-#: app/modules/content/routes.py:234 app/modules/schools/routes.py:270
-#: app/modules/schools/routes.py:292
+#: app/modules/content/routes.py:234 app/modules/schools/routes.py:292
+#: app/modules/schools/routes.py:314
 msgid "لا توجد مدرسة مرتبطة بحسابك."
 msgstr "No school is linked to your account."
 
@@ -1233,11 +1232,11 @@ msgstr "Linking code"
 msgid "ربط الحساب"
 msgstr "Link account"
 
-#: app/modules/family/routes.py:32
+#: app/modules/family/routes.py:39
 msgid "تم ربط الحساب بنجاح."
 msgstr "Account linked successfully."
 
-#: app/modules/family/routes.py:44
+#: app/modules/family/routes.py:51
 msgid "تم إلغاء الربط."
 msgstr "Link removed."
 
@@ -1393,7 +1392,13 @@ msgstr "You have already objected to this submission."
 msgid "تم تحديث الاعتراض."
 msgstr "Objection updated."
 
-#: app/modules/individual/routes.py:45
+#: app/modules/individual/routes.py:54
+msgid "تم إنشاء اشتراكك وهو بانتظار الدفع — أكمل الدفع لتفتح الكورس."
+msgstr ""
+"Your subscription was created and is awaiting payment — complete the "
+"payment to open the course."
+
+#: app/modules/individual/routes.py:56
 msgid "تم الاشتراك بنجاح! يمكنك الآن الوصول إلى محتوى الكورس."
 msgstr "Subscribed successfully! You can now access the course content."
 
@@ -1431,7 +1436,7 @@ msgid "اختبارات متقدمة"
 msgstr "Advanced quizzes"
 
 #: app/modules/main/__init__.py:50 app/services/tutoring.py:143
-#: app/templates/auth/dashboard.html:129 app/templates/auth/dashboard.html:177
+#: app/templates/auth/dashboard.html:132 app/templates/auth/dashboard.html:180
 #: app/templates/individual/dashboard.html:10
 #: app/templates/partials/navbar.html:83 app/templates/tutoring/my.html:2
 #: app/templates/tutoring/profile.html:2
@@ -1614,7 +1619,7 @@ msgstr "Annual price"
 msgid "إنشاء الصف"
 msgstr "Create class"
 
-#: app/modules/schools/forms.py:32 app/templates/schools/class_detail.html:24
+#: app/modules/schools/forms.py:32 app/templates/schools/class_detail.html:40
 msgid "رمز الانضمام"
 msgstr "Join code"
 
@@ -1658,23 +1663,27 @@ msgstr "Level added."
 msgid "رمز انضمام غير صالح."
 msgstr "Invalid join code."
 
-#: app/modules/schools/routes.py:130
+#: app/modules/schools/routes.py:128
 msgid "تم الانضمام للصف."
 msgstr "Joined the class."
 
-#: app/modules/schools/routes.py:225
+#: app/modules/schools/routes.py:143
+msgid "افتح صفحة الدفع"
+msgstr "Open the payment page"
+
+#: app/modules/schools/routes.py:247
 msgid "تم توليد رمز جديد."
 msgstr "A new code was generated."
 
-#: app/modules/schools/routes.py:259
+#: app/modules/schools/routes.py:281
 msgid "تم تعيين المعلم."
 msgstr "Teacher assigned."
 
-#: app/modules/schools/routes.py:276
+#: app/modules/schools/routes.py:298
 msgid "تم إعداد المدرسة بالفعل."
 msgstr "School setup is already completed."
 
-#: app/modules/schools/routes.py:301
+#: app/modules/schools/routes.py:323
 msgid "تم إعداد المدرسة بنجاح!"
 msgstr "School set up successfully!"
 
@@ -1985,86 +1994,86 @@ msgstr "Name and price are required."
 msgid "نوع خطة غير صالح."
 msgstr "Invalid plan type."
 
-#: app/services/billing.py:84
+#: app/services/billing.py:88
 msgid "لديك اشتراك نشط في هذا الصف."
 msgstr "You already have an active subscription for this class."
 
-#: app/services/billing.py:128
+#: app/services/billing.py:139
 msgid "المرجع والمبلغ مطلوبان."
 msgstr "Reference and amount are required."
 
-#: app/services/billing.py:192 app/services/billing.py:232
+#: app/services/billing.py:204 app/services/billing.py:244
 msgid "تمت مراجعة هذا الدفع مسبقاً."
 msgstr "This payment has already been reviewed."
 
-#: app/services/billing.py:297 app/services/wallet_service.py:162
+#: app/services/billing.py:336 app/services/wallet_service.py:162
 #: app/services/wallet_service.py:319
 msgid "المبلغ يجب أن يكون أكبر من صفر."
 msgstr "Amount must be greater than zero."
 
-#: app/services/billing.py:299
+#: app/services/billing.py:338
 #, python-format
 msgid "المبلغ (%(amount)s) يتجاوز الرصيد المتبقي (%(balance)s)."
 msgstr "Amount (%(amount)s) exceeds the remaining balance (%(balance)s)."
 
-#: app/services/billing.py:337 app/services/billing.py:376
-#: app/services/billing.py:413
+#: app/services/billing.py:376 app/services/billing.py:415
+#: app/services/billing.py:452
 msgid "كود الخصم مطلوب."
 msgstr "Discount code is required."
 
-#: app/services/billing.py:339
+#: app/services/billing.py:378
 msgid "اسم الخصم مطلوب."
 msgstr "Discount name is required."
 
-#: app/services/billing.py:341
+#: app/services/billing.py:380
 msgid "نوع الخصم غير صالح (percentage/fixed)."
 msgstr "Invalid discount type (percentage/fixed)."
 
-#: app/services/billing.py:343
+#: app/services/billing.py:382
 msgid "قيمة الخصم يجب أن تكون أكبر من صفر."
 msgstr "Discount value must be greater than zero."
 
-#: app/services/billing.py:345
+#: app/services/billing.py:384
 msgid "الحد الأقصى للاستخدام يجب أن يكون 1 على الأقل."
 msgstr "Maximum usage must be at least 1."
 
-#: app/services/billing.py:347
+#: app/services/billing.py:386
 msgid "تاريخ الانتهاء لا يمكن أن يكون في الماضي."
 msgstr "Expiry date cannot be in the past."
 
-#: app/services/billing.py:350
+#: app/services/billing.py:389
 msgid "كود الخصم موجود مسبقاً."
 msgstr "Discount code already exists."
 
-#: app/services/billing.py:380
+#: app/services/billing.py:419
 msgid "كود الخصم غير صالح."
 msgstr "Invalid discount code."
 
-#: app/services/billing.py:382
+#: app/services/billing.py:421
 msgid "كود الخصم غير مفعل."
 msgstr "Discount code is inactive."
 
-#: app/services/billing.py:384
+#: app/services/billing.py:423
 msgid "كود الخصم منتهي الصلاحية."
 msgstr "Discount code has expired."
 
-#: app/services/billing.py:386 app/services/billing.py:433
+#: app/services/billing.py:425 app/services/billing.py:472
 msgid "تم استنفاد عدد استخدامات كود الخصم."
 msgstr "Discount code usage limit reached."
 
-#: app/services/billing.py:388
+#: app/services/billing.py:427
 msgid "كود الخصم غير صالح لهذه الخطة."
 msgstr "Discount code is not valid for this plan."
 
-#: app/services/billing.py:396
+#: app/services/billing.py:435
 msgid "الخطة غير موجودة."
 msgstr "Plan not found."
 
-#: app/services/billing.py:417
+#: app/services/billing.py:456
 msgid "الاشتراك غير موجود."
 msgstr "Subscription not found."
 
-#: app/services/billing.py:436
+#: app/services/billing.py:475
 msgid "قيمة الخصم تتجاوز سعر الاشتراك."
 msgstr "The discount value exceeds the subscription price."
 
@@ -2683,7 +2692,7 @@ msgstr "My courses"
 #: app/templates/admin/school_admin_dashboard.html:59
 #: app/templates/assessment/quiz_list.html:6
 #: app/templates/auth/dashboard.html:54 app/templates/auth/dashboard.html:62
-#: app/templates/auth/dashboard.html:104 app/templates/auth/dashboard.html:178
+#: app/templates/auth/dashboard.html:104 app/templates/auth/dashboard.html:181
 #: app/templates/base.html:132 app/templates/base.html:137
 #: app/templates/content/lesson_detail.html:6
 #: app/templates/grades/gradebook.html:10 app/templates/partials/navbar.html:81
@@ -2698,12 +2707,12 @@ msgstr "My classes"
 msgid "لوحة الإدارة"
 msgstr "Admin dashboard"
 
-#: app/templates/auth/dashboard.html:139 app/templates/base.html:145
+#: app/templates/auth/dashboard.html:142 app/templates/base.html:145
 #: app/templates/partials/navbar.html:88
 msgid "صفوف أبنائي"
 msgstr "My children's classes"
 
-#: app/templates/auth/dashboard.html:179 app/templates/base.html:149
+#: app/templates/auth/dashboard.html:182 app/templates/base.html:149
 #: app/templates/partials/navbar.html:16
 msgid "الإشعارات"
 msgstr "Notifications"
@@ -3712,14 +3721,14 @@ msgstr "Teachers"
 #: app/templates/admin/dashboard.html:16 app/templates/auth/dashboard.html:80
 #: app/templates/content/lesson_detail.html:8
 #: app/templates/content/lessons.html:2 app/templates/content/lessons.html:6
-#: app/templates/schools/class_detail.html:34
+#: app/templates/schools/class_detail.html:52
 msgid "الدروس"
 msgstr "Lessons"
 
 #: app/templates/admin/dashboard.html:17 app/templates/auth/dashboard.html:82
 #: app/templates/grades/assignments.html:2
 #: app/templates/grades/assignments.html:6
-#: app/templates/schools/class_detail.html:36
+#: app/templates/schools/class_detail.html:54
 msgid "الواجبات"
 msgstr "Assignments"
 
@@ -3803,10 +3812,10 @@ msgstr "Year:"
 #: app/templates/admin/dashboard.html:75 app/templates/admin/dashboard.html:106
 #: app/templates/admin/school_detail.html:56
 #: app/templates/admin/schools_list.html:28
-#: app/templates/auth/dashboard.html:120
+#: app/templates/auth/dashboard.html:123
 #: app/templates/content/_lesson_row.html:11
 #: app/templates/grades/assignments.html:38
-#: app/templates/individual/dashboard.html:25
+#: app/templates/individual/dashboard.html:47
 #: app/templates/notifications/index.html:17
 #: app/templates/schools/classes.html:24 app/templates/schools/manage.html:44
 #: app/templates/schools/my_classes.html:25 app/templates/tutoring/my.html:64
@@ -3919,14 +3928,14 @@ msgstr "Approve this payout request?"
 
 #: app/templates/admin/payouts.html:22
 #: app/templates/admin/pending_payments.html:34
-#: app/templates/billing/admin.html:20
+#: app/templates/billing/admin.html:22
 msgid "اعتماد"
 msgstr "Approve"
 
 #: app/templates/admin/payouts.html:25
 #: app/templates/admin/pending_payments.html:38
 #: app/templates/admin/pending_registrations.html:36
-#: app/templates/billing/admin.html:24
+#: app/templates/billing/admin.html:26
 #: app/templates/school_approvals/queue.html:33
 #: app/templates/school_approvals/super_admin_queue.html:33
 #: app/templates/tutoring/my.html:28
@@ -3979,7 +3988,7 @@ msgid "—"
 msgstr "—"
 
 #: app/templates/admin/pending_payments.html:16
-#: app/templates/billing/class_billing.html:21
+#: app/templates/billing/class_billing.html:24
 msgid "المبلغ:"
 msgstr "Amount:"
 
@@ -4022,7 +4031,7 @@ msgstr "Search by name or email"
 #: app/templates/admin/users_list.html:38
 #: app/templates/school_approvals/queue.html:16
 #: app/templates/school_approvals/super_admin_queue.html:16
-#: app/templates/schools/class_detail.html:56
+#: app/templates/schools/class_detail.html:75
 msgid "الدور"
 msgstr "Role"
 
@@ -4164,6 +4173,7 @@ msgid "إجمالي المحصّل"
 msgstr "Total collected"
 
 #: app/templates/admin/school_admin_dashboard.html:52
+#: app/templates/schools/class_detail.html:28
 msgid "معلّق"
 msgstr "Pending"
 
@@ -4226,12 +4236,12 @@ msgid "صف جديد"
 msgstr "New class"
 
 #: app/templates/admin/school_detail.html:50
-#: app/templates/auth/dashboard.html:74 app/templates/auth/dashboard.html:115
-#: app/templates/auth/dashboard.html:156
+#: app/templates/auth/dashboard.html:74 app/templates/auth/dashboard.html:118
+#: app/templates/auth/dashboard.html:159
 #: app/templates/family/child_grades.html:20
 #: app/templates/family/child_progress.html:20
 #: app/templates/individual/course_catalog.html:37
-#: app/templates/individual/dashboard.html:22
+#: app/templates/individual/dashboard.html:44
 #: app/templates/schools/class_detail.html:16
 #: app/templates/schools/classes.html:19 app/templates/schools/manage.html:39
 #: app/templates/schools/my_classes.html:16
@@ -4382,7 +4392,7 @@ msgid "السعر:"
 msgstr "Price:"
 
 #: app/templates/admin/subscriptions_list.html:32
-#: app/templates/billing/class_billing.html:22
+#: app/templates/billing/class_billing.html:25
 msgid "ينتهي:"
 msgstr "Ends:"
 
@@ -4740,7 +4750,7 @@ msgstr "New quiz"
 #: app/templates/assessment/quiz_list.html:8
 #: app/templates/assessment/quiz_list.html:14
 #: app/templates/auth/dashboard.html:81
-#: app/templates/schools/class_detail.html:35
+#: app/templates/schools/class_detail.html:53
 msgid "الاختبارات"
 msgstr "Quizzes"
 
@@ -5004,7 +5014,7 @@ msgstr "Actions"
 
 #: app/templates/auth/dashboard.html:83 app/templates/grades/attendance.html:3
 #: app/templates/grades/attendance.html:7
-#: app/templates/schools/class_detail.html:37
+#: app/templates/schools/class_detail.html:55
 msgid "الحضور"
 msgstr "Attendance"
 
@@ -5028,54 +5038,58 @@ msgstr "Private tutoring marketplace"
 msgid "ملفي كمعلم"
 msgstr "My tutor profile"
 
-#: app/templates/auth/dashboard.html:98 app/templates/auth/dashboard.html:132
+#: app/templates/auth/dashboard.html:98 app/templates/auth/dashboard.html:135
 msgid "طلباتي وجلساتي"
 msgstr "My requests & sessions"
 
-#: app/templates/auth/dashboard.html:105
+#: app/templates/auth/dashboard.html:107
 #: app/templates/schools/my_classes.html:6
 msgid "انضمام برمز"
 msgstr "Join by code"
 
-#: app/templates/auth/dashboard.html:126
+#: app/templates/auth/dashboard.html:108
+msgid "تصفّح الكورسات المتاحة"
+msgstr "Browse available courses"
+
+#: app/templates/auth/dashboard.html:129
 #: app/templates/progress/my_progress.html:43
 #: app/templates/schools/my_classes.html:31
 msgid "لم تنضم لأي صف بعد."
 msgstr "You haven't joined any class yet."
 
-#: app/templates/auth/dashboard.html:126
+#: app/templates/auth/dashboard.html:129
 #: app/templates/schools/my_classes.html:31
 msgid "انضم برمز"
 msgstr "Join by code"
 
-#: app/templates/auth/dashboard.html:131
+#: app/templates/auth/dashboard.html:134
 msgid "البحث عن معلم"
 msgstr "Find a tutor"
 
-#: app/templates/auth/dashboard.html:133
+#: app/templates/auth/dashboard.html:136
 #: app/templates/progress/my_progress.html:3
 #: app/templates/progress/my_progress.html:5
 #: app/templates/progress/my_progress.html:8
 msgid "تقدمي"
 msgstr "My progress"
 
-#: app/templates/auth/dashboard.html:140 app/templates/auth/dashboard.html:168
+#: app/templates/auth/dashboard.html:143 app/templates/auth/dashboard.html:171
 msgid "إدارة الأبناء"
 msgstr "Manage children"
 
-#: app/templates/auth/dashboard.html:160
+#: app/templates/auth/dashboard.html:163
 msgid "متابعة"
 msgstr "Continue"
 
-#: app/templates/auth/dashboard.html:168
+#: app/templates/auth/dashboard.html:171
 msgid "لا يوجد أبناء مرتبطين بحسابك."
 msgstr "No children are linked to your account."
 
-#: app/templates/auth/dashboard.html:175
+#: app/templates/auth/dashboard.html:178
 msgid "وصول سريع"
 msgstr "Quick access"
 
-#: app/templates/auth/dashboard.html:180 app/templates/partials/navbar.html:86
+#: app/templates/auth/dashboard.html:183 app/templates/partials/navbar.html:86
 msgid "دروسي الخصوصية"
 msgstr "My private sessions"
 
@@ -5199,12 +5213,16 @@ msgid "الاعتمادات المعلّقة"
 msgstr "Pending approvals"
 
 #: app/templates/billing/admin.html:13
-#: app/templates/billing/class_billing.html:20
+#: app/templates/billing/class_billing.html:23
 #: app/templates/billing/invoice.html:27
 msgid "الخطة:"
 msgstr "Plan:"
 
-#: app/templates/billing/admin.html:31
+#: app/templates/billing/admin.html:15
+msgid "الدافع:"
+msgstr "Payer:"
+
+#: app/templates/billing/admin.html:33
 msgid "لا دفعات معلّقة."
 msgstr "No pending payments."
 
@@ -5213,85 +5231,94 @@ msgid "الاشتراك"
 msgstr "Subscription"
 
 #: app/templates/billing/class_billing.html:7
+#: app/templates/schools/class_detail.html:27
 msgid "الاشتراك والدفع"
 msgstr "Subscription & payment"
 
-#: app/templates/billing/class_billing.html:17
+#: app/templates/billing/class_billing.html:19
 msgid "اشتراكك الحالي"
 msgstr "Your current subscription"
 
-#: app/templates/billing/class_billing.html:23
+#: app/templates/billing/class_billing.html:19
+msgid "اشتراك الطالب"
+msgstr "Student's subscription"
+
+#: app/templates/billing/class_billing.html:26
 msgid "تم التفعيل تلقائياً:"
 msgstr "Activated automatically:"
 
-#: app/templates/billing/class_billing.html:28
+#: app/templates/billing/class_billing.html:31
 msgid "الخطط المتاحة"
 msgstr "Available plans"
 
-#: app/templates/billing/class_billing.html:50
+#: app/templates/billing/class_billing.html:49
+msgid "اختر الطالب"
+msgstr "Choose the student"
+
+#: app/templates/billing/class_billing.html:65
 msgid "لا خطط بعد."
 msgstr "No plans yet."
 
-#: app/templates/billing/class_billing.html:50
+#: app/templates/billing/class_billing.html:65
 msgid "أضف خطة أدناه."
 msgstr "Add a plan below."
 
-#: app/templates/billing/class_billing.html:54
+#: app/templates/billing/class_billing.html:69
 msgid "خطة جديدة"
 msgstr "New plan"
 
-#: app/templates/billing/class_billing.html:64
+#: app/templates/billing/class_billing.html:79
 msgid "إضافة الخطة"
 msgstr "Add plan"
 
-#: app/templates/billing/class_billing.html:70
+#: app/templates/billing/class_billing.html:85
 msgid "إرسال الدفع اليدوي"
 msgstr "Submit manual payment"
 
-#: app/templates/billing/class_billing.html:72
+#: app/templates/billing/class_billing.html:87
 msgid "حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد."
 msgstr ""
 "Transfer the amount, then enter the transfer reference. Your subscription"
 " will be activated after approval."
 
-#: app/templates/billing/class_billing.html:76
+#: app/templates/billing/class_billing.html:91
 msgid "رقم العملية أو اسم المرسل"
 msgstr "Transaction number or sender name"
 
-#: app/templates/billing/class_billing.html:80
+#: app/templates/billing/class_billing.html:95
 msgid "إيصال الدفع"
 msgstr "Payment receipt"
 
-#: app/templates/billing/class_billing.html:89
+#: app/templates/billing/class_billing.html:104
 msgid "كود خصم"
 msgstr "Discount code"
 
-#: app/templates/billing/class_billing.html:95
+#: app/templates/billing/class_billing.html:110
 msgid "أدخل كود الخصم"
 msgstr "Enter discount code"
 
-#: app/templates/billing/class_billing.html:96
+#: app/templates/billing/class_billing.html:111
 #: app/templates/billing/discount_form.html:13
 msgid "مثال: WELCOME20"
 msgstr "e.g., WELCOME20"
 
-#: app/templates/billing/class_billing.html:99
+#: app/templates/billing/class_billing.html:114
 msgid "اختر الخطة"
 msgstr "Choose plan"
 
-#: app/templates/billing/class_billing.html:107
+#: app/templates/billing/class_billing.html:122
 msgid "تحقق"
 msgstr "Verify"
 
-#: app/templates/billing/class_billing.html:128
+#: app/templates/billing/class_billing.html:143
 msgid "جاري التحقق..."
 msgstr "Verifying..."
 
-#: app/templates/billing/class_billing.html:143
+#: app/templates/billing/class_billing.html:158
 msgid "تم التحقق بنجاح! مبلغ الخصم:"
 msgstr "Verified successfully! Discount amount:"
 
-#: app/templates/billing/class_billing.html:151
+#: app/templates/billing/class_billing.html:166
 msgid "حدث خطأ، يرجى المحاولة مرة أخرى"
 msgstr "An error occurred, please try again"
 
@@ -5773,7 +5800,24 @@ msgstr "Unlink this account?"
 msgid "إلغاء الربط"
 msgstr "Unlink"
 
-#: app/templates/family/index.html:49
+#: app/templates/family/index.html:48
+msgid "الرسوم والاشتراكات"
+msgstr "Fees & subscriptions"
+
+#: app/templates/family/index.html:54
+msgid "المتبقي:"
+msgstr "Remaining:"
+
+#: app/templates/family/index.html:56
+#: app/templates/individual/dashboard.html:28
+msgid "أكمل الدفع"
+msgstr "Complete payment"
+
+#: app/templates/family/index.html:58
+msgid "الفاتورة"
+msgstr "Invoice"
+
+#: app/templates/family/index.html:68
 msgid "لا يوجد أبناء مرتبطين بحسابك. اطلب من طالبك إنشاء رمز الربط."
 msgstr ""
 "No children are linked to your account. Ask your student to generate a "
@@ -6122,7 +6166,7 @@ msgstr "Save grading"
 
 #: app/templates/individual/course_catalog.html:3
 #: app/templates/individual/course_catalog.html:6
-#: app/templates/individual/dashboard.html:37
+#: app/templates/individual/dashboard.html:62
 msgid "استكشف الكورسات"
 msgstr "Explore courses"
 
@@ -6164,11 +6208,31 @@ msgstr "Explore new courses"
 msgid "محادثة AI"
 msgstr "AI chat"
 
-#: app/templates/individual/dashboard.html:32
+#: app/templates/individual/dashboard.html:17
+msgid "اشتراكات بانتظار الدفع"
+msgstr "Subscriptions awaiting payment"
+
+#: app/templates/individual/dashboard.html:24
+#, python-format
+msgid "%(price)s %(currency)s"
+msgstr "%(price)s %(currency)s"
+
+#: app/templates/individual/dashboard.html:25
+#, python-format
+msgid "أُنشئ في %(date)s"
+msgstr "Created on %(date)s"
+
+#: app/templates/individual/dashboard.html:54
+msgid "اشتراكاتك أعلاه بانتظار الدفع — أكمل الدفع لتفعيل الكورس."
+msgstr ""
+"Your subscriptions above are awaiting payment — complete the payment to "
+"activate the course."
+
+#: app/templates/individual/dashboard.html:57
 msgid "لم تسجل في أي كورس بعد"
 msgstr "You haven't enrolled in any course yet"
 
-#: app/templates/individual/dashboard.html:33
+#: app/templates/individual/dashboard.html:58
 msgid "استكشف الكورسات المتاحة وابدأ رحلتك التعليمية."
 msgstr "Explore available courses and start your learning journey."
 
@@ -6506,31 +6570,39 @@ msgstr "Approval queue (super admin)"
 msgid "جميع طلبات الانضمام المعلقة للمنصة"
 msgstr "All pending platform join requests"
 
-#: app/templates/schools/class_detail.html:23
+#: app/templates/schools/class_detail.html:31
+msgid "هذا الصف مدفوع — يُفتح محتواه بعد اعتماد الدفع."
+msgstr "This class is paid — its content opens after payment approval."
+
+#: app/templates/schools/class_detail.html:33
+msgid "اشترك الآن / أكمل الدفع"
+msgstr "Subscribe now / complete payment"
+
+#: app/templates/schools/class_detail.html:39
 msgid "طالباً"
 msgstr "students"
 
-#: app/templates/schools/class_detail.html:30
+#: app/templates/schools/class_detail.html:48
 msgid "أدوات المعلم"
 msgstr "Teacher tools"
 
-#: app/templates/schools/class_detail.html:31
+#: app/templates/schools/class_detail.html:49
 msgid "أدوات"
 msgstr "Tools"
 
-#: app/templates/schools/class_detail.html:43
+#: app/templates/schools/class_detail.html:61
 msgid "توليد رمز جديد"
 msgstr "Generate new code"
 
-#: app/templates/schools/class_detail.html:52
+#: app/templates/schools/class_detail.html:71
 msgid "الأعضاء"
 msgstr "Members"
 
-#: app/templates/schools/class_detail.html:53
+#: app/templates/schools/class_detail.html:72
 msgid "عضو"
 msgstr "Member"
 
-#: app/templates/schools/class_detail.html:61
+#: app/templates/schools/class_detail.html:80
 msgid "لا يوجد أعضاء"
 msgstr "No members"
 

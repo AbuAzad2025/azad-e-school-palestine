@@ -68,11 +68,15 @@ def get_plan(plan_id: int) -> SubscriptionPlan | None:
     return db.session.get(SubscriptionPlan, plan_id)
 
 
-def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subscription | None, str | None]:
+def subscribe(
+    user_id: int, plan: SubscriptionPlan, class_id: int, payer_id: int | None = None
+) -> tuple[Subscription | None, str | None]:
     """يبدأ اشتراكاً بحالة pending — لا يُفعَّل إلا بعد اعتماد دفع يدوي.
 
     P0-10: FOR UPDATE على صف الاشتراك النشط لمنع اشتراك مزدوج تحت التزامن.
     P2-14: FOR UPDATE moved INSIDE tx() to prevent lock leaking outside the transaction.
+    AZ-P0-03: ``payer_id`` يحفظ هوية الدافع حين تكون ولاّ أمراً بغيره؛
+    ``user_id`` يبقى للطالب صاحب الاشتراك في كل الحالات.
     """
 
     def _create():
@@ -84,6 +88,7 @@ def subscribe(user_id: int, plan: SubscriptionPlan, class_id: int) -> tuple[Subs
             raise TxError(_("لديك اشتراك نشط في هذا الصف."))
         sub = Subscription(
             user_id=user_id,
+            payer_id=payer_id,
             plan_id=plan.id,
             class_id=class_id,
             price=plan.price,
@@ -121,7 +126,13 @@ def record_manual_payment(
     amount: Decimal | float | int | str,
     note: str | None = None,
     receipt_file=None,
+    payer_id: int | None = None,
 ) -> tuple[ManualPayment | None, str | None]:
+    """يسجّل دفعة يدوية بانتظار الاعتماد.
+
+    AZ-P0-03: ``payer_id`` هو من أرسل الدفع فعلاً — الطالب نفسه (None) أو
+    وليّ أمر المرتبط به. المالك user_id لا يتغيّر أبداً.
+    """
     reference = (reference or "").strip()
     amount_dec = money(amount) if amount is not None else None
     if not reference or amount_dec is None or amount_dec <= 0:
@@ -143,6 +154,7 @@ def record_manual_payment(
     def _record():
         payment = ManualPayment(
             subscription_id=subscription.id,
+            payer_id=payer_id,
             reference=reference,
             amount=amount_dec,
             note=note,
@@ -248,6 +260,7 @@ def pending_payments():
         .options(
             joinedload(ManualPayment.subscription).joinedload(Subscription.user),
             joinedload(ManualPayment.subscription).joinedload(Subscription.plan),
+            joinedload(ManualPayment.payer),
             joinedload(ManualPayment.receipts),
         )
         .order_by(ManualPayment.created_at.desc())
@@ -287,6 +300,32 @@ def subscription_balance(subscription_id: int) -> Decimal:
         ManualPayment.status == "approved",
     ).scalar() or Decimal("0")
     return (sub.price - paid).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def subscription_balances(subscription_ids: list[int]) -> dict[int, Decimal]:
+    """أرصدة متبقية لاشتراكات عدة في استعلامين — كشف حساب الأسرة (AZ-P0-03).
+
+    نسخة مجمّعة من ``subscription_balance`` لصفحة الأسرة. الدفعة الغائبة
+    في المجموع لا تعني صفراً: رصيدها يُشتق من السعر كاملاً، فيكذب
+    الاستعلام حين يطلب من المجموع ما هو بحد ذاته نسب واحد.
+    """
+    if not subscription_ids:
+        return {}
+    prices = {
+        sub.id: sub.price
+        for sub in db.session.query(Subscription.id, Subscription.price).filter(Subscription.id.in_(subscription_ids))
+    }
+    approved: dict[int, Decimal] = {}
+    for sid, total in db.session.execute(
+        db.select(ManualPayment.subscription_id, func.sum(ManualPayment.amount))
+        .where(ManualPayment.subscription_id.in_(subscription_ids), ManualPayment.status == "approved")
+        .group_by(ManualPayment.subscription_id)
+    ).all():
+        approved[int(sid)] = total
+    return {
+        sid: (price - approved.get(sid, Decimal("0"))).quantize(CENT, rounding=ROUND_HALF_UP)
+        for sid, price in prices.items()
+    }
 
 
 def can_record_payment(subscription_id: int, amount: Decimal | float | int | str) -> tuple[bool, str]:
