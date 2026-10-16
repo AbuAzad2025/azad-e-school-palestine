@@ -85,6 +85,10 @@
 <div class="azad-section"><h2>{{ _('إرسال الدفع اليدوي') }}</h2></div>
 <div class="azad-card">
   <p class="form-hint u-mb-0-75">{{ _('حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد.') }}</p>
+  {# AZ-P0-05: المسار الإلكتروني الحقيقي — بوابات الدفع عبر create-intent #}
+  <p class="form-hint u-mb-0-75">
+    <a class="azad-link" href="{{ url_for('payments_ui.payment_methods_page', subscription_id=my_sub.id) }}" data-testid="gateway-pay-link">{{ _('أو ادفع عبر بوابة إلكترونية') }}</a>
+  </p>
   <form method="post" action="{{ url_for('billing.payment_create', subscription_id=my_sub.id) }}" enctype="multipart/form-data" novalidate>
     {{ pay_form.hidden_tag() }}
     {% call azad_form_row(cols=2) %}

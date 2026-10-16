@@ -53,12 +53,6 @@ test.describe("Payments — unauthenticated", () => {
 
 test.describe("Payments — gateway catalogue", () => {
   test.beforeEach(async ({ parentSession }) => {
-    // The page confirms the pick with window.alert rather than a navigation,
-    // so the dialog is captured instead of raced against.
-    await parentSession.addInitScript(() => {
-      window.__alerts = [];
-      window.alert = (message) => window.__alerts.push(String(message));
-    });
     await parentSession.goto("/payments/");
   });
 
@@ -69,11 +63,19 @@ test.describe("Payments — gateway catalogue", () => {
     }
   });
 
-  test("selecting a gateway reports the choice", async ({ parentSession }) => {
-    await parentSession.locator('[data-method-id="paytabs"]').getByTestId("payment-method-select").click();
-    await expect
-      .poll(() => parentSession.evaluate(() => window.__alerts))
-      .toEqual([expect.stringContaining("paytabs")]);
+  test("without a subscription there is no dead pay action", async ({ parentSession }) => {
+    // AZ-P0-05: the page used to answer a click with window.alert and no
+    // financial effect. With no owned subscription there is nothing to pay
+    // for, so the catalogue offers a hint instead of a button.
+    await expect(parentSession.getByTestId("payment-context-hint")).toBeVisible();
+    await expect(
+      parentSession.locator('[data-method-id="paytabs"]').getByTestId("payment-method-select"),
+    ).toHaveCount(0);
+  });
+
+  test("a subscription owned by somebody else is forbidden here too", async ({ parentSession, baseURL, seed }) => {
+    const response = await parentSession.request.get(`${baseURL}/payments/?subscription_id=${seed.subscription_id}`);
+    expect(response.status()).toBe(403);
   });
 
   test("the catalogue makes no third-party browser request", async ({ thirdPartyRequests }) => {
@@ -85,6 +87,27 @@ test.describe("Payments — gateway catalogue", () => {
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body.methods.map((m) => m.id).sort()).toEqual([...GATEWAY_IDS].sort());
+  });
+});
+
+// AZ-P0-05: the student's own journey lives in its own describe on purpose.
+// The catalogue block above logs the parent in through `beforeEach`, and
+// `parentSession` shares the `page` fixture — a student login there would find
+// itself already authenticated and never see the login form again.
+test.describe("Payments — owned subscription", () => {
+  test("every gateway is a real pay button that creates an intent", async ({ page, baseURL, seed, loginAs }) => {
+    await loginAs(seed.student_email);
+    await page.goto(`${baseURL}/payments/?subscription_id=${seed.subscription_id}`);
+
+    await expect(page.getByTestId("payment-context")).toBeVisible();
+    await expect(page.getByTestId("payment-method-select")).toHaveCount(GATEWAY_IDS.length);
+
+    // The click must reach `create-intent` and come back with a real payment
+    // id for the app-owned `manual` gateway — not a window.alert and a shrug.
+    const card = page.locator('[data-method-id="manual"]');
+    await card.getByTestId("payment-method-select").click();
+    await expect(card.locator("[data-intent-result]")).toContainText("manual");
+    await expect(card.locator("[data-intent-result]")).toContainText(/[A-Za-z0-9_-]{6,}/);
   });
 });
 

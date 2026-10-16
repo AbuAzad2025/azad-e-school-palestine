@@ -104,7 +104,19 @@ payments_ui_bp = Blueprint("payments_ui", __name__, url_prefix="/payments")
 @payments_ui_bp.get("/")
 @login_required
 def payment_methods_page():
-    """صفحة طرق الدفع المتاحة"""
+    """صفحة طرق الدفع المتاحة.
+
+    AZ-P0-05: كانت هذه واجهة وهمية — زر "اختيار" ينتهي إلى ``alert()``
+    و``console.log`` بلا أي أثر مالي، وهو ما يضرّ الثقة بخيار دفع يبدو قائماً
+    وهو ليس كذلك.
+
+    النهاية المختارة: **تنفيذ** لا إزالة. الطرف الخلفي (``create-intent``
+    و``verify``) حقيقي ومختبر بـe2e، وحذفه يُسقط قدرة دفع قائمة. صارت الصفحة
+    سياقية: تستقبل ``subscription_id`` من صفحة الاشتراك، فيتحقق الخادم من
+    ملكية الطالب له قبل أي شيء، ويُبنى الزر على مبلغ الاشتراك وعملته، ثم
+    يُنشئ نيّة دفع فعلية ويعرض معرّف الجلسة. بلا اشتراك مملوك لا يوجد ما
+    يُدفع — فلا يُعرض أي زر ينتهي إلى لا شيء.
+    """
     methods = [
         {"id": "stripe", "name": "Stripe (بطاقة)", "enabled": True, "currencies": ["USD", "EUR", "ILS"]},
         {"id": "paytabs", "name": "PayTabs", "enabled": True, "currencies": ["USD", "SAR", "AED", "ILS"]},
@@ -112,7 +124,19 @@ def payment_methods_page():
         {"id": "whatsapp", "name": "WhatsApp (يدوي)", "enabled": True, "currencies": ["ILS", "USD", "JOD"]},
         {"id": "manual", "name": "تحويل بنكي / كاش", "enabled": True, "currencies": ["ILS", "USD", "JOD"]},
     ]
-    return render_template("payments_ui/index.html", methods=methods)
+
+    subscription_id = request.args.get("subscription_id", type=int)
+    subscription = None
+    if subscription_id is not None:
+        subscription = db.session.get(Subscription, subscription_id)
+        if subscription is None:
+            abort(404)
+        if subscription.user_id != current_user.id:
+            # غير مالك الاشتراك لا يبني نية دفع عليه — 403 لا 404 (نفس عقد
+            # ``create-intent`` أدناه) فلا يتضارب المساران في الصلاحية.
+            abort(403)
+
+    return render_template("payments_ui/index.html", methods=methods, subscription=subscription)
 
 
 @payments_ui_bp.get("/methods")

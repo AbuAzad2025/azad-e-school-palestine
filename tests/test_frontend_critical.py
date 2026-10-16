@@ -1,7 +1,43 @@
 """Critical frontend tests — Phase 1 blockers"""
 
+import os
+
 import pytest
 from bs4 import BeautifulSoup
+from tests.conftest import (
+    make_class,
+    make_grade,
+    make_school,
+    make_subject,
+    make_subscription,
+    make_subscription_plan,
+    make_user,
+)
+
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "..", "app", "templates")
+PASSWORD = "TestPass123!"
+
+
+def _mk(app, role="student"):
+    import uuid
+
+    email = f"fe-{uuid.uuid4().hex[:8]}@test.com"
+    return make_user(app, role=role, email=email), email
+
+
+def _client(app, email):
+    client = app.test_client()
+    client.post("/auth/login", data={"email": email, "password": PASSWORD})
+    return client
+
+
+def _seed_subscription(app, student_id, price=500.0, status="pending"):
+    sid = make_school(app)
+    gid = make_grade(app, sid, grade_level=1)
+    subj = make_subject(app)
+    cid = make_class(app, sid, gid, subj)
+    plan_id = make_subscription_plan(app, sid, class_id=cid, price=price)
+    return make_subscription(app, student_id, plan_id, cid, price=price, status=status)
 
 
 class TestNestedMain:
@@ -118,6 +154,63 @@ class TestHeadingHierarchy:
 
         assert "heading_level" in content, "azad_card macro must accept heading_level param"
         assert "h{{ heading_level }}" in content, "Macro must use heading_level for h-tag"
+
+
+class TestPaymentsUiNoMockAffordance:
+    """AZ-P0-05: لا زر دفع بلا أثر مالي، والنيّة تُنشأ فعلاً."""
+
+    def test_payment_templates_have_no_alert(self):
+        """لا نص دفع ينتهي إلى alert() أو console.log بلا أثر مالي."""
+        for name in ("index.html",):
+            path = os.path.join(TEMPLATES_DIR, "payments_ui", name)
+            with open(path, encoding="utf-8") as f:
+                content = f.read()
+            assert "alert(" not in content, name
+            assert "console.log" not in content, name
+
+    def test_billing_page_links_to_the_gateway_flow(self):
+        """مسار البوابة الإلكترونية مُعلن من صفحة الاشتراك (لا ميزة مخفية)."""
+        path = os.path.join(TEMPLATES_DIR, "billing", "class_billing.html")
+        with open(path, encoding="utf-8") as f:
+            content = f.read()
+        assert "payments_ui.payment_methods_page" in content
+
+    def test_no_subscription_context_offers_no_dead_action(self, app):
+        """بلا اشتراك مملوك: لا زر، وتلميح يوضّح من أين يبدأ."""
+        _uid, email = _mk(app)
+        html = _client(app, email).get("/payments/").get_data(as_text=True)
+        assert "payment-context-hint" in html
+        assert "payment-method-select" not in html
+
+    def test_owned_subscription_builds_button_on_its_amount(self, app):
+        """اشتراك مملوك: الزر موجود ومبني على مبلغ الاشتراك وعملته."""
+        uid, email = _mk(app)
+        sub_id = _seed_subscription(app, uid, price=500.0)
+        html = _client(app, email).get(f"/payments/?subscription_id={sub_id}").get_data(as_text=True)
+        assert "payment-context" in html
+        assert "payment-method-select" in html
+        assert f'data-subscription-id="{sub_id}"' in html
+        assert 'data-amount="500.00"' in html
+        assert 'data-currency="ILS"' in html
+
+    def test_foreign_subscription_is_not_payable(self, app):
+        """اشتراك طالب آخر: لا يُبنى زر على ماله ولا يُكشف وجوده.
+
+        طبقتان تمنعان ذلك: سياسة RLS تخفي صف اشتراك غير المالك (فتؤول
+        القراءة إلى 404)، وفحص الملكية في المسار يردّ 403 إن وصل الصف
+        لأي سبب (مثل تعطيل RLS في بيئة ما). كلا الرمزين يمنع الدفع،
+        وكلاهما نمط مقبول في اختبارات الأمان بهذا المستودع.
+        """
+        owner, _ = _mk(app)
+        sub_id = _seed_subscription(app, owner, price=500.0)
+        _other, email = _mk(app)
+        resp = _client(app, email).get(f"/payments/?subscription_id={sub_id}")
+        assert resp.status_code in (403, 404)
+        assert "payment-method-select" not in resp.get_data(as_text=True)
+
+    def test_unknown_subscription_is_404(self, app):
+        _uid, email = _mk(app)
+        assert _client(app, email).get("/payments/?subscription_id=99999999").status_code == 404
 
 
 if __name__ == "__main__":

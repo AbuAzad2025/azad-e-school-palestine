@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 21:56+0300\n"
+"POT-Creation-Date: 2026-10-16 09:32+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -40,7 +40,9 @@ msgstr "The page you are looking for does not exist or has been moved."
 
 #: app/core/errors.py:47
 msgid "هذا الإجراء غير مدعوم في هذا العنوان. يرجى العودة والاستخدام من الواجهة."
-msgstr "This action is not supported at this address. Please go back and use the interface."
+msgstr ""
+"This action is not supported at this address. Please go back and use the "
+"interface."
 
 #: app/core/errors.py:48
 msgid "لا يمكن إتمام العملية بسبب تعارض في البيانات. حدّث الصفحة ثم حاول مجدداً."
@@ -181,17 +183,17 @@ msgstr "Approved"
 msgid "مرفوض"
 msgstr "Rejected"
 
-#: app/core/labels.py:101 app/modules/tutoring/forms.py:19
+#: app/core/labels.py:101 app/modules/tutoring/forms.py:18
 msgid "أونلاين وحضوري"
 msgstr "Online and in-person"
 
-#: app/core/labels.py:102 app/modules/tutoring/forms.py:19
-#: app/modules/tutoring/forms.py:36 app/modules/tutoring/forms.py:50
+#: app/core/labels.py:102 app/modules/tutoring/forms.py:18
+#: app/modules/tutoring/forms.py:35 app/modules/tutoring/forms.py:49
 msgid "أونلاين"
 msgstr "Online"
 
-#: app/core/labels.py:103 app/modules/tutoring/forms.py:19
-#: app/modules/tutoring/forms.py:36 app/modules/tutoring/forms.py:50
+#: app/core/labels.py:103 app/modules/tutoring/forms.py:18
+#: app/modules/tutoring/forms.py:35 app/modules/tutoring/forms.py:49
 msgid "حضوري"
 msgstr "In-person"
 
@@ -611,7 +613,7 @@ msgstr "Internal server error"
 msgid "عنوان الاختبار"
 msgstr "Quiz title"
 
-#: app/modules/assessment/forms.py:11 app/modules/tutoring/forms.py:46
+#: app/modules/assessment/forms.py:11 app/modules/tutoring/forms.py:45
 msgid "المدة (دقائق)"
 msgstr "Duration (minutes)"
 
@@ -895,9 +897,9 @@ msgstr "Second semester"
 msgid "السنوي"
 msgstr "Annual"
 
-#: app/modules/billing/forms.py:26 app/modules/tutoring/forms.py:47
+#: app/modules/billing/forms.py:26 app/modules/tutoring/forms.py:46
 #: app/templates/admin/subscription_detail.html:18
-#: app/templates/tutoring/earnings.html:72
+#: app/templates/tutoring/earnings.html:73
 #: app/templates/tutoring/session.html:15
 msgid "السعر"
 msgstr "Price"
@@ -928,7 +930,7 @@ msgid "المبلغ"
 msgstr "Amount"
 
 #: app/modules/billing/forms.py:43 app/modules/grades/forms.py:24
-#: app/modules/tutoring/forms.py:40
+#: app/modules/tutoring/forms.py:39
 #: app/templates/grades/assignment_detail.html:46
 #: app/templates/grades/attendance.html:27
 #: app/templates/grades/attendance.html:33
@@ -1021,7 +1023,7 @@ msgstr "Payment rejected."
 msgid "تم إنشاء كود الخصم."
 msgstr "Discount code created."
 
-#: app/modules/billing/routes.py:343 app/modules/payments/routes.py:152
+#: app/modules/billing/routes.py:343 app/modules/payments/routes.py:176
 msgid "بيانات غير صالحة"
 msgstr "Invalid data"
 
@@ -1508,43 +1510,43 @@ msgstr "Message sent."
 msgid "تم حفظ التفضيلات."
 msgstr "Preferences saved."
 
-#: app/modules/payments/routes.py:157
+#: app/modules/payments/routes.py:181
 msgid "بوابة دفع غير مدعومة"
 msgstr "Unsupported payment gateway"
 
-#: app/modules/payments/routes.py:163
+#: app/modules/payments/routes.py:187
 msgid "غير مصرح: الاشتراك لا يعود لك"
 msgstr "Unauthorized: subscription does not belong to you"
 
-#: app/modules/payments/routes.py:167
+#: app/modules/payments/routes.py:191
 msgid "المبلغ غير مطابق لسعر الاشتراك"
 msgstr "Amount does not match the subscription price"
 
-#: app/modules/payments/routes.py:169
+#: app/modules/payments/routes.py:193
 msgid "العملة غير مطابقة للاشتراك"
 msgstr "Currency does not match the subscription"
 
-#: app/modules/payments/routes.py:182
+#: app/modules/payments/routes.py:206
 msgid "فشل إنشاء طلب الدفع"
 msgstr "Failed to create payment request"
 
-#: app/modules/payments/routes.py:208
+#: app/modules/payments/routes.py:232
 msgid "بيانات غير مكتملة"
 msgstr "Incomplete data"
 
-#: app/modules/payments/routes.py:213
+#: app/modules/payments/routes.py:237
 msgid "بوابة غير مدعومة"
 msgstr "Unsupported gateway"
 
-#: app/modules/payments/routes.py:218
+#: app/modules/payments/routes.py:242
 msgid "البوابة غير مفعلة"
 msgstr "Gateway is not enabled"
 
-#: app/modules/payments/routes.py:239
+#: app/modules/payments/routes.py:263
 msgid "تم التحقق بنجاح"
 msgstr "Verified successfully"
 
-#: app/modules/payments/routes.py:241
+#: app/modules/payments/routes.py:265
 msgid "فشل التحقق"
 msgstr "Verification failed"
 
@@ -1576,7 +1578,7 @@ msgstr "Create school"
 #: app/modules/schools/forms.py:17
 #: app/templates/assessment/question_bank.html:27
 #: app/templates/individual/course_catalog.html:10
-#: app/templates/tutoring/earnings.html:70
+#: app/templates/tutoring/earnings.html:71
 msgid "المادة"
 msgstr "Subject"
 
@@ -1684,82 +1686,82 @@ msgstr "School setup is already completed."
 msgid "تم إعداد المدرسة بنجاح!"
 msgstr "School set up successfully!"
 
-#: app/modules/tutoring/forms.py:14
+#: app/modules/tutoring/forms.py:13
 msgid "المادة التي تدرّسها"
 msgstr "Subject you teach"
 
-#: app/modules/tutoring/forms.py:15 app/templates/tutoring/profile.html:16
+#: app/modules/tutoring/forms.py:14 app/templates/tutoring/profile.html:16
 msgid "سعر الساعة"
 msgstr "Hourly rate"
 
-#: app/modules/tutoring/forms.py:16 app/templates/tutoring/profile.html:17
+#: app/modules/tutoring/forms.py:15 app/templates/tutoring/profile.html:17
 msgid "سعر الجلسة"
 msgstr "Session rate"
 
-#: app/modules/tutoring/forms.py:18
+#: app/modules/tutoring/forms.py:17
 msgid "طريقة الجلسة"
 msgstr "Session mode"
 
-#: app/modules/tutoring/forms.py:23 app/modules/tutoring/forms.py:54
+#: app/modules/tutoring/forms.py:22 app/modules/tutoring/forms.py:53
 #: app/templates/tutoring/profile.html:19
 msgid "منصة الفيديو"
 msgstr "Video platform"
 
-#: app/modules/tutoring/forms.py:27
+#: app/modules/tutoring/forms.py:26
 msgid "نبذة عنك"
 msgstr "About you"
 
-#: app/modules/tutoring/forms.py:28
+#: app/modules/tutoring/forms.py:27
 msgid "حفظ الملف"
 msgstr "Save profile"
 
-#: app/modules/tutoring/forms.py:32
+#: app/modules/tutoring/forms.py:31
 msgid "المادة المطلوبة"
 msgstr "Subject needed"
 
-#: app/modules/tutoring/forms.py:33
+#: app/modules/tutoring/forms.py:32
 msgid "الوقت المفضّل"
 msgstr "Preferred time"
 
-#: app/modules/tutoring/forms.py:35 app/modules/tutoring/forms.py:49
+#: app/modules/tutoring/forms.py:34 app/modules/tutoring/forms.py:48
 #: app/templates/tutoring/profile.html:18
 #: app/templates/tutoring/session.html:14
 msgid "الطريقة"
 msgstr "Mode"
 
-#: app/modules/tutoring/forms.py:39
+#: app/modules/tutoring/forms.py:38
 msgid "السعر المقترح"
 msgstr "Proposed rate"
 
-#: app/modules/tutoring/forms.py:41
+#: app/modules/tutoring/forms.py:40
 msgid "إرسال طلب الحجز"
 msgstr "Send booking request"
 
-#: app/modules/tutoring/forms.py:45
+#: app/modules/tutoring/forms.py:44
 msgid "موعد الجلسة"
 msgstr "Session time"
 
-#: app/modules/tutoring/forms.py:58
+#: app/modules/tutoring/forms.py:57
 msgid "رابط الاجتماع"
 msgstr "Meeting link"
 
-#: app/modules/tutoring/forms.py:59
+#: app/modules/tutoring/forms.py:58
 msgid "المكان الحضوري"
 msgstr "In-person location"
 
-#: app/modules/tutoring/forms.py:60
+#: app/modules/tutoring/forms.py:59
 msgid "تأكيد الجلسة"
 msgstr "Confirm session"
 
-#: app/modules/tutoring/forms.py:65
+#: app/modules/tutoring/forms.py:64
 msgid "تأكيد استلام الدفع"
 msgstr "Confirm payment receipt"
 
-#: app/modules/tutoring/forms.py:70
+#: app/modules/tutoring/forms.py:69
 msgid "المبلغ المطلوب (حد أدنى 200₪)"
 msgstr "Requested amount (minimum ₪200)"
 
-#: app/modules/tutoring/forms.py:73
+#: app/modules/tutoring/forms.py:72
 msgid "طلب سحب"
 msgstr "Withdrawal request"
 
@@ -2288,7 +2290,7 @@ msgstr "Join date"
 #: app/templates/grades/appeals_queue.html:14
 #: app/templates/grades/attendance.html:27
 #: app/templates/progress/student_detail.html:18
-#: app/templates/tutoring/earnings.html:73
+#: app/templates/tutoring/earnings.html:74
 #: app/templates/tutoring/session.html:17
 msgid "الحالة"
 msgstr "Status"
@@ -3633,7 +3635,7 @@ msgid "البريد"
 msgstr "Email"
 
 #: app/templates/admin/contact_inbox.html:14
-#: app/templates/tutoring/earnings.html:68
+#: app/templates/tutoring/earnings.html:69
 msgid "التاريخ"
 msgstr "Date"
 
@@ -4423,7 +4425,7 @@ msgstr "Account information"
 #: app/templates/admin/user_detail.html:36
 #: app/templates/admin/user_detail.html:62
 #: app/templates/admin/users_list.html:46
-#: app/templates/payments_ui/index.html:20
+#: app/templates/payments_ui/index.html:32
 msgid "معطل"
 msgstr "Disabled"
 
@@ -4883,7 +4885,7 @@ msgstr "All attempts"
 #: app/templates/grades/attendance.html:27
 #: app/templates/grades/gradebook.html:52
 #: app/templates/grades/gradebook.html:58
-#: app/templates/tutoring/earnings.html:69
+#: app/templates/tutoring/earnings.html:70
 msgid "الطالب"
 msgstr "Student"
 
@@ -5309,44 +5311,48 @@ msgstr ""
 "Transfer the amount, then enter the transfer reference. Your subscription"
 " will be activated after approval."
 
-#: app/templates/billing/class_billing.html:91
+#: app/templates/billing/class_billing.html:90
+msgid "أو ادفع عبر بوابة إلكترونية"
+msgstr "Or pay through an online gateway"
+
+#: app/templates/billing/class_billing.html:95
 msgid "رقم العملية أو اسم المرسل"
 msgstr "Transaction number or sender name"
 
-#: app/templates/billing/class_billing.html:95
+#: app/templates/billing/class_billing.html:99
 msgid "إيصال الدفع"
 msgstr "Payment receipt"
 
-#: app/templates/billing/class_billing.html:104
+#: app/templates/billing/class_billing.html:108
 msgid "كود خصم"
 msgstr "Discount code"
 
-#: app/templates/billing/class_billing.html:110
+#: app/templates/billing/class_billing.html:114
 msgid "أدخل كود الخصم"
 msgstr "Enter discount code"
 
-#: app/templates/billing/class_billing.html:111
+#: app/templates/billing/class_billing.html:115
 #: app/templates/billing/discount_form.html:13
 msgid "مثال: WELCOME20"
 msgstr "e.g., WELCOME20"
 
-#: app/templates/billing/class_billing.html:114
+#: app/templates/billing/class_billing.html:118
 msgid "اختر الخطة"
 msgstr "Choose plan"
 
-#: app/templates/billing/class_billing.html:122
+#: app/templates/billing/class_billing.html:126
 msgid "تحقق"
 msgstr "Verify"
 
-#: app/templates/billing/class_billing.html:143
+#: app/templates/billing/class_billing.html:147
 msgid "جاري التحقق..."
 msgstr "Verifying..."
 
-#: app/templates/billing/class_billing.html:158
+#: app/templates/billing/class_billing.html:162
 msgid "تم التحقق بنجاح! مبلغ الخصم:"
 msgstr "Verified successfully! Discount amount:"
 
-#: app/templates/billing/class_billing.html:166
+#: app/templates/billing/class_billing.html:170
 msgid "حدث خطأ، يرجى المحاولة مرة أخرى"
 msgstr "An error occurred, please try again"
 
@@ -6325,7 +6331,7 @@ msgstr "Choose an action..."
 msgid "اختيار الكل"
 msgstr "Select all"
 
-#: app/templates/macros/ui.html:258 app/templates/payments_ui/index.html:24
+#: app/templates/macros/ui.html:258
 msgid "اختيار"
 msgstr "Select"
 
@@ -6521,17 +6527,43 @@ msgstr "Available payment methods"
 msgid "اختر طريقة الدفع المناسبة لك"
 msgstr "Choose the payment method that suits you"
 
-#: app/templates/payments_ui/index.html:16
+#: app/templates/payments_ui/index.html:14
+msgid "الدفع لاشتراك:"
+msgstr "Paying for subscription:"
+
+#: app/templates/payments_ui/index.html:18
+msgid "لا يوجد اشتراك محدد للدفع — ابدأ من صفحة الاشتراك لاختيار بوابة دفع."
+msgstr ""
+"No subscription is selected for this payment — start from the "
+"subscription page to pick a gateway."
+
+#: app/templates/payments_ui/index.html:28
 msgid "العملات المدعومة:"
 msgstr "Supported currencies:"
 
-#: app/templates/payments_ui/index.html:18
+#: app/templates/payments_ui/index.html:30
 msgid "مفعل"
 msgstr "Enabled"
 
-#: app/templates/payments_ui/index.html:37
-msgid "تم اختيار:"
-msgstr "Selected:"
+#: app/templates/payments_ui/index.html:38
+msgid "الدفع عبر هذه البوابة"
+msgstr "Pay with this gateway"
+
+#: app/templates/payments_ui/index.html:59
+msgid "جارٍ إنشاء طلب الدفع..."
+msgstr "Creating the payment request…"
+
+#: app/templates/payments_ui/index.html:79
+msgid "تعذّر إنشاء طلب الدفع. حاول مرة أخرى."
+msgstr "Could not create the payment request. Please try again."
+
+#: app/templates/payments_ui/index.html:81
+msgid "طلب الدفع:"
+msgstr "Payment request:"
+
+#: app/templates/payments_ui/index.html:85
+msgid "تعذّر الاتصال بالخادم. حاول مرة أخرى."
+msgstr "Could not reach the server. Please try again."
 
 #: app/templates/progress/class_overview.html:3
 #: app/templates/progress/class_overview.html:5
@@ -6564,7 +6596,7 @@ msgstr "Completed"
 
 #: app/templates/progress/my_progress.html:26
 #: app/templates/progress/student_detail.html:19
-#: app/templates/tutoring/earnings.html:85
+#: app/templates/tutoring/earnings.html:86
 msgid "دقيقة"
 msgstr "min"
 
@@ -6817,7 +6849,9 @@ msgstr "Request earnings withdrawal"
 
 #: app/templates/tutoring/earnings.html:31
 msgid "تحذير: الرصيد المعروض لا يطابق سجل العمولة — راجع الدعم قبل طلب السحب."
-msgstr "Warning: the displayed balance does not match the commission ledger — check with support before requesting a withdrawal."
+msgstr ""
+"Warning: the displayed balance does not match the commission ledger — "
+"check with support before requesting a withdrawal."
 
 #: app/templates/tutoring/earnings.html:37
 msgid "عمولات معلّقة:"
@@ -6831,28 +6865,24 @@ msgstr "Available to withdraw:"
 msgid "الحد الأدنى:"
 msgstr "Minimum:"
 
-#: app/templates/tutoring/earnings.html:50
-msgid "الحد الأدنى للسحب: 200₪. المتاح: "
-msgstr "Minimum withdrawal: ₪200. Available: "
-
-#: app/templates/tutoring/earnings.html:59
+#: app/templates/tutoring/earnings.html:60
 msgid "لم تبلغ الحد الأدنى للسحب بعد — ينقصك"
 msgstr "You have not reached the minimum withdrawal yet — you are short by"
 
-#: app/templates/tutoring/earnings.html:66
+#: app/templates/tutoring/earnings.html:67
 msgid "سجل الجلسات"
 msgstr "Session history"
 
-#: app/templates/tutoring/earnings.html:71
+#: app/templates/tutoring/earnings.html:72
 msgid "المدة"
 msgstr "Duration"
 
-#: app/templates/tutoring/earnings.html:74
+#: app/templates/tutoring/earnings.html:75
 #: app/templates/tutoring/rate_form.html:20
 msgid "التقييم"
 msgstr "Rating"
 
-#: app/templates/tutoring/earnings.html:92
+#: app/templates/tutoring/earnings.html:93
 msgid "لا توجد جلسات بعد."
 msgstr "No sessions yet."
 
@@ -7095,4 +7125,10 @@ msgstr "Confirm payment receipt (manual)"
 
 #~ msgid "أنشئ أول مدرسة لتVESك الطلاب والمعلمين"
 #~ msgstr ""
+
+#~ msgid "تم اختيار:"
+#~ msgstr "Selected:"
+
+#~ msgid "الحد الأدنى للسحب: 200₪. المتاح: "
+#~ msgstr "Minimum withdrawal: ₪200. Available: "
 

@@ -8,7 +8,19 @@
   </div>
 </div>
 
-<div class="azad-grid u-grid-cards-300">
+{# AZ-P0-05: بلا اشتراك مملوك لا يوجد ما يُدفع — لا زر بلا مخرج #}
+{% if subscription %}
+<p class="form-hint" data-testid="payment-context">
+  {{ _('الدفع لاشتراك:') }} <bdi>{{ subscription.price }}</bdi> <bdi>{{ subscription.currency }}</bdi>
+</p>
+{% else %}
+<p class="form-hint" data-testid="payment-context-hint">
+  {{ _('لا يوجد اشتراك محدد للدفع — ابدأ من صفحة الاشتراك لاختيار بوابة دفع.') }}
+</p>
+{% endif %}
+
+<div class="azad-grid u-grid-cards-300"
+     {% if subscription %}data-subscription-id="{{ subscription.id }}" data-amount="{{ subscription.price }}" data-currency="{{ subscription.currency }}"{% endif %}>
   {% for method in methods %}
   <div class="azad-card" data-testid="payment-method" data-method-id="{{ method.id }}">
     <div class="card-body">
@@ -19,10 +31,13 @@
       {% else %}
       <span class="azad-badge azad-badge--muted">{{ _('معطل') }}</span>
       {% endif %}
+      <p class="form-hint u-none" data-intent-result></p>
     </div>
+    {% if subscription and method.enabled %}
     <div class="card-footer u-panel-foot">
-      <button class="azad-btn" data-select-method="{{ method.id }}" data-testid="payment-method-select">{{ _('اختيار') }}</button>
+      <button class="azad-btn" data-select-method="{{ method.id }}" data-testid="payment-method-select">{{ _('الدفع عبر هذه البوابة') }}</button>
     </div>
+    {% endif %}
   </div>
   {% endfor %}
 </div>
@@ -30,16 +45,47 @@
 
 {% block scripts %}
 <script nonce="{{ g.csp_nonce }}">
-// P2-03: ربط بالتفويض بدل onclick المضمّنة
-function selectPaymentMethod(methodId) {
-  // يمكن إضافة منطق اختيار طريقة الدفع هنا
-  console.log('Selected payment method:', methodId);
-  alert('{{ _('تم اختيار:') }} ' + methodId);
-}
-
-document.addEventListener('click', function(e) {
+// AZ-P0-05: الزر ينشئ نية دفع فعلية عبر create-intent ويعرض معرّف الجلسة،
+// وأي فشل يُسجَّل برسالة عربية بجانب البطاقة — لا نافذة تنبيه بلا أثر مالي.
+document.addEventListener('click', async function (e) {
   var btn = e.target.closest('[data-select-method]');
-  if (btn) selectPaymentMethod(btn.dataset.selectMethod);
+  if (!btn) return;
+  var grid = btn.closest('[data-subscription-id]');
+  var out = btn.closest('[data-method-id]').querySelector('[data-intent-result]');
+  if (!grid || !out) return;
+
+  var meta = document.querySelector('meta[name="csrf-token"]');
+  out.classList.remove('u-none', 'u-text-danger');
+  out.textContent = '{{ _("جارٍ إنشاء طلب الدفع...") }}';
+  btn.disabled = true;
+
+  try {
+    var resp = await fetch('{{ url_for("payments_ui.create_payment_intent") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': meta ? meta.getAttribute('content') : ''
+      },
+      body: JSON.stringify({
+        gateway: btn.dataset.selectMethod,
+        amount: grid.dataset.amount,
+        currency: grid.dataset.currency,
+        subscription_id: Number(grid.dataset.subscriptionId)
+      })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      out.classList.add('u-text-danger');
+      out.textContent = data.error || '{{ _("تعذّر إنشاء طلب الدفع. حاول مرة أخرى.") }}';
+    } else {
+      out.textContent = '{{ _("طلب الدفع:") }} ' + data.payment_id + ' — ' + data.gateway + ' — ' + data.amount + ' ' + data.currency;
+    }
+  } catch (err) {
+    out.classList.add('u-text-danger');
+    out.textContent = '{{ _("تعذّر الاتصال بالخادم. حاول مرة أخرى.") }}';
+  } finally {
+    btn.disabled = false;
+  }
 });
 </script>
 {% endblock %}
