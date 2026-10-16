@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from 'macros/ui.html' import azad_stat_card %}
+{% from 'macros/ui.html' import azad_stat_card, azad_table %}
 {% block title %}{{ _('لوحة الإيرادات') }} — {{ _('إدارة المنصة') }}{% endblock %}
 {% block content %}
 <div class="azad-section">
@@ -19,10 +19,82 @@
 </div>
 
 {% set s = data.summary %}
+{% set c = data.commission.summary %}
 <div class="azad-quick-actions u-grid-cards--fit">
   {{ azad_stat_card(s.total_revenue ~ ' ' ~ s.currency, _('إجمالي الإيرادات'), 'credit-card', 'var(--azad-green)') }}
   {{ azad_stat_card(s.transaction_count, _('عدد المعاملات'), 'shopping-cart', 'var(--azad-blue)') }}
   {{ azad_stat_card(data.growth_rate ~ '%', _('معدل النمو'), 'trending-up', 'var(--azad-amber)' if data.growth_rate >= 0 else 'var(--azad-red)') }}
+</div>
+
+{# AZ-P1-06: صف عمولة مستقل عن اشتراكات الطلاب — إيراد المنصة من الدروس الخصوصية. #}
+<div class="azad-section u-mt-2">
+  <h2 class="section-title">{{ _('عمولة الدروس الخصوصية') }}</h2>
+  <div class="azad-quick-actions u-grid-cards--fit">
+    {{ azad_stat_card(c.total_commission ~ ' ' ~ c.currency, _('إجمالي العمولة'), 'percent', 'var(--azad-gold)') }}
+    {{ azad_stat_card(c.transaction_count, _('عدد الجلسات المفوترة'), 'teacher', 'var(--azad-blue)') }}
+    {{ azad_stat_card(c.pending_commission ~ ' ' ~ c.currency, _('عمولة معلّقة'), 'clock', 'var(--azad-amber)') }}
+  </div>
+  <p class="form-hint" data-testid="commission-note">
+    {{ _('النسبة:') }} <bdi>{{ c.commission_rate }}%</bdi> — {{ _('مجموع الجلسات:') }}
+    <bdi>{{ c.session_total }}</bdi> {{ c.currency }}
+  </p>
+</div>
+
+<div class="azad-section u-mt-2">
+  <h2 class="section-title">{{ _('العمولة حسب المدرسة') }}</h2>
+  <div class="azad-table-container">
+    {% set com_school_headers = [
+      {'key': 'school', 'label': _('المدرسة')},
+      {'key': 'count', 'label': _('عدد الجلسات')},
+      {'key': 'total', 'label': _('العمولة')},
+    ] %}
+    {% set com_school_rows = [] %}
+    {# لا نستخدم `_` كاسم مهمل هنا: في Jinja يحجب دالة الترجمة `_()` لما بعد
+       التعيين في نفس النطاق، فتنكسر النصوص التالية بـNoneType. #}
+    {% for school in data.commission.by_school %}
+      {% set row_added = com_school_rows.append({'id': loop.index, 'cells': {
+        'school': school.school_name,
+        'count': school.count,
+        'total': school.total ~ ' ' ~ c.currency
+      }}) %}
+    {% endfor %}
+    {# معيار المثبت: الصفر يظهر صريحاً كصف صفري لا كفراغ أو قسم مخفي. #}
+    {% if not com_school_rows %}
+      {% set zero_added = com_school_rows.append({'id': 0, 'cells': {
+        'school': _('لا عمولات مسجّلة في هذه الفترة'),
+        'count': 0,
+        'total': 0 ~ ' ' ~ c.currency
+      }}) %}
+    {% endif %}
+    {{ azad_table(headers=com_school_headers, rows=com_school_rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
+  </div>
+</div>
+
+<div class="azad-section u-mt-2">
+  <h2 class="section-title">{{ _('العمولة شهرياً') }}</h2>
+  <div class="azad-table-container">
+    {% set com_month_headers = [
+      {'key': 'month', 'label': _('الشهر')},
+      {'key': 'count', 'label': _('عدد الجلسات')},
+      {'key': 'total', 'label': _('العمولة')},
+    ] %}
+    {% set com_month_rows = [] %}
+    {% for row in data.commission.monthly_trend %}
+      {% set row_added = com_month_rows.append({'id': loop.index, 'cells': {
+        'month': row.month,
+        'count': row.count,
+        'total': row.total ~ ' ' ~ c.currency
+      }}) %}
+    {% endfor %}
+    {% if not com_month_rows %}
+      {% set zero_added = com_month_rows.append({'id': 0, 'cells': {
+        'month': _('لا عمولات مسجّلة في هذه الفترة'),
+        'count': 0,
+        'total': 0 ~ ' ' ~ c.currency
+      }}) %}
+    {% endif %}
+    {{ azad_table(headers=com_month_headers, rows=com_month_rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
+  </div>
 </div>
 
 <div class="azad-section u-mt-2">
@@ -40,7 +112,6 @@
   <canvas id="trendChart" height="300"></canvas>
 </div>
 
-{% from "macros/ui.html" import azad_table %}
 {% if data.by_school %}
 <div class="azad-section u-mt-2">
   <h2 class="section-title">{{ _('تفاصيل الإيرادات حسب المدرسة') }}</h2>

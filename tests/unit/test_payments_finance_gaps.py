@@ -968,3 +968,198 @@ class TestInvoiceService:
             pdf = render_invoice_pdf(sub_id)
         assert pdf is not None
         assert bytes(pdf)[:5] == b"%PDF-"
+
+# ════════════════════════════════════════════════════════════════════
+# AZ-P1-06 — تقرير عمولات المنصة للأدمن
+# ════════════════════════════════════════════════════════════════════
+# القيود تُكتب فعلاً في الدفتر عند إتمام كل جلسة، وكانت بلا أي واجهة تقرأها.
+# الاختبارات تبذر قيوداً (عبر جلسات حقيقية — session_id NOT NULL ومرجع أجنبي)
+# وتتحقق من: الاستقلال عن إيراد اشتراكات الطلاب، والتجميع الشهري ولكل مدرسة،
+# وإسناد العمولة إلى مدرسة المعلّم (لا مجاميع مدارس أخرى)، وظهور الصفر صراحة.
+
+
+def _commission(app, school_id=None, amount=100.0, rate=20.0, status="pending"):
+    """قيد عمولة حقيقي: معلّم (برابط مدرسي اختياري) + جلسة + صف الدفتر."""
+    from app.extensions import db
+    from app.models.tutoring import TutorCommission
+    from tests.conftest import make_tutoring_session
+
+    tutor_id = make_user(app, role="teacher", school_id=school_id)
+    student_id = make_user(app, role="student")
+    session_id = make_tutoring_session(app, tutor_id, student_id, price=amount)
+    commission_amount = round(amount * rate / 100, 2)
+    with app.app_context():
+        row = TutorCommission(
+            session_id=session_id,
+            tutor_id=tutor_id,
+            session_amount=amount,
+            commission_rate=rate,
+            commission_amount=commission_amount,
+            tutor_net=round(amount - commission_amount, 2),
+            status=status,
+        )
+        db.session.add(row)
+        db.session.commit()
+        return row.id, tutor_id
+
+
+class TestPlatformCommissionReport:
+    def test_commission_is_independent_of_student_subscriptions(self, app):
+        """صف العمولة يقيس الدفتر، لا اشتراكات الطلاب — الرقمان من مصدرين."""
+        from app.services.revenue import get_commission_summary, get_revenue_summary
+
+        sid = make_school(app)
+        student = make_user(app, role="student", school_id=sid)
+        grade = make_grade(app, sid)
+        subject = make_subject(app)
+        cid = make_class(app, sid, grade, subject)
+        plan = make_subscription_plan(app, sid, cid, price=500.0)
+        sub = make_subscription(app, student, plan, cid, price=500.0, status="active")
+        make_payment(app, sub, amount=500.0, status="approved")
+        _commission(app, school_id=sid, amount=100.0)
+
+        with app.app_context():
+            commission = get_commission_summary()
+            subscriptions = get_revenue_summary()
+            assert subscriptions["total_revenue"] == 500.0
+            assert commission["total_commission"] == 20.0
+            assert commission["transaction_count"] == 1
+
+    def test_summary_splits_pending_and_counts_sessions(self, app):
+        from app.services.revenue import get_commission_summary
+
+        sid = make_school(app)
+        _commission(app, school_id=sid, amount=100.0, status="pending")
+        _commission(app, school_id=sid, amount=200.0, status="withdrawn")
+
+        with app.app_context():
+            data = get_commission_summary(school_id=sid)
+            assert data["total_commission"] == 60.0  # 20 + 40
+            assert data["session_total"] == 300.0
+            assert data["transaction_count"] == 2
+            assert data["pending_commission"] == 20.0
+            assert data["pending_count"] == 1
+            assert data["commission_rate"] == 20.0
+
+    def test_school_scope_never_returns_another_school(self, app):
+        """أدمن مدرسة A يرى مجموع A فقط — لا تسريب مجموع B في النطاق المدرسي."""
+        from app.services.revenue import get_commission_summary
+
+        school_a = make_school(app)
+        school_b = make_school(app)
+        _commission(app, school_id=school_a, amount=100.0)
+        _commission(app, school_id=school_b, amount=300.0)
+        _commission(app, school_id=school_b, amount=100.0)
+
+        with app.app_context():
+            scoped_a = get_commission_summary(school_id=school_a)
+            scoped_b = get_commission_summary(school_id=school_b)
+            platform = get_commission_summary()
+            assert scoped_a["total_commission"] == 20.0
+            assert scoped_a["transaction_count"] == 1
+            assert scoped_b["total_commission"] == 80.0
+            assert platform["total_commission"] == 100.0
+            assert platform["school_id"] is None
+
+    def test_by_school_attributes_each_commission_once(self, app):
+        from app.services.revenue import get_commission_by_school
+
+        school_a = make_school(app, name_ar="مدرسة أ")
+        school_b = make_school(app, name_ar="مدرسة ب")
+        _commission(app, school_id=school_a, amount=100.0)
+        _commission(app, school_id=school_a, amount=100.0)
+        _commission(app, school_id=school_b, amount=500.0)
+
+        with app.app_context():
+            rows = get_commission_by_school()
+            by_id = {r["school_id"]: r for r in rows}
+            assert by_id[school_a]["total"] == 40.0
+            assert by_id[school_a]["count"] == 2
+            assert by_id[school_b]["total"] == 100.0
+            assert by_id[school_b]["count"] == 1
+
+            scoped = get_commission_by_school(school_id=school_a)
+            assert [r["school_id"] for r in scoped] == [school_a]
+
+    def test_unattributed_commission_stays_in_the_total(self, app):
+        """معلّم بلا رابط مدرسي: يظهر في الإجمالي ولا يختفي، ولا يظهر في التوزيع."""
+        from app.services.revenue import get_commission_by_school, get_commission_summary
+
+        school_a = make_school(app)
+        _commission(app, school_id=school_a, amount=100.0)
+        _commission(app, school_id=None, amount=100.0)
+
+        with app.app_context():
+            assert get_commission_summary()["total_commission"] == 40.0
+            rows = get_commission_by_school()
+            assert sum(r["count"] for r in rows) == 1
+            assert sum(r["total"] for r in rows) == 20.0
+
+    def test_monthly_trend_is_grouped_by_month(self, app):
+        from app.services.revenue import get_commission_monthly_trend
+
+        school_a = make_school(app)
+        _commission(app, school_id=school_a, amount=100.0)
+
+        with app.app_context():
+            trend = get_commission_monthly_trend(12)
+            assert len(trend) == 1
+            assert trend[0]["month"] == datetime.now(UTC).strftime("%Y-%m")
+            assert trend[0]["total"] == 20.0
+            assert trend[0]["count"] == 1
+            assert get_commission_monthly_trend(12, school_id=make_school(app)) == []
+
+    def test_empty_ledger_reports_explicit_zeroes(self, app):
+        """لا بيانات → أصفار صريحة لا `None` ولا فراغ يوهم بأن التقرير معطل."""
+        from app.services.revenue import (
+            get_commission_by_school,
+            get_commission_monthly_trend,
+            get_commission_summary,
+        )
+
+        empty_school = make_school(app)
+        with app.app_context():
+            summary = get_commission_summary(school_id=empty_school)
+            assert summary["total_commission"] == 0.0
+            assert summary["session_total"] == 0.0
+            assert summary["transaction_count"] == 0
+            assert summary["pending_commission"] == 0.0
+            assert summary["pending_count"] == 0
+            assert get_commission_by_school(school_id=empty_school) == []
+            assert get_commission_monthly_trend(12, school_id=empty_school) == []
+
+    def test_revenue_dashboard_data_carries_the_commission_block(self, app):
+        from app.services.revenue import get_revenue_dashboard_data
+
+        sid = make_school(app)
+        _commission(app, school_id=sid, amount=100.0)
+        with app.app_context():
+            data = get_revenue_dashboard_data(days=30)
+            assert {"summary", "by_school", "monthly_trend"} <= set(data["commission"])
+            assert data["commission"]["summary"]["total_commission"] == 20.0
+
+    def test_revenue_page_renders_the_commission_report(self, app):
+        """صفحة الإيرادات تعرض صف العمولة ومدارسه — لا تقرير في الخدمة فقط."""
+        sid = make_school(app, name_ar="مدرسة العمولة")
+        _commission(app, school_id=sid, amount=100.0)
+        _uid, client = _persona(app, "super_admin")
+
+        resp = client.get("/admin/revenue")
+        assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        assert "commission-note" in html
+        assert "مدرسة العمولة" in html
+
+    def test_revenue_page_states_the_zero_explicitly(self, app):
+        _uid, client = _persona(app, "super_admin")
+        resp = client.get("/admin/revenue")
+        assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        # الصف الصفري بدل قسم مخفي: القارئ يرى أن الرقم صفر لا أنه ناقص.
+        assert "لا عمولات مسجّلة في هذه الفترة" in html
+
+    def test_school_admin_cannot_open_the_platform_report(self, app):
+        sid = make_school(app)
+        _uid, client = _persona(app, "school_admin", school_id=sid)
+        resp = client.get("/admin/revenue", follow_redirects=False)
+        assert resp.status_code in (302, 403)

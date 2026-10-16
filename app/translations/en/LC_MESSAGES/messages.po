@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-16 09:32+0300\n"
+"POT-Creation-Date: 2026-10-16 09:52+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -3591,7 +3591,8 @@ msgid "قريباً"
 msgstr "Coming soon"
 
 #: app/templates/admin/certificates.html:17
-#: app/templates/admin/moe_export.html:15 app/templates/admin/revenue.html:49
+#: app/templates/admin/moe_export.html:15 app/templates/admin/revenue.html:47
+#: app/templates/admin/revenue.html:120
 #: app/templates/admin/schools_list.html:17
 #: app/templates/school_approvals/queue.html:17
 #: app/templates/school_approvals/super_admin_queue.html:17
@@ -3735,8 +3736,8 @@ msgstr "Assignments"
 msgid "اشتراكات نشطة"
 msgstr "Active subscriptions"
 
-#: app/templates/admin/dashboard.html:19 app/templates/admin/revenue.html:23
-#: app/templates/admin/revenue.html:51
+#: app/templates/admin/dashboard.html:19 app/templates/admin/revenue.html:24
+#: app/templates/admin/revenue.html:122
 msgid "إجمالي الإيرادات"
 msgstr "Total revenue"
 
@@ -4088,31 +4089,79 @@ msgstr "Period"
 msgid "آخر سنة"
 msgstr "Last year"
 
-#: app/templates/admin/revenue.html:24 app/templates/admin/revenue.html:50
+#: app/templates/admin/revenue.html:25 app/templates/admin/revenue.html:121
 msgid "عدد المعاملات"
 msgstr "Transaction count"
 
-#: app/templates/admin/revenue.html:25
+#: app/templates/admin/revenue.html:26
 msgid "معدل النمو"
 msgstr "Growth rate"
 
-#: app/templates/admin/revenue.html:29
+#: app/templates/admin/revenue.html:31
+msgid "عمولة الدروس الخصوصية"
+msgstr "Private tutoring commission"
+
+#: app/templates/admin/revenue.html:33
+msgid "إجمالي العمولة"
+msgstr "Total commission"
+
+#: app/templates/admin/revenue.html:34
+msgid "عدد الجلسات المفوترة"
+msgstr "Billed sessions"
+
+#: app/templates/admin/revenue.html:35
+msgid "عمولة معلّقة"
+msgstr "Pending commission"
+
+#: app/templates/admin/revenue.html:38
+msgid "النسبة:"
+msgstr "Rate:"
+
+#: app/templates/admin/revenue.html:38
+msgid "مجموع الجلسات:"
+msgstr "Session total:"
+
+#: app/templates/admin/revenue.html:44
+msgid "العمولة حسب المدرسة"
+msgstr "Commission by school"
+
+#: app/templates/admin/revenue.html:48 app/templates/admin/revenue.html:78
+msgid "عدد الجلسات"
+msgstr "Sessions"
+
+#: app/templates/admin/revenue.html:49 app/templates/admin/revenue.html:79
+msgid "العمولة"
+msgstr "Commission"
+
+#: app/templates/admin/revenue.html:64 app/templates/admin/revenue.html:91
+msgid "لا عمولات مسجّلة في هذه الفترة"
+msgstr "No commissions recorded in this period"
+
+#: app/templates/admin/revenue.html:74
+msgid "العمولة شهرياً"
+msgstr "Commission by month"
+
+#: app/templates/admin/revenue.html:77
+msgid "الشهر"
+msgstr "Month"
+
+#: app/templates/admin/revenue.html:101
 msgid "الإيرادات حسب بوابة الدفع"
 msgstr "Revenue by payment gateway"
 
-#: app/templates/admin/revenue.html:34
+#: app/templates/admin/revenue.html:106
 msgid "أعلى 10 مدارس من حيث الإيرادات"
 msgstr "Top 10 schools by revenue"
 
-#: app/templates/admin/revenue.html:39
+#: app/templates/admin/revenue.html:111
 msgid "الاتجاه الشهري للإيرادات"
 msgstr "Monthly revenue trend"
 
-#: app/templates/admin/revenue.html:46
+#: app/templates/admin/revenue.html:117
 msgid "تفاصيل الإيرادات حسب المدرسة"
 msgstr "Revenue details by school"
 
-#: app/templates/admin/revenue.html:119 app/templates/admin/revenue.html:146
+#: app/templates/admin/revenue.html:190 app/templates/admin/revenue.html:217
 msgid "الإيرادات (ILS)"
 msgstr "Revenue (ILS)"
 
