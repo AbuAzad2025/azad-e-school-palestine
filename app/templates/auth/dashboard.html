@@ -92,10 +92,30 @@
   {{ azad_empty_state(_('ليس لديك أي صف مخصص للتدريس.'), icon_name='book-open') }}
   {% endif %}
 
+  {# AZ-P0-04: أهم شاشة للمعلم (المال) كانت غير قابلة للاكتشاف — رصيد صريح
+     وإجراء مباشر إلى الأرباح، وزر واحد إلى السحب عند بلوغ الحد الأدنى. #}
+  {% if tutor_earnings %}
+  <div class="azad-section">
+    <h2>{{ _('أرباحي') }}</h2>
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('tutoring.tutor_earnings') }}" data-testid="dash-tutor-earnings">{{ icon('wallet') }} {{ _('صفحة الأرباح') }}</a>
+  </div>
+  <div class="stats-grid">
+    {{ azad_stat_card(tutor_earnings.withdrawable, _('المتاح للسحب'), 'wallet', 'var(--azad-green)') }}
+    {{ azad_stat_card(tutor_earnings.net_earnings, _('صافي الأرباح'), 'credit-card', 'var(--azad-blue)') }}
+    {{ azad_stat_card(tutor_earnings.pending_commission_count, _('عمولات معلّقة'), 'percent', 'var(--azad-gold)') }}
+  </div>
+  {% if not tutor_earnings.can_request_payout %}
+  <p class="form-hint" data-testid="dash-payout-shortfall">
+    {{ _('الحد الأدنى للسحب') }} {{ tutor_earnings.minimum_payout }}₪ — {{ _('ينقصك') }} {{ tutor_earnings.shortfall }}₪.
+  </p>
+  {% endif %}
+  {% endif %}
+
   <div class="azad-section"><h2>{{ _('سوق الدروس الخصوصية') }}</h2></div>
   {{ azad_quick_actions([
     {'icon': 'user', 'label': _('ملفي كمعلم'), 'href': url_for('tutoring.profile', tutor_id=current_user.id), 'variant': 'blue'},
-    {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'variant': 'blue'}
+    {'icon': 'folder', 'label': _('طلباتي وجلساتي'), 'href': url_for('tutoring.my'), 'variant': 'blue'},
+    {'icon': 'wallet', 'label': _('أرباحي'), 'href': url_for('tutoring.tutor_earnings'), 'variant': 'blue'}
   ]) }}
 
 {% elif is_student() %}

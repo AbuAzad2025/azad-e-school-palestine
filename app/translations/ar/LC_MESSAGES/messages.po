@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-15 20:51+0300\n"
+"POT-Creation-Date: 2026-10-15 21:56+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -166,17 +166,17 @@ msgstr ""
 msgid "مرفوض"
 msgstr ""
 
-#: app/core/labels.py:101 app/modules/tutoring/forms.py:15
+#: app/core/labels.py:101 app/modules/tutoring/forms.py:19
 msgid "أونلاين وحضوري"
 msgstr ""
 
-#: app/core/labels.py:102 app/modules/tutoring/forms.py:15
-#: app/modules/tutoring/forms.py:32 app/modules/tutoring/forms.py:46
+#: app/core/labels.py:102 app/modules/tutoring/forms.py:19
+#: app/modules/tutoring/forms.py:36 app/modules/tutoring/forms.py:50
 msgid "أونلاين"
 msgstr ""
 
-#: app/core/labels.py:103 app/modules/tutoring/forms.py:15
-#: app/modules/tutoring/forms.py:32 app/modules/tutoring/forms.py:46
+#: app/core/labels.py:103 app/modules/tutoring/forms.py:19
+#: app/modules/tutoring/forms.py:36 app/modules/tutoring/forms.py:50
 msgid "حضوري"
 msgstr ""
 
@@ -594,7 +594,7 @@ msgstr ""
 msgid "عنوان الاختبار"
 msgstr ""
 
-#: app/modules/assessment/forms.py:11 app/modules/tutoring/forms.py:42
+#: app/modules/assessment/forms.py:11 app/modules/tutoring/forms.py:46
 msgid "المدة (دقائق)"
 msgstr ""
 
@@ -838,25 +838,25 @@ msgstr ""
 msgid "المستوى الدراسي"
 msgstr ""
 
-#: app/modules/auth/routes.py:32
+#: app/modules/auth/routes.py:33
 msgid ""
 "تم إنشاء الحساب بنجاح. حسابك في انتظار موافقة الإدارة. سيتم إشعارك عند "
 "القبول."
 msgstr ""
 
-#: app/modules/auth/routes.py:78
+#: app/modules/auth/routes.py:79
 msgid "تم تسجيل الخروج."
 msgstr ""
 
-#: app/modules/auth/routes.py:97
+#: app/modules/auth/routes.py:98
 msgid "إن كان البريد مسجلاً، ستصل رسالة إعادة التعيين."
 msgstr ""
 
-#: app/modules/auth/routes.py:110
+#: app/modules/auth/routes.py:111
 msgid "تم تحديث كلمة المرور. سجّل الدخول الآن."
 msgstr ""
 
-#: app/modules/auth/routes.py:132
+#: app/modules/auth/routes.py:133
 msgid "تم إنشاء حسابك بنجاح! يمكنك تسجيل الدخول الآن."
 msgstr ""
 
@@ -876,9 +876,9 @@ msgstr ""
 msgid "السنوي"
 msgstr ""
 
-#: app/modules/billing/forms.py:26 app/modules/tutoring/forms.py:43
+#: app/modules/billing/forms.py:26 app/modules/tutoring/forms.py:47
 #: app/templates/admin/subscription_detail.html:18
-#: app/templates/tutoring/earnings.html:51
+#: app/templates/tutoring/earnings.html:72
 #: app/templates/tutoring/session.html:15
 msgid "السعر"
 msgstr ""
@@ -909,7 +909,7 @@ msgid "المبلغ"
 msgstr ""
 
 #: app/modules/billing/forms.py:43 app/modules/grades/forms.py:24
-#: app/modules/tutoring/forms.py:36
+#: app/modules/tutoring/forms.py:40
 #: app/templates/grades/assignment_detail.html:46
 #: app/templates/grades/attendance.html:27
 #: app/templates/grades/attendance.html:33
@@ -1411,10 +1411,10 @@ msgstr ""
 msgid "اختبارات متقدمة"
 msgstr ""
 
-#: app/modules/main/__init__.py:50 app/services/tutoring.py:143
-#: app/templates/auth/dashboard.html:132 app/templates/auth/dashboard.html:180
+#: app/modules/main/__init__.py:50 app/services/tutoring.py:144
+#: app/templates/auth/dashboard.html:152 app/templates/auth/dashboard.html:200
 #: app/templates/individual/dashboard.html:10
-#: app/templates/partials/navbar.html:83 app/templates/tutoring/my.html:2
+#: app/templates/partials/navbar.html:86 app/templates/tutoring/my.html:2
 #: app/templates/tutoring/profile.html:2
 #: app/templates/tutoring/profile_form.html:2
 #: app/templates/tutoring/session.html:3
@@ -1555,7 +1555,7 @@ msgstr ""
 #: app/modules/schools/forms.py:17
 #: app/templates/assessment/question_bank.html:27
 #: app/templates/individual/course_catalog.html:10
-#: app/templates/tutoring/earnings.html:49
+#: app/templates/tutoring/earnings.html:70
 msgid "المادة"
 msgstr ""
 
@@ -1663,82 +1663,82 @@ msgstr ""
 msgid "تم إعداد المدرسة بنجاح!"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:10
+#: app/modules/tutoring/forms.py:14
 msgid "المادة التي تدرّسها"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:11 app/templates/tutoring/profile.html:16
+#: app/modules/tutoring/forms.py:15 app/templates/tutoring/profile.html:16
 msgid "سعر الساعة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:12 app/templates/tutoring/profile.html:17
+#: app/modules/tutoring/forms.py:16 app/templates/tutoring/profile.html:17
 msgid "سعر الجلسة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:14
+#: app/modules/tutoring/forms.py:18
 msgid "طريقة الجلسة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:19 app/modules/tutoring/forms.py:50
+#: app/modules/tutoring/forms.py:23 app/modules/tutoring/forms.py:54
 #: app/templates/tutoring/profile.html:19
 msgid "منصة الفيديو"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:23
+#: app/modules/tutoring/forms.py:27
 msgid "نبذة عنك"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:24
+#: app/modules/tutoring/forms.py:28
 msgid "حفظ الملف"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:28
+#: app/modules/tutoring/forms.py:32
 msgid "المادة المطلوبة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:29
+#: app/modules/tutoring/forms.py:33
 msgid "الوقت المفضّل"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:31 app/modules/tutoring/forms.py:45
+#: app/modules/tutoring/forms.py:35 app/modules/tutoring/forms.py:49
 #: app/templates/tutoring/profile.html:18
 #: app/templates/tutoring/session.html:14
 msgid "الطريقة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:35
+#: app/modules/tutoring/forms.py:39
 msgid "السعر المقترح"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:37
+#: app/modules/tutoring/forms.py:41
 msgid "إرسال طلب الحجز"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:41
+#: app/modules/tutoring/forms.py:45
 msgid "موعد الجلسة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:54
+#: app/modules/tutoring/forms.py:58
 msgid "رابط الاجتماع"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:55
+#: app/modules/tutoring/forms.py:59
 msgid "المكان الحضوري"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:56
+#: app/modules/tutoring/forms.py:60
 msgid "تأكيد الجلسة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:61
+#: app/modules/tutoring/forms.py:65
 msgid "تأكيد استلام الدفع"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:65
+#: app/modules/tutoring/forms.py:70
 msgid "المبلغ المطلوب (حد أدنى 200₪)"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:66
+#: app/modules/tutoring/forms.py:73
 msgid "طلب سحب"
 msgstr ""
 
@@ -1816,19 +1816,19 @@ msgstr ""
 msgid "تم إنهاء الجلسة المباشرة."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:332 app/services/tutoring.py:402
+#: app/modules/tutoring/routes.py:332 app/services/tutoring.py:403
 msgid "لا يمكن تقييم جلسة لم تنتهِ بعد."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:343 app/services/tutoring.py:413
+#: app/modules/tutoring/routes.py:343 app/services/tutoring.py:414
 msgid "انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة)."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:348 app/services/tutoring.py:419
+#: app/modules/tutoring/routes.py:348 app/services/tutoring.py:420
 msgid "لقد قيّمت هذه الجلسة مسبقاً."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:355 app/services/tutoring.py:422
+#: app/modules/tutoring/routes.py:355 app/services/tutoring.py:423
 msgid "التقييم يجب أن يكون بين 1 و 5."
 msgstr ""
 
@@ -2246,7 +2246,7 @@ msgstr ""
 #: app/templates/grades/appeals_queue.html:14
 #: app/templates/grades/attendance.html:27
 #: app/templates/progress/student_detail.html:18
-#: app/templates/tutoring/earnings.html:52
+#: app/templates/tutoring/earnings.html:73
 #: app/templates/tutoring/session.html:17
 msgid "الحالة"
 msgstr ""
@@ -2463,45 +2463,45 @@ msgstr ""
 msgid "الباقة غير صالحة."
 msgstr ""
 
-#: app/services/tutoring.py:53
+#: app/services/tutoring.py:54
 msgid "لديك ملف دروس خصوصية مسبقاً."
 msgstr ""
 
-#: app/services/tutoring.py:114
+#: app/services/tutoring.py:115
 msgid "لديك طلب معلّق لهذا المعلم."
 msgstr ""
 
-#: app/services/tutoring.py:241 app/services/tutoring.py:398
+#: app/services/tutoring.py:242 app/services/tutoring.py:399
 msgid "الجلسة غير موجودة."
 msgstr ""
 
-#: app/services/tutoring.py:243
+#: app/services/tutoring.py:244
 msgid "غير مصرح."
 msgstr ""
 
-#: app/services/tutoring.py:250
+#: app/services/tutoring.py:251
 msgid "إعدادات Zoom غير مكتملة."
 msgstr ""
 
-#: app/services/tutoring.py:263
+#: app/services/tutoring.py:264
 #, python-format
 msgid "فشل الحصول على رمز Zoom: %(detail)s"
 msgstr ""
 
-#: app/services/tutoring.py:311
+#: app/services/tutoring.py:312
 #, python-format
 msgid "خطأ غير متوقع: %(detail)s"
 msgstr ""
 
-#: app/services/tutoring.py:400
+#: app/services/tutoring.py:401
 msgid "ليس لديك صلاحية تقييم هذه الجلسة."
 msgstr ""
 
-#: app/services/tutoring.py:665
+#: app/services/tutoring.py:690
 msgid "الحد الأدنى للسحب 200₪."
 msgstr ""
 
-#: app/services/tutoring.py:674
+#: app/services/tutoring.py:699
 #, python-format
 msgid "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s)."
 msgstr ""
@@ -2626,7 +2626,7 @@ msgstr ""
 #: app/templates/admin/base.html:19 app/templates/base.html:123
 #: app/templates/errors/403.html:21 app/templates/errors/429.html:21
 #: app/templates/partials/breadcrumbs.html:7
-#: app/templates/partials/navbar.html:73 app/templates/partials/navbar.html:100
+#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:105
 #: app/templates/schools/class_detail.html:6
 #: app/templates/schools/manage.html:6
 msgid "الرئيسية"
@@ -2634,18 +2634,18 @@ msgstr ""
 
 #: app/templates/base.html:128 app/templates/individual/dashboard.html:3
 #: app/templates/individual/dashboard.html:6
-#: app/templates/partials/navbar.html:78
+#: app/templates/partials/navbar.html:81
 msgid "كورساتي"
 msgstr ""
 
 #: app/templates/admin/school_admin_dashboard.html:59
 #: app/templates/assessment/quiz_list.html:6
 #: app/templates/auth/dashboard.html:54 app/templates/auth/dashboard.html:62
-#: app/templates/auth/dashboard.html:104 app/templates/auth/dashboard.html:181
+#: app/templates/auth/dashboard.html:124 app/templates/auth/dashboard.html:201
 #: app/templates/base.html:132 app/templates/base.html:137
 #: app/templates/content/lesson_detail.html:6
-#: app/templates/grades/gradebook.html:10 app/templates/partials/navbar.html:81
-#: app/templates/partials/navbar.html:85
+#: app/templates/grades/gradebook.html:10 app/templates/partials/navbar.html:84
+#: app/templates/partials/navbar.html:88
 #: app/templates/schools/class_detail.html:7
 #: app/templates/schools/manage.html:8 app/templates/schools/my_classes.html:2
 #: app/templates/schools/my_classes.html:5
@@ -2656,12 +2656,12 @@ msgstr ""
 msgid "لوحة الإدارة"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:142 app/templates/base.html:145
-#: app/templates/partials/navbar.html:88
+#: app/templates/auth/dashboard.html:162 app/templates/base.html:145
+#: app/templates/partials/navbar.html:93
 msgid "صفوف أبنائي"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:182 app/templates/base.html:149
+#: app/templates/auth/dashboard.html:202 app/templates/base.html:149
 #: app/templates/partials/navbar.html:16
 msgid "الإشعارات"
 msgstr ""
@@ -2955,12 +2955,12 @@ msgid "شعار أزاد"
 msgstr ""
 
 #: app/templates/admin/base.html:42 app/templates/admin/base.html:45
-#: app/templates/landing.html:32 app/templates/partials/navbar.html:40
+#: app/templates/landing.html:32 app/templates/partials/navbar.html:43
 msgid "تبديل المظهر"
 msgstr ""
 
 #: app/templates/landing.html:36 app/templates/landing.html:155
-#: app/templates/partials/navbar.html:62 app/templates/partials/navbar.html:101
+#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:106
 msgid "دخول"
 msgstr ""
 
@@ -3093,7 +3093,7 @@ msgid "ابدأ رحلتك التعليمية الآن"
 msgstr ""
 
 #: app/templates/landing.html:149 app/templates/main/index.html:10
-#: app/templates/partials/navbar.html:63 app/templates/partials/navbar.html:102
+#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:107
 #: app/templates/pricing.html:60
 msgid "سجّل مجاناً"
 msgstr ""
@@ -3573,7 +3573,7 @@ msgid "البريد"
 msgstr ""
 
 #: app/templates/admin/contact_inbox.html:14
-#: app/templates/tutoring/earnings.html:47
+#: app/templates/tutoring/earnings.html:68
 msgid "التاريخ"
 msgstr ""
 
@@ -3749,7 +3749,7 @@ msgstr ""
 #: app/templates/admin/dashboard.html:75 app/templates/admin/dashboard.html:106
 #: app/templates/admin/school_detail.html:56
 #: app/templates/admin/schools_list.html:28
-#: app/templates/auth/dashboard.html:123
+#: app/templates/auth/dashboard.html:143
 #: app/templates/content/_lesson_row.html:11
 #: app/templates/grades/assignments.html:38
 #: app/templates/individual/dashboard.html:47
@@ -4064,7 +4064,7 @@ msgstr ""
 #: app/templates/errors/404.html:21 app/templates/family/child_grades.html:5
 #: app/templates/family/child_progress.html:5
 #: app/templates/family/generate_code.html:5 app/templates/family/index.html:5
-#: app/templates/main/index.html:8 app/templates/partials/navbar.html:74
+#: app/templates/main/index.html:8 app/templates/partials/navbar.html:77
 #: app/templates/progress/class_overview.html:5
 #: app/templates/progress/my_progress.html:5
 #: app/templates/progress/student_detail.html:5
@@ -4171,8 +4171,8 @@ msgid "صف جديد"
 msgstr ""
 
 #: app/templates/admin/school_detail.html:50
-#: app/templates/auth/dashboard.html:74 app/templates/auth/dashboard.html:118
-#: app/templates/auth/dashboard.html:159
+#: app/templates/auth/dashboard.html:74 app/templates/auth/dashboard.html:138
+#: app/templates/auth/dashboard.html:179
 #: app/templates/family/child_grades.html:20
 #: app/templates/family/child_progress.html:20
 #: app/templates/individual/course_catalog.html:37
@@ -4237,13 +4237,13 @@ msgstr ""
 msgid "اللغة الافتراضية"
 msgstr ""
 
-#: app/templates/admin/settings.html:22 app/templates/partials/navbar.html:44
-#: app/templates/partials/navbar.html:106
+#: app/templates/admin/settings.html:22 app/templates/partials/navbar.html:47
+#: app/templates/partials/navbar.html:111
 msgid "العربية"
 msgstr ""
 
-#: app/templates/admin/settings.html:23 app/templates/partials/navbar.html:44
-#: app/templates/partials/navbar.html:106
+#: app/templates/admin/settings.html:23 app/templates/partials/navbar.html:47
+#: app/templates/partials/navbar.html:111
 msgid "English"
 msgstr ""
 
@@ -4819,7 +4819,7 @@ msgstr ""
 #: app/templates/grades/attendance.html:27
 #: app/templates/grades/gradebook.html:52
 #: app/templates/grades/gradebook.html:58
-#: app/templates/tutoring/earnings.html:48
+#: app/templates/tutoring/earnings.html:69
 msgid "الطالب"
 msgstr ""
 
@@ -4963,66 +4963,97 @@ msgstr ""
 msgid "ليس لديك أي صف مخصص للتدريس."
 msgstr ""
 
-#: app/templates/auth/dashboard.html:95
+#: app/templates/auth/dashboard.html:99 app/templates/auth/dashboard.html:118
+#: app/templates/partials/navbar.html:38 app/templates/partials/navbar.html:91
+msgid "أرباحي"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:100
+msgid "صفحة الأرباح"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:103
+#: app/templates/tutoring/earnings.html:16
+msgid "المتاح للسحب"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:104
+#: app/templates/tutoring/earnings.html:15
+msgid "صافي الأرباح"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:105
+msgid "عمولات معلّقة"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:109
+msgid "الحد الأدنى للسحب"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:109
+msgid "ينقصك"
+msgstr ""
+
+#: app/templates/auth/dashboard.html:114
 msgid "سوق الدروس الخصوصية"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:97
+#: app/templates/auth/dashboard.html:116
 msgid "ملفي كمعلم"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:98 app/templates/auth/dashboard.html:135
+#: app/templates/auth/dashboard.html:117 app/templates/auth/dashboard.html:155
 msgid "طلباتي وجلساتي"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:107
+#: app/templates/auth/dashboard.html:127
 #: app/templates/schools/my_classes.html:6
 msgid "انضمام برمز"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:108
+#: app/templates/auth/dashboard.html:128
 msgid "تصفّح الكورسات المتاحة"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:129
+#: app/templates/auth/dashboard.html:149
 #: app/templates/progress/my_progress.html:43
 #: app/templates/schools/my_classes.html:31
 msgid "لم تنضم لأي صف بعد."
 msgstr ""
 
-#: app/templates/auth/dashboard.html:129
+#: app/templates/auth/dashboard.html:149
 #: app/templates/schools/my_classes.html:31
 msgid "انضم برمز"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:134
+#: app/templates/auth/dashboard.html:154
 msgid "البحث عن معلم"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:136
+#: app/templates/auth/dashboard.html:156
 #: app/templates/progress/my_progress.html:3
 #: app/templates/progress/my_progress.html:5
 #: app/templates/progress/my_progress.html:8
 msgid "تقدمي"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:143 app/templates/auth/dashboard.html:171
+#: app/templates/auth/dashboard.html:163 app/templates/auth/dashboard.html:191
 msgid "إدارة الأبناء"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:163
+#: app/templates/auth/dashboard.html:183
 msgid "متابعة"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:171
+#: app/templates/auth/dashboard.html:191
 msgid "لا يوجد أبناء مرتبطين بحسابك."
 msgstr ""
 
-#: app/templates/auth/dashboard.html:178
+#: app/templates/auth/dashboard.html:198
 msgid "وصول سريع"
 msgstr ""
 
-#: app/templates/auth/dashboard.html:183 app/templates/partials/navbar.html:86
+#: app/templates/auth/dashboard.html:203 app/templates/partials/navbar.html:89
 msgid "دروسي الخصوصية"
 msgstr ""
 
@@ -6362,7 +6393,7 @@ msgstr ""
 msgid "تطوير: أحمد غنام"
 msgstr ""
 
-#: app/templates/partials/navbar.html:10 app/templates/partials/navbar.html:59
+#: app/templates/partials/navbar.html:10 app/templates/partials/navbar.html:62
 msgid "فتح البحث"
 msgstr ""
 
@@ -6370,31 +6401,31 @@ msgstr ""
 msgid "قائمة المستخدم"
 msgstr ""
 
-#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:92
+#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:97
 msgid "الملف الشخصي"
 msgstr ""
 
-#: app/templates/partials/navbar.html:49 app/templates/partials/navbar.html:95
+#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:100
 msgid "خروج"
 msgstr ""
 
-#: app/templates/partials/navbar.html:54
+#: app/templates/partials/navbar.html:57
 msgid "القائمة"
 msgstr ""
 
-#: app/templates/partials/navbar.html:72
+#: app/templates/partials/navbar.html:75
 msgid "القائمة الرئيسية"
 msgstr ""
 
-#: app/templates/partials/navbar.html:79
+#: app/templates/partials/navbar.html:82
 msgid "استكشف"
 msgstr ""
 
-#: app/templates/partials/navbar.html:91
+#: app/templates/partials/navbar.html:96
 msgid "الحساب"
 msgstr ""
 
-#: app/templates/partials/navbar.html:103
+#: app/templates/partials/navbar.html:108
 msgid "طالب فردي"
 msgstr ""
 
@@ -6453,7 +6484,7 @@ msgstr ""
 
 #: app/templates/progress/my_progress.html:26
 #: app/templates/progress/student_detail.html:19
-#: app/templates/tutoring/earnings.html:64
+#: app/templates/tutoring/earnings.html:85
 msgid "دقيقة"
 msgstr ""
 
@@ -6678,14 +6709,6 @@ msgstr ""
 msgid "عمولة المنصة (20%%)"
 msgstr ""
 
-#: app/templates/tutoring/earnings.html:15
-msgid "صافي الأرباح"
-msgstr ""
-
-#: app/templates/tutoring/earnings.html:16
-msgid "المتاح للسحب"
-msgstr ""
-
 #: app/templates/tutoring/earnings.html:17
 msgid "إجمالي السحوبات"
 msgstr ""
@@ -6710,24 +6733,44 @@ msgstr ""
 msgid "طلب سحب أرباح"
 msgstr ""
 
-#: app/templates/tutoring/earnings.html:35
-msgid "الحد الأدنى للسحب: 200₪. المتاح: "
+#: app/templates/tutoring/earnings.html:31
+msgid "تحذير: الرصيد المعروض لا يطابق سجل العمولة — راجع الدعم قبل طلب السحب."
 msgstr ""
 
-#: app/templates/tutoring/earnings.html:45
-msgid "سجل الجلسات"
+#: app/templates/tutoring/earnings.html:37
+msgid "عمولات معلّقة:"
+msgstr ""
+
+#: app/templates/tutoring/earnings.html:38
+msgid "المتاح للسحب:"
+msgstr ""
+
+#: app/templates/tutoring/earnings.html:39
+msgid "الحد الأدنى:"
 msgstr ""
 
 #: app/templates/tutoring/earnings.html:50
+msgid "الحد الأدنى للسحب: 200₪. المتاح: "
+msgstr ""
+
+#: app/templates/tutoring/earnings.html:59
+msgid "لم تبلغ الحد الأدنى للسحب بعد — ينقصك"
+msgstr ""
+
+#: app/templates/tutoring/earnings.html:66
+msgid "سجل الجلسات"
+msgstr ""
+
+#: app/templates/tutoring/earnings.html:71
 msgid "المدة"
 msgstr ""
 
-#: app/templates/tutoring/earnings.html:53
+#: app/templates/tutoring/earnings.html:74
 #: app/templates/tutoring/rate_form.html:20
 msgid "التقييم"
 msgstr ""
 
-#: app/templates/tutoring/earnings.html:71
+#: app/templates/tutoring/earnings.html:92
 msgid "لا توجد جلسات بعد."
 msgstr ""
 

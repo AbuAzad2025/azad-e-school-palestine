@@ -12,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
+from app.config.constants import TUTOR_MIN_PAYOUT
 from app.core.db import TxError, tx
 from app.core.i18n import _
 from app.core.logging import get_logger
@@ -516,6 +517,22 @@ def get_tutor_earnings(tutor_id: int) -> dict:
         or 0
     )
 
+    # AZ-P0-04: شفافية الرصيد — عدّاد العمولات المعلّقة، ومطابقة "المتاح للسحب"
+    # لمكوّنات سجل العمولة نفسه (session_amount − commission_amount) لا لمجموع
+    # مطابق. أي انحراف بين العمود المخزَّن ومكوّناته يظهر تنبيهاً في الواجهة
+    # بدل رقم صامت يوحي بأن الرصيد سليم.
+    commission_agg = (
+        db.session.query(
+            func.count(TutorCommission.id).label("pending_count"),
+            func.sum(TutorCommission.session_amount - TutorCommission.commission_amount).label("expected_net"),
+        )
+        .filter(TutorCommission.tutor_id == tutor_id, TutorCommission.status == "pending")
+        .one()
+    )
+    pending_commission_count = commission_agg.pending_count or 0
+    ledger_net = round(float(commission_agg.expected_net or 0), 2)
+    withdrawable_r = round(withdrawable, 2)
+
     return {
         "total_earnings": round(total_earnings, 2),
         "pending_payouts": round(pending, 2),
@@ -525,9 +542,15 @@ def get_tutor_earnings(tutor_id: int) -> dict:
         "total_sessions": total_sessions,
         "commission_amount": commission_amount,
         "net_earnings": net_earnings,
-        "withdrawable": round(withdrawable, 2),
+        "withdrawable": withdrawable_r,
         "total_payouts": round(float(total_payouts), 2),
         "commission_rate": COMMISSION_RATE,
+        "pending_commission_count": pending_commission_count,
+        "ledger_net": ledger_net,
+        "balance_consistent": abs(withdrawable_r - ledger_net) < 0.01,
+        "minimum_payout": TUTOR_MIN_PAYOUT,
+        "shortfall": max(0.0, round(TUTOR_MIN_PAYOUT - withdrawable_r, 2)),
+        "can_request_payout": withdrawable_r >= TUTOR_MIN_PAYOUT,
     }
 
 
@@ -661,7 +684,9 @@ def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, st
 
     P0-10: FOR UPDATE على العمولات المعلّقة لمنع سحب مزدوج تحت التزامن.
     """
-    if amount < 200:
+    # AZ-P0-04: الحد الأدنى من مصدر واحد — نفس الرقم يحرسه النموذج وتُبنى
+    # عليه رسالة القالب، فلا يتباعد قيد الخدمة عن الواجهة.
+    if amount < TUTOR_MIN_PAYOUT:
         return None, _("الحد الأدنى للسحب 200₪.")
 
     def _create():

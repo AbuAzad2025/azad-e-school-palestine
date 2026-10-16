@@ -24,6 +24,13 @@ ATTENDANCE_NOTE_MAX_LEN = 1000
 
 AUTODISMIT_FLASH_MS = 5000
 
+# ── Tutor payouts (AZ-P0-04) ────────────────────────────────────────────────
+
+# الحد الأدنى لطلب سحب أرباح المعلم. مصدر واحد يستهلكه النموذج (تحقق الإدخال)
+# والخدمة (حرس طلب السحب) وقالب الأرباح (إظهار الزر أو الفرق) — فلا يتباعد
+# الرقم بين الطبقات الثلاث.
+TUTOR_MIN_PAYOUT = 200.0
+
 # Scroll-reveal defaults live with the code that uses them (the observer
 # options in app/static/js/index.js) and the reveal state in app/static/css/app.css.
 

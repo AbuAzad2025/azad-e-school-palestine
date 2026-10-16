@@ -34,6 +34,9 @@
               <small>{{ current_user.email }}</small>
             </div>
             <a href="{{ url_for('auth.dashboard') }}">{{ icon('user') }} {{ _('الملف الشخصي') }}</a>
+            {% if is_teacher() %}
+            <a href="{{ url_for('tutoring.tutor_earnings') }}" data-testid="menu-tutor-earnings">{{ icon('wallet') }} {{ _('أرباحي') }}</a>
+            {% endif %}
             <button type="button" data-theme-toggle class="nav-user-theme">
               <span data-theme-icon-light>{{ icon('sun') }}</span>
               <span data-theme-icon-dark>{{ icon('moon') }}</span>
@@ -84,6 +87,8 @@
   {% elif is_teacher() %}
     <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
     <a href="{{ url_for('tutoring.my') }}">{{ icon('teacher') }} {{ _('دروسي الخصوصية') }}</a>
+    {# AZ-P0-04: أهم شاشة للمعلم (المال) كانت بلا أي رابط — تُبرز الآن في الشريط #}
+    <a href="{{ url_for('tutoring.tutor_earnings') }}" data-testid="nav-tutor-earnings">{{ icon('wallet') }} {{ _('أرباحي') }}</a>
   {% elif is_parent() %}
     <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوف أبنائي') }}</a>
   {% endif %}

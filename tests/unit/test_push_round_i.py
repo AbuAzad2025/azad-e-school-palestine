@@ -2009,3 +2009,153 @@ def db_get_session(session_id):
     from app.models.tutoring import TutoringSession
 
     return db.session.get(TutoringSession, session_id)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AZ-P0-04 — إبراز شاشة أرباح/سحب المدرس
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _seed_commission(app, tutor_id, price, *, status=None, tutor_net=None):
+    """ينشئ جلسة مكتملة ثم سجل عمولتها عبر الخدمة الحقيقية (لا صف مزيف).
+
+    ``status`` و``tutor_net`` تعديلان مباشران يحاكيان حالتين فقط: عمولة
+    مسحوبة (لا تُحتسب في المتاح)، وانحراف مخزَّن يختبر كشف عدم المطابقة.
+    """
+    stu_id = make_user(app, role="student", email=f"ri-earn-{_uid()}@test.com")
+    sess_id = make_tutoring_session(app, tutor_id, stu_id, status="completed", price=price)
+    with app.app_context():
+        from app.extensions import db
+        from app.models.tutoring import TutorCommission, TutoringSession
+        from app.services.tutoring import create_commission_record
+
+        created = create_commission_record(db.session.get(TutoringSession, sess_id))
+        assert created is not None, "سجل العمولة يجب أن يُنشأ لجلسة مكتملة"
+        row = TutorCommission.query.filter_by(session_id=sess_id).first()
+        if status:
+            row.status = status
+        if tutor_net is not None:
+            row.tutor_net = tutor_net
+        db.session.commit()
+        return row.id
+
+
+class TestTutorEarningsVisibility:
+    """AZ-P0-04: المعلم يصل إلى أرباحه، والطالب لا، والرصيد صادق."""
+
+    def test_teacher_sees_link_in_navbar_and_dashboard(self, app):
+        """(١) الرابط ظاهر في الشريط وفي الداشبورد لدور المعلم."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        client = login_email(app, email)
+
+        # الداشبورد يحمل الشريط (رابط الجوال + قائمة المستخدم) ومحتوى الداشبورد
+        dash = client.get("/auth/dashboard", follow_redirects=True).get_data(as_text=True)
+        assert "nav-tutor-earnings" in dash
+        assert "menu-tutor-earnings" in dash
+        assert "dash-tutor-earnings" in dash
+        assert "/tutoring/earnings" in dash
+
+    def test_student_does_not_see_earnings_link(self, app):
+        """(١) الطالب لا يرى الرابط ولا يفتح الصفحة."""
+        _uid_s, email = mk(app, "student")
+        client = login_email(app, email)
+        html = client.get("/auth/dashboard", follow_redirects=True).get_data(as_text=True)
+        assert "tutor-earnings" not in html
+        assert "/tutoring/earnings" not in html
+
+    def test_student_earnings_page_403(self, app):
+        """(ج) طالب يفتح صفحة الأرباح → 403."""
+        _uid_s, email = mk(app, "student")
+        client = login_email(app, email)
+        assert client.get("/tutoring/earnings").status_code == 403
+
+    def test_no_commissions_hides_payout_button_and_shows_shortfall(self, app):
+        """(أ) معلم بلا عمولات: لا زر سحب + رسالة الفرق."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        client = login_email(app, email)
+
+        html = client.get("/tutoring/earnings").get_data(as_text=True)
+        assert "payout-form" not in html
+        assert "payout-shortfall" in html
+        assert "earnings-mismatch" not in html
+        # (٢) الحد الأدنى والرصيد المعلّق يظهران صريحين
+        assert "pending-commission" in html
+
+    def test_below_threshold_shows_remaining_gap(self, app):
+        """(٣) دون الحد الأدنى → لا زر، ورسالة تُظهر الفرق الباقي."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        _seed_commission(app, uid, price=125.0)  # صافي 100
+        client = login_email(app, email)
+
+        html = client.get("/tutoring/earnings").get_data(as_text=True)
+        assert "payout-form" not in html
+        assert "payout-shortfall" in html
+        assert "100.0" in html  # ينقصه 100 من 200
+
+    def test_at_threshold_shows_button_and_post_creates_payout(self, app):
+        """(ب) بلوغ الحد الأدنى → الزر موجود وPOST ينشئ طلب سحب."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        _seed_commission(app, uid, price=375.0)  # صافي 300
+        client = login_email(app, email)
+
+        html = client.get("/tutoring/earnings").get_data(as_text=True)
+        assert "payout-form" in html
+        assert "payout-shortfall" not in html
+
+        resp = client.post("/tutoring/payout-request", data={"amount": "250"})
+        assert resp.status_code in (200, 302)
+        with app.app_context():
+            from app.models.tutoring import TutorPayout
+
+            payouts = TutorPayout.query.filter_by(tutor_id=uid).all()
+            assert len(payouts) == 1 and float(payouts[0].amount) == 250.0
+
+    def test_below_minimum_post_writes_nothing(self, app):
+        """الحد الأدنى محروس في الخدمة: مبلغ أقل لا يكتب صفاً."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        _seed_commission(app, uid, price=375.0)  # صافي 300
+        client = login_email(app, email)
+
+        client.post("/tutoring/payout-request", data={"amount": "50"})
+        with app.app_context():
+            from app.models.tutoring import TutorPayout
+
+            assert TutorPayout.query.filter_by(tutor_id=uid).count() == 0
+
+    def test_balance_mismatch_raises_alert(self, app):
+        """(٤) الروصيد لا يطابق مكوّنات سجل العمولة → تنبيه لا رقم صامت."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        # session_amount - commission_amount = 240 بينما العمود المخزَّن 100
+        _seed_commission(app, uid, price=300.0, tutor_net=100.0)
+        client = login_email(app, email)
+
+        html = client.get("/tutoring/earnings").get_data(as_text=True)
+        assert "earnings-mismatch" in html
+
+    def test_no_mismatch_when_ledger_is_consistent(self, app):
+        """الرصيد السليم لا يُطلق تنبيهاً."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        _seed_commission(app, uid, price=250.0)  # صافي 200 = الحد بالضبط
+        client = login_email(app, email)
+
+        html = client.get("/tutoring/earnings").get_data(as_text=True)
+        assert "earnings-mismatch" not in html
+        assert "payout-form" in html
+
+    def test_withdrawn_commissions_not_counted_as_withdrawable(self, app):
+        """العمولات المسحوبة لا تُحتسب في المتاح للسحب."""
+        uid, email = mk(app, "teacher")
+        make_tutor_profile(app, uid)
+        _seed_commission(app, uid, price=500.0, status="withdrawn")
+        client = login_email(app, email)
+
+        html = client.get("/tutoring/earnings").get_data(as_text=True)
+        assert "payout-form" not in html
+        assert "payout-shortfall" in html

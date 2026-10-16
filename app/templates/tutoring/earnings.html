@@ -23,8 +23,23 @@
 
 <div class="azad-section azad-mt-6">
   <h2 class="section-title">{{ _('طلب سحب أرباح') }}</h2>
+
+  {# AZ-P0-04: إن انحرف الرصيد المعروض عن مكونات سجل العمولة يظهر تنبيه
+     صريح بدل رقم صامت يوهم بأن الحساب سليم. #}
+  {% if not earnings.balance_consistent %}
+  <div class="azad-card u-text-danger" role="alert" data-testid="earnings-mismatch">
+    {{ _('تحذير: الرصيد المعروض لا يطابق سجل العمولة — راجع الدعم قبل طلب السحب.') }}
+  </div>
+  {% endif %}
+
   <div class="azad-card azad-card--narrow">
-    <form method="post" action="{{ url_for('tutoring.payout_request') }}" novalidate>
+    <p class="azad-field__help" data-testid="pending-commission">
+      {{ _('عمولات معلّقة:') }} <bdi>{{ earnings.pending_commission_count }}</bdi>
+      — {{ _('المتاح للسحب:') }} <bdi>{{ earnings.withdrawable }}</bdi> ₪
+      — {{ _('الحد الأدنى:') }} <bdi>{{ earnings.minimum_payout }}</bdi> ₪
+    </p>
+    {% if earnings.can_request_payout %}
+    <form method="post" action="{{ url_for('tutoring.payout_request') }}" novalidate data-testid="payout-form">
       {{ payout_form.hidden_tag() }}
       <div class="azad-field">
         {{ payout_form.amount.label(class="azad-field__label") }}
@@ -32,12 +47,19 @@
         {% for error in payout_form.amount.errors %}
         <ul class="form-errors"><li>{{ error }}</li></ul>
         {% endfor %}
-        <small class="azad-field__help">{{ _('الحد الأدنى للسحب: 200₪. المتاح: ') ~ (earnings.withdrawable if earnings.withdrawable else 0) ~ ' ' ~ (session.currency if session else '₪') }}</small>
+        {# الحذف: كان السطر يكرّر «المتاح/الحد الأدنى» بأرقام مضمّنة في النص
+           المترجم (200₪)، وبطاقة السياق أعلاه تعرضها من المصدر الواحد. #}
       </div>
       <div class="form-actions">
         {{ payout_form.submit(class="azad-btn u-w100") }}
       </div>
     </form>
+    {% else %}
+    {# AZ-P0-04: زر السحب لا يظهر قبل بلوغ الحد الأدنى — تظهر المسافة الباقية #}
+    <p class="azad-field__help" data-testid="payout-shortfall">
+      {{ _('لم تبلغ الحد الأدنى للسحب بعد — ينقصك') }} <bdi>{{ earnings.shortfall }}</bdi> ₪.
+    </p>
+    {% endif %}
   </div>
 </div>
 
@@ -58,7 +80,7 @@
     {% set price_cell %}<bdi>{{ s.price or 0 }}</bdi> <bdi>{{ s.currency }}</bdi>{% endset %}
     {% set review_cell %}{% set review = s.reviews|first if s.reviews else none %}{% if review %}<span class="u-text-amber">{{ '★' * review.rating }}</span> ({{ review.rating }}/5){% else %}<span class="text-muted">—</span>{% endif %}{% endset %}
     {% set _ = rows.append({'id': s.id, 'cells': {
-      'date': s.scheduled_at|azad_datetime if s.scheduled_at else '—',
+      'date': s.scheduled_at.strftime('%Y-%m-%d %H:%M') if s.scheduled_at else '—',
       'student': s.student.name_ar,
       'subject': s.subject,
       'duration': (s.duration_min or 0) ~ ' ' ~ _('دقيقة'),

@@ -1,5 +1,8 @@
 """نماذج الدروس الخصوصية"""
 
+from decimal import Decimal
+
+from app.config.constants import TUTOR_MIN_PAYOUT
 from flask_babel import lazy_gettext as _
 from flask_wtf import FlaskForm
 from wtforms import DateTimeLocalField, DecimalField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
@@ -62,5 +65,8 @@ class PaySessionForm(FlaskForm):
 
 
 class PayoutRequestForm(FlaskForm):
-    amount = DecimalField(_("المبلغ المطلوب (حد أدنى 200₪)"), validators=[DataRequired(), NumberRange(min=200)])
+    amount = DecimalField(
+        _("المبلغ المطلوب (حد أدنى 200₪)"),
+        validators=[DataRequired(), NumberRange(min=Decimal(str(TUTOR_MIN_PAYOUT)))],
+    )
     submit = SubmitField(_("طلب سحب"))

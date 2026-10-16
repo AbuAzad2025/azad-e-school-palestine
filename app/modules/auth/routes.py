@@ -3,6 +3,7 @@
 from app.models.user import UserRole
 from app.services.auth import authenticate, mark_login, register_user, request_password_reset
 from app.services.auth import reset_password as reset_user_password
+from app.services.tutoring import get_tutor_earnings
 from flask import current_app, flash, make_response, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
@@ -220,5 +221,8 @@ def dashboard():
         my_school_student_count=my_school_student_count,
         my_school_teacher_count=my_school_teacher_count,
         my_school_subscription_count=my_school_subscription_count,
+        # AZ-P0-04: أرباح المعلم تُجلب فقط لدور المعلم — لا استعلام إضافي
+        # لأي دور آخر، ولا يظهر الرصيد لغير صاحبه.
+        tutor_earnings=(get_tutor_earnings(current_user.id) if current_user.role == UserRole.teacher else None),
         children_memberships={},
     )
