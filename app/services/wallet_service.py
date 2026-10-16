@@ -535,6 +535,54 @@ def ledger_query(
     return query
 
 
+def user_has_active_link_in_school(user_id: int, school_id: int) -> bool:
+    """هل المستخدم عضو نشط في هذه المدرسة؟
+
+    يُفحص نفس الجدول الذي تعتمده RLS (``user_role_links`` بدور نشط). هذه هي
+    الدالة **الصارمة**: لا تتجاوز الفحص لأي دور — ومنها المنصة، لأن إيداعاً في
+    محفظة ``school_id`` لمستخدم لا رابط له بها يزرع رصيداً لمستخدم غريب في
+    مدرسة لا صلة له بها (وهو ما أغلقته D7 في واجهة API).
+    """
+    from app.models.user import UserRoleLink
+
+    return UserRoleLink.query.filter_by(user_id=user_id, school_id=school_id, is_active=True).first() is not None
+
+
+def admin_deposit(
+    school_id: int,
+    target_user_id: int,
+    amount: Decimal,
+    operator_id: int | None = None,
+    note: str = "",
+    idempotency_key: str | None = None,
+) -> tuple[Any, str | None]:
+    """إيداع إداري من الواجهة: عضوية نشطة + محفظة مضمونة + قيداً في الدفتر.
+
+    يجمع ما تحتاجه الواجهة في نداء واحد: التحقق الصارم من أن المستخدم عضو نشط
+    في المدرسة (لا شحن لمحفظة شخص من مدرسة أخرى)، ثم ضمان وجود المحفظة، ثم
+    ``admin_credit`` الذي يرفض المبالغ غير الموجبة ويكتب الرصيد والقيد في
+    ``tx()`` واحدة. مُعرّف التفرد يُولَّد هنا إن لم يمرّره الطلب، ومشغّل العملية
+    يُسجَّل على القيد (``reference_id``) وعلى سجل التدقيق في طبقة المسار.
+    """
+    if target_user_id <= 0 or school_id <= 0:
+        return None, _("بيانات الإيداع غير صالحة.")
+    if not user_has_active_link_in_school(target_user_id, school_id):
+        return None, _("المستخدم ليس عضواً نشطاً في هذه المدرسة.")
+
+    wallet, wallet_error = get_or_create_wallet(school_id, target_user_id)
+    if wallet_error or wallet is None:
+        return None, wallet_error or _("تعذّر تجهيز المحفظة.")
+
+    return admin_credit(
+        school_id=school_id,
+        target_user_id=target_user_id,
+        amount=amount,
+        idempotency_key=idempotency_key or f"admin_deposit:{school_id}:{target_user_id}:{uuid.uuid4().hex}",
+        description=note.strip() or _("إيداع إداري"),
+        operator_id=operator_id,
+    )
+
+
 def find_reversal_of(transaction_id: int) -> Any:
     """القيد المقابل لحركة — ``None`` إن لم تُعكس بعد."""
     from app.models.wallet import WalletTransaction

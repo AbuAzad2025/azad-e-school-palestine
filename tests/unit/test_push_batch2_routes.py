@@ -9,7 +9,9 @@ auth-scoping and validation branches.
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 
+import pytest
 from tests.conftest import (
     make_class,
     make_class_member,
@@ -570,3 +572,137 @@ class TestWalletApi:
             json={"dest_user_id": classmate[0], "amount": "10", "idempotency_key": uuid.uuid4().hex},
         )
         assert ok.status_code == 200
+
+
+class TestAdminWalletDeposit:
+    """AZ-P1-08 — إيداع إداري من لوحة المنصة.
+
+    المال يدخل النظام من خارجه (مصدر ``NULL``)، فلا يشترط محفظة مقابلة — لكنه
+    يشترط عضوية نشطة في المدرسة المختارة، وسجل تدقيق باسم المنفّذ في نفس
+    الالتزام. الاختبارات تقيس الأثر الفعلي: الرصيد، وصفوف الدفتر، وصفوف
+    التدقيق، ومحتوى صفحة الدفتر — لا رموز الحالة وحدها.
+    """
+
+    def _people(self, app):
+        sid = make_school(app)
+        platform, p_email = mk_user(app, "super_admin")
+        student, s_email = mk_user(app, "student", school_id=sid)
+        return sid, platform, p_email, student, s_email
+
+    def _rows(self, app):
+        """(صفوف الدفتر، صفوف تدقيق الإيداع) — تُقرأ من قاعدة البيانات مباشرة."""
+        from app.extensions import db
+        from app.models.system import AuditLog
+        from app.models.wallet import WalletTransaction
+
+        with app.app_context():
+            return (
+                db.session.query(WalletTransaction).count(),
+                db.session.query(AuditLog).filter_by(action="wallet_deposit").count(),
+            )
+
+    def _balance(self, app, school_id, user_id):
+        from app.services.wallet_service import get_balance
+
+        with app.app_context():
+            return get_balance(school_id, user_id)
+
+    def test_deposit_credits_balance_and_writes_an_audited_ledger_row(self, app):
+        from app.models.system import AuditLog
+        from app.models.wallet import WalletTransaction
+
+        sid, platform, p_email, student, _ = self._people(app)
+        client = login_as(app, (platform, p_email))
+
+        resp = client.post(
+            "/admin/wallet/deposit",
+            data={"school_id": sid, "user_id": student, "amount": "120.50", "note": "دفعة أولى"},
+        )
+        assert resp.status_code == 302
+        assert self._balance(app, sid, student) == Decimal("120.50")
+
+        with app.app_context():
+            row = WalletTransaction.query.filter_by(transaction_type="admin_adjustment").one()
+            # طرف ``None`` = مال دخل النظام من خارجه، لا تحويل من محفظة أخرى.
+            assert row.source_wallet_id is None
+            assert row.destination_wallet_id is not None
+            assert row.school_id == sid
+            assert row.description == "دفعة أولى"
+            assert row.reference_id == platform  # المنفّذ مكتوب على القيد نفسه
+
+            log = AuditLog.query.filter_by(action="wallet_deposit").one()
+            assert log.user_id == platform
+            assert log.detail["transaction_id"] == row.id
+            assert log.detail["target_user_id"] == student
+            assert log.detail["school_id"] == sid
+            assert log.detail["amount"] == "120.50"
+            assert log.detail["note"] == "دفعة أولى"
+
+    def test_deposit_shows_up_in_the_ledger_page_for_that_user(self, app):
+        sid, platform, p_email, student, _ = self._people(app)
+        client = login_as(app, (platform, p_email))
+        client.post(
+            "/admin/wallet/deposit",
+            data={"school_id": sid, "user_id": student, "amount": "30", "note": "رصيد افتتاحي"},
+        )
+
+        page = client.get(f"/admin/wallet?school_id={sid}&user_id={student}")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "30.00 ILS" in html
+        assert "رصيد افتتاحي" in html
+
+    @pytest.mark.parametrize("amount", ["", "abc", "0", "-5", "NaN"])
+    def test_a_rejected_amount_writes_nothing(self, app, amount):
+        sid, platform, p_email, student, _ = self._people(app)
+        client = login_as(app, (platform, p_email))
+
+        resp = client.post(
+            "/admin/wallet/deposit",
+            data={"school_id": sid, "user_id": student, "amount": amount},
+        )
+        assert resp.status_code == 302
+        assert self._rows(app) == (0, 0)
+        assert self._balance(app, sid, student) == Decimal("0.00")
+
+    def test_missing_school_or_user_writes_nothing(self, app):
+        sid, platform, p_email, student, _ = self._people(app)
+        client = login_as(app, (platform, p_email))
+
+        for data in ({"user_id": student, "amount": "10"}, {"school_id": sid, "amount": "10"}):
+            assert client.post("/admin/wallet/deposit", data=data).status_code == 302
+
+        assert self._rows(app) == (0, 0)
+        assert self._balance(app, sid, student) == Decimal("0.00")
+
+    def test_deposit_refuses_a_user_of_another_school(self, app):
+        """لوحة المنصة أيضاً لا تزرع محفظة لمستخدم لا صلة له بالمدرسة."""
+        from app.models.wallet import Wallet
+
+        sid, platform, p_email, _, _ = self._people(app)
+        outsider, _ = mk_user(app, "student", school_id=make_school(app))
+        client = login_as(app, (platform, p_email))
+
+        resp = client.post(
+            "/admin/wallet/deposit",
+            data={"school_id": sid, "user_id": outsider, "amount": "50"},
+        )
+        assert resp.status_code == 302
+        assert self._rows(app) == (0, 0)
+        with app.app_context():
+            assert Wallet.query.filter_by(school_id=sid, user_id=outsider).count() == 0
+
+    def test_school_admin_and_student_cannot_deposit(self, app):
+        sid, _, _, student, _ = self._people(app)
+
+        for role in ("school_admin", "student"):
+            who, email = mk_user(app, role, school_id=sid)
+            client = login_as(app, (who, email))
+            resp = client.post(
+                "/admin/wallet/deposit",
+                data={"school_id": sid, "user_id": student, "amount": "25"},
+            )
+            assert resp.status_code == 403
+
+        assert self._rows(app) == (0, 0)
+        assert self._balance(app, sid, student) == Decimal("0.00")

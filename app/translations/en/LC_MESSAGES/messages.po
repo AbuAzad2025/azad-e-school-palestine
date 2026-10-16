@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-16 22:57+0300\n"
+"POT-Creation-Date: 2026-10-16 23:54+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -25,10 +25,11 @@ msgstr "Invalid request. Check the submitted data and try again."
 
 #: app/core/errors.py:44
 msgid "انتهت جلستك أو لم تسجّل الدخول. يرجى تسجيل الدخول للمتابعة."
-msgstr "Your session ended or you are not signed in. Please sign in to continue."
-"Your session has expired or you are not signed in. Please sign in to "
-"continue.Your session has ended or you are not signed in. Please sign in "
-"to continue."
+msgstr ""
+"Your session ended or you are not signed in. Please sign in to "
+"continue.Your session has expired or you are not signed in. Please sign "
+"in to continue.Your session has ended or you are not signed in. Please "
+"sign in to continue."
 
 #: app/core/errors.py:45
 msgid "لا تملك صلاحية الوصول إلى هذا المورد."
@@ -40,16 +41,18 @@ msgstr "The page you are looking for does not exist or has been moved."
 
 #: app/core/errors.py:47
 msgid "هذا الإجراء غير مدعوم في هذا العنوان. يرجى العودة والاستخدام من الواجهة."
-msgstr "This action is not supported at this address. Go back and use the interface."
-"This action is not supported at this address. Please go back and use the "
-"interface."
+msgstr ""
+"This action is not supported at this address. Go back and use the "
+"interface.This action is not supported at this address. Please go back "
+"and use the interface."
 
 #: app/core/errors.py:48
 msgid "لا يمكن إتمام العملية بسبب تعارض في البيانات. حدّث الصفحة ثم حاول مجدداً."
-msgstr "The operation could not be completed because of a data conflict. Refresh the page and try again."
-"The operation can't be completed because of a data conflict. Refresh the "
-"page and try again.The action could not be completed because of a data "
-"conflict. Refresh the page and try again."
+msgstr ""
+"The operation could not be completed because of a data conflict. Refresh "
+"the page and try again.The operation can't be completed because of a data"
+" conflict. Refresh the page and try again.The action could not be "
+"completed because of a data conflict. Refresh the page and try again."
 
 #: app/core/errors.py:49
 msgid "حجم الملف المرسل أكبر من الحد المسموح."
@@ -65,10 +68,11 @@ msgstr "The submitted data is incomplete or invalid."
 
 #: app/core/errors.py:53
 msgid "تعذّر إكمال الطلب من خدمة خارجية. يرجى المحاولة بعد قليل."
-msgstr "An external service could not complete the request. Please try again shortly."
-"The request couldn't be completed by an external service. Please try "
-"again shortly.The request could not be completed by an external service. "
-"Please try again shortly."
+msgstr ""
+"An external service could not complete the request. Please try again "
+"shortly.The request couldn't be completed by an external service. Please "
+"try again shortly.The request could not be completed by an external "
+"service. Please try again shortly."
 
 #: app/core/errors.py:54
 msgid "عدد الطلبات كبير خلال وقت قصير. يرجى المحاولة بعد قليل."
@@ -92,9 +96,10 @@ msgstr "Sign in again and retry."
 
 #: app/core/errors.py:154
 msgid "إن كنت ترى أن هذا خطأ، تواصل مع إدارة مدرستك لتفعيل صلاحيتك."
-msgstr "If you believe this is a mistake, contact your school administration to activate your permission."
+msgstr ""
 "If you believe this is a mistake, contact your school administration to "
-"activate your access."
+"activate your permission.If you believe this is a mistake, contact your "
+"school administration to activate your access."
 
 #: app/core/errors.py:155
 msgid "تحقق من الرابط أو عد إلى لوحتك الرئيسية."
@@ -126,8 +131,9 @@ msgstr "Wait a minute or two and try again."
 
 #: app/core/errors.py:162
 msgid "إن تكرر الخطأ، تواصل مع الدعم وأرسل لهم رقم المتابعة."
-msgstr "If the error happens again, contact support and give them the reference number."
-"If the error repeats, contact support and send them the tracking "
+msgstr ""
+"If the error happens again, contact support and give them the reference "
+"number.If the error repeats, contact support and send them the tracking "
 "reference."
 
 #: app/core/errors.py:163
@@ -140,9 +146,10 @@ msgstr "Try again in a few minutes; the service is under temporary load."
 
 #: app/core/errors.py:182
 msgid "انتهت صلاحية جلسة طلبك. حدّث الصفحة لإصدار رمز أمان جديد ثم أعد المحاولة."
-msgstr "Your request session expired. Refresh the page to get a new security token, then try again."
-"Your request session expired — refresh the page to issue a new security "
-"code, then try again."
+msgstr ""
+"Your request session expired. Refresh the page to get a new security "
+"token, then try again.Your request session expired — refresh the page to "
+"issue a new security code, then try again."
 
 #: app/core/errors.py:358
 msgid "انتهت صلاحية الجلسة. حدّث الصفحة ثم حاول مجدداً."
@@ -297,57 +304,58 @@ msgstr "Your AI quota has been used up."
 #: app/modules/api/routes.py:167 app/modules/api/routes.py:177
 #: app/modules/api/routes.py:184 app/modules/api/routes.py:250
 #: app/modules/api/routes.py:355 app/modules/api/routes.py:361
-#: app/modules/api/routes.py:556 app/modules/wallet_api.py:96
-#: app/modules/wallet_api.py:98 app/modules/wallet_api.py:142
+#: app/modules/api/routes.py:556 app/modules/wallet_api.py:95
+#: app/modules/wallet_api.py:97 app/modules/wallet_api.py:141
 msgid "غير مصرح بالوصول"
 msgstr "Access denied"
 
-#: app/modules/wallet_api.py:103 app/modules/wallet_api.py:147
-#: app/modules/wallet_api.py:204 app/modules/wallet_api.py:290
+#: app/modules/wallet_api.py:102 app/modules/wallet_api.py:146
+#: app/modules/wallet_api.py:203 app/modules/wallet_api.py:289
 msgid "school_id مطلوب"
 msgstr "school_id is required"
 
-#: app/modules/wallet_api.py:208
+#: app/modules/wallet_api.py:207
 msgid "لا يمكن التحويل من محفظة غيرك"
 msgstr "You cannot transfer from another user's wallet"
 
-#: app/modules/wallet_api.py:212
+#: app/modules/wallet_api.py:211
 msgid "dest_user_id مطلوب"
 msgstr "dest_user_id is required"
 
-#: app/modules/wallet_api.py:216 app/modules/wallet_api.py:298
+#: app/modules/wallet_api.py:215 app/modules/wallet_api.py:297
 msgid "مبلغ غير صالح"
 msgstr "Invalid amount"
 
-#: app/modules/wallet_api.py:220 app/modules/wallet_api.py:302
+#: app/modules/wallet_api.py:219 app/modules/wallet_api.py:301
 msgid "idempotency_key مطلوب (UUID)"
 msgstr "idempotency_key is required (UUID)"
 
-#: app/modules/wallet_api.py:226
+#: app/modules/wallet_api.py:225
 msgid "المستخدم المستلم ليس عضواً نشطاً في هذه المدرسة"
 msgstr "The recipient is not an active member of this school."
 
-#: app/modules/wallet_api.py:228
+#: app/modules/wallet_api.py:227
 msgid "المستخدم المرسل ليس عضواً نشطاً في هذه المدرسة"
 msgstr "The sender is not an active member of this school."
 
-#: app/modules/wallet_api.py:230
+#: app/modules/wallet_api.py:229
 msgid "تحويل محفظة"
 msgstr "Wallet transfer"
 
-#: app/modules/wallet_api.py:236 app/modules/wallet_api.py:312
+#: app/modules/wallet_api.py:235 app/modules/wallet_api.py:311
 msgid "تعذر إنشاء المحفظة"
 msgstr "Could not create the wallet"
 
-#: app/modules/wallet_api.py:294
+#: app/modules/wallet_api.py:293
 msgid "user_id مطلوب"
 msgstr "user_id is required"
 
-#: app/modules/wallet_api.py:307
+#: app/modules/wallet_api.py:306
 msgid "المستخدم ليس عضواً نشطاً في هذه المدرسة"
 msgstr "The user is not an active member of this school."
 
-#: app/modules/wallet_api.py:319
+#: app/modules/wallet_api.py:318 app/services/wallet_service.py:581
+#: app/templates/admin/wallet_ledger.html:20
 msgid "إيداع إداري"
 msgstr "Administrative deposit"
 
@@ -500,39 +508,55 @@ msgstr "The transaction could not be reversed."
 msgid "تم عكس الحركة بقيد مقابل."
 msgstr "The transaction was reversed with an offsetting entry."
 
-#: app/modules/admin/routes.py:1360
+#: app/modules/admin/routes.py:1221
+msgid "اختر المدرسة والمستخدم قبل الإيداع."
+msgstr "Choose the school and the user before depositing."
+
+#: app/modules/admin/routes.py:1227 app/modules/admin/routes.py:1230
+msgid "المبلغ غير صالح — أدخل رقماً موجباً."
+msgstr "The amount is invalid — enter a positive number."
+
+#: app/modules/admin/routes.py:1242
+msgid "تعذّر تنفيذ الإيداع."
+msgstr "The deposit could not be completed."
+
+#: app/modules/admin/routes.py:1262
+msgid "تم إيداع المبلغ في محفظة المستخدم."
+msgstr "The amount was deposited into the user's wallet."
+
+#: app/modules/admin/routes.py:1432
 msgid "نص الرد مطلوب"
 msgstr "Reply text is required"
 
-#: app/modules/admin/routes.py:1370
+#: app/modules/admin/routes.py:1442
 msgid "تم إرسال الرد بنجاح"
 msgstr "Reply sent successfully"
 
-#: app/modules/admin/routes.py:1372
+#: app/modules/admin/routes.py:1444
 msgid "فشل إرسال الرد"
 msgstr "Failed to send reply"
 
-#: app/modules/admin/routes.py:1417 app/modules/admin/routes.py:1443
+#: app/modules/admin/routes.py:1489 app/modules/admin/routes.py:1515
 msgid "طلب السحب غير موجود."
 msgstr "The withdrawal request does not exist."
 
-#: app/modules/admin/routes.py:1419 app/modules/admin/routes.py:1445
+#: app/modules/admin/routes.py:1491 app/modules/admin/routes.py:1517
 msgid "تمت مراجعة طلب السحب مسبقاً."
 msgstr "This withdrawal request has already been reviewed."
 
-#: app/modules/admin/routes.py:1435
+#: app/modules/admin/routes.py:1507
 msgid "فشل اعتماد طلب السحب"
 msgstr "Failed to approve the payout request"
 
-#: app/modules/admin/routes.py:1437
+#: app/modules/admin/routes.py:1509
 msgid "تم اعتماد طلب السحب."
 msgstr "Payout request approved."
 
-#: app/modules/admin/routes.py:1458
+#: app/modules/admin/routes.py:1530
 msgid "فشل رفض طلب السحب"
 msgstr "Failed to reject the payout request"
 
-#: app/modules/admin/routes.py:1460
+#: app/modules/admin/routes.py:1532
 msgid "تم رفض طلب السحب."
 msgstr "Payout request rejected."
 
@@ -644,7 +668,7 @@ msgstr "Save quiz"
 #: app/modules/assessment/forms.py:22 app/modules/billing/forms.py:22
 #: app/modules/billing/forms.py:51 app/modules/calendar/forms.py:12
 #: app/modules/grades/forms.py:38 app/templates/admin/ai_usage.html:49
-#: app/templates/admin/wallet_ledger.html:58
+#: app/templates/admin/wallet_ledger.html:94
 #: app/templates/assessment/question_bank.html:19
 #: app/templates/billing/discount_list.html:18
 #: app/templates/calendar/index.html:22
@@ -934,7 +958,8 @@ msgid "رقم مرجع التحويل"
 msgstr "Transfer reference number"
 
 #: app/modules/billing/forms.py:42 app/templates/admin/payouts.html:11
-#: app/templates/admin/wallet_ledger.html:59
+#: app/templates/admin/wallet_ledger.html:40
+#: app/templates/admin/wallet_ledger.html:95
 #: app/templates/billing/invoice.html:41
 msgid "المبلغ"
 msgstr "Amount"
@@ -1403,9 +1428,10 @@ msgstr "Objection updated."
 
 #: app/modules/individual/routes.py:54
 msgid "تم إنشاء اشتراكك وهو بانتظار الدفع — أكمل الدفع لتفتح الكورس."
-msgstr "Your subscription was created and is awaiting payment — complete the payment to unlock the course."
+msgstr ""
 "Your subscription was created and is awaiting payment — complete the "
-"payment to open the course."
+"payment to unlock the course.Your subscription was created and is "
+"awaiting payment — complete the payment to open the course."
 
 #: app/modules/individual/routes.py:56
 msgid "تم الاشتراك بنجاح! يمكنك الآن الوصول إلى محتوى الكورس."
@@ -1801,9 +1827,10 @@ msgstr "You cannot book a session with yourself."
 
 #: app/modules/tutoring/routes.py:150
 msgid "السعر المقترح خارج النطاق المسموح (80%–150% من سعر المعلم المعلن)."
-msgstr "The suggested price is outside the allowed range (80%–150% of the tutor's listed price)."
-"The proposed rate is outside the allowed range (80%–150% of the tutor's "
-"listed rate)."
+msgstr ""
+"The suggested price is outside the allowed range (80%–150% of the tutor's"
+" listed price).The proposed rate is outside the allowed range (80%–150% "
+"of the tutor's listed rate)."
 
 #: app/modules/tutoring/routes.py:172
 msgid "طلب درس خصوصي جديد"
@@ -1907,9 +1934,10 @@ msgstr ""
 
 #: app/services/ai.py:550
 msgid "يمكنك عرض الواجبات في قسم الواجبات. هل تريد مساعدة في مشكلة معينة؟"
-msgstr "You can view assignments in the assignments section. Would you like help with a specific problem?"
-"You can view assignments in the Assignments section. Do you need help "
-"with a specific problem?"
+msgstr ""
+"You can view assignments in the assignments section. Would you like help "
+"with a specific problem?You can view assignments in the Assignments "
+"section. Do you need help with a specific problem?"
 
 #: app/services/ai.py:553
 #, python-format
@@ -1973,9 +2001,10 @@ msgstr "Incorrect email or password."
 
 #: app/services/auth.py:91
 msgid "الحساب مقفل مؤقتاً بسبب محاولات فاشلة متكررة. حاول لاحقاً."
-msgstr "The account is temporarily locked because of repeated failed attempts. Try again later."
-"Account temporarily locked due to repeated failed attempts. Try again "
-"later."
+msgstr ""
+"The account is temporarily locked because of repeated failed attempts. "
+"Try again later.Account temporarily locked due to repeated failed "
+"attempts. Try again later."
 
 #: app/services/auth.py:105
 msgid "حسابك معطّل. تواصل مع الإدارة."
@@ -1983,9 +2012,10 @@ msgstr "Your account is disabled. Contact administration."
 
 #: app/services/auth.py:109
 msgid "حسابك في انتظار موافقة الإدارة. سيتم إشعارك عند القبول."
-msgstr "Your account is awaiting administration approval. You will be notified once it is approved."
-"Your account is awaiting administrator approval. You will be notified "
-"once approved."
+msgstr ""
+"Your account is awaiting administration approval. You will be notified "
+"once it is approved.Your account is awaiting administrator approval. You "
+"will be notified once approved."
 
 #: app/services/auth.py:162 app/services/auth.py:165
 msgid "رابط إعادة التعيين غير صالح أو منتهي."
@@ -2261,9 +2291,10 @@ msgstr "Renew subscription now"
 #: app/services/email.py:233
 #, python-format
 msgid "تذكير: تجديد اشتراكك خلال %(days)s يوم — منصة مدرسة أزاد الإلكترونية"
-msgstr "Reminder: your subscription renews in %(days)s days — Azad E-School Platform"
-"Reminder: your subscription expires in %(days)s day(s) — Azad E-School "
-"Platform"
+msgstr ""
+"Reminder: your subscription renews in %(days)s days — Azad E-School "
+"PlatformReminder: your subscription expires in %(days)s day(s) — Azad "
+"E-School Platform"
 
 #: app/services/email.py:248
 msgid "رد على رسالتك"
@@ -2295,7 +2326,7 @@ msgstr "Join date"
 #: app/templates/admin/subscription_detail.html:16
 #: app/templates/admin/user_detail.html:35
 #: app/templates/admin/users_list.html:39
-#: app/templates/admin/wallet_ledger.html:63
+#: app/templates/admin/wallet_ledger.html:99
 #: app/templates/assessment/quiz_results.html:28
 #: app/templates/billing/discount_list.html:23
 #: app/templates/grades/appeals_queue.html:14
@@ -2600,43 +2631,58 @@ msgstr "The wallet does not exist."
 msgid "المحفظة غير نشطة."
 msgstr "The wallet is inactive."
 
+#: app/services/wallet_service.py:568
+msgid "بيانات الإيداع غير صالحة."
+msgstr "The deposit details are invalid."
+
+#: app/services/wallet_service.py:570
+msgid "المستخدم ليس عضواً نشطاً في هذه المدرسة."
+msgstr "The user is not an active member of this school."
+
 #: app/services/wallet_service.py:574
+msgid "تعذّر تجهيز المحفظة."
+msgstr "The wallet could not be prepared."
+
+#: app/services/wallet_service.py:622
 msgid "الحركة غير موجودة في هذه المدرسة."
 msgstr "Transaction not found in this school."
 
-#: app/services/wallet_service.py:576
+#: app/services/wallet_service.py:624
 msgid "لا يمكن عكس قيد عكس."
 msgstr "A reversal entry cannot be reversed."
 
-#: app/services/wallet_service.py:584
+#: app/services/wallet_service.py:632
 msgid "هذه الحركة معكوسة مسبقاً."
 msgstr "This transaction has already been reversed."
 
-#: app/services/wallet_service.py:601
+#: app/services/wallet_service.py:649
 msgid "محفظة الطرف المقابل غير موجودة."
 msgstr "The counterparty wallet does not exist."
 
-#: app/services/wallet_service.py:603
+#: app/services/wallet_service.py:651
 msgid "المحفظة المرسلة الأصلية غير موجودة."
 msgstr "The original sending wallet does not exist."
 
-#: app/services/wallet_service.py:607 app/services/wallet_service.py:613
+#: app/services/wallet_service.py:655 app/services/wallet_service.py:661
 msgid "المحفظة غير نشطة — لا يمكن عكس الحركة."
 msgstr "The wallet is inactive — the transaction cannot be reversed."
 
-#: app/services/wallet_service.py:609
+#: app/services/wallet_service.py:657
 msgid "رصيد المحفظة لا يكفي لعكس الحركة (المبلغ تم صرفه)."
-msgstr "The wallet balance is not enough to reverse the transaction (the amount has been spent)."
+msgstr ""
+"The wallet balance is not enough to reverse the transaction (the amount "
+"has been spent)."
 
-#: app/services/wallet_service.py:616
+#: app/services/wallet_service.py:664
 #, python-format
 msgid "عكس الحركة رقم %(id)s"
 msgstr "Reversal of transaction %(id)s"
 
 #: app/templates/base.html:9 app/templates/landing.html:9
 msgid "منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية"
-msgstr "Azad E-School Platform — complete e-learning for the Palestinian curricula"
-"Azad Electronic School Platform — integrated e-learning for the "
+msgstr ""
+"Azad E-School Platform — complete e-learning for the Palestinian "
+"curriculaAzad Electronic School Platform — integrated e-learning for the "
 "Palestinian curriculum"
 
 #: app/templates/admin/base.html:2 app/templates/admin/dashboard.html:3
@@ -2769,7 +2815,7 @@ msgstr "Messages"
 #: app/templates/admin/pending_registrations.html:10
 #: app/templates/admin/schools_list.html:9
 #: app/templates/admin/users_list.html:21
-#: app/templates/admin/wallet_ledger.html:48 app/templates/base.html:161
+#: app/templates/admin/wallet_ledger.html:84 app/templates/base.html:161
 #: app/templates/individual/course_catalog.html:27
 #: app/templates/macros/forms.html:186 app/templates/partials/navbar.html:12
 #: app/templates/tutoring/index.html:9
@@ -3101,9 +3147,10 @@ msgstr "Organized recorded lessons"
 
 #: app/templates/landing.html:62
 msgid "محتوى تعليمي عالي الجودة من أفضل المعلمين، مرتّب حسب المناهج الرسمية."
-msgstr "High-quality educational content from the best teachers, organised by the official curricula."
-"High-quality educational content from top teachers, organized by official"
-" curricula."
+msgstr ""
+"High-quality educational content from the best teachers, organised by the"
+" official curricula.High-quality educational content from top teachers, "
+"organized by official curricula."
 
 #: app/templates/landing.html:66
 msgid "اختبارات تفاعلية مراقبة"
@@ -3111,9 +3158,10 @@ msgstr "Proctored interactive quizzes"
 
 #: app/templates/landing.html:67
 msgid "اختبارات ذكية مع مراقبة النزاهة ونتائج فورية لتحسين الأداء."
-msgstr "Smart quizzes with integrity monitoring and instant results to improve performance."
-"Smart quizzes with integrity monitoring and instant results to boost "
-"performance."
+msgstr ""
+"Smart quizzes with integrity monitoring and instant results to improve "
+"performance.Smart quizzes with integrity monitoring and instant results "
+"to boost performance."
 
 #: app/templates/landing.html:71
 msgid "دروس خصوصية أونلاين"
@@ -3121,8 +3169,9 @@ msgstr "Online private tutoring"
 
 #: app/templates/landing.html:72
 msgid "احجز جلسات فردية مع معلمين متخصصين في أي مادة وفي أي وقت."
-msgstr "Book one-to-one sessions with specialist tutors in any subject at any time."
-"Book one-on-one sessions with specialized teachers in any subject, "
+msgstr ""
+"Book one-to-one sessions with specialist tutors in any subject at any "
+"time.Book one-on-one sessions with specialized teachers in any subject, "
 "anytime."
 
 #: app/templates/landing.html:80
@@ -3473,13 +3522,13 @@ msgstr "All entities"
 #: app/templates/admin/schools_list.html:11
 #: app/templates/admin/subscriptions_list.html:17
 #: app/templates/admin/users_list.html:23
-#: app/templates/admin/wallet_ledger.html:50
+#: app/templates/admin/wallet_ledger.html:86
 #: app/templates/grades/attendance.html:33
 msgid "مسح"
 msgstr "Clear"
 
 #: app/templates/admin/audit_logs.html:37
-#: app/templates/admin/wallet_ledger.html:56
+#: app/templates/admin/wallet_ledger.html:92
 #: app/templates/progress/my_progress.html:26
 #: app/templates/progress/student_detail.html:19
 msgid "الوقت"
@@ -3647,7 +3696,8 @@ msgstr "Coming soon"
 #: app/templates/admin/moe_export.html:15 app/templates/admin/revenue.html:47
 #: app/templates/admin/revenue.html:120
 #: app/templates/admin/schools_list.html:17
-#: app/templates/admin/wallet_ledger.html:57
+#: app/templates/admin/wallet_ledger.html:27
+#: app/templates/admin/wallet_ledger.html:93
 #: app/templates/school_approvals/queue.html:17
 #: app/templates/school_approvals/super_admin_queue.html:17
 #: app/templates/schools/onboarding.html:59
@@ -3723,7 +3773,7 @@ msgid "الرد على الرسالة"
 msgstr "Reply to message"
 
 #: app/templates/admin/contact_inbox.html:63
-#: app/templates/admin/wallet_ledger.html:61
+#: app/templates/admin/wallet_ledger.html:97
 #: app/templates/billing/invoice.html:28
 msgid "إلى"
 msgstr "To"
@@ -4469,12 +4519,12 @@ msgid "لا توجد دفعات"
 msgstr "No payments"
 
 #: app/templates/admin/subscriptions_list.html:8
-#: app/templates/admin/wallet_ledger.html:38
+#: app/templates/admin/wallet_ledger.html:74
 msgid "تصفية حسب الحالة"
 msgstr "Filter by status"
 
 #: app/templates/admin/subscriptions_list.html:9
-#: app/templates/admin/wallet_ledger.html:39
+#: app/templates/admin/wallet_ledger.html:75
 msgid "كل الحالات"
 msgstr "All statuses"
 
@@ -4602,79 +4652,103 @@ msgstr "No users match your search"
 
 #: app/templates/admin/wallet_ledger.html:8
 msgid "كل حركة مالية بأطرافها، مع إمكانية عكس حركة بقيد مقابل."
-msgstr "Every financial transaction with its parties, plus the option to reverse one with an offsetting entry."
+msgstr ""
+"Every financial transaction with its parties, plus the option to reverse "
+"one with an offsetting entry."
 
 #: app/templates/admin/wallet_ledger.html:14
 msgid ""
 "العكس لا يعدّل الحركة الأصلية ولا يحذفها: يُضاف قيد مقابل بالمعكوس، فتبقى"
 " المسار الكامل ظاهراً."
-msgstr "A reversal neither edits nor deletes the original transaction: an offsetting entry in the opposite direction is added, so the full trail stays visible."
-
-#: app/templates/admin/wallet_ledger.html:19
-msgid "بحث في الوصف أو المفتاح"
-msgstr "Search the description or key"
+msgstr ""
+"A reversal neither edits nor deletes the original transaction: an "
+"offsetting entry in the opposite direction is added, so the full trail "
+"stays visible."
 
 #: app/templates/admin/wallet_ledger.html:22
-msgid "تصفية حسب المدرسة"
-msgstr "Filter by school"
+msgid ""
+"الإيداع بلا محفظة مصدر (مال يدخل النظام من خارجه) ويُسجَّل باسمك في سجل "
+"التدقيق."
+msgstr "A deposit has no source wallet (money entering the system from outside) and is recorded under your name in the audit log."
 
-#: app/templates/admin/wallet_ledger.html:23
-msgid "كل المدارس"
-msgstr "All schools"
+#: app/templates/admin/wallet_ledger.html:29
+msgid "اختر المدرسة"
+msgstr "Choose a school"
 
-#: app/templates/admin/wallet_ledger.html:30
-msgid "تصفية حسب النوع"
-msgstr "Filter by type"
-
-#: app/templates/admin/wallet_ledger.html:31
-msgid "كل الأنواع"
-msgstr "All types"
-
-#: app/templates/admin/wallet_ledger.html:46
+#: app/templates/admin/wallet_ledger.html:36
+#: app/templates/admin/wallet_ledger.html:82
 msgid "معرّف المستخدم"
 msgstr "User ID"
 
-#: app/templates/admin/wallet_ledger.html:60
+#: app/templates/admin/wallet_ledger.html:44
+msgid "ملاحظة (اختياري)"
+msgstr "Note (optional)"
+
+#: app/templates/admin/wallet_ledger.html:48
+msgid "تنفيذ الإيداع"
+msgstr "Submit deposit"
+
+#: app/templates/admin/wallet_ledger.html:55
+msgid "بحث في الوصف أو المفتاح"
+msgstr "Search the description or key"
+
+#: app/templates/admin/wallet_ledger.html:58
+msgid "تصفية حسب المدرسة"
+msgstr "Filter by school"
+
+#: app/templates/admin/wallet_ledger.html:59
+msgid "كل المدارس"
+msgstr "All schools"
+
+#: app/templates/admin/wallet_ledger.html:66
+msgid "تصفية حسب النوع"
+msgstr "Filter by type"
+
+#: app/templates/admin/wallet_ledger.html:67
+msgid "كل الأنواع"
+msgstr "All types"
+
+#: app/templates/admin/wallet_ledger.html:96
 msgid "من"
 msgstr "From"
 
-#: app/templates/admin/wallet_ledger.html:62
+#: app/templates/admin/wallet_ledger.html:98
 #: app/templates/grades/rubric_builder.html:22
 #: app/templates/grades/rubric_builder.html:36
 msgid "الوصف"
 msgstr "Description"
 
-#: app/templates/admin/wallet_ledger.html:64
-#: app/templates/admin/wallet_ledger.html:89
+#: app/templates/admin/wallet_ledger.html:100
+#: app/templates/admin/wallet_ledger.html:125
 msgid "عكس"
 msgstr "Reverse"
 
-#: app/templates/admin/wallet_ledger.html:69
-#: app/templates/admin/wallet_ledger.html:70
+#: app/templates/admin/wallet_ledger.html:105
+#: app/templates/admin/wallet_ledger.html:106
 msgid "خارج النظام"
 msgstr "Outside the system"
 
-#: app/templates/admin/wallet_ledger.html:74
+#: app/templates/admin/wallet_ledger.html:110
 msgid "معكوسة"
 msgstr "Reversed"
 
-#: app/templates/admin/wallet_ledger.html:76
+#: app/templates/admin/wallet_ledger.html:112
 msgid "قيد عكس"
 msgstr "Reversal entry"
 
-#: app/templates/admin/wallet_ledger.html:88
+#: app/templates/admin/wallet_ledger.html:124
 msgid "سبب العكس (اختياري)"
 msgstr "Reversal reason (optional)"
 
-#: app/templates/admin/wallet_ledger.html:88
+#: app/templates/admin/wallet_ledger.html:124
 msgid "سبب العكس"
 msgstr "Reversal reason"
 
-#: app/templates/admin/wallet_ledger.html:89
+#: app/templates/admin/wallet_ledger.html:125
 msgid "عكس هذه الحركة بقيد مقابل؟"
 msgstr "Reverse this transaction with an offsetting entry?"
 
-#: app/templates/admin/wallet_ledger.html:116
+#: app/templates/admin/wallet_ledger.html:152
 msgid "لا حركات في الدفتر بهذه الفلاتر."
 msgstr "No ledger transactions match these filters."
 
@@ -5379,9 +5453,10 @@ msgstr "School code (optional)"
 
 #: app/templates/auth/register.html:59
 msgid "إذا كنت معلماً/طالباً/ولي أمر، أدخل كود المدرسة للانضمام مباشرة."
-msgstr "If you are a teacher, student, or guardian, enter the school code to join directly."
-"If you are a teacher, student, or parent, enter the school code to join "
-"directly."
+msgstr ""
+"If you are a teacher, student, or guardian, enter the school code to join"
+" directly.If you are a teacher, student, or parent, enter the school code"
+" to join directly."
 
 #: app/templates/auth/register.html:63
 #: app/templates/auth/register_individual.html:48
@@ -5405,9 +5480,10 @@ msgstr "Register as an individual student"
 
 #: app/templates/auth/register_individual.html:11
 msgid "سجّل كطالب مستقل واستكشف الكورسات المتاحة مباشرة."
-msgstr "Register as an independent student and explore the available courses right away."
-"Sign up as an independent student and explore available courses right "
-"away."
+msgstr ""
+"Register as an independent student and explore the available courses "
+"right away.Sign up as an independent student and explore available "
+"courses right away."
 
 #: app/templates/auth/register_individual.html:72
 msgid "مدرستك لديها كود انضمام؟"
@@ -5491,9 +5567,10 @@ msgstr "Submit manual payment"
 
 #: app/templates/billing/class_billing.html:87
 msgid "حوّل المبلغ ثم أدخل مرجع التحويل. سيُفعّل اشتراكك بعد الاعتماد."
-msgstr "Transfer the amount, then enter the transfer reference. Your subscription activates after approval."
+msgstr ""
 "Transfer the amount, then enter the transfer reference. Your subscription"
-" will be activated after approval."
+" activates after approval.Transfer the amount, then enter the transfer "
+"reference. Your subscription will be activated after approval."
 
 #: app/templates/billing/class_billing.html:90
 msgid "أو ادفع عبر بوابة إلكترونية"
@@ -5676,9 +5753,10 @@ msgstr "No academic events yet."
 
 #: app/templates/contact/contact.html:7
 msgid "نحن هنا للمساعدة. املأ النموذج وسنرد عليك في أقرب وقت ممكن."
-msgstr "We are here to help. Fill in the form and we will reply as soon as possible."
+msgstr ""
 "We are here to help. Fill in the form and we will reply as soon as "
-"possible."
+"possible.We are here to help. Fill in the form and we will reply as soon "
+"as possible."
 
 #: app/templates/contact/contact.html:16
 msgid "اسمك الكامل"
@@ -5848,9 +5926,10 @@ msgstr "You do not have permission to access this page."
 
 #: app/templates/errors/403.html:15
 msgid "هذه الصفحة متاحة لدور محدّد. سجّل الدخول بالحساب المناسب ثم حاول مجدداً."
-msgstr "This page is available to a specific role. Sign in with the right account and try again."
-"This page is limited to specific roles. Sign in with the appropriate "
-"account and try again."
+msgstr ""
+"This page is available to a specific role. Sign in with the right account"
+" and try again.This page is limited to specific roles. Sign in with the "
+"appropriate account and try again."
 
 #: app/templates/errors/403.html:18
 msgid "العودة إلى لوحي"
@@ -6037,9 +6116,10 @@ msgstr "Invoice"
 
 #: app/templates/family/index.html:68
 msgid "لا يوجد أبناء مرتبطين بحسابك. اطلب من طالبك إنشاء رمز الربط."
-msgstr "No children are linked to your account. Ask your student to generate a linking code."
+msgstr ""
 "No children are linked to your account. Ask your student to generate a "
-"linking code."
+"linking code.No children are linked to your account. Ask your student to "
+"generate a linking code."
 
 #: app/templates/gamification/badges.html:2
 msgid "شاراتي"
@@ -6437,9 +6517,10 @@ msgstr "Created on %(date)s"
 
 #: app/templates/individual/dashboard.html:54
 msgid "اشتراكاتك أعلاه بانتظار الدفع — أكمل الدفع لتفعيل الكورس."
-msgstr "Your subscriptions above are awaiting payment — complete the payment to activate the course."
+msgstr ""
 "Your subscriptions above are awaiting payment — complete the payment to "
-"activate the course."
+"activate the course.Your subscriptions above are awaiting payment — "
+"complete the payment to activate the course."
 
 #: app/templates/individual/dashboard.html:57
 msgid "لم تسجل في أي كورس بعد"
@@ -6712,9 +6793,10 @@ msgstr "Paying for subscription:"
 
 #: app/templates/payments_ui/index.html:18
 msgid "لا يوجد اشتراك محدد للدفع — ابدأ من صفحة الاشتراك لاختيار بوابة دفع."
-msgstr "No subscription is selected for payment — start from the subscription page to choose a payment gateway."
-"No subscription is selected for this payment — start from the "
-"subscription page to pick a gateway."
+msgstr ""
+"No subscription is selected for payment — start from the subscription "
+"page to choose a payment gateway.No subscription is selected for this "
+"payment — start from the subscription page to pick a gateway."
 
 #: app/templates/payments_ui/index.html:28
 msgid "العملات المدعومة:"
@@ -6879,9 +6961,10 @@ msgstr "Enter the join code you received from your teacher or school."
 
 #: app/templates/schools/manage.html:53
 msgid "أنشئ أول صف لمدرستك لبدء إضافة الطلاب والمحتوى"
-msgstr "Create your school's first class to start adding students and content"
-"Create your first class for your school to start adding students and "
-"content"
+msgstr ""
+"Create your school's first class to start adding students and "
+"contentCreate your first class for your school to start adding students "
+"and content"
 
 #: app/templates/schools/manage.html:61
 msgid "إضافة مستوى دراسي"
@@ -7028,9 +7111,11 @@ msgstr "Request earnings withdrawal"
 
 #: app/templates/tutoring/earnings.html:31
 msgid "تحذير: الرصيد المعروض لا يطابق سجل العمولة — راجع الدعم قبل طلب السحب."
-msgstr "Warning: the displayed balance does not match the commission log — check with support before requesting a payout."
-"Warning: the displayed balance does not match the commission ledger — "
-"check with support before requesting a withdrawal."
+msgstr ""
+"Warning: the displayed balance does not match the commission log — check "
+"with support before requesting a payout.Warning: the displayed balance "
+"does not match the commission ledger — check with support before "
+"requesting a withdrawal."
 
 #: app/templates/tutoring/earnings.html:37
 msgid "عمولات معلّقة:"

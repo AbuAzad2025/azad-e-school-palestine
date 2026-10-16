@@ -14,6 +14,42 @@
   {{ _('العكس لا يعدّل الحركة الأصلية ولا يحذفها: يُضاف قيد مقابل بالمعكوس، فتبقى المسار الكامل ظاهراً.') }}
 </p>
 
+{# AZ-P1-08: إيداع إداري — المال يدخل النظام من خارجه فالمصدر NULL، والرصيد
+   وسجل التدقيق في التزام واحد، ولا يُشحن إلا عضو نشط في المدرسة المختارة. #}
+<section class="azad-card" data-testid="admin-deposit">
+  <h2 class="azad-card__title">{{ icon('cash') }} {{ _('إيداع إداري') }}</h2>
+  <p class="form-hint" data-testid="deposit-source-note">
+    {{ _('الإيداع بلا محفظة مصدر (مال يدخل النظام من خارجه) ويُسجَّل باسمك في سجل التدقيق.') }}
+  </p>
+  <form method="post" action="{{ url_for('admin.wallet_deposit') }}" class="form-inline gradebook-form-row">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="gradebook-form-col">
+      <label class="azad-field__label" for="deposit-school">{{ _('المدرسة') }}</label>
+      <select id="deposit-school" name="school_id" class="azad-field__input" required>
+        <option value="">{{ _('اختر المدرسة') }}</option>
+        {% for school in schools %}
+        <option value="{{ school.id }}">{{ school.name_ar }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="gradebook-form-col">
+      <label class="azad-field__label" for="deposit-user">{{ _('معرّف المستخدم') }}</label>
+      <input id="deposit-user" type="number" name="user_id" min="1" required class="azad-field__input">
+    </div>
+    <div class="gradebook-form-col">
+      <label class="azad-field__label" for="deposit-amount">{{ _('المبلغ') }}</label>
+      <input id="deposit-amount" type="number" name="amount" step="0.01" min="0.01" required class="azad-field__input">
+    </div>
+    <div class="gradebook-form-col--2">
+      <label class="azad-field__label" for="deposit-note">{{ _('ملاحظة (اختياري)') }}</label>
+      <input id="deposit-note" type="text" name="note" maxlength="200" class="azad-field__input">
+    </div>
+    <div class="gradebook-form-actions">
+      <button class="azad-btn" type="submit">{{ _('تنفيذ الإيداع') }}</button>
+    </div>
+  </form>
+</section>
+
 <form method="get" class="form-inline gradebook-form-row">
   <div class="gradebook-form-col--2">
     <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث في الوصف أو المفتاح') }}" aria-label="{{ _('بحث في الوصف أو المفتاح') }}" class="azad-field__input">

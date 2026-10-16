@@ -40,15 +40,14 @@ def _user_in_school(user_id: int, school_id: int) -> bool:
 
     الفحص الجوهري: مشرف المدرسة (A) كان يستطيع إنشاء محفظة لمستخدم من
     مدرسة (B) داخل (A) وإيداعها — التينانتس تقنيًا سليمًا (الصف يحمل
-    school_id = A) لكنها بقايا مالك لطالب لا صلة له بالمدرسة. يفحص
-    ``user_role_links`` نفس الجدول الذي تعتمده RLS (دور نشط). super_admin
-    يتخطى الفحص لأنه فوق التينانتس (نفس دلالة ‎current_school_id()‎).
+    school_id = A) لكنها بقايا مالك لطالب لا صلة له بالمدرسة. الفحص نفسه
+    يعيش في ``wallet_service.user_has_active_link_in_school`` (يُشترك مع
+    لوحة المنصة)، ويُضاف هنا استثناء ``super_admin`` وحده لأن هذه الواجهة
+    تعمل على مستوى المنصة (نفس دلالة ‎current_school_id()‎).
     """
-    from app.models.user import UserRoleLink
-
     if current_user.role == UserRole.super_admin:
         return True
-    return UserRoleLink.query.filter_by(user_id=user_id, school_id=school_id, is_active=True).first() is not None
+    return wallet_service.user_has_active_link_in_school(user_id, school_id)
 
 
 def _parse_amount(raw: str | None) -> Decimal | None:

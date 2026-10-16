@@ -187,6 +187,11 @@
 
 ## AZ-P1-08 — واجهة إيداع إداري
 
+**الحالة:** مُنفَّذ — `user_has_active_link_in_school` و`admin_deposit` في
+`app/services/wallet_service.py`، ومسار `admin.wallet_deposit` ببطاقة النموذج في
+`app/templates/admin/wallet_ledger.html`، و`TestAdminWalletDeposit` في
+`tests/unit/test_push_batch2_routes.py`. فحص العضوية صار مشتركاً مع واجهة API بدل تكراره.
+
 **الوضع:** الإيداع الإداري موجود في الخدمة (`app/services/wallet_service.py:302` `admin_credit`) لكن الواجهة الوحيدة هي `POST /api/v1/wallet/deposits` من خارج المنصة.
 
 **نطاق الإصلاح:** نموذج أدمن + مسار يستدعي `admin_credit` داخل `tx()`، مع `role_required` للمنصة (لا أدمن مدرسة)، وربط بمصدر الإيداع في التدقيق.

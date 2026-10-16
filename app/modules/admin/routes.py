@@ -3,7 +3,7 @@
 import os
 import shutil
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
 from app.core import flash_error
@@ -1188,6 +1188,78 @@ def wallet_ledger_reverse(transaction_id: int):
         return redirect(ledger_url)
 
     flash(_("تم عكس الحركة بقيد مقابل."), "success")
+    return redirect(ledger_url)
+
+
+@bp.post("/wallet/deposit")
+@login_required
+@role_required(UserRole.super_admin)
+def wallet_deposit():
+    """إيداع إداري من لوحة المنصة — رصيد يدخل النظام من خارجه.
+
+    المال هنا لا يأتي من محفظة أخرى، لذلك يُكتب القيد بمصدر ``NULL``
+    (خارج النظام). ولا يُشحن إلا مستخدم **عضو نشط في المدرسة المختارة**،
+    والإيداع نفسه وسجل التدقيق في ``tx()`` واحدة — فلا رصيد بلا أثر باسم
+    منفّذه. والمطلوب ``super_admin``: الشحن صلاحية مالية على مستوى المنصة.
+    """
+    from app.services.wallet_service import admin_deposit
+
+    school_id = request.form.get("school_id", type=int)
+    target_user_id = request.form.get("user_id", type=int)
+    raw_amount = (request.form.get("amount") or "").strip()
+    note = (request.form.get("note") or "").strip()
+
+    def _ledger_url() -> str:
+        """العودة إلى الدفتر مصفّىً على نفس المدرسة/المستخدم لرؤية القيد الجديد."""
+        filters = {key: str(value) for key, value in (("school_id", school_id), ("user_id", target_user_id)) if value}
+        base = url_for("admin.wallet_ledger")
+        return f"{base}?{urlencode(filters)}" if filters else base
+
+    ledger_url = _ledger_url()
+
+    if not school_id or not target_user_id:
+        flash_error(_("اختر المدرسة والمستخدم قبل الإيداع."), "danger", 400)
+        return redirect(ledger_url)
+
+    try:
+        amount = Decimal(raw_amount)
+    except (InvalidOperation, ValueError):
+        flash_error(_("المبلغ غير صالح — أدخل رقماً موجباً."), "danger", 400)
+        return redirect(ledger_url)
+    if not amount.is_finite() or amount <= 0:
+        flash_error(_("المبلغ غير صالح — أدخل رقماً موجباً."), "danger", 400)
+        return redirect(ledger_url)
+
+    def _deposit_and_audit():
+        deposited, error = admin_deposit(
+            school_id=school_id,
+            target_user_id=target_user_id,
+            amount=amount,
+            operator_id=current_user.id,
+            note=note,
+        )
+        if error or deposited is None:
+            raise TxError(error or _("تعذّر تنفيذ الإيداع."))
+        _audit_admin_action(
+            "wallet_deposit",
+            {
+                "transaction_id": deposited.id,
+                "school_id": school_id,
+                "target_user_id": target_user_id,
+                "amount": str(deposited.amount),
+                "currency": deposited.currency,
+                "note": note,
+            },
+        )
+        return deposited
+
+    try:
+        tx(_deposit_and_audit)
+    except TxError as exc:
+        flash_error(str(exc), "danger", 400)
+        return redirect(ledger_url)
+
+    flash(_("تم إيداع المبلغ في محفظة المستخدم."), "success")
     return redirect(ledger_url)
 
 
