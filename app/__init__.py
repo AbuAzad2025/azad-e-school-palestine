@@ -327,6 +327,21 @@ def create_app(config_class=Config):
         count = expire_subscriptions()
         click.echo(f"expired_subscriptions={count}")
 
+    # AZ-P1-09: الدفعات المعلّقة تتجاوز مهلة 24 ساعة → expired (cron: flask expire-pending-payments)
+    @app.cli.command("expire-pending-payments")
+    @click.option(
+        "--ttl-hours",
+        default=None,
+        type=click.IntRange(min=1),
+        help="مهلة الدفعة المعلّقة بالساعات (افتراضياً 24).",
+    )
+    def expire_pending_payments_cmd(ttl_hours):
+        """إنهاء الدفعات اليدوية المعلّقة التي تجاوزت المهلة — لا تمسّ الاشتراكات."""
+        from .services.billing import PENDING_PAYMENT_TTL_HOURS, expire_pending_payments
+
+        count = expire_pending_payments(ttl_hours or PENDING_PAYMENT_TTL_HOURS)
+        click.echo(f"expired_pending_payments={count}")
+
     @app.cli.command("init-system")
     @click.option("--super-admin-email", default=None, help="Email of the super admin to ensure exists.")
     @click.option("--super-admin-password", default=None, help="Password for the super admin.")

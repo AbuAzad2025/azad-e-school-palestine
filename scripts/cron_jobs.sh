@@ -43,23 +43,10 @@ for f in Path('backups').glob('backup_*.sql*'):
 # Daily payment reminders - 7:00 AM
 0 7 * * * /path/to/venv/bin/python /path/to/scripts/daily_reminders.py >> /var/log/azad_reminders.log 2>&1
 
-# Process pending payments every 5 minutes
-*/5 * * * * /path/to/venv/bin/python -c "
-import os, sys
-sys.path.insert(0, '/path/to/14-e-school-palestine')
-os.environ['PYTHONPATH'] = '/path/to/14-e-school-palestine'
-from app import create_app
-from app.extensions import db
-from app.models.billing import ManualPayment
-from app.services.billing import approve_payment
-app = create_app()
-with app.app_context():
-    for p in ManualPayment.query.filter_by(status='pending').all():
-        # Check if payment expired (older than 24h)
-        if p.created_at < datetime.utcnow() - timedelta(hours=24):
-            p.status = 'expired'
-            db.session.commit()
-" >> /var/log/azad_payment_cleanup.log 2>&1
+# Process pending payments every 5 minutes.
+# AZ-P1-09: كانت الكتلة السابقة تفشل بلا أثر (datetime/timedelta غير مستوردين)
+# فتبقى الدفعات المعلّقة بلا انتهاء. المنطق الآن في CLI قابل للاختبار.
+*/5 * * * * cd /path/to/14-e-school-palestine && FLASK_APP=run.py /path/to/venv/bin/flask expire-pending-payments >> /var/log/azad_payment_cleanup.log 2>&1
 
 # Check Stripe webhooks every minute (if using Stripe)
 # * * * * * curl -X POST https://yourdomain.com/api/ai/chat/stream -H "Content-Type: application/json" -d '{}' >> /dev/null 2>&1

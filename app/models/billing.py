@@ -79,7 +79,9 @@ class ManualPayment(PKMixin, db.Model):
     reference: Mapped[str] = mapped_column(Text, nullable=False)  # رقم مرجع التحويل
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     note: Mapped[str | None] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # pending/approved/rejected
+    # pending/approved/rejected/expired — ``expired`` تكتبه مهمة تنظيف الدفعات
+    # المعلّقة (AZ-P1-09) بعد تجاوز المهلة (قيد ``ck_manual_payment_status``).
+    status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)
     reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at = db.Column(db.DateTime(timezone=True))
     gateway: Mapped[str | None] = mapped_column(String(20))  # stripe/paytabs/cashu/manual

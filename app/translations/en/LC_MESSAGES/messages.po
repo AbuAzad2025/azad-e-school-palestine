@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-16 23:54+0300\n"
+"POT-Creation-Date: 2026-10-17 00:05+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -2045,74 +2045,78 @@ msgstr "Reference and amount are required."
 msgid "تمت مراجعة هذا الدفع مسبقاً."
 msgstr "This payment has already been reviewed."
 
-#: app/services/billing.py:336 app/services/wallet_service.py:170
+#: app/services/billing.py:302
+msgid "مهلة الدفعة المعلّقة يجب أن تكون أكبر من صفر."
+msgstr "The pending-payment time limit must be greater than zero."
+
+#: app/services/billing.py:365 app/services/wallet_service.py:170
 #: app/services/wallet_service.py:327
 msgid "المبلغ يجب أن يكون أكبر من صفر."
 msgstr "Amount must be greater than zero."
 
-#: app/services/billing.py:338
+#: app/services/billing.py:367
 #, python-format
 msgid "المبلغ (%(amount)s) يتجاوز الرصيد المتبقي (%(balance)s)."
 msgstr "Amount (%(amount)s) exceeds the remaining balance (%(balance)s)."
 
-#: app/services/billing.py:376 app/services/billing.py:415
-#: app/services/billing.py:452
+#: app/services/billing.py:405 app/services/billing.py:444
+#: app/services/billing.py:481
 msgid "كود الخصم مطلوب."
 msgstr "Discount code is required."
 
-#: app/services/billing.py:378
+#: app/services/billing.py:407
 msgid "اسم الخصم مطلوب."
 msgstr "Discount name is required."
 
-#: app/services/billing.py:380
+#: app/services/billing.py:409
 msgid "نوع الخصم غير صالح (percentage/fixed)."
 msgstr "Invalid discount type (percentage/fixed)."
 
-#: app/services/billing.py:382
+#: app/services/billing.py:411
 msgid "قيمة الخصم يجب أن تكون أكبر من صفر."
 msgstr "Discount value must be greater than zero."
 
-#: app/services/billing.py:384
+#: app/services/billing.py:413
 msgid "الحد الأقصى للاستخدام يجب أن يكون 1 على الأقل."
 msgstr "Maximum usage must be at least 1."
 
-#: app/services/billing.py:386
+#: app/services/billing.py:415
 msgid "تاريخ الانتهاء لا يمكن أن يكون في الماضي."
 msgstr "Expiry date cannot be in the past."
 
-#: app/services/billing.py:389
+#: app/services/billing.py:418
 msgid "كود الخصم موجود مسبقاً."
 msgstr "Discount code already exists."
 
-#: app/services/billing.py:419
+#: app/services/billing.py:448
 msgid "كود الخصم غير صالح."
 msgstr "Invalid discount code."
 
-#: app/services/billing.py:421
+#: app/services/billing.py:450
 msgid "كود الخصم غير مفعل."
 msgstr "Discount code is inactive."
 
-#: app/services/billing.py:423
+#: app/services/billing.py:452
 msgid "كود الخصم منتهي الصلاحية."
 msgstr "Discount code has expired."
 
-#: app/services/billing.py:425 app/services/billing.py:472
+#: app/services/billing.py:454 app/services/billing.py:501
 msgid "تم استنفاد عدد استخدامات كود الخصم."
 msgstr "Discount code usage limit reached."
 
-#: app/services/billing.py:427
+#: app/services/billing.py:456
 msgid "كود الخصم غير صالح لهذه الخطة."
 msgstr "Discount code is not valid for this plan."
 
-#: app/services/billing.py:435
+#: app/services/billing.py:464
 msgid "الخطة غير موجودة."
 msgstr "Plan not found."
 
-#: app/services/billing.py:456
+#: app/services/billing.py:485
 msgid "الاشتراك غير موجود."
 msgstr "Subscription not found."
 
-#: app/services/billing.py:475
+#: app/services/billing.py:504
 msgid "قيمة الخصم تتجاوز سعر الاشتراك."
 msgstr "The discount value exceeds the subscription price."
 
@@ -4669,7 +4673,9 @@ msgstr ""
 msgid ""
 "الإيداع بلا محفظة مصدر (مال يدخل النظام من خارجه) ويُسجَّل باسمك في سجل "
 "التدقيق."
-msgstr "A deposit has no source wallet (money entering the system from outside) and is recorded under your name in the audit log."
+msgstr ""
+"A deposit has no source wallet (money entering the system from outside) "
+"and is recorded under your name in the audit log."
 
 #: app/templates/admin/wallet_ledger.html:29
 msgid "اختر المدرسة"

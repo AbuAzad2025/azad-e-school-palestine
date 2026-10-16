@@ -7,6 +7,27 @@
 
 ## [Unreleased]
 
+### fix(billing) — مهمة الدفعات المعلّقة تُنفَّذ فعلاً (AZ-P1-09)
+
+- **المشكلة (عطل صامت):** مهمة `*/5` في `scripts/cron_jobs.sh` كانت كتلة Python تفشل
+  في كل تشغيل (`datetime.utcnow()`/`timedelta` غير مستوردين، و`approve_payment`
+  مستورد بلا داعٍ) — أي أن الدفعات المعلّقة لم تُنظَّف ولا مرة منذ كتابة السكربت.
+- **الحل:** نقل المنطق إلى `billing.expire_pending_payments(ttl_hours=24)` + أمر
+  `flask expire-pending-payments [--ttl-hours N]`، والسطر في cron صار نداءً واحداً
+  (`cd <app> && FLASK_APP=run.py flask expire-pending-payments`).
+- **قيد اكتشفه الاختبار:** قاعدة الاختبار رفضت الحالة الجديدة —
+  `ck_manual_payment_status` (من `a7b8c9d0e1f2`) كان يسمح بـ
+  `pending/approved/rejected` فقط، فحفظ `expired` يفشل بـ`CheckViolation`. أُضيفت
+  ترحيل `s2t3u4v5w6x7` توسّع القيد، وتراجع التراجع `expired` → `pending` موثّقاً
+  (لا يمكن عكس ترحيل حالة بلا خسارة في الاتجاهين).
+- **حدود النطاق:** المهلة تُطبّق على `status = 'pending'` فقط: المعتمدة والمرفوضة لا
+  تُمَس، ولا يُغيَّر أي اشتراك — فصلٌ صريح عن `expire-subscriptions`.
+- **i18n:** نص جديد واحد (رسالة مهلة غير موجبة) مترجم في `en` (صفر fuzzy).
+- **الاختبار:** `tests/unit/test_hotfix_d_series.py::TestAZP109PendingPaymentsCron` —
+  4 حالات: انتهاء الأقدم من المهلة فقط، عدم مسّ المعتماد/المرفوض/الاشتراكات، خيار
+  `--ttl-hours` يقصر النافذة، ورفض مهلة غير موجبة (رمز 2 من CLI + `TxError` من
+  الخدمة) بلا أي كتابة.
+
 ### feat(admin) — إيداع إداري من لوحة المنصة (AZ-P1-08)
 
 - **المشكلة:** الإيداع الإداري موجود في الخدمة (`wallet_service.admin_credit`) لكن واجهته

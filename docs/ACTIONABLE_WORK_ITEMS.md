@@ -204,6 +204,12 @@
 
 ## AZ-P1-09 — إصلاح مهمة المدفوعات المعلّقة (الآن تعمل بـ `NameError`)
 
+**الحالة:** مُنفَّذ — `billing.expire_pending_payments` (مهلة
+`PENDING_PAYMENT_TTL_HOURS = 24`) وأمر `flask expire-pending-payments`، ونداء واحد
+في `scripts/cron_jobs.sh` بدل الكتلة الميتة. ترحيل `s2t3u4v5w6x7` وسّع قيد
+`ck_manual_payment_status` ليقبل `expired` (كان الاختبار هو من كشفه). الاختبارات:
+`TestAZP109PendingPaymentsCron` في `tests/unit/test_hotfix_d_series.py`.
+
 **الوضع:** مهمة `*/5` في `scripts/cron_jobs.sh` تستعمل `datetime.utcnow()`/`timedelta` بلا استيرادهما → تفشل كل 5 دقائق بلا أثر ظاهر، أي أن الدفعات المنتهية لا تُعلَّم `expired`.
 
 **نطاق الإصلاح:** إما تصحيح الاستيراد في السكربت، أو — الأفضل — نقل المنطق إلى CLI رسمي بجوار `flask expire-subscriptions` (`app/__init__.py:322`) مثل `flask expire-pending-payments`، ثم استدعاء الـ CLI من الـ cron.

@@ -285,6 +285,35 @@ def expire_subscriptions() -> int:
     return tx(_expire)
 
 
+# AZ-P1-09: مهلة الدفعة المعلّقة — تجاوزها يعني طلباً لا يُدفع ويجمّد مقعداً.
+PENDING_PAYMENT_TTL_HOURS = 24
+
+
+def expire_pending_payments(ttl_hours: int = PENDING_PAYMENT_TTL_HOURS) -> int:
+    """يُنهي الدفعات اليدوية المعلّقة الأقدم من المهلة — من CLI/cron لا من عرض الصفحات.
+
+    كانت هذه المهمة تُنفّذ كل 5 دقائق من سكربت cron بكتلة Python تفشل بلا أثر
+    (`datetime.utcnow()`/`timedelta` غير مستوردين) فلا تُنظَّف الدفعات المعلّقة
+    أبداً. المنطق هنا الآن قابل للاختبار ومحدود النطاق: حالة ``pending`` فقط —
+    المعتمدة والمرفوضة والمنتهية مسبقاً لا تُمَس، ولا يُغيَّر أي اشتراك (تلك
+    مهمة ``expire_subscriptions``).
+    """
+    if ttl_hours <= 0:
+        raise TxError(_("مهلة الدفعة المعلّقة يجب أن تكون أكبر من صفر."))
+    cutoff = datetime.now(UTC) - timedelta(hours=ttl_hours)
+
+    def _expire() -> int:
+        stmt = (
+            update(ManualPayment)
+            .where(ManualPayment.status == "pending")
+            .where(ManualPayment.created_at < cutoff)
+            .values(status="expired")
+        )
+        return db.session.execute(stmt).rowcount  # type: ignore[attr-defined]
+
+    return tx(_expire)
+
+
 def has_active_subscription(user_id: int, class_id: int) -> bool:
     sub = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").first()
     return sub is not None

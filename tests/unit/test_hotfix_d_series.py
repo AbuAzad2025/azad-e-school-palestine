@@ -22,6 +22,7 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
+import pytest
 from tests.conftest import (
     make_grade,
     make_payment,
@@ -499,3 +500,102 @@ class TestP7WalletTutoringIntegration:
             db.session.commit()
             rec = create_commission_record(db.session.get(TutoringSession, session_id))
             assert rec is not None, "P7: commission record created even without wallet"
+
+
+class TestAZP109PendingPaymentsCron:
+    """AZ-P1-09 — الدفعات المعلّقة تُنهى من CLI حقيقي بدل كتلة cron ميتة.
+
+    كانت المهمة في `scripts/cron_jobs.sh` تفشل بلا أثر (`datetime.utcnow()`
+    و`timedelta` غير مستوردين)، فلا تُنظَّف الدفعات المعلّقة أبداً. المنطق الآن
+    في `billing.expire_pending_payments` + أمر `flask expire-pending-payments`،
+    والاختبارات تقيس حالات الصفوف فعلياً لا مجرد رمز الخروج.
+    """
+
+    def _payment(self, app, *, status="pending", age_hours=0, sub_status="pending"):
+        sid = make_school(app)
+        student = make_user(app, role="student", school_id=sid)
+        class_id = _class(app, sid)
+        plan = make_subscription_plan(app, sid, class_id=class_id)
+        sub = make_subscription(app, student, plan, class_id, status=sub_status)
+        payment = make_payment(app, sub, amount=50.0, status=status)
+        if age_hours:
+            from datetime import UTC, datetime, timedelta
+
+            from app.extensions import db
+            from app.models.billing import ManualPayment
+
+            with app.app_context():
+                row = db.session.get(ManualPayment, payment)
+                row.created_at = datetime.now(UTC) - timedelta(hours=age_hours)
+                db.session.commit()
+        return sid, sub, payment
+
+    def _payment_status(self, app, payment_id):
+        from app.extensions import db
+        from app.models.billing import ManualPayment
+
+        with app.app_context():
+            return db.session.get(ManualPayment, payment_id).status
+
+    def _subscription_status(self, app, subscription_id):
+        from app.extensions import db
+        from app.models.billing import Subscription
+
+        with app.app_context():
+            return db.session.get(Subscription, subscription_id).status
+
+    def test_cli_expires_only_payments_past_the_ttl(self, app):
+        runner = app.test_cli_runner()
+        _sid_old, _sub_old, old = self._payment(app, age_hours=30)
+        _sid_new, _sub_new, fresh = self._payment(app, age_hours=1)
+
+        result = runner.invoke(args=["expire-pending-payments"])
+        assert result.exit_code == 0
+        assert "expired_pending_payments=1" in result.output
+        assert self._payment_status(app, old) == "expired"
+        assert self._payment_status(app, fresh) == "pending"
+
+    def test_cli_leaves_reviewed_payments_and_subscriptions_alone(self, app):
+        runner = app.test_cli_runner()
+        _sid_a, sub_pending, old_pending = self._payment(app, age_hours=48)
+        _sid_b, _sub_approved, approved = self._payment(app, status="approved", age_hours=48)
+        _sid_c, _sub_rejected, rejected = self._payment(app, status="rejected", age_hours=48)
+        _sid_d, active_sub, _pay_active = self._payment(app, status="approved", age_hours=48, sub_status="active")
+
+        result = runner.invoke(args=["expire-pending-payments"])
+        assert result.exit_code == 0
+        assert "expired_pending_payments=1" in result.output
+
+        assert self._payment_status(app, old_pending) == "expired"
+        assert self._payment_status(app, approved) == "approved"
+        assert self._payment_status(app, rejected) == "rejected"
+        # لا يُلمس أي اشتراك: لا الذي انتهت دفعته ولا الفعّال.
+        assert self._subscription_status(app, sub_pending) == "pending"
+        assert self._subscription_status(app, active_sub) == "active"
+
+    def test_ttl_option_shortens_the_window(self, app):
+        runner = app.test_cli_runner()
+        _sid, _sub, payment = self._payment(app, age_hours=3)
+
+        assert runner.invoke(args=["expire-pending-payments", "--ttl-hours", "6"]).exit_code == 0
+        assert self._payment_status(app, payment) == "pending"
+
+        short = runner.invoke(args=["expire-pending-payments", "--ttl-hours", "2"])
+        assert short.exit_code == 0
+        assert "expired_pending_payments=1" in short.output
+        assert self._payment_status(app, payment) == "expired"
+
+    def test_invalid_ttl_is_refused_without_writing(self, app):
+        from app.core.db import TxError
+        from app.services.billing import expire_pending_payments
+
+        runner = app.test_cli_runner()
+        _sid, _sub, payment = self._payment(app, age_hours=48)
+
+        assert runner.invoke(args=["expire-pending-payments", "--ttl-hours", "0"]).exit_code == 2
+        assert self._payment_status(app, payment) == "pending"
+
+        # الحماية نفسها في الخدمة (للمستدعي البرمجي لا الـ CLI فقط).
+        with app.app_context():
+            with pytest.raises(TxError):
+                expire_pending_payments(0)
