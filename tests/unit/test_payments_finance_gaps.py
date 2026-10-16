@@ -1163,3 +1163,271 @@ class TestPlatformCommissionReport:
         _uid, client = _persona(app, "school_admin", school_id=sid)
         resp = client.get("/admin/revenue", follow_redirects=False)
         assert resp.status_code in (302, 403)
+
+# ════════════════════════════════════════════════════════════════════
+# AZ-P1-07 — مستكشف دفتر المحفظة + عكس حركة
+# ════════════════════════════════════════════════════════════════════
+# الدفتر غير قابل للتغيير: العكس يُنشئ قيداً مقابلاً ولا يعدّل الأصل ولا
+# يحذفه، ووجود القيد المقابل هو علامة «معكوسة». الاختبارات تتحقق من الأثر
+# المالي الفعلي (الأرصدة)، ومن رفض العكس المكرّر، ومن بقاء التينانت، ومن
+# كتابة سجل التدقيق مع المنفّذ في نفس المعاملة.
+
+
+def _funded_transfer(app, amount=Decimal("100.00"), src_balance=Decimal("100.00")):
+    """مدرسة + محفظتان ممولتان + تحويل مكتمل → (school_id, src, dst, tx_id)."""
+    from app.extensions import db
+    from app.models.wallet import Wallet
+
+    sid = make_school(app)
+    src = make_user(app, role="student", school_id=sid)
+    dst = make_user(app, role="student", school_id=sid)
+    src_wallet_id = _wallet(app, sid, src)
+    _wallet(app, sid, dst)
+    with app.app_context():
+        wallet = db.session.get(Wallet, src_wallet_id)
+        assert wallet is not None
+        wallet.balance = src_balance
+        db.session.commit()
+
+    # الخدمة تحتاج سياق تطبيق، والكائن يصبح منتهي الصلاحية بعد الالتزام —
+    # لذلك يُلتقط المعرّف داخل السياق لا بعده.
+    with app.app_context():
+        tx, err = _xfer(app, sid, src, dst, amount, f"b5-{uuid.uuid4().hex[:8]}")
+        assert err is None and tx is not None
+        tx_id = tx.id
+    return sid, src, dst, tx_id
+
+
+def _balances(app, school_id, user_id):
+    from app.services.wallet_service import get_balance
+
+    with app.app_context():
+        return get_balance(school_id, user_id)
+
+
+class TestLedgerReversal:
+    def test_reversal_appends_offsetting_entry_and_restores_balances(self, app):
+        from app.extensions import db
+        from app.models.wallet import WalletTransaction
+        from app.services.wallet_service import reverse_transaction
+
+        sid, src, dst, tx_id = _funded_transfer(app)
+        before_src = _balances(app, sid, src)
+        before_dst = _balances(app, sid, dst)
+
+        with app.app_context():
+            reversal, err = reverse_transaction(
+                school_id=sid, transaction_id=tx_id, operator_id=None, reason="خطأ إدخال"
+            )
+            assert err is None
+            assert reversal is not None
+            assert reversal.transaction_type == "reversal"
+            assert reversal.reference_type == "wallet_reversal"
+            assert reversal.reference_id == tx_id
+
+            original = db.session.get(WalletTransaction, tx_id)
+            # الأصل كما هو بالحرف: لا تعديل ولا حذف (دفتر غير قابل للتغيير).
+            assert original is not None
+            assert original.status == "completed"
+            assert original.amount == Decimal("100.00")
+            assert original.source_wallet_id == reversal.destination_wallet_id
+            assert original.destination_wallet_id == reversal.source_wallet_id
+
+        assert _balances(app, sid, src) == before_src + Decimal("100.00")
+        assert _balances(app, sid, dst) == before_dst - Decimal("100.00")
+
+    def test_reversal_carries_its_reason_and_operator(self, app):
+        from app.services.wallet_service import reverse_transaction
+
+        sid, _src, _dst, tx_id = _funded_transfer(app)
+        operator = make_user(app, role="super_admin")
+        with app.app_context():
+            reversal, err = reverse_transaction(
+                school_id=sid, transaction_id=tx_id, operator_id=operator, reason="تكرار إدخال"
+            )
+            assert err is None
+            assert reversal.description == "تكرار إدخال"
+            assert reversal.metadata_json["reversed_by"] == operator
+
+    def test_second_reversal_is_rejected_with_one_offsetting_entry(self, app):
+        from app.extensions import db
+        from app.models.wallet import WalletTransaction
+        from app.services.wallet_service import reverse_transaction
+
+        sid, src, dst, tx_id = _funded_transfer(app)
+        with app.app_context():
+            _first, err = reverse_transaction(school_id=sid, transaction_id=tx_id)
+            assert err is None
+            after_first = (_balances(app, sid, src), _balances(app, sid, dst))
+
+            second, err2 = reverse_transaction(school_id=sid, transaction_id=tx_id)
+            assert second is None
+            assert err2 is not None
+            assert "معكوسة" in err2
+
+            assert (
+                WalletTransaction.query.filter_by(reference_type="wallet_reversal", reference_id=tx_id).count() == 1
+            )
+            assert db.session.get(WalletTransaction, tx_id).status == "completed"
+
+        assert (_balances(app, sid, src), _balances(app, sid, dst)) == after_first
+
+    def test_reversal_cannot_reach_another_school(self, app):
+        """حدّ التينانت: عكس باسم مدرسة أخرى لا يجد الحركة ولا يحرّك رصيداً."""
+        from app.services.wallet_service import reverse_transaction
+
+        sid, src, dst, tx_id = _funded_transfer(app)
+        other_school = make_school(app)
+        before = (_balances(app, sid, src), _balances(app, sid, dst))
+
+        with app.app_context():
+            reversal, err = reverse_transaction(school_id=other_school, transaction_id=tx_id)
+            assert reversal is None
+            assert err is not None
+
+        assert (_balances(app, sid, src), _balances(app, sid, dst)) == before
+
+    def test_reversal_of_admin_deposit_takes_money_out_of_the_system(self, app):
+        from app.services.wallet_service import admin_credit, get_balance, reverse_transaction
+
+        sid = make_school(app)
+        student = make_user(app, role="student", school_id=sid)
+        _wallet(app, sid, student)
+        with app.app_context():
+            tx, err = admin_credit(
+                school_id=sid,
+                target_user_id=student,
+                amount=Decimal("75.00"),
+                idempotency_key=f"b5-{uuid.uuid4().hex[:8]}",
+                description="إيداع إداري",
+            )
+            assert err is None
+            assert tx.source_wallet_id is None
+            assert get_balance(sid, student) == Decimal("75.00")
+
+            reversal, err2 = reverse_transaction(school_id=sid, transaction_id=tx.id)
+            assert err2 is None
+            # المال دخل من خارج النظام فيدخل من خارج النظام: بلا محفظة مقابلة.
+            assert reversal.source_wallet_id == tx.destination_wallet_id
+            assert reversal.destination_wallet_id is None
+            assert get_balance(sid, student) == Decimal("0.00")
+
+    def test_reversal_requires_the_money_to_still_be_there(self, app):
+        """رصيد مصروف لا يُعكس برقم سالب — يُرفض برسالة والرصيد ثابت."""
+        from app.services.wallet_service import reverse_transaction
+
+        sid, src, dst, tx_id = _funded_transfer(app)
+        third = make_user(app, role="student", school_id=sid)
+        _wallet(app, sid, third)
+        with app.app_context():
+            spent, err = _xfer(app, sid, dst, third, Decimal("100.00"), f"b5-{uuid.uuid4().hex[:8]}")
+        assert err is None and spent is not None
+        before = (_balances(app, sid, dst), _balances(app, sid, third))
+
+        with app.app_context():
+            reversal, err2 = reverse_transaction(school_id=sid, transaction_id=tx_id)
+            assert reversal is None
+            assert err2 is not None
+            assert "رصيد" in err2
+
+        assert (_balances(app, sid, dst), _balances(app, sid, third)) == before
+
+    def test_a_reversal_cannot_be_reversed(self, app):
+        from app.services.wallet_service import reverse_transaction
+
+        sid, _src, _dst, tx_id = _funded_transfer(app)
+        with app.app_context():
+            reversal, err = reverse_transaction(school_id=sid, transaction_id=tx_id)
+            assert err is None
+            nested, err2 = reverse_transaction(school_id=sid, transaction_id=reversal.id)
+            assert nested is None
+            assert err2 is not None
+            assert "قيد عكس" in err2
+
+
+class TestWalletLedgerAdminRoutes:
+    def test_super_admin_reversal_creates_entry_and_audit(self, app):
+        from app.extensions import db
+        from app.models.system import AuditLog
+        from app.models.wallet import WalletTransaction
+
+        sid, _src, _dst, tx_id = _funded_transfer(app)
+        admin_id, client = _persona(app, "super_admin")
+
+        resp = client.post(f"/admin/wallet/{tx_id}/reverse", data={"reason": "عكس بطلب المالك"})
+        assert resp.status_code == 302
+
+        with app.app_context():
+            reversal = WalletTransaction.query.filter_by(
+                reference_type="wallet_reversal", reference_id=tx_id
+            ).one()
+            assert reversal.transaction_type == "reversal"
+            # الأصل ما زال قائماً بحالته.
+            assert db.session.get(WalletTransaction, tx_id).status == "completed"
+
+            log = AuditLog.query.filter_by(action="wallet_reversal").one()
+            assert log.user_id == admin_id
+            assert log.detail["transaction_id"] == tx_id
+            assert log.detail["reversal_id"] == reversal.id
+            assert log.detail["school_id"] == sid
+
+    def test_second_route_reversal_is_refused_without_a_second_entry(self, app):
+        from app.models.wallet import WalletTransaction
+
+        _sid, _src, _dst, tx_id = _funded_transfer(app)
+        _admin_id, client = _persona(app, "super_admin")
+
+        assert client.post(f"/admin/wallet/{tx_id}/reverse", data={}).status_code == 302
+        second = client.post(f"/admin/wallet/{tx_id}/reverse", data={}, follow_redirects=True)
+        assert second.status_code == 200
+
+        with app.app_context():
+            assert (
+                WalletTransaction.query.filter_by(reference_type="wallet_reversal", reference_id=tx_id).count() == 1
+            )
+
+    def test_unknown_transaction_is_404(self, app):
+        _admin_id, client = _persona(app, "super_admin")
+        assert client.post("/admin/wallet/99999999/reverse", data={}).status_code == 404
+
+    def test_school_admin_neither_sees_nor_reverses(self, app):
+        from app.models.wallet import WalletTransaction
+
+        sid, _src, _dst, tx_id = _funded_transfer(app)
+        _uid, client = _persona(app, "school_admin", school_id=sid)
+
+        assert client.get("/admin/wallet", follow_redirects=False).status_code in (302, 403)
+        assert client.post(f"/admin/wallet/{tx_id}/reverse", data={}, follow_redirects=False).status_code in (302, 403)
+
+        with app.app_context():
+            assert (
+                WalletTransaction.query.filter_by(reference_type="wallet_reversal", reference_id=tx_id).count() == 0
+            )
+
+    def test_ledger_explorer_lists_rows_and_filters_by_school(self, app):
+        sid, _src, _dst, tx_id = _funded_transfer(app)
+        other_sid, _s2, _d2, other_tx_id = _funded_transfer(app)
+        _uid, client = _persona(app, "super_admin")
+
+        page = client.get("/admin/wallet")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "ledger-immutability-note" in html
+        assert f'data-row-id="{tx_id}"' in html
+        assert f'data-row-id="{other_tx_id}"' in html
+
+        filtered = client.get(f"/admin/wallet?school_id={sid}")
+        filtered_html = filtered.get_data(as_text=True)
+        assert f'data-row-id="{tx_id}"' in filtered_html
+        assert f'data-row-id="{other_tx_id}"' not in filtered_html
+        assert other_sid != sid
+
+    def test_ledger_explorer_shows_the_reversal_state(self, app):
+        _sid, _src, _dst, tx_id = _funded_transfer(app)
+        _admin_id, client = _persona(app, "super_admin")
+        client.post(f"/admin/wallet/{tx_id}/reverse", data={})
+
+        page = client.get("/admin/wallet")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "معكوسة" in html

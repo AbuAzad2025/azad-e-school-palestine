@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-16 09:52+0300\n"
+"POT-Creation-Date: 2026-10-16 22:57+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -238,8 +238,8 @@ msgstr ""
 msgid "ملغي"
 msgstr ""
 
-#: app/core/labels.py:115 app/modules/admin/routes.py:494
-#: app/modules/admin/routes.py:504 app/modules/admin/routes.py:514
+#: app/core/labels.py:115 app/modules/admin/routes.py:495
+#: app/modules/admin/routes.py:505 app/modules/admin/routes.py:515
 msgid "بانتظار المراجعة"
 msgstr ""
 
@@ -334,178 +334,186 @@ msgstr ""
 msgid "إيداع إداري"
 msgstr ""
 
-#: app/modules/admin/routes.py:280
+#: app/modules/admin/routes.py:281
 msgid "لا يمكنك تعطيل حسابك الخاص"
 msgstr ""
 
-#: app/modules/admin/routes.py:287
+#: app/modules/admin/routes.py:288
 msgid "تم تحديث حالة المستخدم"
 msgstr ""
 
-#: app/modules/admin/routes.py:302
+#: app/modules/admin/routes.py:303
 msgid "بيانات غير كافية"
 msgstr ""
 
-#: app/modules/admin/routes.py:309
+#: app/modules/admin/routes.py:310
 msgid "إجراء غير مسموح"
 msgstr ""
 
-#: app/modules/admin/routes.py:338
+#: app/modules/admin/routes.py:339
 msgid "تم تنفيذ الإجراء"
 msgstr ""
 
-#: app/modules/admin/routes.py:360
+#: app/modules/admin/routes.py:361
 #, python-format
 msgid ""
 "وضع انتحال الصفة: أنت تتصفح الآن كـ %(name)s — استخدم شريط الانتحال "
 "للعودة."
 msgstr ""
 
-#: app/modules/admin/routes.py:381
+#: app/modules/admin/routes.py:382
 msgid "عدت إلى حسابك الأصلي."
 msgstr ""
 
-#: app/modules/admin/routes.py:464
+#: app/modules/admin/routes.py:465
 msgid "تم إلغاء الاشتراك"
 msgstr ""
 
-#: app/modules/admin/routes.py:484
+#: app/modules/admin/routes.py:485
 msgid "مُرسل"
 msgstr ""
 
-#: app/modules/admin/routes.py:525 app/modules/admin/routes.py:535
-#: app/modules/admin/routes.py:545
+#: app/modules/admin/routes.py:526 app/modules/admin/routes.py:536
+#: app/modules/admin/routes.py:546
 msgid "مُعتمد / نشط"
 msgstr ""
 
-#: app/modules/admin/routes.py:527 app/modules/admin/routes.py:537
+#: app/modules/admin/routes.py:528 app/modules/admin/routes.py:538
 msgid "المشرف"
 msgstr ""
 
-#: app/modules/admin/routes.py:556 app/modules/admin/routes.py:566
+#: app/modules/admin/routes.py:557 app/modules/admin/routes.py:567
 msgid "منتهي الصلاحية"
 msgstr ""
 
-#: app/modules/admin/routes.py:627
+#: app/modules/admin/routes.py:628
 msgid "فشل اعتماد الدفع"
 msgstr ""
 
-#: app/modules/admin/routes.py:637
+#: app/modules/admin/routes.py:638
 msgid "تم اعتماد الدفع وتفعيل الاشتراك"
 msgstr ""
 
-#: app/modules/admin/routes.py:675
+#: app/modules/admin/routes.py:676
 msgid "فشل رفض الدفع"
 msgstr ""
 
-#: app/modules/admin/routes.py:685
+#: app/modules/admin/routes.py:686
 msgid "تم رفض الدفع"
 msgstr ""
 
-#: app/modules/admin/routes.py:743 app/modules/admin/routes.py:795
+#: app/modules/admin/routes.py:744 app/modules/admin/routes.py:796
 msgid "DATABASE_URL غير مضبوط"
 msgstr ""
 
-#: app/modules/admin/routes.py:760
+#: app/modules/admin/routes.py:761
 msgid "تم إنشاء النسخة الاحتياطية بنجاح"
 msgstr ""
 
-#: app/modules/admin/routes.py:763
+#: app/modules/admin/routes.py:764
 #, python-format
 msgid "فشل النسخ الاحتياطي: %(detail)s"
 msgstr ""
 
-#: app/modules/admin/routes.py:767
+#: app/modules/admin/routes.py:768
 msgid "لم يتم العثور على pg_dump — تأكد من تثبيت PostgreSQL"
 msgstr ""
 
-#: app/modules/admin/routes.py:769 app/modules/admin/routes.py:836
+#: app/modules/admin/routes.py:770 app/modules/admin/routes.py:837
 #, python-format
 msgid "خطأ: %(detail)s"
 msgstr ""
 
-#: app/modules/admin/routes.py:785
+#: app/modules/admin/routes.py:786
 msgid "الملف غير موجود"
 msgstr ""
 
-#: app/modules/admin/routes.py:790
+#: app/modules/admin/routes.py:791
 msgid "يجب كتابة 'yes — restore' للتأكيد"
 msgstr ""
 
-#: app/modules/admin/routes.py:813
+#: app/modules/admin/routes.py:814
 msgid "فشل تسجيل عملية الاستعادة"
 msgstr ""
 
-#: app/modules/admin/routes.py:827
+#: app/modules/admin/routes.py:828
 msgid "تمت الاستعادة بنجاح"
 msgstr ""
 
-#: app/modules/admin/routes.py:830
+#: app/modules/admin/routes.py:831
 #, python-format
 msgid "فشل الاستعادة: %(detail)s"
 msgstr ""
 
-#: app/modules/admin/routes.py:834
+#: app/modules/admin/routes.py:835
 msgid "لم يتم العثور على psql — تأكد من تثبيت PostgreSQL"
 msgstr ""
 
-#: app/modules/admin/routes.py:913
+#: app/modules/admin/routes.py:914
 msgid "غير مسماً"
 msgstr ""
 
-#: app/modules/admin/routes.py:977
+#: app/modules/admin/routes.py:978
 msgid "فشل حفظ الإعدادات"
 msgstr ""
 
-#: app/modules/admin/routes.py:980
+#: app/modules/admin/routes.py:981
 msgid "تم حفظ الإعدادات"
 msgstr ""
 
-#: app/modules/admin/routes.py:1015 app/modules/admin/routes.py:1037
+#: app/modules/admin/routes.py:1016 app/modules/admin/routes.py:1038
 msgid "هذا المستخدم ليس في حالة انتظار"
 msgstr ""
 
-#: app/modules/admin/routes.py:1026
+#: app/modules/admin/routes.py:1027
 msgid "تم قبول المستخدم بنجاح. يمكنه الآن تسجيل الدخول."
 msgstr ""
 
-#: app/modules/admin/routes.py:1045
+#: app/modules/admin/routes.py:1046
 msgid "تم رفض تسجيل المستخدم."
 msgstr ""
 
-#: app/modules/admin/routes.py:1231
+#: app/modules/admin/routes.py:1170
+msgid "تعذّر عكس الحركة."
+msgstr ""
+
+#: app/modules/admin/routes.py:1190
+msgid "تم عكس الحركة بقيد مقابل."
+msgstr ""
+
+#: app/modules/admin/routes.py:1360
 msgid "نص الرد مطلوب"
 msgstr ""
 
-#: app/modules/admin/routes.py:1241
+#: app/modules/admin/routes.py:1370
 msgid "تم إرسال الرد بنجاح"
 msgstr ""
 
-#: app/modules/admin/routes.py:1243
+#: app/modules/admin/routes.py:1372
 msgid "فشل إرسال الرد"
 msgstr ""
 
-#: app/modules/admin/routes.py:1288 app/modules/admin/routes.py:1314
+#: app/modules/admin/routes.py:1417 app/modules/admin/routes.py:1443
 msgid "طلب السحب غير موجود."
 msgstr ""
 
-#: app/modules/admin/routes.py:1290 app/modules/admin/routes.py:1316
+#: app/modules/admin/routes.py:1419 app/modules/admin/routes.py:1445
 msgid "تمت مراجعة طلب السحب مسبقاً."
 msgstr ""
 
-#: app/modules/admin/routes.py:1306
+#: app/modules/admin/routes.py:1435
 msgid "فشل اعتماد طلب السحب"
 msgstr ""
 
-#: app/modules/admin/routes.py:1308
+#: app/modules/admin/routes.py:1437
 msgid "تم اعتماد طلب السحب."
 msgstr ""
 
-#: app/modules/admin/routes.py:1329
+#: app/modules/admin/routes.py:1458
 msgid "فشل رفض طلب السحب"
 msgstr ""
 
-#: app/modules/admin/routes.py:1331
+#: app/modules/admin/routes.py:1460
 msgid "تم رفض طلب السحب."
 msgstr ""
 
@@ -617,6 +625,7 @@ msgstr ""
 #: app/modules/assessment/forms.py:22 app/modules/billing/forms.py:22
 #: app/modules/billing/forms.py:51 app/modules/calendar/forms.py:12
 #: app/modules/grades/forms.py:38 app/templates/admin/ai_usage.html:49
+#: app/templates/admin/wallet_ledger.html:58
 #: app/templates/assessment/question_bank.html:19
 #: app/templates/billing/discount_list.html:18
 #: app/templates/calendar/index.html:22
@@ -904,6 +913,7 @@ msgid "رقم مرجع التحويل"
 msgstr ""
 
 #: app/modules/billing/forms.py:42 app/templates/admin/payouts.html:11
+#: app/templates/admin/wallet_ledger.html:59
 #: app/templates/billing/invoice.html:41
 msgid "المبلغ"
 msgstr ""
@@ -1963,8 +1973,8 @@ msgstr ""
 msgid "تمت مراجعة هذا الدفع مسبقاً."
 msgstr ""
 
-#: app/services/billing.py:336 app/services/wallet_service.py:162
-#: app/services/wallet_service.py:319
+#: app/services/billing.py:336 app/services/wallet_service.py:170
+#: app/services/wallet_service.py:327
 msgid "المبلغ يجب أن يكون أكبر من صفر."
 msgstr ""
 
@@ -2241,6 +2251,7 @@ msgstr ""
 #: app/templates/admin/subscription_detail.html:16
 #: app/templates/admin/user_detail.html:35
 #: app/templates/admin/users_list.html:39
+#: app/templates/admin/wallet_ledger.html:63
 #: app/templates/assessment/quiz_results.html:28
 #: app/templates/billing/discount_list.html:23
 #: app/templates/grades/appeals_queue.html:14
@@ -2506,41 +2517,74 @@ msgstr ""
 msgid "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s)."
 msgstr ""
 
-#: app/services/wallet_service.py:165
+#: app/services/wallet_service.py:173
 msgid "لا يمكن التحويل للمستخدم نفسه."
 msgstr ""
 
-#: app/services/wallet_service.py:187
+#: app/services/wallet_service.py:195
 msgid "محفظة المرسل غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:189
+#: app/services/wallet_service.py:197
 msgid "محفظة المستلم غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:192
+#: app/services/wallet_service.py:200
 msgid "محفظة المرسل غير نشطة."
 msgstr ""
 
-#: app/services/wallet_service.py:194
+#: app/services/wallet_service.py:202
 msgid "محفظة المستلم غير نشطة."
 msgstr ""
 
-#: app/services/wallet_service.py:197
+#: app/services/wallet_service.py:205
 msgid "العملتان غير متطابقتين."
 msgstr ""
 
-#: app/services/wallet_service.py:204
+#: app/services/wallet_service.py:212
 #, python-format
 msgid "الرصيد غير كافٍ. المتاح: %(available)s %(currency)s"
 msgstr ""
 
-#: app/services/wallet_service.py:331
+#: app/services/wallet_service.py:339
 msgid "المحفظة غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:333
+#: app/services/wallet_service.py:341
 msgid "المحفظة غير نشطة."
+msgstr ""
+
+#: app/services/wallet_service.py:574
+msgid "الحركة غير موجودة في هذه المدرسة."
+msgstr ""
+
+#: app/services/wallet_service.py:576
+msgid "لا يمكن عكس قيد عكس."
+msgstr ""
+
+#: app/services/wallet_service.py:584
+msgid "هذه الحركة معكوسة مسبقاً."
+msgstr ""
+
+#: app/services/wallet_service.py:601
+msgid "محفظة الطرف المقابل غير موجودة."
+msgstr ""
+
+#: app/services/wallet_service.py:603
+msgid "المحفظة المرسلة الأصلية غير موجودة."
+msgstr ""
+
+#: app/services/wallet_service.py:607 app/services/wallet_service.py:613
+msgid "المحفظة غير نشطة — لا يمكن عكس الحركة."
+msgstr ""
+
+#: app/services/wallet_service.py:609
+msgid "رصيد المحفظة لا يكفي لعكس الحركة (المبلغ تم صرفه)."
+msgstr ""
+
+#: app/services/wallet_service.py:616
+#, python-format
+msgid "عكس الحركة رقم %(id)s"
 msgstr ""
 
 #: app/templates/base.html:9 app/templates/landing.html:9
@@ -2674,7 +2718,8 @@ msgstr ""
 #: app/templates/admin/audit_logs.html:29
 #: app/templates/admin/pending_registrations.html:10
 #: app/templates/admin/schools_list.html:9
-#: app/templates/admin/users_list.html:21 app/templates/base.html:161
+#: app/templates/admin/users_list.html:21
+#: app/templates/admin/wallet_ledger.html:48 app/templates/base.html:161
 #: app/templates/individual/course_catalog.html:27
 #: app/templates/macros/forms.html:186 app/templates/partials/navbar.html:12
 #: app/templates/tutoring/index.html:9
@@ -2954,7 +2999,7 @@ msgstr ""
 msgid "شعار أزاد"
 msgstr ""
 
-#: app/templates/admin/base.html:42 app/templates/admin/base.html:45
+#: app/templates/admin/base.html:43 app/templates/admin/base.html:46
 #: app/templates/landing.html:32 app/templates/partials/navbar.html:43
 msgid "تبديل المظهر"
 msgstr ""
@@ -3201,6 +3246,7 @@ msgstr ""
 #: app/templates/admin/schools_list.html:3 app/templates/admin/settings.html:2
 #: app/templates/admin/subscriptions_list.html:3
 #: app/templates/admin/user_detail.html:2 app/templates/admin/users_list.html:3
+#: app/templates/admin/wallet_ledger.html:3
 msgid "لوحة المشرف"
 msgstr ""
 
@@ -3367,11 +3413,13 @@ msgstr ""
 #: app/templates/admin/schools_list.html:11
 #: app/templates/admin/subscriptions_list.html:17
 #: app/templates/admin/users_list.html:23
+#: app/templates/admin/wallet_ledger.html:50
 #: app/templates/grades/attendance.html:33
 msgid "مسح"
 msgstr ""
 
 #: app/templates/admin/audit_logs.html:37
+#: app/templates/admin/wallet_ledger.html:56
 #: app/templates/progress/my_progress.html:26
 #: app/templates/progress/student_detail.html:19
 msgid "الوقت"
@@ -3420,7 +3468,7 @@ msgid "لا توجد سجلات تدقيق."
 msgstr ""
 
 #: app/templates/admin/backups.html:3 app/templates/admin/backups.html:6
-#: app/templates/admin/base.html:37 app/templates/auth/dashboard.html:33
+#: app/templates/admin/base.html:38 app/templates/auth/dashboard.html:33
 msgid "النسخ الاحتياطي"
 msgstr ""
 
@@ -3500,16 +3548,21 @@ msgstr ""
 msgid "النظام"
 msgstr ""
 
-#: app/templates/admin/base.html:38 app/templates/admin/settings.html:2
+#: app/templates/admin/base.html:37 app/templates/admin/wallet_ledger.html:3
+#: app/templates/admin/wallet_ledger.html:7
+msgid "دفتر المحفظة"
+msgstr ""
+
+#: app/templates/admin/base.html:39 app/templates/admin/settings.html:2
 #: app/templates/auth/dashboard.html:34
 msgid "الإعدادات"
 msgstr ""
 
-#: app/templates/admin/base.html:55
+#: app/templates/admin/base.html:56
 msgid "محتوى الإدارة"
 msgstr ""
 
-#: app/templates/admin/base.html:57
+#: app/templates/admin/base.html:58
 msgid "فتح القائمة"
 msgstr ""
 
@@ -3532,6 +3585,7 @@ msgstr ""
 #: app/templates/admin/moe_export.html:15 app/templates/admin/revenue.html:47
 #: app/templates/admin/revenue.html:120
 #: app/templates/admin/schools_list.html:17
+#: app/templates/admin/wallet_ledger.html:57
 #: app/templates/school_approvals/queue.html:17
 #: app/templates/school_approvals/super_admin_queue.html:17
 #: app/templates/schools/onboarding.html:59
@@ -3607,6 +3661,7 @@ msgid "الرد على الرسالة"
 msgstr ""
 
 #: app/templates/admin/contact_inbox.html:63
+#: app/templates/admin/wallet_ledger.html:61
 #: app/templates/billing/invoice.html:28
 msgid "إلى"
 msgstr ""
@@ -4350,10 +4405,12 @@ msgid "لا توجد دفعات"
 msgstr ""
 
 #: app/templates/admin/subscriptions_list.html:8
+#: app/templates/admin/wallet_ledger.html:38
 msgid "تصفية حسب الحالة"
 msgstr ""
 
 #: app/templates/admin/subscriptions_list.html:9
+#: app/templates/admin/wallet_ledger.html:39
 msgid "كل الحالات"
 msgstr ""
 
@@ -4477,6 +4534,84 @@ msgstr ""
 
 #: app/templates/admin/users_list.html:81
 msgid "لا يوجد مستخدمين يطابقون البحث"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:8
+msgid "كل حركة مالية بأطرافها، مع إمكانية عكس حركة بقيد مقابل."
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:14
+msgid ""
+"العكس لا يعدّل الحركة الأصلية ولا يحذفها: يُضاف قيد مقابل بالمعكوس، فتبقى"
+" المسار الكامل ظاهراً."
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:19
+msgid "بحث في الوصف أو المفتاح"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:22
+msgid "تصفية حسب المدرسة"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:23
+msgid "كل المدارس"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:30
+msgid "تصفية حسب النوع"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:31
+msgid "كل الأنواع"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:46
+msgid "معرّف المستخدم"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:60
+msgid "من"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:62
+#: app/templates/grades/rubric_builder.html:22
+#: app/templates/grades/rubric_builder.html:36
+msgid "الوصف"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:64
+#: app/templates/admin/wallet_ledger.html:89
+msgid "عكس"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:69
+#: app/templates/admin/wallet_ledger.html:70
+msgid "خارج النظام"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:74
+msgid "معكوسة"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:76
+msgid "قيد عكس"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:88
+msgid "سبب العكس (اختياري)"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:88
+msgid "سبب العكس"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:89
+msgid "عكس هذه الحركة بقيد مقابل؟"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:116
+msgid "لا حركات في الدفتر بهذه الفلاتر."
 msgstr ""
 
 #: app/templates/ai/chat.html:2 app/templates/ai/chat.html:18
@@ -6098,11 +6233,6 @@ msgstr ""
 
 #: app/templates/grades/rubric_builder.html:17
 msgid "مثال: تقييم المقال"
-msgstr ""
-
-#: app/templates/grades/rubric_builder.html:22
-#: app/templates/grades/rubric_builder.html:36
-msgid "الوصف"
 msgstr ""
 
 #: app/templates/grades/rubric_builder.html:23

@@ -4,6 +4,7 @@ import os
 import shutil
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from app.core import flash_error
 from app.core.db import TxError, tx
@@ -1060,6 +1061,134 @@ def revenue_dashboard():
 
     data = get_revenue_dashboard_data(days=days)
     return render_template("admin/revenue.html", data=data, days=days)
+
+
+# ======================================================================
+# مستكشف دفتر المحفظة + عكس حركة (AZ-P1-07)
+# ======================================================================
+@bp.get("/wallet")
+@login_required
+@role_required(UserRole.super_admin)
+def wallet_ledger():
+    """مستكشف دفتر المحفظة — كل حركة بفلاترها، ومنها زر العكس.
+
+    الدفتر غير قابل للتغيير: العكس يُنشئ قيداً مقابلاً (انظر
+    ``wallet_service.reverse_transaction``) ولا يعدّل الأصل ولا يحذفه. الرؤية
+    هنا على مستوى المنصة، وحدود التينانت تُفرض في الخدمة عبر ``school_id`` —
+    فطلب عكس لحركة مدرسة أخرى لا يجد صفاً يعمله.
+    """
+    from app.models.wallet import WalletTransaction
+    from app.services.wallet_service import WALLET_REVERSAL_REFERENCE, ledger_query
+
+    page = request.args.get("page", 1, type=int)
+    school_filter = request.args.get("school_id", type=int)
+    user_filter = request.args.get("user_id", type=int)
+    type_filter = request.args.get("type", "")
+    status_filter = request.args.get("status", "")
+    search = request.args.get("search", "").strip()
+
+    pagination = (
+        ledger_query(
+            school_id=school_filter,
+            owner_user_id=user_filter,
+            tx_type=type_filter or None,
+            status=status_filter or None,
+            search=search or None,
+        )
+        .order_by(WalletTransaction.created_at.desc(), WalletTransaction.id.desc())
+        .paginate(page=page, per_page=50, error_out=False)
+    )
+
+    # «معكوسة» تُقرأ من وجود القيد المقابل لا من عمود يُكتب على الأصل. وللصفحة
+    # الحالية فقط — لا استعلام لكل صف.
+    page_ids = [row.id for row in pagination.items]
+    reversed_ids: set[int] = set()
+    if page_ids:
+        reversed_ids = {
+            ref_id
+            for (ref_id,) in db.session.query(WalletTransaction.reference_id)
+            .filter(
+                WalletTransaction.reference_type == WALLET_REVERSAL_REFERENCE,
+                WalletTransaction.reference_id.in_(page_ids),
+            )
+            .all()
+        }
+
+    return render_template(
+        "admin/wallet_ledger.html",
+        pagination=pagination,
+        schools=School.query.order_by(School.name_ar).all(),
+        types=[
+            t
+            for (t,) in db.session.query(WalletTransaction.transaction_type)
+            .distinct()
+            .order_by(WalletTransaction.transaction_type)
+        ],
+        statuses=[
+            s for (s,) in db.session.query(WalletTransaction.status).distinct().order_by(WalletTransaction.status)
+        ],
+        reversed_ids=reversed_ids,
+        school_filter=school_filter,
+        user_filter=user_filter,
+        type_filter=type_filter,
+        status_filter=status_filter,
+        search=search,
+    )
+
+
+@bp.post("/wallet/<int:transaction_id>/reverse")
+@login_required
+@role_required(UserRole.super_admin)
+def wallet_ledger_reverse(transaction_id: int):
+    """عكس حركة + سجل تدقيق في التزام واحد (لا عكس بلا أثر تدقيق)."""
+    from app.models.wallet import WalletTransaction
+    from app.services.wallet_service import reverse_transaction
+
+    original = db.session.get(WalletTransaction, transaction_id)
+    if original is None:
+        abort(404)
+
+    reason = request.form.get("reason", "").strip()
+    # الفلاتر تعود مع المستخدم بعد العكس حتى لا يفقد موضعه في الدفتر.
+    back_filters: dict[str, str] = {
+        key: value
+        for key in ("page", "school_id", "user_id", "type", "status", "search")
+        if (value := request.form.get(key))
+    }
+    ledger_url = url_for("admin.wallet_ledger")
+    if back_filters:
+        ledger_url = f"{ledger_url}?{urlencode(back_filters)}"
+
+    def _reverse_and_audit():
+        reversal, error = reverse_transaction(
+            school_id=original.school_id,
+            transaction_id=transaction_id,
+            operator_id=current_user.id,
+            reason=reason,
+        )
+        if error or reversal is None:
+            raise TxError(error or _("تعذّر عكس الحركة."))
+        _audit_admin_action(
+            "wallet_reversal",
+            {
+                "transaction_id": transaction_id,
+                "reversal_id": reversal.id,
+                "amount": str(reversal.amount),
+                "currency": reversal.currency,
+                "school_id": original.school_id,
+                "reason": reason,
+            },
+        )
+        return reversal
+
+    try:
+        tx(_reverse_and_audit)
+    except TxError as exc:
+        flash_error(str(exc), "danger", 400)
+        return redirect(ledger_url)
+
+    flash(_("تم عكس الحركة بقيد مقابل."), "success")
+    return redirect(ledger_url)
 
 
 @bp.get("/health")

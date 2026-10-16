@@ -170,6 +170,11 @@
 
 ## AZ-P1-07 — مستكشف دفتر المحفظة + عكس حركة
 
+**الحالة:** مُنفَّذ — `ledger_query` و`reverse_transaction` في `app/services/wallet_service.py`،
+ومسارات `admin.wallet_ledger` / `admin.wallet_ledger_reverse`، وقالب
+`app/templates/admin/wallet_ledger.html`، و13 حالة في `tests/unit/test_payments_finance_gaps.py`.
+«معكوسة» تُقرأ من وجود القيد المقابل لا من عمود يُكتب على الأصل.
+
 **الوصف:** الحالة `reversed` معرّفة في `app/models/wallet.py`، لكن لا مسار لعكس حركة، وسجل الحركات متاح فقط عبر API لمستخدم محدّد (`app/modules/wallet_api.py` → `/api/v1/wallet/transactions` يتطلب `user_id`).
 
 **نطاق الإصلاح:** لوحة أدمن (`app/modules/admin/routes.py` + قالب) تعرض `WalletTransaction` بالنطاق والفلترة، وإجراء عكس يستدعي منطق `app/services/wallet_service.py` داخل `tx()` مع قيد مقابل (لا تعديل ولا حذف سجل أصلي — الدفتر غير قابل للتغيير).

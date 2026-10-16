@@ -12,15 +12,21 @@ from __future__ import annotations
 
 import hashlib
 import uuid
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app.core.db import TxError, tx
 from app.core.i18n import _
 from app.core.logging import get_logger
 from app.extensions import db
+
+if TYPE_CHECKING:
+    # Flask-SQLAlchemy تُثري Query بدالة paginate التي لا تعرفها sqlalchemy.orm.
+    from flask_sqlalchemy.query import Query
 
 logger = get_logger(__name__)
 
@@ -33,6 +39,8 @@ TX_TUTOR_PAYOUT = "tutor_payout"
 TX_SUBSCRIPTION_CREDIT = "subscription_credit"
 TX_ADMIN_ADJUSTMENT = "admin_adjustment"
 TX_REFUND = "refund"
+# AZ-P1-07: قيد مقابل لحركة معكوسة — أصلاً جديد في الدفتر لا تعديل على غيره.
+TX_REVERSAL = "reversal"
 
 
 def _money(value: Decimal | float | int | str) -> Decimal:
@@ -452,3 +460,194 @@ def get_wallet_summary(school_id: int, user_id: int) -> dict:
         "transaction_count": count,
         "currency": wallet.currency,
     }
+
+
+# ════════════════════════════════════════════════════════════════════
+# مستكشف الدفتر وعكس الحركة (AZ-P1-07)
+# ════════════════════════════════════════════════════════════════════
+# حالة ``reversed`` معرّفة في النموذج، لكن لا مسار لعكس حركة، وسجل الحركات
+# مُتاح فقط لمستخدم واحد عبر API. الدفتر هنا **غير قابل للتغيير**: العكس لا
+# يعدّل صف الأصل ولا يحذفه، بل يُنشئ قيداً مقابلاً (أطراف مقلوبة، نفس المبلغ)
+# يُشير إلى الأصل عبر ``reference_type``/``reference_id``. ووجود هذا القيد
+# المقابل هو علامة «معكوسة» — ولهذا يُرفض العكس الثاني بلا الحاجة إلى كتابة
+# حالة على الأصل.
+#
+# حفظ المال: الطرف المدين في العكس هو الطرف الدائن في الأصل (المحفظة التي
+# دخلها المال)، فإن لم يكن فيها رصيد يكفي فالحركة أُنفقت لاحقاً ولا يجوز عكسها
+# برقم سلبي — يُرفض العكس برسالة صريحة. والعملية كلها داخل ``tx()`` بصف
+# الأصل مقفلاً (``with_for_update``) فلا يمر عكس ثانٍ متزامن، و``idempotency``
+# فريد على القيد المقابل كطبقة ثانية.
+
+WALLET_REVERSAL_REFERENCE = "wallet_reversal"
+
+
+def ledger_query(
+    school_id: int | None = None,
+    owner_user_id: int | None = None,
+    tx_type: str | None = None,
+    status: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    search: str | None = None,
+) -> Query:
+    """بناء استعلام دفتر المحفظة — المستكشف يُصفّحه كما يصفّح سجل التدقيق.
+
+    ``school_id`` هو حدّ التينانت (RLS طبقة أولى وهذا فلتر صريح طبقة ثانية)،
+    و``owner_user_id`` يقصر على الحركات التي تمسّ محافظ مستخدم واحد (كأي من
+    طرفي الحركة).
+    """
+    from app.models.wallet import Wallet, WalletTransaction
+
+    # الحمولة تُقرأ من الخدمة مرة واحدة: المحفظتان ومالكاهما والمدرسة — بلا
+    # استعلام لكل صف في صفحة المستكشف.
+    query = WalletTransaction.query.options(
+        joinedload(WalletTransaction.source_wallet).joinedload(Wallet.user),
+        joinedload(WalletTransaction.destination_wallet).joinedload(Wallet.user),
+        joinedload(WalletTransaction.school),
+    )
+
+    if school_id is not None:
+        query = query.filter(WalletTransaction.school_id == school_id)
+    if tx_type:
+        query = query.filter(WalletTransaction.transaction_type == tx_type)
+    if status:
+        query = query.filter(WalletTransaction.status == status)
+    if date_from is not None:
+        query = query.filter(WalletTransaction.created_at >= date_from)
+    if date_to is not None:
+        query = query.filter(WalletTransaction.created_at <= date_to)
+    if owner_user_id is not None:
+        query = query.filter(
+            db.or_(
+                WalletTransaction.source_wallet.has(Wallet.user_id == owner_user_id),
+                WalletTransaction.destination_wallet.has(Wallet.user_id == owner_user_id),
+            )
+        )
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            db.or_(
+                WalletTransaction.description.ilike(pattern),
+                WalletTransaction.idempotency_key.ilike(pattern),
+                WalletTransaction.transaction_hash.ilike(pattern),
+            )
+        )
+    return query
+
+
+def find_reversal_of(transaction_id: int) -> Any:
+    """القيد المقابل لحركة — ``None`` إن لم تُعكس بعد."""
+    from app.models.wallet import WalletTransaction
+
+    return WalletTransaction.query.filter_by(
+        reference_type=WALLET_REVERSAL_REFERENCE, reference_id=transaction_id
+    ).first()
+
+
+def reverse_transaction(
+    school_id: int,
+    transaction_id: int,
+    operator_id: int | None = None,
+    reason: str = "",
+) -> tuple[Any, str | None]:
+    """عكس حركة بقيد مقابل داخل ``tx()`` — بلا تعديل أو حذف للأصل.
+
+    Args:
+        school_id: المدرسة (حدّ التينانت — حركة مدرسة أخرى لا تُرى ولا تُعكس).
+        transaction_id: معرّف الحركة الأصلية.
+        operator_id: المنفّذ (يُسجَّل في الوصف والتدقيق).
+        reason: سبب العكس (يُدمج في وصف القيد المقابل).
+
+    Returns:
+        (WalletTransaction, None) للقيد المقابل، أو (None, رسالة خطأ) للفشل.
+    """
+    from app.models.wallet import Wallet, WalletTransaction
+
+    def _reverse():
+        original = (
+            db.session.query(WalletTransaction)
+            .filter(WalletTransaction.id == transaction_id, WalletTransaction.school_id == school_id)
+            .with_for_update()
+            .first()
+        )
+        if original is None:
+            raise TxError(_("الحركة غير موجودة في هذه المدرسة."))
+        if original.transaction_type == TX_REVERSAL:
+            raise TxError(_("لا يمكن عكس قيد عكس."))
+
+        existing = (
+            db.session.query(WalletTransaction)
+            .filter_by(reference_type=WALLET_REVERSAL_REFERENCE, reference_id=original.id)
+            .first()
+        )
+        if existing is not None:
+            raise TxError(_("هذه الحركة معكوسة مسبقاً."))
+
+        amount = _money(original.amount)
+        # أطراف العكس مقلوبة: ما دخل صار يخرج، وما خرج صار يعود. وطرف ``None``
+        # يعني مالاً عبر حدود النظام (إيداع إداري) — فيخرج عند العكس بلا مقابل.
+        origin_wallet = (
+            db.session.query(Wallet).filter_by(id=original.destination_wallet_id).with_for_update().first()
+            if original.destination_wallet_id
+            else None
+        )
+        back_wallet = (
+            db.session.query(Wallet).filter_by(id=original.source_wallet_id).with_for_update().first()
+            if original.source_wallet_id
+            else None
+        )
+
+        if original.destination_wallet_id and origin_wallet is None:
+            raise TxError(_("محفظة الطرف المقابل غير موجودة."))
+        if original.source_wallet_id and back_wallet is None:
+            raise TxError(_("المحفظة المرسلة الأصلية غير موجودة."))
+
+        if origin_wallet is not None:
+            if origin_wallet.status != "active":
+                raise TxError(_("المحفظة غير نشطة — لا يمكن عكس الحركة."))
+            if _money(origin_wallet.balance) < amount:
+                raise TxError(_("رصيد المحفظة لا يكفي لعكس الحركة (المبلغ تم صرفه)."))
+            origin_wallet.balance = _money(_money(origin_wallet.balance) - amount)
+        if back_wallet is not None:
+            if back_wallet.status != "active":
+                raise TxError(_("المحفظة غير نشطة — لا يمكن عكس الحركة."))
+            back_wallet.balance = _money(_money(back_wallet.balance) + amount)
+
+        description = reason.strip() or _("عكس الحركة رقم %(id)s", id=original.id)
+        reversal = WalletTransaction(
+            school_id=school_id,
+            source_wallet_id=origin_wallet.id if origin_wallet is not None else None,
+            destination_wallet_id=back_wallet.id if back_wallet is not None else None,
+            amount=amount,
+            currency=original.currency,
+            transaction_type=TX_REVERSAL,
+            transaction_hash=_generate_tx_hash(
+                school_id,
+                origin_wallet.id if origin_wallet is not None else None,
+                back_wallet.id if back_wallet is not None else None,
+                amount,
+                TX_REVERSAL,
+            ),
+            idempotency_key=f"wallet_reversal:{original.id}",
+            description=description,
+            reference_type=WALLET_REVERSAL_REFERENCE,
+            reference_id=original.id,
+            metadata_json={"reversed_by": operator_id, "original_amount": str(amount)},
+            status="completed",
+        )
+        db.session.add(reversal)
+        return reversal
+
+    try:
+        result = tx(_reverse)
+    except TxError as exc:
+        return None, str(exc)
+
+    logger.info(
+        "wallet_transaction_reversed",
+        original_tx_id=transaction_id,
+        reversal_tx_id=result.id,
+        school_id=school_id,
+        operator=operator_id,
+    )
+    return result, None

@@ -1,0 +1,119 @@
+{% extends "admin/base.html" %}
+{% from "macros/ui.html" import azad_pagination, azad_table %}
+{% block title %}{{ _('دفتر المحفظة') }} — {{ _('لوحة المشرف') }}{% endblock %}
+{% block admin_content %}
+<div class="azad-section">
+  <div>
+    <h1 class="page-title azad-title u-m-0">{{ icon('wallet') }} {{ _('دفتر المحفظة') }}</h1>
+    <p class="page-subtitle">{{ _('كل حركة مالية بأطرافها، مع إمكانية عكس حركة بقيد مقابل.') }}</p>
+  </div>
+</div>
+
+{# AZ-P1-07: الدفتر غير قابل للتغيير — العكس يُنشئ قيداً مقابلاً ولا يمسّ الأصل. #}
+<p class="form-hint" data-testid="ledger-immutability-note">
+  {{ _('العكس لا يعدّل الحركة الأصلية ولا يحذفها: يُضاف قيد مقابل بالمعكوس، فتبقى المسار الكامل ظاهراً.') }}
+</p>
+
+<form method="get" class="form-inline gradebook-form-row">
+  <div class="gradebook-form-col--2">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ _('بحث في الوصف أو المفتاح') }}" aria-label="{{ _('بحث في الوصف أو المفتاح') }}" class="azad-field__input">
+  </div>
+  <div class="gradebook-form-col">
+    <select name="school_id" class="azad-field__input" aria-label="{{ _('تصفية حسب المدرسة') }}">
+      <option value="">{{ _('كل المدارس') }}</option>
+      {% for school in schools %}
+      <option value="{{ school.id }}" {% if school_filter == school.id %}selected{% endif %}>{{ school.name_ar }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="gradebook-form-col">
+    <select name="type" class="azad-field__input" aria-label="{{ _('تصفية حسب النوع') }}">
+      <option value="">{{ _('كل الأنواع') }}</option>
+      {% for t in types %}
+      <option value="{{ t }}" {% if type_filter == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="gradebook-form-col">
+    <select name="status" class="azad-field__input" aria-label="{{ _('تصفية حسب الحالة') }}">
+      <option value="">{{ _('كل الحالات') }}</option>
+      {% for s in statuses %}
+      <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="gradebook-form-col">
+    <input type="number" name="user_id" value="{{ user_filter or '' }}" placeholder="{{ _('معرّف المستخدم') }}" aria-label="{{ _('معرّف المستخدم') }}" class="azad-field__input">
+  </div>
+  <div class="gradebook-form-actions"><button class="azad-btn" type="submit">{{ _('بحث') }}</button></div>
+  {% if search or school_filter or type_filter or status_filter or user_filter %}
+  <div class="gradebook-form-actions"><a href="{{ url_for('admin.wallet_ledger') }}" class="azad-btn-outline">{{ _('مسح') }}</a></div>
+  {% endif %}
+</form>
+
+{% if pagination.items %}
+{% set headers = [
+  {'key': 'time', 'label': _('الوقت')},
+  {'key': 'school', 'label': _('المدرسة')},
+  {'key': 'type', 'label': _('النوع')},
+  {'key': 'amount', 'label': _('المبلغ')},
+  {'key': 'from', 'label': _('من')},
+  {'key': 'to', 'label': _('إلى')},
+  {'key': 'description', 'label': _('الوصف')},
+  {'key': 'state', 'label': _('الحالة')},
+  {'key': 'reverse', 'label': _('عكس')},
+] %}
+{% set rows = [] %}
+{% for tx in pagination.items %}
+  {# طرف ``None`` = مال عبر حدود النظام (إيداع إداري) لا محفظة مقابلة. #}
+  {% set from_cell %}{% if tx.source_wallet and tx.source_wallet.user %}{{ tx.source_wallet.user.name_ar or tx.source_wallet.user.email }}{% else %}<span class="text-muted">{{ _('خارج النظام') }}</span>{% endif %}{% endset %}
+  {% set to_cell %}{% if tx.destination_wallet and tx.destination_wallet.user %}{{ tx.destination_wallet.user.name_ar or tx.destination_wallet.user.email }}{% else %}<span class="text-muted">{{ _('خارج النظام') }}</span>{% endif %}{% endset %}
+  {% set type_cell %}<span class="meta-chip">{{ tx.transaction_type }}</span>{% endset %}
+  {% set state_cell %}
+    {% if tx.id in reversed_ids %}
+      <span class="azad-badge azad-badge--muted">{{ _('معكوسة') }}</span>
+    {% elif tx.transaction_type == 'reversal' %}
+      <span class="azad-badge azad-badge--info">{{ _('قيد عكس') }}</span>
+    {% else %}
+      <span class="azad-badge azad-badge--success">{{ tx.status }}</span>
+    {% endif %}
+  {% endset %}
+  {% set reverse_cell %}
+    {% if tx.status == 'completed' and tx.transaction_type != 'reversal' and tx.id not in reversed_ids %}
+    <form method="post" action="{{ url_for('admin.wallet_ledger_reverse', transaction_id=tx.id) }}" class="u-flex-gap-05">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for key, value in {'page': pagination.page, 'school_id': school_filter, 'user_id': user_filter, 'type': type_filter, 'status': status_filter, 'search': search}.items() %}
+        {% if value %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+      {% endfor %}
+      <input type="text" name="reason" placeholder="{{ _('سبب العكس (اختياري)') }}" aria-label="{{ _('سبب العكس') }}" class="azad-field__input">
+      <button type="submit" class="azad-btn-outline azad-btn-sm" data-confirm="{{ _('عكس هذه الحركة بقيد مقابل؟') }}">{{ _('عكس') }}</button>
+    </form>
+    {% else %}
+    <span class="text-muted">—</span>
+    {% endif %}
+  {% endset %}
+  {% set row_added = rows.append({'id': tx.id, 'cells': {
+    'time': tx.created_at.strftime('%Y-%m-%d %H:%M') if tx.created_at else '-',
+    'school': tx.school.name_ar if tx.school else '-',
+    'type': type_cell,
+    'amount': tx.amount ~ ' ' ~ tx.currency,
+    'from': from_cell,
+    'to': to_cell,
+    'description': tx.description or '-',
+    'state': state_cell,
+    'reverse': reverse_cell,
+  }}) %}
+{% endfor %}
+<div class="azad-table-container">
+{{ azad_table(headers=headers, rows=rows, modifiers='azad-table--striped azad-table--hover azad-table--card-view-mobile') }}
+</div>
+
+{{ azad_pagination(pagination, 'admin.wallet_ledger', {'school_id': school_filter, 'user_id': user_filter, 'type': type_filter, 'status': status_filter, 'search': search}) }}
+
+{% else %}
+<div class="azad-empty">
+  <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+  <div class="azad-empty__title">{{ _('لا حركات في الدفتر بهذه الفلاتر.') }}</div>
+</div>
+{% endif %}
+{% endblock %}
