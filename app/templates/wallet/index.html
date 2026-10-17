@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ _('محفظتي') }}{% endblock %}
+{% from "macros/ui.html" import azad_stat_card %}
+{% block content %}
+<div class="azad-section">
+  <div>
+    <h1 class="page-title azad-title azad-mt-0" data-testid="wallet-title">{{ icon('wallet') }} {{ _('محفظتي') }}</h1>
+    <p class="page-subtitle">{{ _('الرصيد وسجل الحركات المالية في مدرستك') }}</p>
+  </div>
+</div>
+
+{% if wallet is none %}
+{# AZ-P3-14 معيار (2): حالة فراغ صريحة — لا رصيد صفر يوهم بوجود محفظة #}
+<div class="azad-card azad-empty" role="status" data-testid="wallet-empty">
+  <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+  <p class="u-m-0">{{ _('لا توجد محفظة نشطة لحسابك بعد.') }}</p>
+  <p class="azad-field__help u-m-0">{{ _('راجع إدارة مدرستك لتجهيز محفظة، ثم عُد إلى هذه الصفحة لعرض رصيدك وسجل حركاتك.') }}</p>
+</div>
+{% else %}
+<div class="azad-quick-actions u-grid-cards--fit" data-testid="wallet-summary">
+  {{ azad_stat_card(summary.balance ~ ' ' ~ summary.currency, _('الرصيد الحالي'), 'wallet', 'var(--azad-green)') }}
+  {{ azad_stat_card(summary.total_received ~ ' ' ~ summary.currency, _('إجمالي الوارد'), 'arrow-down-circle', 'var(--azad-blue)') }}
+  {{ azad_stat_card(summary.total_sent ~ ' ' ~ summary.currency, _('إجمالي الصادر'), 'arrow-up-circle', 'var(--azad-red)') }}
+</div>
+
+<div class="azad-section azad-mt-6">
+  <h2 class="section-title">{{ _('سجل الحركات') }}</h2>
+  {% if rows %}
+  <div class="azad-card azad-card--wide">
+    <table class="azad-table" data-testid="wallet-transactions">
+      <thead>
+        <tr>
+          <th scope="col">{{ _('النوع') }}</th>
+          <th scope="col">{{ _('الوصف') }}</th>
+          <th scope="col">{{ _('الاتجاه') }}</th>
+          <th scope="col">{{ _('المبلغ') }}</th>
+          <th scope="col">{{ _('التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in rows %}
+        <tr data-testid="wallet-tx-row">
+          <td>{{ t.type_label }}</td>
+          <td>{{ t.description }}</td>
+          <td>{{ t.direction_label }}</td>
+          <td class="u-text-{% if t.direction == 'in' %}success{% else %}danger{% endif %}">
+            {%- if t.direction == 'in' %}+{% else %}-{% endif -%}
+            <bdi>{{ t.amount }}</bdi>
+          </td>
+          <td><bdi>{{ t.created_at.strftime('%Y-%m-%d') if t.created_at else '—' }}</bdi></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="azad-pagination" aria-label="{{ _('ترقيم الصفحات') }} u-mt-2" data-testid="wallet-pagination">
+    {% if has_prev %}
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('wallet_ui.my_wallet', page=page - 1) }}" data-testid="wallet-page-prev" rel="prev">← {{ _('الأحدث') }}</a>
+    {% endif %}
+    <span class="azad-field__help">{{ _('صفحة %(page)s من %(pages)s', page=page, pages=pages) }}</span>
+    {% if has_next %}
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('wallet_ui.my_wallet', page=page + 1) }}" data-testid="wallet-page-next" rel="next">{{ _('الأقدم') }} →</a>
+    {% endif %}
+  </nav>
+  {% else %}
+  <div class="azad-card azad-empty" role="status" data-testid="wallet-no-transactions">
+    <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+    <p class="u-m-0">{{ _('لا توجد حركات مالية مسجّلة على محفظتك بعد.') }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

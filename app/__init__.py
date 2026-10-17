@@ -259,6 +259,7 @@ def create_app(config_class=Config):
     from .modules.schools import bp as schools_bp
     from .modules.tutoring import bp as tutoring_bp
     from .modules.wallet_api import bp as wallet_api_bp
+    from .modules.wallet_ui import bp as wallet_ui_bp
     from .modules.whatsapp import bp as whatsapp_bp
 
     app.register_blueprint(main_bp)
@@ -287,6 +288,7 @@ def create_app(config_class=Config):
     app.register_blueprint(individual_bp)
     app.register_blueprint(contact_bp)
     app.register_blueprint(wallet_api_bp)
+    app.register_blueprint(wallet_ui_bp)
     app.register_blueprint(whatsapp_bp)
 
     # تطبيق حدود معدل مخصصة للمسارات الحساسة

@@ -83,12 +83,14 @@
     {% else %}
       <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
     {% endif %}
+    <a href="{{ url_for('wallet_ui.my_wallet') }}" data-testid="nav-my-wallet">{{ icon('wallet') }} {{ _('محفظتي') }}</a>
     <a href="{{ url_for('tutoring.index') }}">{{ icon('books') }} {{ _('دروس خصوصية') }}</a>
   {% elif is_teacher() %}
     <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوفي') }}</a>
     <a href="{{ url_for('tutoring.my') }}">{{ icon('teacher') }} {{ _('دروسي الخصوصية') }}</a>
     {# AZ-P0-04: أهم شاشة للمعلم (المال) كانت بلا أي رابط — تُبرز الآن في الشريط #}
     <a href="{{ url_for('tutoring.tutor_earnings') }}" data-testid="nav-tutor-earnings">{{ icon('wallet') }} {{ _('أرباحي') }}</a>
+    <a href="{{ url_for('wallet_ui.my_wallet') }}" data-testid="nav-my-wallet">{{ icon('wallet') }} {{ _('محفظتي') }}</a>
   {% elif is_parent() %}
     <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوف أبنائي') }}</a>
   {% endif %}

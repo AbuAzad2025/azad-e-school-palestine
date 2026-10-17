@@ -105,6 +105,17 @@ def get_or_create_wallet(
     return wallet, None
 
 
+def find_wallet(school_id: int, user_id: int) -> Any | None:
+    """صف المحفظة إن وجد — بلا إنشاء (فروقان عن get_or_create_wallet).
+
+    AZ-P3-14: حالة «لا محفظة نشطة» في الواجهة تحتاج تمييزاً صريحاً عن
+    الرصيد صفر، فالمحفظة الغائبة ليست رصيداً صفراً — هي لا وجود.
+    """
+    from app.models.wallet import Wallet
+
+    return Wallet.query.filter_by(school_id=school_id, user_id=user_id).first()
+
+
 def get_balance(
     school_id: int,
     user_id: int,

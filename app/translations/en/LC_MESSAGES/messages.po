@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-17 09:37+0300\n"
+"POT-Creation-Date: 2026-10-17 20:19+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -354,10 +354,47 @@ msgstr "user_id is required"
 msgid "المستخدم ليس عضواً نشطاً في هذه المدرسة"
 msgstr "The user is not an active member of this school."
 
-#: app/modules/wallet_api.py:318 app/services/wallet_service.py:581
-#: app/templates/admin/wallet_ledger.html:20
+#: app/modules/wallet_api.py:318 app/modules/wallet_ui.py:32
+#: app/services/wallet_service.py:592 app/templates/admin/wallet_ledger.html:20
 msgid "إيداع إداري"
 msgstr "Administrative deposit"
+
+#: app/modules/wallet_ui.py:28
+msgid "تحويل بين حسابين"
+msgstr "Transfer between accounts"
+
+#: app/modules/wallet_ui.py:29
+#, python-format
+msgid "عمولة المنصة"
+msgstr "Platform commission"
+
+#: app/modules/wallet_ui.py:30
+msgid "سحب أرباح"
+msgstr "Earnings withdrawal"
+
+#: app/modules/wallet_ui.py:31
+msgid "فائض اشتراك"
+msgstr "Subscription credit"
+
+#: app/modules/wallet_ui.py:33
+msgid "استرداد"
+msgstr "Refund"
+
+#: app/modules/wallet_ui.py:34
+msgid "عكس حركة"
+msgstr "Transaction reversal"
+
+#: app/modules/wallet_ui.py:38
+msgid "وارِد"
+msgstr "Incoming"
+
+#: app/modules/wallet_ui.py:39
+msgid "صارِد"
+msgstr "Outgoing"
+
+#: app/modules/wallet_ui.py:68
+msgid "لا توجد مدرسة نشطة لحسابك لعرض محفظتها."
+msgstr "Your account has no active school to show a wallet for."
 
 #: app/modules/admin/routes.py:281
 msgid "لا يمكنك تعطيل حسابك الخاص"
@@ -671,7 +708,7 @@ msgstr "Save quiz"
 #: app/templates/admin/wallet_ledger.html:94
 #: app/templates/assessment/question_bank.html:19
 #: app/templates/billing/discount_list.html:18
-#: app/templates/calendar/index.html:22
+#: app/templates/calendar/index.html:22 app/templates/wallet/index.html:33
 msgid "النوع"
 msgstr "Type"
 
@@ -960,7 +997,7 @@ msgstr "Transfer reference number"
 #: app/modules/billing/forms.py:42 app/templates/admin/payouts.html:11
 #: app/templates/admin/wallet_ledger.html:40
 #: app/templates/admin/wallet_ledger.html:95
-#: app/templates/billing/invoice.html:41
+#: app/templates/billing/invoice.html:41 app/templates/wallet/index.html:36
 msgid "المبلغ"
 msgstr "Amount"
 
@@ -1367,7 +1404,6 @@ msgid "صُحّح واجبك"
 msgstr "Your assignment has been graded"
 
 #: app/modules/grades/routes.py:201
-#, fuzzy
 msgid "سُجّلت درجة لابنك"
 msgstr "A grade was recorded for your child"
 
@@ -1478,7 +1514,7 @@ msgstr "Advanced quizzes"
 #: app/modules/main/__init__.py:50 app/services/tutoring.py:144
 #: app/templates/auth/dashboard.html:152 app/templates/auth/dashboard.html:200
 #: app/templates/individual/dashboard.html:10
-#: app/templates/partials/navbar.html:86 app/templates/tutoring/my.html:2
+#: app/templates/partials/navbar.html:87 app/templates/tutoring/my.html:2
 #: app/templates/tutoring/profile.html:2
 #: app/templates/tutoring/profile_form.html:2
 #: app/templates/tutoring/session.html:3
@@ -1866,9 +1902,8 @@ msgid "تم تحديث الجلسة."
 msgstr "Session updated."
 
 #: app/modules/tutoring/routes.py:251 app/modules/tutoring/routes.py:283
-#, fuzzy
 msgid "تم تأكيد دفع درسك الخصوصي من الطالب والمعلم"
-msgstr "Your private session payment was confirmed"
+msgstr "Your private session payment was confirmed by both student and tutor"
 
 #: app/modules/tutoring/routes.py:253 app/modules/tutoring/routes.py:284
 msgid "تم إقفال الدفع بعد تأكيد الطرفين."
@@ -2067,8 +2102,8 @@ msgstr "This payment has already been reviewed."
 msgid "مهلة الدفعة المعلّقة يجب أن تكون أكبر من صفر."
 msgstr "The pending-payment time limit must be greater than zero."
 
-#: app/services/billing.py:365 app/services/wallet_service.py:170
-#: app/services/wallet_service.py:327
+#: app/services/billing.py:365 app/services/wallet_service.py:181
+#: app/services/wallet_service.py:338
 msgid "المبلغ يجب أن يكون أكبر من صفر."
 msgstr "Amount must be greater than zero."
 
@@ -2404,9 +2439,8 @@ msgid "تعذّر قراءة مساحة القرص."
 msgstr "Could not read the available disk space."
 
 #: app/services/health.py:66
-#, fuzzy
 msgid "لا توجد نسخة احتياطية في مجلد النسخ."
-msgstr "No backups yet"
+msgstr "No backups in the backup folder yet."
 
 #: app/services/individual.py:62
 msgid "هذا الكورس غير متاح."
@@ -2639,86 +2673,86 @@ msgstr "Only the tutor can make this rejection."
 msgid "لا يمكن رفض دفعة مقفلة مسبقاً — الجلسة مدفوعة."
 msgstr "A closed payment cannot be rejected — the session is paid."
 
-#: app/services/wallet_service.py:173
+#: app/services/wallet_service.py:184
 msgid "لا يمكن التحويل للمستخدم نفسه."
 msgstr "You cannot transfer to yourself."
 
-#: app/services/wallet_service.py:195
+#: app/services/wallet_service.py:206
 msgid "محفظة المرسل غير موجودة."
 msgstr "The sender's wallet does not exist."
 
-#: app/services/wallet_service.py:197
+#: app/services/wallet_service.py:208
 msgid "محفظة المستلم غير موجودة."
 msgstr "The recipient's wallet does not exist."
 
-#: app/services/wallet_service.py:200
+#: app/services/wallet_service.py:211
 msgid "محفظة المرسل غير نشطة."
 msgstr "The sender's wallet is inactive."
 
-#: app/services/wallet_service.py:202
+#: app/services/wallet_service.py:213
 msgid "محفظة المستلم غير نشطة."
 msgstr "The recipient's wallet is inactive."
 
-#: app/services/wallet_service.py:205
+#: app/services/wallet_service.py:216
 msgid "العملتان غير متطابقتين."
 msgstr "The two operations do not match."
 
-#: app/services/wallet_service.py:212
+#: app/services/wallet_service.py:223
 #, python-format
 msgid "الرصيد غير كافٍ. المتاح: %(available)s %(currency)s"
 msgstr "Insufficient balance. Available: %(available)s %(currency)s"
 
-#: app/services/wallet_service.py:339
+#: app/services/wallet_service.py:350
 msgid "المحفظة غير موجودة."
 msgstr "The wallet does not exist."
 
-#: app/services/wallet_service.py:341
+#: app/services/wallet_service.py:352
 msgid "المحفظة غير نشطة."
 msgstr "The wallet is inactive."
 
-#: app/services/wallet_service.py:568
+#: app/services/wallet_service.py:579
 msgid "بيانات الإيداع غير صالحة."
 msgstr "The deposit details are invalid."
 
-#: app/services/wallet_service.py:570
+#: app/services/wallet_service.py:581
 msgid "المستخدم ليس عضواً نشطاً في هذه المدرسة."
 msgstr "The user is not an active member of this school."
 
-#: app/services/wallet_service.py:574
+#: app/services/wallet_service.py:585
 msgid "تعذّر تجهيز المحفظة."
 msgstr "The wallet could not be prepared."
 
-#: app/services/wallet_service.py:622
+#: app/services/wallet_service.py:633
 msgid "الحركة غير موجودة في هذه المدرسة."
 msgstr "Transaction not found in this school."
 
-#: app/services/wallet_service.py:624
+#: app/services/wallet_service.py:635
 msgid "لا يمكن عكس قيد عكس."
 msgstr "A reversal entry cannot be reversed."
 
-#: app/services/wallet_service.py:632
+#: app/services/wallet_service.py:643
 msgid "هذه الحركة معكوسة مسبقاً."
 msgstr "This transaction has already been reversed."
 
-#: app/services/wallet_service.py:649
+#: app/services/wallet_service.py:660
 msgid "محفظة الطرف المقابل غير موجودة."
 msgstr "The counterparty wallet does not exist."
 
-#: app/services/wallet_service.py:651
+#: app/services/wallet_service.py:662
 msgid "المحفظة المرسلة الأصلية غير موجودة."
 msgstr "The original sending wallet does not exist."
 
-#: app/services/wallet_service.py:655 app/services/wallet_service.py:661
+#: app/services/wallet_service.py:666 app/services/wallet_service.py:672
 msgid "المحفظة غير نشطة — لا يمكن عكس الحركة."
 msgstr "The wallet is inactive — the transaction cannot be reversed."
 
-#: app/services/wallet_service.py:657
+#: app/services/wallet_service.py:668
 msgid "رصيد المحفظة لا يكفي لعكس الحركة (المبلغ تم صرفه)."
 msgstr ""
 "The wallet balance is not enough to reverse the transaction (the amount "
 "has been spent)."
 
-#: app/services/wallet_service.py:664
+#: app/services/wallet_service.py:675
 #, python-format
 msgid "عكس الحركة رقم %(id)s"
 msgstr "Reversal of transaction %(id)s"
@@ -2811,7 +2845,7 @@ msgstr "Bottom navigation"
 #: app/templates/admin/base.html:19 app/templates/base.html:123
 #: app/templates/errors/403.html:21 app/templates/errors/429.html:21
 #: app/templates/partials/breadcrumbs.html:7
-#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:105
+#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:107
 #: app/templates/schools/class_detail.html:6
 #: app/templates/schools/manage.html:6
 msgid "الرئيسية"
@@ -2830,7 +2864,7 @@ msgstr "My courses"
 #: app/templates/base.html:132 app/templates/base.html:137
 #: app/templates/content/lesson_detail.html:6
 #: app/templates/grades/gradebook.html:10 app/templates/partials/navbar.html:84
-#: app/templates/partials/navbar.html:88
+#: app/templates/partials/navbar.html:89
 #: app/templates/schools/class_detail.html:7
 #: app/templates/schools/manage.html:8 app/templates/schools/my_classes.html:2
 #: app/templates/schools/my_classes.html:5
@@ -2842,7 +2876,7 @@ msgid "لوحة الإدارة"
 msgstr "Admin dashboard"
 
 #: app/templates/auth/dashboard.html:162 app/templates/base.html:145
-#: app/templates/partials/navbar.html:93
+#: app/templates/partials/navbar.html:95
 msgid "صفوف أبنائي"
 msgstr "My children's classes"
 
@@ -3146,7 +3180,7 @@ msgid "تبديل المظهر"
 msgstr "Toggle theme"
 
 #: app/templates/landing.html:36 app/templates/landing.html:155
-#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:106
+#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:108
 msgid "دخول"
 msgstr "Log in"
 
@@ -3290,7 +3324,7 @@ msgid "ابدأ رحلتك التعليمية الآن"
 msgstr "Start your learning journey now"
 
 #: app/templates/landing.html:149 app/templates/main/index.html:10
-#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:107
+#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:109
 #: app/templates/pricing.html:60
 msgid "سجّل مجاناً"
 msgstr "Sign up free"
@@ -3785,7 +3819,7 @@ msgid "البريد"
 msgstr "Email"
 
 #: app/templates/admin/contact_inbox.html:14
-#: app/templates/tutoring/earnings.html:69
+#: app/templates/tutoring/earnings.html:69 app/templates/wallet/index.html:37
 msgid "التاريخ"
 msgstr "Date"
 
@@ -4501,12 +4535,12 @@ msgid "اللغة الافتراضية"
 msgstr "Default language"
 
 #: app/templates/admin/settings.html:22 app/templates/partials/navbar.html:47
-#: app/templates/partials/navbar.html:111
+#: app/templates/partials/navbar.html:113
 msgid "العربية"
 msgstr "Arabic"
 
 #: app/templates/admin/settings.html:23 app/templates/partials/navbar.html:47
-#: app/templates/partials/navbar.html:111
+#: app/templates/partials/navbar.html:113
 msgid "English"
 msgstr "English"
 
@@ -4762,6 +4796,7 @@ msgstr "From"
 #: app/templates/admin/wallet_ledger.html:98
 #: app/templates/grades/rubric_builder.html:22
 #: app/templates/grades/rubric_builder.html:36
+#: app/templates/wallet/index.html:34
 msgid "الوصف"
 msgstr "Description"
 
@@ -5337,7 +5372,7 @@ msgid "ليس لديك أي صف مخصص للتدريس."
 msgstr "You have no classes assigned to teach."
 
 #: app/templates/auth/dashboard.html:99 app/templates/auth/dashboard.html:118
-#: app/templates/partials/navbar.html:38 app/templates/partials/navbar.html:91
+#: app/templates/partials/navbar.html:38 app/templates/partials/navbar.html:92
 msgid "أرباحي"
 msgstr "My earnings"
 
@@ -5426,7 +5461,7 @@ msgstr "No children are linked to your account."
 msgid "وصول سريع"
 msgstr "Quick access"
 
-#: app/templates/auth/dashboard.html:203 app/templates/partials/navbar.html:89
+#: app/templates/auth/dashboard.html:203 app/templates/partials/navbar.html:90
 msgid "دروسي الخصوصية"
 msgstr "My private sessions"
 
@@ -6824,11 +6859,11 @@ msgstr "Open search"
 msgid "قائمة المستخدم"
 msgstr "User menu"
 
-#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:97
+#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:99
 msgid "الملف الشخصي"
 msgstr "Profile"
 
-#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:100
+#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:102
 msgid "خروج"
 msgstr "Log out"
 
@@ -6844,11 +6879,16 @@ msgstr "Main menu"
 msgid "استكشف"
 msgstr "Explore"
 
-#: app/templates/partials/navbar.html:96
+#: app/templates/partials/navbar.html:86 app/templates/partials/navbar.html:93
+#: app/templates/wallet/index.html:2 app/templates/wallet/index.html:7
+msgid "محفظتي"
+msgstr "My wallet"
+
+#: app/templates/partials/navbar.html:98
 msgid "الحساب"
 msgstr "Account"
 
-#: app/templates/partials/navbar.html:108
+#: app/templates/partials/navbar.html:110
 msgid "طالب فردي"
 msgstr "Individual student"
 
@@ -7437,33 +7477,84 @@ msgstr "Payment (dual confirmation)"
 
 #: app/templates/tutoring/session.html:55
 #: app/templates/tutoring/session.html:80
-#, fuzzy
 msgid "الدفع مؤكد من الطرفين"
-msgstr "Active users"
+msgstr "Payment confirmed by both parties"
 
 #: app/templates/tutoring/session.html:58
-#, fuzzy
 msgid "الطالب أكد الدفع"
-msgstr "Payment request:"
+msgstr "The student confirmed the payment"
 
 #: app/templates/tutoring/session.html:66
-#, fuzzy
 msgid "رفض استلام الدفع"
-msgstr "Confirm payment receipt"
+msgstr "Reject payment receipt"
 
 #: app/templates/tutoring/session.html:82
-#, fuzzy
 msgid "بانتظار تأكيد المعلم باستلام الدفع"
-msgstr "Confirm payment receipt"
+msgstr "Awaiting the tutor's confirmation of payment receipt"
 
 #: app/templates/tutoring/session.html:86
-#, fuzzy
 msgid "تأكيد الدفع"
-msgstr "Confirm rejection"
+msgstr "Confirm payment"
 
 #: app/templates/tutoring/session.html:87
 msgid "يُقفل الدفع بعد تأكيد الطرفين معاً."
 msgstr "Payment closes only after both parties confirm."
+
+#: app/templates/wallet/index.html:8
+msgid "الرصيد وسجل الحركات المالية في مدرستك"
+msgstr "Your balance and transaction history in your school"
+
+#: app/templates/wallet/index.html:16
+msgid "لا توجد محفظة نشطة لحسابك بعد."
+msgstr "No active wallet for your account yet."
+
+#: app/templates/wallet/index.html:17
+msgid ""
+"راجع إدارة مدرستك لتجهيز محفظة، ثم عُد إلى هذه الصفحة لعرض رصيدك وسجل "
+"حركاتك."
+msgstr "Contact your school's administration to set up a wallet, then return "
+"to this page to view your balance and transactions."
+
+#: app/templates/wallet/index.html:21
+msgid "الرصيد الحالي"
+msgstr "Current balance"
+
+#: app/templates/wallet/index.html:22
+msgid "إجمالي الوارد"
+msgstr "Total incoming"
+
+#: app/templates/wallet/index.html:23
+msgid "إجمالي الصادر"
+msgstr "Total outgoing"
+
+#: app/templates/wallet/index.html:27
+msgid "سجل الحركات"
+msgstr "Transaction history"
+
+#: app/templates/wallet/index.html:35
+msgid "الاتجاه"
+msgstr "Direction"
+
+#: app/templates/wallet/index.html:56
+msgid "ترقيم الصفحات"
+msgstr "Pagination"
+
+#: app/templates/wallet/index.html:58
+msgid "الأحدث"
+msgstr "Newer"
+
+#: app/templates/wallet/index.html:60
+#, python-format
+msgid "صفحة %(page)s من %(pages)s"
+msgstr "Page %(page)s of %(pages)s"
+
+#: app/templates/wallet/index.html:62
+msgid "الأقدم"
+msgstr "Older"
+
+#: app/templates/wallet/index.html:68
+msgid "لا توجد حركات مالية مسجّلة على محفظتك بعد."
+msgstr "No financial transactions recorded on your wallet yet."
 
 #~ msgid "غير مسموح"
 #~ msgstr "Not allowed"
