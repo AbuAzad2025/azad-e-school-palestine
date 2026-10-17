@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-17 00:05+0300\n"
+"POT-Creation-Date: 2026-10-17 08:35+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -254,7 +254,7 @@ msgstr "Failed"
 #: app/templates/admin/users_list.html:46
 #: app/templates/billing/discount_list.html:31
 #: app/templates/billing/invoice.html:33
-#: app/templates/family/child_progress.html:24
+#: app/templates/family/child_progress.html:58
 msgid "نشط"
 msgstr "Active"
 
@@ -2385,6 +2385,11 @@ msgstr "Add text or a file for the submission."
 msgid "تعذّر قراءة مساحة القرص."
 msgstr "Could not read the available disk space."
 
+#: app/services/health.py:66
+#, fuzzy
+msgid "لا توجد نسخة احتياطية في مجلد النسخ."
+msgstr "No backups yet"
+
 #: app/services/individual.py:62
 msgid "هذا الكورس غير متاح."
 msgstr "This course is not available."
@@ -4396,7 +4401,7 @@ msgstr "New class"
 #: app/templates/auth/dashboard.html:74 app/templates/auth/dashboard.html:138
 #: app/templates/auth/dashboard.html:179
 #: app/templates/family/child_grades.html:20
-#: app/templates/family/child_progress.html:20
+#: app/templates/family/child_progress.html:21
 #: app/templates/individual/course_catalog.html:37
 #: app/templates/individual/dashboard.html:44
 #: app/templates/schools/class_detail.html:16
@@ -5275,7 +5280,9 @@ msgstr "View all classes"
 msgid "إجراءات"
 msgstr "Actions"
 
-#: app/templates/auth/dashboard.html:83 app/templates/grades/attendance.html:3
+#: app/templates/auth/dashboard.html:83
+#: app/templates/family/child_progress.html:46
+#: app/templates/grades/attendance.html:3
 #: app/templates/grades/attendance.html:7
 #: app/templates/schools/class_detail.html:55
 msgid "الحضور"
@@ -6026,7 +6033,7 @@ msgid "عرض السجل"
 msgstr "View record"
 
 #: app/templates/family/child_grades.html:30
-#: app/templates/family/child_progress.html:30
+#: app/templates/family/child_progress.html:64
 msgid "الطالب غير مسجل في أي صف حالياً."
 msgstr "The student is not enrolled in any class currently."
 
@@ -6042,6 +6049,34 @@ msgstr "Student progress"
 #: app/templates/family/child_progress.html:9
 msgid "متابعة تقدم الطالب في جميع صفوفه"
 msgstr "Track the student's progress across all their classes"
+
+#: app/templates/family/child_progress.html:25
+msgid "لا توجد بيانات تقدم بعد في هذا الصف."
+msgstr "No progress data yet in this class."
+
+#: app/templates/family/child_progress.html:29
+msgid "إنجاز الدروس"
+msgstr "Lesson completion"
+
+#: app/templates/family/child_progress.html:39
+msgid "متوسط الدرجات"
+msgstr "Average grade"
+
+#: app/templates/family/child_progress.html:47
+msgid "حاضر"
+msgstr "Present"
+
+#: app/templates/family/child_progress.html:48
+msgid "غائب"
+msgstr "Absent"
+
+#: app/templates/family/child_progress.html:49
+msgid "متأخر"
+msgstr "Late"
+
+#: app/templates/family/child_progress.html:51
+msgid "بعذر"
+msgstr "Excused"
 
 #: app/templates/family/generate_code.html:9
 msgid "أرسل هذا الرمز لولي أمرك لربط حسابك بحسابه"

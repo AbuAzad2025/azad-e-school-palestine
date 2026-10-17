@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/ui.html" import azad_section, azad_empty_state, azad_stat_card, azad_breadcrumb %}
+{% from "macros/ui.html" import azad_section, azad_empty_state, azad_breadcrumb %}
 {% block title %}{{ _('تقدم الطالب') }} — {{ _('روابط الأسرة') }}{% endblock %}
 {% block breadcrumbs %}
 {{ azad_breadcrumb([{'label': _('لوحتي'), 'href': url_for('auth.dashboard')}, {'label': _('أبنائي'), 'href': url_for('family.index')}, {'label': _('تقدم الطالب')}]) }}
@@ -8,17 +8,51 @@
 <h1 class="page-title azad-title">{{ _('تقدم الطالب') }}</h1>
 <p class="page-subtitle">{{ _('متابعة تقدم الطالب في جميع صفوفه') }}</p>
 
-{% set visible_memberships = memberships|selectattr('class_room')|list %}
-{% if visible_memberships %}
+{% if progress_rows %}
 <div class="azad-list">
-    {% for m in visible_memberships %}
+    {% for row in progress_rows %}
+    {% set cr = row.class_room %}
+    {% set no_data = row.lessons_total == 0 and row.avg_grade_pct is none and row.attendance is none %}
     <div class="azad-item">
         <div>
-            <div class="item-title">{{ m.class_room.name or m.class_room.subject.name_ar }}</div>
+            <div class="item-title">{{ cr.name or cr.subject.name_ar }}</div>
             <div class="item-meta">
-                <span>{{ m.class_room.subject.name_ar }}</span>
-                <span>{{ _('الصف') }} {{ m.class_room.grade.grade_level }}</span>
+                <span>{{ cr.subject.name_ar }}</span>
+                <span>{{ _('الصف') }} {{ cr.grade.grade_level }}</span>
             </div>
+
+            {% if no_data %}
+            <p class="item-meta u-text-muted">{{ _('لا توجد بيانات تقدم بعد في هذا الصف.') }}</p>
+            {% else %}
+            {% if row.lessons_total %}
+            <div class="item-meta">
+                <span>{{ _('إنجاز الدروس') }}: {{ row.lessons_completed }} / {{ row.lessons_total }}</span>
+                <div class="meter">
+                    <i class="mf-{{ (row.completion_pct // 5 * 5) if row.completion_pct < 100 else 100 }} mf-green"></i>
+                </div>
+                <span class="meta-chip u-text-green">{{ row.completion_pct }}%</span>
+            </div>
+            {% endif %}
+
+            {% if row.avg_grade_pct is not none %}
+            <div class="item-meta">
+                <span>{{ _('متوسط الدرجات') }}</span>
+                <span class="meta-chip">{{ row.avg_grade_pct }}%</span>
+            </div>
+            {% endif %}
+
+            {% if row.attendance %}
+            <div class="item-meta">
+                <span>{{ _('الحضور') }}:</span>
+                <span class="meta-chip u-text-green">{{ _('حاضر') }} {{ row.attendance.present }}</span>
+                <span class="meta-chip u-text-red">{{ _('غائب') }} {{ row.attendance.absent }}</span>
+                <span class="meta-chip">{{ _('متأخر') }} {{ row.attendance.late }}</span>
+                {% if row.attendance.excused %}
+                <span class="meta-chip">{{ _('بعذر') }} {{ row.attendance.excused }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
         </div>
         <div class="item-actions">
             <span class="meta-chip u-text-green">{{ _('نشط') }}</span>

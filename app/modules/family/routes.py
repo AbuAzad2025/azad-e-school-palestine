@@ -66,10 +66,15 @@ def generate_code():
 @bp.get("/children/<int:student_id>/progress")
 @parent_of_required
 def child_progress(student_id):
-    from app.models.class_room import ClassMember
+    # AZ-P2-11: إنجاز الدروس + المعدل + الحضور لكل صف (استعلامات مجمّعة).
+    from app.services.family import child_progress_summary
 
-    memberships = ClassMember.query.filter_by(user_id=student_id, status="active").all()
-    return render_template("family/child_progress.html", student_id=student_id, memberships=memberships)
+    progress_rows = child_progress_summary(student_id)
+    return render_template(
+        "family/child_progress.html",
+        student_id=student_id,
+        progress_rows=progress_rows,
+    )
 
 
 @bp.get("/children/<int:student_id>/grades")

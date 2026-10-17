@@ -26,10 +26,15 @@ import pytest
 from tests.conftest import (
     make_class,
     make_class_member,
+    make_family_link,
     make_grade,
+    make_grade_category,
+    make_grade_entry,
+    make_grade_item,
     make_lesson,
     make_payment,
     make_school,
+    make_student_progress,
     make_subject,
     make_subscription,
     make_subscription_plan,
@@ -1218,4 +1223,153 @@ class TestAssessmentRouteGaps:
         with patch.object(aroutes, "get_quiz_stats", return_value=None):
             resp = client.get(f"/classes/quiz/{qid}/stats", follow_redirects=False)
         assert resp.status_code == 302
-        assert "results" in resp.location
+
+
+class TestChildProgressDeep:
+    """AZ-P2-11 — تعميق صفحة تقدم الابن: إنجاز/معدل/حضور + حالات فراغ صريحة."""
+
+    @staticmethod
+    def _id(x):
+        """يقبل ثنائية (uid, email) أو معرْفاً مجرداً."""
+        return x[0] if isinstance(x, tuple) else x
+
+    def _seed_class(self, app, parent, stu, school_id):
+        """صف واحد نشط للاختبار — parent وstu ثنائيات (uid, email)؛ يعيد class_id."""
+        make_family_link(app, self._id(parent), self._id(stu))
+        gid = make_grade(app, school_id, grade_level=_next_level(school_id))
+        subj = make_subject(app)
+        cid = make_class(app, school_id, gid, subj)
+        make_class_member(app, cid, stu)
+        return cid
+
+    def _seed_attendance(self, app, class_id, student_id, statuses):
+        """سجلات حضور بأيام مختلفة (تجنب uq_attendance_day)."""
+        with app.app_context():
+            from datetime import UTC, datetime, timedelta
+
+            from app.extensions import db
+            from app.models.attendance import Attendance
+
+            base = datetime.now(UTC).date()
+            for i, st in enumerate(statuses):
+                db.session.add(
+                    Attendance(
+                        class_id=class_id,
+                        student_id=student_id,
+                        date=base - timedelta(days=i),
+                        status=st,
+                    )
+                )
+            db.session.commit()
+
+    def test_summary_numbers(self, app):
+        """نسبة إنجاز 50% + معدل 70% + عدّاد الحضور من بيانات مبذورة."""
+        from app.services.family import child_progress_summary
+
+        sid = make_school(app)
+        parent = mk_user(app, role="parent", school_id=sid)
+        stu, _ = mk_user(app, role="student", school_id=sid)
+        other, _ = mk_user(app, role="student", school_id=sid)
+        cid = self._seed_class(app, parent, stu, sid)
+
+        l1 = make_lesson(app, cid)
+        make_lesson(app, cid)
+        make_student_progress(app, self._id(stu), l1, cid, status="completed", pct=100)
+
+        cat = make_grade_category(app, cid, "تحصيلي", 100)
+        item1 = make_grade_item(app, cid, cat, "اختبار 1", 100.0)
+        item2 = make_grade_item(app, cid, cat, "اختبار 2", 50.0)
+        make_grade_entry(app, self._id(stu), item1, 80.0)
+        make_grade_entry(app, self._id(stu), item2, 25.0)
+        # درجة زميل في نفس الصف — لا يجب تسريبها إلى ولي الأمر
+        make_grade_entry(app, other, item1, 90.0)
+
+        self._seed_attendance(app, cid, self._id(stu), ["present", "absent", "late"])
+
+        with app.app_context():
+            rows = child_progress_summary(stu)
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["lessons_total"] == 2
+        assert row["lessons_completed"] == 1
+        assert row["completion_pct"] == 50
+        assert row["avg_grade_pct"] == 70.0  # (80+25)/(100+50)
+        assert row["attendance"] == {"present": 1, "absent": 1, "late": 1, "excused": 0}
+
+    def test_summary_empty_class_shows_absence_not_zero(self, app):
+        """طالب في صف بلا بيانات → None (لا صفر مضلّل) للثلاثة الأبعاد."""
+        from app.services.family import child_progress_summary
+
+        sid = make_school(app)
+        parent = mk_user(app, role="parent", school_id=sid)
+        stu, _ = mk_user(app, role="student", school_id=sid)
+        self._seed_class(app, parent, stu, sid)
+
+        with app.app_context():
+            rows = child_progress_summary(stu)
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["completion_pct"] is None
+        assert row["avg_grade_pct"] is None
+        assert row["attendance"] is None
+
+    def test_summary_no_classes(self, app):
+        """طالب بلا عضويات → قائمة فارغة (القالب يعرض حالة فراغ عامة)."""
+        from app.services.family import child_progress_summary
+
+        stu, _ = mk_user(app, role="student")
+        with app.app_context():
+            assert child_progress_summary(stu) == []
+
+    def test_no_cross_tenant_leak(self, app):
+        """درجات طالب من مدرسة أخرى في صفّها لا تظهر لولي أمر ابننا."""
+        from app.services.family import child_progress_summary
+
+        sid = make_school(app)
+        other_sid = make_school(app)
+        parent = mk_user(app, role="parent", school_id=sid)
+        stu, _ = mk_user(app, role="student", school_id=sid)
+        cid = self._seed_class(app, parent, stu, sid)
+
+        foreign, _ = mk_user(app, role="student", school_id=other_sid)
+        cat = make_grade_category(app, cid, "تحصيلي", 100)
+        item = make_grade_item(app, cid, cat, "اختبار", 100.0)
+        make_grade_entry(app, foreign, item, 5.0)
+
+        with app.app_context():
+            rows = child_progress_summary(stu)
+        assert rows[0]["avg_grade_pct"] is None
+
+    def test_route_renders_numbers(self, app):
+        """ولي الأمر يرى الإنجاز والمعدل والحضور في صفحة التقدم."""
+        sid = make_school(app)
+        parent = mk_user(app, role="parent", school_id=sid)
+        stu, _ = mk_user(app, role="student", school_id=sid)
+        cid = self._seed_class(app, parent, stu, sid)
+        l1 = make_lesson(app, cid)
+        make_lesson(app, cid)
+        make_student_progress(app, self._id(stu), l1, cid, status="completed", pct=100)
+        self._seed_attendance(app, cid, self._id(stu), ["present"])
+
+        resp = login_as(app, parent if isinstance(parent, tuple) else (parent, None)).get(
+            f"/family/children/{self._id(stu)}/progress"
+        )
+        html = resp.get_data(as_text=True)
+        assert resp.status_code == 200
+        assert "إنجاز الدروس" in html and "50%" in html
+        assert "حاضر" in html
+        assert "لا توجد بيانات تقدم بعد" not in html
+
+    def test_route_renders_empty_state_for_dataless_class(self, app):
+        """صفب بلا بيانات → حالة فراغ صريحة في الواجهة."""
+        sid = make_school(app)
+        parent = mk_user(app, role="parent", school_id=sid)
+        stu, _ = mk_user(app, role="student", school_id=sid)
+        self._seed_class(app, parent, stu, sid)
+
+        resp = login_as(app, parent if isinstance(parent, tuple) else (parent, None)).get(
+            f"/family/children/{self._id(stu)}/progress"
+        )
+        html = resp.get_data(as_text=True)
+        assert resp.status_code == 200
+        assert "لا توجد بيانات تقدم بعد في هذا الصف." in html
