@@ -709,3 +709,138 @@ def request_payout(tutor_id: int, amount: float) -> tuple[TutorPayout | None, st
         return tx(_create), None
     except TxError as exc:
         return None, str(exc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AZ-P2-13 — دفع آمن للجلسات الخصوصية (تأكيد مزدوج + قيد دفتر واحد)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _finalize_session_payment(locked: TutoringSession) -> None:
+    """أقفل الدفعة (داخل tx() الحالي بعد قفل الصف): قيد دفتر واحد idempotent.
+
+    القيد يستعمل مفتاح ``tutoring_session:{id}:inflow`` — نفس المفتاح
+    الذي يحرسه ``_append_commission_ledger``
+    عند اكتمال الجلسة، فإتمام الدفع ثم اكتمال الجلسة (والعكس) لا يكرّر
+    التدفق أبداً، ومحفظة غائبة تُخطى بأمان مع سجل تحذيري أوضح.
+    """
+    from app.models.wallet import Wallet, WalletTransaction
+    from app.services.wallet_service import _generate_tx_hash, _money
+
+    school_id = getattr(locked.tutor, "school_id", None)
+    price = locked.price
+    if school_id and price:
+        wallet = (
+            db.session.query(Wallet).filter_by(school_id=school_id, user_id=locked.tutor_id).with_for_update().first()
+        )
+        if wallet is None:
+            logger.info("payment_ledger_skipped_no_wallet", session_id=locked.id, tutor_id=locked.tutor_id)
+        else:
+            amount_dec = _money(price)
+            key = f"tutoring_session:{locked.id}:inflow"
+            exists = WalletTransaction.query.filter_by(idempotency_key=key).first()
+            if exists is None:
+                db.session.add(
+                    WalletTransaction(
+                        school_id=school_id,
+                        source_wallet_id=None,
+                        destination_wallet_id=wallet.id,
+                        amount=amount_dec,
+                        currency=wallet.currency,
+                        transaction_type=TX_INFLOW_TYPE,
+                        transaction_hash=_generate_tx_hash(school_id, None, wallet.id, amount_dec, TX_INFLOW_TYPE),
+                        idempotency_key=key,
+                        description=f"جلسة خصوصية #{locked.id} — دفع مؤكد من الطرفين",
+                        reference_type="tutoring_session",
+                        reference_id=locked.id,
+                        status="completed",
+                    )
+                )
+                wallet.balance = _money(wallet.balance + amount_dec)
+
+    locked.payment_status = "paid"
+    locked.payment_confirmed_at = locked.updated_at
+
+
+def confirm_session_payment_by_student(session_id: int, actor_id: int) -> tuple[str | None, str | None]:
+    """تأكيد الطالب: أُدفع للمعلم. الإقفال لا يحدث إلا بتأكيد الطرفين معاً.
+
+    يعيد ``"paid"`` عند الإقفال، ``"waiting"`` بانتظار المعلم، و
+    ``(None, رسالة)`` في خطأ الصلاحية/التحقق.
+    """
+
+    def _work() -> str:
+        locked = db.session.execute(
+            db.select(TutoringSession).where(TutoringSession.id == session_id).with_for_update()
+        ).scalar_one_or_none()
+        if locked is None:
+            raise TxError(_("الجلسة غير موجودة."))
+        if locked.student_id != actor_id:
+            raise TxError(_("هذا التأكيد حق الطالب وحده."))
+        if locked.payment_status == "paid":
+            return "paid"  # بلا تقفل مكرر — لا رسالة خطأ
+        locked.student_confirmed_payment = True
+        if not locked.tutor_confirmed_payment:
+            return "waiting"
+        _finalize_session_payment(locked)
+        return "paid"
+
+    try:
+        return tx(_work), None
+    except TxError as exc:
+        return None, str(exc)
+
+
+def confirm_session_payment_by_tutor(session_id: int, actor_id: int) -> tuple[str | None, str | None]:
+    """تأكيد المعلم: أستلمت المبلغ. نفس منطق الإقفال المزدوج مع العكس.
+
+    يعيد ``"paid"`` عند الإقفال، أو ``"waiting"`` بانتظار تأكيد الطالب.
+    """
+
+    def _work() -> str:
+        locked = db.session.execute(
+            db.select(TutoringSession).where(TutoringSession.id == session_id).with_for_update()
+        ).scalar_one_or_none()
+        if locked is None:
+            raise TxError(_("الجلسة غير موجودة."))
+        if locked.tutor_id != actor_id:
+            raise TxError(_("هذا التأكيد حق المعلم وحده."))
+        if locked.payment_status == "paid":
+            return "paid"
+        locked.tutor_confirmed_payment = True
+        if not locked.student_confirmed_payment:
+            return "waiting"
+        _finalize_session_payment(locked)
+        return "paid"
+
+    try:
+        return tx(_work), None
+    except TxError as exc:
+        return None, str(exc)
+
+
+def reject_session_payment_by_tutor(session_id: int, actor_id: int) -> tuple[str | None, str | None]:
+    """رفض المعلم: يعيد الجلسة حالة غير مدفوعة وتُمحي التأكيدات.
+
+    الرفض ممنوع بعد إغلاق المال (``paid``) — يُرفض مع رسالة، وتبقى حالة الجلسة كما هي.
+    """
+
+    def _work() -> str:
+        locked = db.session.execute(
+            db.select(TutoringSession).where(TutoringSession.id == session_id).with_for_update()
+        ).scalar_one_or_none()
+        if locked is None:
+            raise TxError(_("الجلسة غير موجودة."))
+        if locked.tutor_id != actor_id:
+            raise TxError(_("هذا الرفض حق المعلم وحده."))
+        if locked.payment_status == "paid":
+            raise TxError(_("لا يمكن رفض دفعة مقفلة مسبقاً — الجلسة مدفوعة."))
+        locked.student_confirmed_payment = False
+        locked.tutor_confirmed_payment = False
+        locked.payment_confirmed_at = None
+        return "pending"
+
+    try:
+        return tx(_work), None
+    except TxError as exc:
+        return None, str(exc)

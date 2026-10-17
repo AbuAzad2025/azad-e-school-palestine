@@ -66,6 +66,10 @@ class TutoringSession(PKMixin, db.Model):
     location: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(12), default="requested", nullable=False)
     payment_status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)
+    # AZ-P2-13: تأكيد مزدوج للدفع — لا يقفل المال إلا بتأكيد الطرفين.
+    student_confirmed_payment: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    tutor_confirmed_payment: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    payment_confirmed_at = db.Column(db.DateTime(timezone=True))
     end_time = db.Column(db.DateTime(timezone=True))
     video_provider: Mapped[str] = mapped_column(String(10), default="jitsi", nullable=False)
     zoom_meeting_id: Mapped[str | None] = mapped_column(String(64))

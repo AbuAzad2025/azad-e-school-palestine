@@ -91,6 +91,22 @@ def _ensure_phase2_schema(db_engine):
         )
         # Tutoring sessions: end_time
         db_engine.session.execute(text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ"))
+        # AZ-P2-13: dual payment confirmation columns
+        db_engine.session.execute(
+            text(
+                "ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS "
+                "student_confirmed_payment BOOLEAN DEFAULT FALSE NOT NULL"
+            )
+        )
+        db_engine.session.execute(
+            text(
+                "ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS "
+                "tutor_confirmed_payment BOOLEAN DEFAULT FALSE NOT NULL"
+            )
+        )
+        db_engine.session.execute(
+            text("ALTER TABLE tutoring_sessions ADD COLUMN IF NOT EXISTS payment_confirmed_at TIMESTAMPTZ")
+        )
         # Tutor reviews table
         db_engine.session.execute(
             text(
@@ -751,7 +767,9 @@ def make_tutor_profile(app, tutor_id, subject="رياضيات", price_hour=100.0
         return p.id
 
 
-def make_tutoring_session(app, tutor_id, student_id, subject="رياضيات", status="completed", price=100.0, end_time=None):
+def make_tutoring_session(
+    app, tutor_id, student_id, subject="رياضيات", status="completed", price=100.0, end_time=None, payment_status="paid"
+):
     with app.app_context():
         from datetime import datetime, timedelta
 
@@ -768,7 +786,7 @@ def make_tutoring_session(app, tutor_id, student_id, subject="رياضيات", s
             duration_min=60,
             price=price,
             status=status,
-            payment_status="paid",
+            payment_status=payment_status,
             end_time=end_time,
         )
         _db.session.add(s)

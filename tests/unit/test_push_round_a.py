@@ -369,11 +369,10 @@ class TestTutoringSessionLifecycle:
         )
         assert resp.status_code in (302, 403)
 
-    def test_session_pay_by_student(self, app):
+    def test_session_pay_by_student_waits_for_tutor(self, app):
+        """AZ-P2-13: تأكيد الطالب وحده لا يقفل الدفع — بقي "بانتظار المعلم"."""
         sid = make_school(app)
-        tid, _, stu_id, sess_id = self._make_session(app, sid)
-        _, stu_email = mk_user(app, "student", school_id=sid)
-        # pay must be by the session's own student
+        tid, t_email, stu_id, sess_id = self._make_session(app, sid)
         from app.models.tutoring import TutoringSession
         from tests.conftest import _db
 
@@ -382,16 +381,18 @@ class TestTutoringSessionLifecycle:
 
             sess = _db.session.get(TutoringSession, sess_id)
             stu_email = _db.session.get(User, sess.student_id).email
+            sess.payment_status = "pending"
+            _db.session.commit()
 
         client = login_as(app, (0, stu_email))
         resp = client.post(f"/tutoring/sessions/{sess_id}/pay", follow_redirects=False)
         assert resp.status_code == 302
-        # payment_status must land in the DB-allowed set (paid, not 'approved')
         with app.app_context():
             _db.session.expire_all()
-            from app.models.tutoring import TutoringSession
-
-            assert _db.session.get(TutoringSession, sess_id).payment_status == "paid"
+            sess = _db.session.get(TutoringSession, sess_id)
+            assert sess.payment_status == "pending"  # لا إقفال من طرف واحد
+            assert sess.student_confirmed_payment is True
+            assert sess.tutor_confirmed_payment is False
 
     def test_session_pay_by_tutor_403(self, app):
         sid = make_school(app)

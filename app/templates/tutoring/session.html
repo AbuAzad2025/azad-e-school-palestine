@@ -49,16 +49,44 @@
       <div class="form-actions">{{ form.submit(class="azad-btn") }}</div>
     </form>
 
-    <div class="azad-section"><h2>{{ _('الإجراءات') }}</h2></div>
+    <div class="azad-section"><h2>{{ _('الدفع (تأكيد مزدوج)') }}</h2></div>
     <div class="item-actions">
-      {% if session_.payment_status != 'approved' %}
-      <form class="u-inline" method="post" action="{{ url_for('tutoring.session_pay', session_id=session_.id) }}">
+      {% if session_.payment_status == 'paid' %}
+      <span class="meta-chip u-text-green">{{ _('الدفع مؤكد من الطرفين') }}</span>
+      {% else %}
+      {% if session_.student_confirmed_payment %}
+      <span class="meta-chip">{{ _('الطالب أكد الدفع') }}</span>
+      {% endif %}
+      <form class="u-inline" method="post" action="{{ url_for('tutoring.session_pay_confirm', session_id=session_.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="azad-btn" type="submit">{{ _('تأكيد استلام الدفع (يدوي)') }}</button>
+        <button class="azad-btn" type="submit">{{ _('تأكيد استلام الدفع') }}</button>
+      </form>
+      <form class="u-inline" method="post" action="{{ url_for('tutoring.session_pay_reject', session_id=session_.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn-outline" type="submit">{{ _('رفض استلام الدفع') }}</button>
       </form>
       {% endif %}
+    </div>
+
+    <div class="azad-section"><h2>{{ _('الإجراءات') }}</h2></div>
+    <div class="item-actions">
       <a class="azad-btn-outline" href="{{ url_for('tutoring.session_status', session_id=session_.id, value='completed') }}">{{ _('إنهاء الجلسة') }}</a>
       <a class="azad-btn-outline" href="{{ url_for('tutoring.session_status', session_id=session_.id, value='cancelled') }}">{{ _('إلغاء') }}</a>
+    </div>
+  {% else %}
+    <div class="azad-section"><h2>{{ _('الدفع (تأكيد مزدوج)') }}</h2></div>
+    <div class="item-actions">
+      {% if session_.payment_status == 'paid' %}
+      <span class="meta-chip u-text-green">{{ _('الدفع مؤكد من الطرفين') }}</span>
+      {% elif session_.student_confirmed_payment %}
+      <span class="meta-chip">{{ _('بانتظار تأكيد المعلم باستلام الدفع') }}</span>
+      {% else %}
+      <form class="u-inline" method="post" action="{{ url_for('tutoring.session_pay', session_id=session_.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="azad-btn" type="submit">{{ _('تأكيد الدفع') }}</button>
+        <span class="item-meta">{{ _('يُقفل الدفع بعد تأكيد الطرفين معاً.') }}</span>
+      </form>
+      {% endif %}
     </div>
   {% endif %}
 </div>

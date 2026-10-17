@@ -34,10 +34,10 @@
 | AZ-P1-07 | مستكشف دفتر المحفظة + عكس حركة | P1 | نعم | `tests/unit/test_payments_finance_gaps.py` |
 | AZ-P1-08 | واجهة إيداع إداري | P1 | نعم | `tests/unit/test_push_batch2_routes.py` |
 | AZ-P1-09 | إصلاح مهمة المدفوعات المعلّقة في cron | P1 | نعم | `tests/unit/test_hotfix_d_series.py` |
-| AZ-P1-10 | جدولة تشغيلية حقيقية (cron/worker) | P1 | لا | `tests/test_production_deployment.py` |
-| AZ-P2-11 | تعميق صفحة تقدّم الابن | P2 | لا | `tests/unit/test_coverage_sprint_m2.py` |
-| AZ-P2-12 | تشغيل تنبيهات الغياب + إشعار ولي الأمر عند الدرجة | P2 | لا | `tests/unit/test_push_round_i.py` |
-| AZ-P2-13 | دفع آمن للجلسات الخصوصية (تأكيد مزدوج) | P2 | نعم | `tests/unit/test_payments_gateway_gaps.py` |
+| AZ-P1-10 | جدولة تشغيلية حقيقية (cron/worker) ✅ (84b2829) | P1 | لا | `tests/test_production_deployment.py` |
+| AZ-P2-11 | تعميق صفحة تقدّم الابن ✅ (90f2caa) | P2 | لا | `tests/unit/test_coverage_sprint_m2.py` |
+| AZ-P2-12 | تشغيل تنبيهات الغياب + إشعار ولي الأمر عند الدرجة ✅ (4d0c03c) | P2 | لا | `tests/unit/test_push_round_i.py` |
+| AZ-P2-13 | دفع آمن للجلسات الخصوصية (تأكيد مزدوج) ✅ | P2 | نعم | `tests/unit/test_payments_gateway_gaps.py` |
 
 ---
 
@@ -345,3 +345,4 @@ milestones: v2.0.0 (P0 حصراً) → v2.1.0 (P1) → v2.2.0 (P2)
 | التاريخ | التغيير |
 |---|---|
 | — | إنشاء المستند من تحليل الفجوات؛ كل مرجع سطري أُعيد فحصه |
+| 2026-10-17 | تنفيذ الدفعة الأخيرة: AZ-P1-10 (84b2829)، AZ-P2-11 (90f2caa)، AZ-P2-12 (4d0c03c)، AZ-P2-13 (تأكيد مزدوج + قيود دفتر idempotent). كل بنود المستند صارت منفّذة ومختبرة |

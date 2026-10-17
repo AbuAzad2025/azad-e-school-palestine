@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-17 09:06+0300\n"
+"POT-Creation-Date: 2026-10-17 09:37+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -1762,7 +1762,7 @@ msgstr ""
 msgid "تأكيد الجلسة"
 msgstr ""
 
-#: app/modules/tutoring/forms.py:64
+#: app/modules/tutoring/forms.py:64 app/templates/tutoring/session.html:62
 msgid "تأكيد استلام الدفع"
 msgstr ""
 
@@ -1828,47 +1828,59 @@ msgstr ""
 msgid "تم تحديث الجلسة."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:243
-msgid "تم تأكيد دفع درسك الخصوصي"
+#: app/modules/tutoring/routes.py:251 app/modules/tutoring/routes.py:283
+msgid "تم تأكيد دفع درسك الخصوصي من الطالب والمعلم"
 msgstr ""
 
-#: app/modules/tutoring/routes.py:244
-msgid "تم تأكيد استلام الدفع (يدوي)."
+#: app/modules/tutoring/routes.py:253 app/modules/tutoring/routes.py:284
+msgid "تم إقفال الدفع بعد تأكيد الطرفين."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:262
+#: app/modules/tutoring/routes.py:255
+msgid "سجّلنا تأكيدك — بانتظار تأكيد المعلم باستلام الدفع."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:286
+msgid "سجّلنا تأكيدك — بانتظار تأكيد الطالب بتفاصيل الدفع."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:306
+msgid "أُلغي قيد الدفع — الجلسة بلا تأكيدات."
+msgstr ""
+
+#: app/modules/tutoring/routes.py:324
 msgid "تم تحديث حالة الجلسة."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:304
+#: app/modules/tutoring/routes.py:366
 msgid "تم بدء الجلسة المباشرة."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:317
+#: app/modules/tutoring/routes.py:379
 msgid "تم إنهاء الجلسة المباشرة."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:332 app/services/tutoring.py:403
+#: app/modules/tutoring/routes.py:394 app/services/tutoring.py:403
 msgid "لا يمكن تقييم جلسة لم تنتهِ بعد."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:343 app/services/tutoring.py:414
+#: app/modules/tutoring/routes.py:405 app/services/tutoring.py:414
 msgid "انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة)."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:348 app/services/tutoring.py:420
+#: app/modules/tutoring/routes.py:410 app/services/tutoring.py:420
 msgid "لقد قيّمت هذه الجلسة مسبقاً."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:355 app/services/tutoring.py:423
+#: app/modules/tutoring/routes.py:417 app/services/tutoring.py:423
 msgid "التقييم يجب أن يكون بين 1 و 5."
 msgstr ""
 
-#: app/modules/tutoring/routes.py:361
+#: app/modules/tutoring/routes.py:423
 msgid "شكراً لتقيميكم!"
 msgstr ""
 
-#: app/modules/tutoring/routes.py:392
+#: app/modules/tutoring/routes.py:454
 msgid "تم إرسال طلب السحب."
 msgstr ""
 
@@ -2513,6 +2525,8 @@ msgid "لديك طلب معلّق لهذا المعلم."
 msgstr ""
 
 #: app/services/tutoring.py:242 app/services/tutoring.py:399
+#: app/services/tutoring.py:777 app/services/tutoring.py:805
+#: app/services/tutoring.py:833
 msgid "الجلسة غير موجودة."
 msgstr ""
 
@@ -2545,6 +2559,22 @@ msgstr ""
 #: app/services/tutoring.py:699
 #, python-format
 msgid "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s)."
+msgstr ""
+
+#: app/services/tutoring.py:779
+msgid "هذا التأكيد حق الطالب وحده."
+msgstr ""
+
+#: app/services/tutoring.py:807
+msgid "هذا التأكيد حق المعلم وحده."
+msgstr ""
+
+#: app/services/tutoring.py:835
+msgid "هذا الرفض حق المعلم وحده."
+msgstr ""
+
+#: app/services/tutoring.py:837
+msgid "لا يمكن رفض دفعة مقفلة مسبقاً — الجلسة مدفوعة."
 msgstr ""
 
 #: app/services/wallet_service.py:173
@@ -3637,7 +3667,7 @@ msgstr ""
 
 #: app/templates/admin/certificates.html:19
 #: app/templates/admin/user_detail.html:82
-#: app/templates/tutoring/session.html:52
+#: app/templates/tutoring/session.html:71
 msgid "الإجراءات"
 msgstr ""
 
@@ -3727,7 +3757,7 @@ msgstr ""
 #: app/templates/grades/rubric_builder.html:59
 #: app/templates/macros/forms.html:179 app/templates/messages/compose.html:45
 #: app/templates/tutoring/rate_form.html:37
-#: app/templates/tutoring/session.html:61
+#: app/templates/tutoring/session.html:74
 msgid "إلغاء"
 msgstr ""
 
@@ -7256,7 +7286,7 @@ msgid "عرض حالة الجلسة"
 msgstr ""
 
 #: app/templates/tutoring/session.html:29
-#: app/templates/tutoring/session.html:60
+#: app/templates/tutoring/session.html:73
 msgid "إنهاء الجلسة"
 msgstr ""
 
@@ -7272,8 +7302,34 @@ msgstr ""
 msgid "تعديل الجلسة"
 msgstr ""
 
-#: app/templates/tutoring/session.html:57
-msgid "تأكيد استلام الدفع (يدوي)"
+#: app/templates/tutoring/session.html:52
+#: app/templates/tutoring/session.html:77
+msgid "الدفع (تأكيد مزدوج)"
+msgstr ""
+
+#: app/templates/tutoring/session.html:55
+#: app/templates/tutoring/session.html:80
+msgid "الدفع مؤكد من الطرفين"
+msgstr ""
+
+#: app/templates/tutoring/session.html:58
+msgid "الطالب أكد الدفع"
+msgstr ""
+
+#: app/templates/tutoring/session.html:66
+msgid "رفض استلام الدفع"
+msgstr ""
+
+#: app/templates/tutoring/session.html:82
+msgid "بانتظار تأكيد المعلم باستلام الدفع"
+msgstr ""
+
+#: app/templates/tutoring/session.html:86
+msgid "تأكيد الدفع"
+msgstr ""
+
+#: app/templates/tutoring/session.html:87
+msgid "يُقفل الدفع بعد تأكيد الطرفين معاً."
 msgstr ""
 
 #~ msgid "غير مسموح"
@@ -7335,5 +7391,14 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "الحد الأدنى للسحب: 200₪. المتاح: "
+#~ msgstr ""
+
+#~ msgid "تم تأكيد دفع درسك الخصوصي"
+#~ msgstr ""
+
+#~ msgid "تم تأكيد استلام الدفع (يدوي)."
+#~ msgstr ""
+
+#~ msgid "تأكيد استلام الدفع (يدوي)"
 #~ msgstr ""
 

@@ -224,24 +224,86 @@ def session_detail(session_id):
 @bp.post("/sessions/<int:session_id>/pay")
 @login_required
 def session_pay(session_id):
+    """AZ-P2-13: تأكيد الطالب أولًا — الإقفال ينتظر تأكيد المعلم (تأكيد مزدوج)."""
+    from app.services.tutoring import confirm_session_payment_by_student
+
     session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
         abort(403)
-    # Only the student (payer) can confirm payment
     if current_user.id != session_.student_id:
         abort(403)
-    update_session(session_, payment_status="paid")
-    audit(
-        "tutoring.payment",
-        "tutoring_sessions",
-        session_.id,
-        amount=session_.price,
-        currency=session_.currency,
-        gateway="manual",
-        session_id=session_.id,
-    )
-    notify(session_.student_id, "tutoring", _("تم تأكيد دفع درسك الخصوصي"))
-    flash(_("تم تأكيد استلام الدفع (يدوي)."), "success")
+    status, error = confirm_session_payment_by_student(session_id, current_user.id)
+    if error:
+        flash(_(error), "danger")
+    elif status == "paid":
+        audit(
+            "tutoring.payment",
+            "tutoring_sessions",
+            session_.id,
+            amount=session_.price,
+            currency=session_.currency,
+            gateway="manual_dual_confirm",
+            session_id=session_.id,
+        )
+        notify(
+            session_.tutor_id,
+            "tutoring",
+            _("تم تأكيد دفع درسك الخصوصي من الطالب والمعلم"),
+        )
+        flash(_("تم إقفال الدفع بعد تأكيد الطرفين."), "success")
+    else:
+        flash(_("سجّلنا تأكيدك — بانتظار تأكيد المعلم باستلام الدفع."), "info")
+    return redirect(url_for("tutoring.session_detail", session_id=session_.id))
+
+
+@bp.post("/sessions/<int:session_id>/pay-confirm")
+@login_required
+def session_pay_confirm(session_id):
+    """تأكيد المعلم: استلام الدفع — يكمل الإقفال إن سبقه تأكيد الطالب."""
+    from app.services.tutoring import confirm_session_payment_by_tutor
+
+    session_ = db.get_or_404(TutoringSession, session_id)
+    if not can_access(current_user, session_):
+        abort(403)
+    if current_user.id != session_.tutor_id:
+        abort(403)
+    status, error = confirm_session_payment_by_tutor(session_id, current_user.id)
+    if error:
+        flash(_(error), "danger")
+    elif status == "paid":
+        audit(
+            "tutoring.payment",
+            "tutoring_sessions",
+            session_.id,
+            amount=session_.price,
+            currency=session_.currency,
+            gateway="manual_dual_confirm",
+            session_id=session_.id,
+        )
+        notify(session_.student_id, "tutoring", _("تم تأكيد دفع درسك الخصوصي من الطالب والمعلم"))
+        flash(_("تم إقفال الدفع بعد تأكيد الطرفين."), "success")
+    else:
+        flash(_("سجّلنا تأكيدك — بانتظار تأكيد الطالب بتفاصيل الدفع."), "info")
+    return redirect(url_for("tutoring.session_detail", session_id=session_.id))
+
+
+@bp.post("/sessions/<int:session_id>/pay-reject")
+@login_required
+def session_pay_reject(session_id):
+    """رفض المعلم: يعيد الجلسة حالة غير مدفوعة ويمحي التأكيدات."""
+    from app.services.tutoring import reject_session_payment_by_tutor
+
+    session_ = db.get_or_404(TutoringSession, session_id)
+    if not can_access(current_user, session_):
+        abort(403)
+    if current_user.id != session_.tutor_id:
+        abort(403)
+    status, error = reject_session_payment_by_tutor(session_id, current_user.id)
+    if error:
+        flash(_(error), "danger")
+    elif status == "pending":
+        audit("tutoring.payment_rejected", "tutoring_sessions", session_.id)
+        flash(_("أُلغي قيد الدفع — الجلسة بلا تأكيدات."), "warning")
     return redirect(url_for("tutoring.session_detail", session_id=session_.id))
 
 

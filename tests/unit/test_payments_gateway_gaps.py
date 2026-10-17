@@ -751,3 +751,162 @@ class TestInvoicePdfGaps:
 
         with app.test_request_context("/"):
             assert render_invoice_pdf(999_999) is None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AZ-P2-13 — دفع آمن للجلسات الخصوصية (تأكيد مزدوج، قيد دفتر واحد، رفض)
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _seed_duel(app):
+    """جلسة خصوصية بطرمَيها (طالب + معلم بمدرسة ومحفظة) — يعيد (tid, stu, sess_id, sid)."""
+    from tests.conftest import make_school, make_tutor_profile, make_tutoring_session, make_user
+
+    sid = make_school(app)
+    tid = make_user(app, role="teacher", school_id=sid)
+    make_tutor_profile(app, tid)
+    stu = make_user(app, role="student", school_id=sid)
+    sess_id = make_tutoring_session(app, tid, stu, status="completed", price=100.0, payment_status="pending")
+    return tid, stu, sess_id, sid
+
+
+class TestTutoringDualConfirmationAZP213:
+    def test_student_alone_cannot_close_payment(self, app):
+        """الطالب وحده لا يستطيع إقفال الدفع — الجلسة تنتظر المعلم."""
+        from app.extensions import db
+        from app.models.tutoring import TutoringSession
+        from app.services.tutoring import confirm_session_payment_by_student
+
+        tid, stu, sess_id, _ = _seed_duel(app)
+        with app.app_context():
+            status, err = confirm_session_payment_by_student(sess_id, stu)
+            assert err is None
+            assert status == "waiting"
+            db.session.expire_all()
+            sess = db.session.get(TutoringSession, sess_id)
+            assert sess.payment_status == "pending"
+            assert sess.student_confirmed_payment is True
+
+    def test_both_party_confirm_closes_payment_with_single_ledger(self, app):
+        """بعد تأكيد الطرفين: payment_status=paid + قيد دفتر واحد بالضبط."""
+        from app.extensions import db
+        from app.models.tutoring import TutoringSession
+        from app.models.wallet import Wallet, WalletTransaction
+        from app.services.tutoring import confirm_session_payment_by_student, confirm_session_payment_by_tutor
+        from app.services.wallet_service import get_or_create_wallet
+
+        tid, stu, sess_id, sid = _seed_duel(app)
+        with app.app_context():
+            get_or_create_wallet(school_id=sid, user_id=tid)
+            assert confirm_session_payment_by_student(sess_id, stu) == ("waiting", None)
+            assert confirm_session_payment_by_tutor(sess_id, tid) == ("paid", None)
+
+            db.session.expire_all()
+            sess = db.session.get(TutoringSession, sess_id)
+            assert sess.payment_status == "paid"
+            entries = (
+                db.session.query(WalletTransaction)
+                .filter(
+                    WalletTransaction.reference_type == "tutoring_session",
+                    WalletTransaction.reference_id == sess_id,
+                )
+                .all()
+            )
+            inflows = [e for e in entries if e.destination_wallet_id is not None]
+            assert len(inflows) == 1
+            assert float(inflows[0].amount) == 100.0
+            wallet = db.session.query(Wallet).filter_by(school_id=sid, user_id=tid).one()
+            assert float(wallet.balance) == 100.0
+
+    def test_repeated_confirmation_writes_no_second_ledger(self, app):
+        """إقفال مكرر لا يُنشئ قيداً ثانياً ولا يزيد الرصيد."""
+        from app.extensions import db
+        from app.models.wallet import Wallet
+        from app.services.tutoring import confirm_session_payment_by_student, confirm_session_payment_by_tutor
+        from app.services.wallet_service import get_or_create_wallet
+
+        tid, stu, sess_id, sid = _seed_duel(app)
+        with app.app_context():
+            get_or_create_wallet(school_id=sid, user_id=tid)
+            confirm_session_payment_by_student(sess_id, stu)
+            confirm_session_payment_by_tutor(sess_id, tid)
+            # تكرار التأكيد بعد الإقفال — بلا أثر
+            assert confirm_session_payment_by_tutor(sess_id, tid) == ("paid", None)
+            assert confirm_session_payment_by_student(sess_id, stu) == ("paid", None)
+
+            wallet = db.session.query(Wallet).filter_by(school_id=sid, user_id=tid).one()
+            assert float(wallet.balance) == 100.0
+
+    def test_tutor_reject_reopens_inline_payment(self, app):
+        """رفض المعلم يمحي التأكيدات ويعيد الجلسة حالة غير مدفوعة."""
+        from app.extensions import db
+        from app.models.tutoring import TutoringSession
+        from app.services.tutoring import (
+            confirm_session_payment_by_student,
+            confirm_session_payment_by_tutor,
+            reject_session_payment_by_tutor,
+        )
+
+        tid, stu, sess_id, _ = _seed_duel(app)
+        with app.app_context():
+            confirm_session_payment_by_student(sess_id, stu)
+            status, err = reject_session_payment_by_tutor(sess_id, tid)
+            assert err is None
+            assert status == "pending"
+            db.session.expire_all()
+            sess = db.session.get(TutoringSession, sess_id)
+            assert sess.payment_status == "pending"
+            assert sess.student_confirmed_payment is False
+            assert sess.tutor_confirmed_payment is False
+
+            # ولا يُقبل إقفال مالي لاحق إلا بتأكيد جديد من الطرفين
+            assert confirm_session_payment_by_student(sess_id, stu) == ("waiting", None)
+            assert confirm_session_payment_by_tutor(sess_id, tid) == ("paid", None)
+
+    def test_reject_paid_session_refused(self, app):
+        """الرفض ممنوع بعد إقفال الدفع."""
+        from app.extensions import db
+        from app.models.tutoring import TutoringSession
+        from app.services.tutoring import (
+            confirm_session_payment_by_student,
+            confirm_session_payment_by_tutor,
+            reject_session_payment_by_tutor,
+        )
+        from app.services.wallet_service import get_or_create_wallet
+
+        tid, stu, sess_id, sid = _seed_duel(app)
+        with app.app_context():
+            get_or_create_wallet(school_id=sid, user_id=tid)
+            confirm_session_payment_by_student(sess_id, stu)
+            confirm_session_payment_by_tutor(sess_id, tid)
+            status, err = reject_session_payment_by_tutor(sess_id, tid)
+            assert status is None and err is not None
+            db.session.expire_all()
+            assert db.session.get(TutoringSession, sess_id).payment_status == "paid"
+
+    def test_route_actor_mix_fails(self, app, client):
+        """تقاطع الأدوار: المعلم لا يستعمل مسار الطالب والعكس — الحرس يرفض."""
+        from app.extensions import db
+        from app.models.user import User
+
+        tid, stu, sess_id, sid = _seed_duel(app)
+
+        with app.app_context():
+            tutor_email = db.session.get(User, tid).email
+            student_email = db.session.get(User, stu).email
+
+        c_tutor = app.test_client()
+        c_tutor.post("/auth/login", data={"email": tutor_email, "password": "TestPass123!"})
+        resp = c_tutor.post(f"/tutoring/sessions/{sess_id}/pay", follow_redirects=False)
+        assert resp.status_code == 403
+
+        c_student = app.test_client()
+        c_student.post("/auth/login", data={"email": student_email, "password": "TestPass123!"})
+        resp = c_student.post(f"/tutoring/sessions/{sess_id}/pay-confirm", follow_redirects=False)
+        assert resp.status_code == 403
+
+        # غير طرفي الجلسة مرفوض في مساري التأكيد
+        c_stranger = app.test_client()
+        c_stranger.post("/auth/login", data={"email": "", "password": "x"})
+        resp = c_student.post(f"/tutoring/sessions/{sess_id + 999999}/pay-confirm", follow_redirects=False)
+        assert resp.status_code == 404
