@@ -387,6 +387,27 @@ def create_app(config_class=Config):
         if result["status"] != "healthy":
             sys.exit(1)
 
+    # AZ-P2-12: تنبيه غياب اليوم لوليا الأمر — مهمة يومية (cron: absence-alerts)
+    @app.cli.command("send-absence-alerts")
+    @click.option(
+        "--date",
+        "target_date",
+        default=None,
+        help="يوم الغياب بصيغة YYYY-MM-DD (افتراضياً اليوم UTC).",
+    )
+    def send_absence_alerts_cmd(target_date):
+        """يرسل تنبيه غياب لوليّ أمر كل طالب سُجّل غائباً في اليوم المحدد."""
+        from .services.attendance import run_absence_alerts
+
+        if target_date:
+            try:
+                count = run_absence_alerts(target_date)
+            except ValueError:
+                raise click.BadParameter("التاريخ يجب أن بصيغة YYYY-MM-DD") from None
+        else:
+            count = run_absence_alerts()
+        click.echo(f"absence_alerts_sent={count}")
+
     @app.cli.command("init-system")
     @click.option("--super-admin-email", default=None, help="Email of the super admin to ensure exists.")
     @click.option("--super-admin-password", default=None, help="Password for the super admin.")

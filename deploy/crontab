@@ -22,6 +22,9 @@ JOBS=/app/scripts/scheduled_jobs.sh
 # تذكيرات التجديد 7:00 صباحاً
 0 7 * * * root "${JOBS}" daily-reminders >> /var/log/azad/reminders.log 2>&1
 
+# تنبيه غياب اليوم لوليا الأمر (AZ-P2-12) — 7:30 صباحاً بعد التسجيل الصباحي
+30 7 * * * root "${JOBS}" absence-alerts >> /var/log/azad/absence_alerts.log 2>&1
+
 # نسخة احتياطية يومية 2:30 صباحاً (الاحتفاظ داخل scripts/backup.py)
 30 2 * * * root "${JOBS}" backup >> /var/log/azad/backup.log 2>&1
 

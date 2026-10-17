@@ -189,6 +189,18 @@ def submission_grade(submission_id):
         from app.services.email import send_grade_published_email
 
         send_grade_published_email(submission.student, submission.assignment, form.mark.data)
+        # AZ-P2-12: وليّ المرتبط بالطالب يُشعَر بنفس الرصد — نص الإشعار
+        # يحمل عنوان الواجب والعلامة فقط، دون اسم الطالب (لا تسريب بين الأسر).
+        from app.services.family import get_parent
+
+        parent_user = get_parent(submission.student_id)
+        if parent_user is not None:
+            notify(
+                parent_user.id,
+                "grade",
+                _("سُجّلت درجة لابنك"),
+                f"{submission.assignment.title}: {form.mark.data}",
+            )
         flash(_("صُحّح التسليم."), "success")
     return redirect(
         url_for(

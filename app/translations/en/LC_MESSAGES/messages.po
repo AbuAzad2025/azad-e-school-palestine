@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-17 08:35+0300\n"
+"POT-Creation-Date: 2026-10-17 09:06+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -1062,7 +1062,7 @@ msgstr "Discount code created."
 msgid "بيانات غير صالحة"
 msgstr "Invalid data"
 
-#: app/modules/billing/routes.py:393 app/modules/grades/routes.py:391
+#: app/modules/billing/routes.py:393 app/modules/grades/routes.py:403
 msgid "تعذر إنشاء ملف PDF."
 msgstr "Unable to generate PDF file."
 
@@ -1366,63 +1366,68 @@ msgstr "Your assignment was submitted."
 msgid "صُحّح واجبك"
 msgstr "Your assignment has been graded"
 
-#: app/modules/grades/routes.py:192
+#: app/modules/grades/routes.py:201
+#, fuzzy
+msgid "سُجّلت درجة لابنك"
+msgstr "A grade was recorded for your child"
+
+#: app/modules/grades/routes.py:204
 msgid "صُحّح التسليم."
 msgstr "Submission graded."
 
-#: app/modules/grades/routes.py:242
+#: app/modules/grades/routes.py:254
 msgid "أُضيف القسم."
 msgstr "Category added."
 
-#: app/modules/grades/routes.py:258
+#: app/modules/grades/routes.py:270
 msgid "أُضيف البند."
 msgstr "Item added."
 
-#: app/modules/grades/routes.py:276
+#: app/modules/grades/routes.py:288
 msgid "الدرجة تتجاوز الدرجة العظمى للبند."
 msgstr "The mark exceeds the maximum mark for this item."
 
-#: app/modules/grades/routes.py:278
+#: app/modules/grades/routes.py:290
 msgid "سُجّلت الدرجة."
 msgstr "Grade recorded."
 
-#: app/modules/grades/routes.py:338
+#: app/modules/grades/routes.py:350
 msgid "الملاحظة أطول من الحد المسموح."
 msgstr "The note is longer than the allowed limit."
 
-#: app/modules/grades/routes.py:348
+#: app/modules/grades/routes.py:360
 msgid "سُجّل الحضور."
 msgstr "Attendance recorded."
 
-#: app/modules/grades/routes.py:431
+#: app/modules/grades/routes.py:443
 msgid "اسم القالب مطلوب."
 msgstr "Template name is required."
 
-#: app/modules/grades/routes.py:433
+#: app/modules/grades/routes.py:445
 msgid "أضف معياراً واحداً على الأقل."
 msgstr "Add at least one criterion."
 
-#: app/modules/grades/routes.py:436
+#: app/modules/grades/routes.py:448
 msgid "تم حفظ القالب."
 msgstr "Template saved."
 
-#: app/modules/grades/routes.py:485
+#: app/modules/grades/routes.py:497
 msgid "تم حفظ التقييم."
 msgstr "Assessment saved."
 
-#: app/modules/grades/routes.py:512
+#: app/modules/grades/routes.py:524
 msgid "اكتب سبب الاعتراض."
 msgstr "Write your reason for objection."
 
-#: app/modules/grades/routes.py:516
+#: app/modules/grades/routes.py:528
 msgid "تم إرسال الاعتراض."
 msgstr "Objection submitted."
 
-#: app/modules/grades/routes.py:518
+#: app/modules/grades/routes.py:530
 msgid "لديك اعتراض مسبق على هذا التسليم."
 msgstr "You have already objected to this submission."
 
-#: app/modules/grades/routes.py:537
+#: app/modules/grades/routes.py:549
 msgid "تم تحديث الاعتراض."
 msgstr "Objection updated."
 

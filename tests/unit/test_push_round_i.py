@@ -28,6 +28,7 @@ from tests.conftest import (
     make_attachment,
     make_class,
     make_class_member,
+    make_family_link,
     make_family_link_code,
     make_grade,
     make_grade_category,
@@ -2159,3 +2160,155 @@ class TestTutorEarningsVisibility:
         html = client.get("/tutoring/earnings").get_data(as_text=True)
         assert "payout-form" not in html
         assert "payout-shortfall" in html
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AZ-P2-12 — تنبيهات الغياب اليومية + إشعار وليّ الأمر عند الدرجة
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _seed_absence_row(app, class_id, student_id, day, status="absent"):
+    with app.app_context():
+        from app.extensions import db
+        from app.models.attendance import Attendance
+
+        db.session.add(Attendance(class_id=class_id, student_id=student_id, date=day, status=status))
+        db.session.commit()
+
+
+class TestAbsenceAlertsAZP212:
+    def test_absent_today_alerts_linked_parent_once(self, app):
+        """غائب اليوم → رسالة واحدة لولي الأمر المرتبط؛ التشغيل الثاني بلا إرسال."""
+        from datetime import UTC, datetime
+
+        from app.extensions import db
+        from app.models.attendance import AbsenceAlertLog
+        from app.services.attendance import run_absence_alerts
+
+        sid, cid = setup_class(app)
+        parent_uid, _ = mk(app, role="parent", school_id=sid)
+        stu_uid, _ = mk(app, role="student", school_id=sid)
+        make_family_link(app, parent_uid, stu_uid)
+        day = datetime.now(UTC).date()
+        _seed_absence_row(app, cid, stu_uid, day)
+
+        sent_to = []
+        with app.app_context():
+            with patch(
+                "app.services.email.send_absence_alert_email",
+                side_effect=lambda p, s, days: sent_to.append(p.email) or True,
+            ):
+                assert run_absence_alerts(day) == 1
+                # تشغيل ثانٍ في نفس اليوم — لا إرسال مكرر
+                assert run_absence_alerts(day) == 0
+
+            assert len(sent_to) == 1
+            assert db.session.query(AbsenceAlertLog).count() == 1
+
+    def test_present_is_not_alerted(self, app):
+        """حاضر اليوم لا يُرسل لوليّه تنبيه غياب."""
+        from datetime import UTC, datetime
+
+        from app.services.attendance import run_absence_alerts
+
+        sid, cid = setup_class(app)
+        stu_uid, _ = mk(app, role="student", school_id=sid)
+        day = datetime.now(UTC).date()
+        _seed_absence_row(app, cid, stu_uid, day, status="present")
+
+        with app.app_context(), patch("app.services.email.send_absence_alert_email", return_value=True) as m:
+            assert run_absence_alerts(day) == 0
+        m.assert_not_called()
+
+    def test_student_without_parent_never_fails_task(self, app):
+        """طالب غائب بلا رابط وليّ أمر → تخطى، لا فشل ولا سجل."""
+        from datetime import UTC, datetime
+
+        from app.extensions import db
+        from app.models.attendance import AbsenceAlertLog
+        from app.services.attendance import run_absence_alerts
+
+        sid, cid = setup_class(app)
+        stu_uid, _ = mk(app, role="student", school_id=sid)
+        day = datetime.now(UTC).date()
+        _seed_absence_row(app, cid, stu_uid, day)
+
+        with app.app_context(), patch("app.services.email.send_absence_alert_email", return_value=True) as m:
+            assert run_absence_alerts(day) == 0
+            m.assert_not_called()
+            assert db.session.query(AbsenceAlertLog).count() == 0
+
+    def test_email_failure_does_not_write_log(self, app):
+        """فشل البريد → لا سجل لمنع التكرار (المحاولة القادمة كافية)."""
+        from datetime import UTC, datetime
+
+        from app.extensions import db
+        from app.models.attendance import AbsenceAlertLog
+        from app.services.attendance import run_absence_alerts
+
+        sid, cid = setup_class(app)
+        parent_uid, _ = mk(app, role="parent", school_id=sid)
+        stu_uid, _ = mk(app, role="student", school_id=sid)
+        make_family_link(app, parent_uid, stu_uid)
+        day = datetime.now(UTC).date()
+        _seed_absence_row(app, cid, stu_uid, day)
+
+        with (
+            app.app_context(),
+            patch("app.services.email.send_absence_alert_email", side_effect=RuntimeError("smtp down")),
+        ):
+            assert run_absence_alerts(day) == 0
+            assert db.session.query(AbsenceAlertLog).count() == 0
+
+
+class TestGradeParentNotifyAZP212:
+    def _seed_submission(self, app):
+        """مدرس للصف + طالب مرتبط بوليّ + واجب + تسليم — يعيد (tid, cid, sub_id, parent_uid, stu, other_parent)."""
+        from app.extensions import db
+        from app.models.class_room import ClassRoom
+        from app.models.gradebook import Assignment, Submission
+
+        sid, cid = setup_class(app)
+        tid, _ = mk(app, role="teacher", school_id=sid)
+        make_class_member(app, cid, tid)
+        stu_uid, _ = mk(app, role="student", school_id=sid)
+        make_class_member(app, cid, stu_uid)
+        parent_uid, _ = mk(app, role="parent", school_id=sid)
+        make_family_link(app, parent_uid, stu_uid)
+        other_parent, _ = mk(app, role="parent", school_id=sid)  # وليّ أسرة أخرى — لا يُشعَر
+
+        with app.app_context():
+            db.session.get(ClassRoom, cid).teacher_id = tid
+            db.session.commit()
+
+        with app.app_context():
+            a = Assignment(class_id=cid, title="واجب 1", created_by=tid)
+            db.session.add(a)
+            db.session.commit()
+            sub = Submission(assignment_id=a.id, student_id=stu_uid, body="حل")
+            db.session.add(sub)
+            db.session.commit()
+            return tid, cid, sub.id, parent_uid, stu_uid, other_parent
+
+    def test_grade_notifies_student_and_parent(self, app):
+        """رصد الدرجة يُشعر الطالب ووليّه معاً — ولا أسرة أخرى تُشعَر."""
+        from app.extensions import db
+        from app.models.communication import Notification
+        from app.models.user import User
+
+        tid, cid, sub_id, parent_uid, stu_uid, other_parent = self._seed_submission(app)
+
+        with app.app_context():
+            teacher_email = db.session.get(User, tid).email
+
+        client = app.test_client()
+        client.post("/auth/login", data={"email": teacher_email, "password": PASSWORD})
+        resp = client.post(f"/classes/submissions/{sub_id}/grade", data={"mark": "85", "feedback": "جيد"})
+        assert resp.status_code == 302
+
+        with app.app_context():
+            recipients = {n.user_id: n for n in db.session.query(Notification).filter_by(type="grade").all()}
+        assert stu_uid in recipients and parent_uid in recipients
+        assert other_parent not in recipients
+        # لا تسريب اسم الطالب (النص يحمل عنوان الواجب والعلامة فقط)
+        assert recipients[parent_uid].body.startswith("واجب")

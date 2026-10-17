@@ -58,6 +58,9 @@ case "${1:-}" in
   daily-reminders)
     exec "${PYTHON[@]}" "${APP_DIR}/scripts/daily_reminders.py"
     ;;
+  absence-alerts)
+    exec "${FLASK[@]}" send-absence-alerts
+    ;;
   backup)
     exec "${SCRIPT_DIR}/cron_backup.sh"
     ;;
@@ -72,7 +75,7 @@ case "${1:-}" in
     exec "${FLASK[@]}" backup-health --max-age-hours 25
     ;;
   *)
-    echo "usage: $0 {pending-payments|expire-subscriptions|daily-reminders|backup|ai-usage-report|ai-budget-alert|backup-health}" >&2
+    echo "usage: $0 {pending-payments|expire-subscriptions|daily-reminders|absence-alerts|backup|ai-usage-report|ai-budget-alert|backup-health}" >&2
     exit 2
     ;;
 esac
