@@ -13,7 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     gettext \
+    # AZ-P1-10: cron لتشغيل المهام المجدولة داخل صورة واحدة (خدمة scheduler)
+    cron \
     && rm -rf /var/lib/apt/lists/*
+
+# سجلات المهام المجدولة (deploy/crontab يكتب فيها)
+RUN mkdir -p /var/log/azad
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt

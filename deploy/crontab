@@ -1,0 +1,35 @@
+# AZ-P1-10: جدولة المهام داخل الحاوية — تُوصل إلى /etc/cron.d/azad بواسطة خدمة
+# `scheduler` في docker-compose.production.yml (cron -f يقرأ هذا الملف).
+#
+# صيغة /etc/cron.d تتطلب عمود المستخدم (root لأن الحاوية تعمل بهذا المستخدم)،
+# وكل سطر يستدعي scripts/scheduled_jobs.sh — نفس الملف الذي يستدعيه cron المضيف
+# (scripts/cron_jobs.sh) وبنفس الأوامر، فلا تتباعد النسختان.
+#
+# مسارات الحاوية: التطبيق في /app، والأسرار من .env عبر env_file في الـ compose.
+# لا كلمات مرور هنا، ولا دور `postgres`: دور التطبيق وحده (أقل صلاحية).
+
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+APP_DIR=/app
+JOBS=/app/scripts/scheduled_jobs.sh
+
+# المدفوعات المعلّقة تجاوزت المهلة → expired (كل 5 دقائق)
+*/5 * * * * root "${JOBS}" pending-payments >> /var/log/azad/payment_cleanup.log 2>&1
+
+# الاشتراكات المنتهية → expired (كل ساعة)
+0 * * * * root "${JOBS}" expire-subscriptions >> /var/log/azad/subscriptions.log 2>&1
+
+# تذكيرات التجديد 7:00 صباحاً
+0 7 * * * root "${JOBS}" daily-reminders >> /var/log/azad/reminders.log 2>&1
+
+# نسخة احتياطية يومية 2:30 صباحاً (الاحتفاظ داخل scripts/backup.py)
+30 2 * * * root "${JOBS}" backup >> /var/log/azad/backup.log 2>&1
+
+# فحص حداثة النسخة 5:00 صباحاً
+0 5 * * * root "${JOBS}" backup-health >> /var/log/azad/backup_health.log 2>&1
+
+# تقرير استخدام AI 6:00 صباحاً
+0 6 * * * root "${JOBS}" ai-usage-report >> /var/log/azad/ai_daily.log 2>&1
+
+# تنبيه الميزانية كل اثنين 9:00 (رمز خروج 1 عند تجاوز 80%)
+0 9 * * 1 root "${JOBS}" ai-budget-alert >> /var/log/azad/ai_budget.log 2>&1

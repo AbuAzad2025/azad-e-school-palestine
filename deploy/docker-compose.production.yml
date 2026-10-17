@@ -21,6 +21,33 @@ services:
     networks:
       - azad
 
+  # AZ-P1-10: الجدولة الحقيقية — cron داخل نفس الصورة (نفس الكود ونفس .env)
+  # يقرأ deploy/crontab، وكل مهمة تستدعي scripts/scheduled_jobs.sh. كان ملف
+  # النشر بلا أي جدولة، والمهام الوحيدة المكتوبة كانت في crontab المضيف.
+  scheduler:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    command: ["cron", "-f", "-l", "2"]
+    env_file:
+      - ../.env
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - APP_DIR=/app
+    volumes:
+      - ../instance:/app/instance
+      - ../backups:/app/backups
+      - ../deploy/crontab:/etc/cron.d/azad:ro
+    depends_on:
+      - db
+      - redis
+    networks:
+      - azad
+
   db:
     image: postgres:15-alpine
     restart: unless-stopped

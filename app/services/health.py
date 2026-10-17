@@ -42,6 +42,47 @@ def check_disk() -> dict:
         return {"component": "disk", "status": "down", "latency_ms": 0, "message": _("تعذّر قراءة مساحة القرص.")}
 
 
+def check_backup_freshness(max_age_hours: int = 25, min_size_mb: float = 1.0) -> dict:
+    """أحدث نسخة احتياطية: عمرها وحجمها (AZ-P1-10).
+
+    مهمة النسخ قد تتوقف بلا ضجة (مسار خاطئ، صلاحية، مساحة ممتلئة)، وتظهر المشكلة
+    فقط يوم الحاجة للاستعادة. لذلك تُفحص الحداثة والحجم من مهمة مجدولة: نسخة
+    منقضية = ``down``، ونسخة أصغر من الحد = ``degraded`` (ملف مقطوع).
+    """
+    import os
+    from pathlib import Path
+
+    backup_dir = Path(os.getenv("BACKUP_DIR", "backups"))
+    candidates = sorted(
+        (p for p in backup_dir.glob("backup_*.sql*") if p.is_file()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not candidates:
+        return {
+            "component": "backup",
+            "status": "down",
+            "latency_ms": 0,
+            "message": _("لا توجد نسخة احتياطية في مجلد النسخ."),
+        }
+
+    latest = candidates[0]
+    age = datetime.now(UTC) - datetime.fromtimestamp(latest.stat().st_mtime, tz=UTC)
+    size_mb = latest.stat().st_size / (1024 * 1024)
+    if age > timedelta(hours=max_age_hours):
+        status = "down"
+    elif size_mb < min_size_mb:
+        status = "degraded"
+    else:
+        status = "healthy"
+    return {
+        "component": "backup",
+        "status": status,
+        "latency_ms": 0,
+        "message": f"{latest.name} ({size_mb:.1f} MB, {age.total_seconds() / 3600:.1f}h)",
+    }
+
+
 def record_health(result: dict) -> HealthCheck:
     def _record():
         hc = HealthCheck(

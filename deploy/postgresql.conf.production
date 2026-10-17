@@ -127,7 +127,10 @@ autovacuum_vacuum_cost_delay = 2ms
 # EXTENSIONS
 # -----------------------------------------------------------------------------
 
-shared_preload_libraries = 'pg_stat_statements, auto_explain, pg_cron'
+# AZ-P1-10: أُزيل `pg_cron` — كان مُحمَّلاً بلا أي مهمة مسجّلة، أي إعداداً
+# ميتاً يوهم بجدولة قائمة. الجدولة الحقيقية في خدمة `scheduler`
+# (deploy/crontab) أو في crontab المضيف (scripts/cron_jobs.sh).
+shared_preload_libraries = 'pg_stat_statements, auto_explain'
 pg_stat_statements.max = 10000
 pg_stat_statements.track = all
 auto_explain.log_min_duration = 5000

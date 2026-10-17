@@ -342,6 +342,51 @@ def create_app(config_class=Config):
         count = expire_pending_payments(ttl_hours or PENDING_PAYMENT_TTL_HOURS)
         click.echo(f"expired_pending_payments={count}")
 
+    # AZ-P1-10: تقارير التشغيل المجدولة صارت أوامر حقيقية بدل كتل Python داخل cron
+    # (نفس عطل AZ-P1-09: كتلة داخل سكربت لا تُختبر وتتعفّن بلا أثر).
+    @app.cli.command("ai-usage-report")
+    @click.option("--days", default=1, type=click.IntRange(min=1, max=365), help="نطاق التقرير بالأيام.")
+    @click.option(
+        "--budget-threshold",
+        default=None,
+        type=float,
+        help="إن مرّرتها: رمز خروج 1 عندما يتجاوز استهلاك الميزانية النسبة.",
+    )
+    def ai_usage_report_cmd(days, budget_threshold):
+        """يطبع تقرير استخدام AI (طلبات/تكلفة/ميزانية) — للمهمة المجدولة والتنبيه."""
+        import json
+        import sys
+
+        from .services.ai import get_ai_service
+
+        stats = get_ai_service().get_usage_stats(days=days)
+        click.echo(json.dumps(stats, indent=2, ensure_ascii=False, default=str))
+        usage_percent = (stats.get("budget") or {}).get("usage_percent")
+        if budget_threshold is not None and usage_percent is not None and usage_percent > budget_threshold:
+            click.echo(
+                f"WARNING: AI budget at {usage_percent}% (threshold {budget_threshold}%)",
+                err=True,
+            )
+            sys.exit(1)
+
+    @app.cli.command("backup-health")
+    @click.option(
+        "--max-age-hours",
+        default=25,
+        type=click.IntRange(min=1, max=24 * 30),
+        help="أقصى عمر مقبول لأحدث نسخة احتياطية.",
+    )
+    def backup_health_cmd(max_age_hours):
+        """يتحقق من حداثة أحدث نسخة احتياطية — رمز خروج 1 إن كانت ناقصة أو قديمة."""
+        import sys
+
+        from .services.health import check_backup_freshness
+
+        result = check_backup_freshness(max_age_hours=max_age_hours)
+        click.echo(f"backup_status={result['status']} {result.get('message') or ''}".strip())
+        if result["status"] != "healthy":
+            sys.exit(1)
+
     @app.cli.command("init-system")
     @click.option("--super-admin-email", default=None, help="Email of the super admin to ensure exists.")
     @click.option("--super-admin-password", default=None, help="Password for the super admin.")
