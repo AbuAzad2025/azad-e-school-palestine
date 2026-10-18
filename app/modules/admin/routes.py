@@ -1123,6 +1123,7 @@ def wallet_ledger():
                 WalletTransaction.reference_id.in_(page_ids),
             )
             .all()
+            if ref_id is not None  # reference_id عمود اختياري
         }
 
     from app.services.wallet_service import list_pending_topups

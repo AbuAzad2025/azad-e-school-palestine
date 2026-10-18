@@ -152,20 +152,23 @@ def child_progress_summary(student_id: int) -> list[dict]:
     }
 
     # 3) معدل الدرجات لكل صف — مجموع الدرجات / مجموع العلامات الكاملة
-    grade_sums: dict[int, tuple[float, float]] = {
-        int(cid): (float(sum_mark), float(sum_max))
-        for cid, sum_mark, sum_max in db.session.execute(
-            select(GradeItem.class_id, func.sum(GradeEntry.mark), func.sum(GradeItem.max_mark))
-            .join(GradeEntry, GradeEntry.grade_item_id == GradeItem.id)
-            .where(
-                GradeEntry.student_id == student_id,
-                GradeItem.class_id.in_(class_ids),
-                GradeEntry.mark.is_not(None),
-                GradeItem.max_mark.is_not(None),
-            )
-            .group_by(GradeItem.class_id)
-        ).all()
-    }
+    #    func.sum() يعود Optional؛ الفلترة أعلاه تستبعد NULL أصلاً، لكن نتحقق
+    #    صراحةً لئلا يتحول غياب الدرجات إلى صفر يُحسب ضمن المعدل.
+    grade_sums: dict[int, tuple[float, float]] = {}
+    for cid, sum_mark, sum_max in db.session.execute(
+        select(GradeItem.class_id, func.sum(GradeEntry.mark), func.sum(GradeItem.max_mark))
+        .join(GradeEntry, GradeEntry.grade_item_id == GradeItem.id)
+        .where(
+            GradeEntry.student_id == student_id,
+            GradeItem.class_id.in_(class_ids),
+            GradeEntry.mark.is_not(None),
+            GradeItem.max_mark.is_not(None),
+        )
+        .group_by(GradeItem.class_id)
+    ).all():
+        if sum_mark is None or sum_max is None:
+            continue
+        grade_sums[int(cid)] = (float(sum_mark), float(sum_max))
 
     # 4) الحضور لكل (صف، حالة)
     att_by_class: dict[int, dict[str, int]] = {}
