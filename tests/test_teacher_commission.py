@@ -12,6 +12,24 @@ def _unique_email():
     return f"user-{uuid.uuid4().hex[:8]}@test.com"
 
 
+def _attach_school(app, user):
+    """يربط المعلم بمدرسة نشطة — AZ-P3-16: لا تسوية عمولة بلا مدرسة.
+
+    المحفظة صفّ تينانتي (مفتاحه ``school_id``)، فتسوية الجلسة تحتاج عضوية
+    نشطة في مدرسة: بغيرها يفشل ``create_commission_record`` صراحةً بدل أن
+    يُسقط ساقي الدفتر صامتاً. اختبارات هذا الملف تقيس حساب العمولة والسحب،
+    فهي تُهيّئ الشرط الملازم لهما لا سلوك «بلا مدرسة».
+    """
+    from app.extensions import db
+    from app.models.user import UserRoleLink
+    from tests.conftest import make_school
+
+    school_id = make_school(app)
+    with app.app_context():
+        db.session.add(UserRoleLink(user_id=user.id, school_id=school_id, role=user.role))
+        db.session.commit()
+
+
 def test_create_commission_on_session_complete(app):
     """يتم إنشاء عمولة عند اكتمال الجلسة"""
     with app.app_context():
@@ -36,6 +54,7 @@ def test_create_commission_on_session_complete(app):
         )
         db.session.add_all([tutor, student])
         db.session.commit()
+        _attach_school(app, tutor)
 
         # Create session
         session = TutoringSession(
@@ -84,6 +103,7 @@ def test_commission_calculation_20_percent(app):
         )
         db.session.add_all([tutor, student])
         db.session.commit()
+        _attach_school(app, tutor)
 
         # Test with different prices
         for price, expected_commission, expected_net in [
@@ -134,6 +154,7 @@ def test_no_duplicate_commission(app):
         )
         db.session.add_all([tutor, student])
         db.session.commit()
+        _attach_school(app, tutor)
 
         session = TutoringSession(
             tutor_id=tutor.id,
@@ -181,6 +202,7 @@ def test_request_payout_success(app):
         )
         db.session.add_all([tutor, student])
         db.session.commit()
+        _attach_school(app, tutor)
 
         # Create completed session with commission
         session = TutoringSession(
@@ -252,6 +274,7 @@ def test_request_payout_exceeds_balance(app):
         )
         db.session.add_all([tutor, student])
         db.session.commit()
+        _attach_school(app, tutor)
 
         # Create small session
         session = TutoringSession(

@@ -643,7 +643,8 @@ class TestTutoringRoutes:
 
     def test_payout_too_low_vs_success(self, app):
         sid, cid, _ = setup_class(app)
-        tid, _ = mk(app, "teacher")
+        # AZ-P3-16: تسوية العمولة تفتح محفظة المعلّم — والمحفظة صفّ تينانتي.
+        tid, _ = mk(app, "teacher", school_id=sid)
         uid = make_user(app, role="student", school_id=sid)
         sess_id = make_tutoring_session(app, tid, uid, status="completed", price=1000)
         with app.app_context():

@@ -35,6 +35,7 @@ from tests.conftest import (
     make_subject,
     make_subscription,
     make_subscription_plan,
+    make_tutoring_session,
     make_user,
 )
 
@@ -829,6 +830,155 @@ class TestTutorCommission:
                 sid, tutor, platform, Decimal("100"), Decimal("20"), f"b5-{uuid.uuid4().hex[:8]}", session_id=2
             )
         assert err is not None
+
+
+# ═════════════════════════ AZ-P3-16: settlement matching ═════════════════════════
+
+
+class TestTutorCommissionSettlement:
+    """AZ-P3-16 — محفظة المعلم وسجل العمولة لا يتباعدان أبداً (لا تخطٍّ صامت).
+
+    معايير القبول (docs/ACTIONABLE_WORK_ITEMS.md §AZ-P3-16):
+    1. معلم بلا صف محفظة تُفتح له عند أول تسوية وتُكتب الساقان كاملتين.
+    2. التخطي الصامت لا يحدث؛ ما لا يُسوَّى يفشل صراحةً مع تنبيه إداري.
+    3. رصيد المحفظة = مجموع قيود الدفتر المطابقة (قابلية مطابقة).
+    4. إكمال الجلسة مرتين لا ينشئ قيداً ثانياً (التزام idempotent).
+    """
+
+    def _login_existing(self, app, uid):
+        """جلسة عميل لحساب قائم — بعض حالات الفشل لا تمرّ بمسار الشخصيات."""
+        from app.extensions import db
+        from app.models.user import User
+
+        with app.app_context():
+            email = db.session.get(User, uid).email
+        client = app.test_client()
+        client.post("/auth/login", data={"email": email, "password": _PASSWORD})
+        return client
+
+    def _session_without_wallet(self, app, *, price=100.0):
+        """يعلم + طالب في مدرسة واحدة بلا أي صف محفظة مُهيأ مسبقاً."""
+        from app.models.wallet import Wallet
+
+        sid = make_school(app)
+        tutor = make_user(app, role="teacher", school_id=sid)
+        student = make_user(app, role="student", school_id=sid)
+        session_id = make_tutoring_session(app, tutor_id=tutor, student_id=student, price=price)
+        with app.app_context():
+            assert Wallet.query.filter_by(school_id=sid, user_id=tutor).first() is None
+        return sid, tutor, student, session_id
+
+    def _settle(self, app, session_id):
+        """تسوية واحدة → ``(أُنشئ السجل؟، صافي المعلم)`` مقروءان داخل الجلسة."""
+        from app.extensions import db
+        from app.models.tutoring import TutoringSession
+        from app.services.tutoring import create_commission_record
+
+        with app.app_context():
+            created = create_commission_record(db.session.get(TutoringSession, session_id))
+            return created is not None, (created.tutor_net if created is not None else None)
+
+    def test_missing_wallet_is_created_and_both_legs_written(self, app):
+        from app.models.wallet import Wallet, WalletTransaction
+
+        sid, tutor, _student, session_id = self._session_without_wallet(app, price=250.0)
+        created, tutor_net = self._settle(app, session_id)
+        assert created is True
+
+        with app.app_context():
+            wallet = Wallet.query.filter_by(school_id=sid, user_id=tutor).one()
+            legs = WalletTransaction.query.filter_by(
+                reference_type="tutoring_session", reference_id=session_id
+            ).all()
+            by_type = {leg.transaction_type: leg for leg in legs}
+            assert set(by_type) == {"tutor_session_credit", "tutor_commission"}
+            assert by_type["tutor_session_credit"].amount == Decimal("250.00")
+            assert by_type["tutor_session_credit"].destination_wallet_id == wallet.id
+            assert by_type["tutor_commission"].amount == Decimal("50.00")  # 20%
+            assert by_type["tutor_commission"].source_wallet_id == wallet.id
+            assert wallet.balance == Decimal("200.00")
+            assert wallet.balance == tutor_net  # صافي سجل العمولة نفسه
+
+    def test_balance_matches_ledger_sum_across_sessions(self, app):
+        """مطابقة (reconciliation): الرصيد = مجموع قيود الدفتر المطابقة دائماً."""
+        from app.models.wallet import Wallet, WalletTransaction
+
+        sid, tutor, student, first = self._session_without_wallet(app, price=100.0)
+        second = make_tutoring_session(app, tutor_id=tutor, student_id=student, price=300.0)
+        self._settle(app, first)
+        self._settle(app, second)
+
+        with app.app_context():
+            wallet = Wallet.query.filter_by(school_id=sid, user_id=tutor).one()
+            legs = WalletTransaction.query.filter_by(school_id=sid).all()
+            ledger_net = sum(
+                leg.amount if leg.transaction_type == "tutor_session_credit" else -leg.amount for leg in legs
+            )
+            assert len(legs) == 4  # ساقان لكل جلسة
+            assert ledger_net == Decimal("320.00")  # 80 + 240
+            assert wallet.balance == ledger_net
+
+    def test_recompletion_does_not_double_the_ledger(self, app):
+        from app.models.tutoring import TutorCommission
+        from app.models.wallet import Wallet, WalletTransaction
+
+        sid, tutor, _student, session_id = self._session_without_wallet(app, price=200.0)
+        assert self._settle(app, session_id)[0] is True
+        assert self._settle(app, session_id)[0] is False  # سجل قائم → لا عمل ثانٍ
+
+        with app.app_context():
+            assert TutorCommission.query.filter_by(session_id=session_id).count() == 1
+            legs = WalletTransaction.query.filter_by(reference_id=session_id, reference_type="tutoring_session").all()
+            assert len(legs) == 2
+            assert Wallet.query.filter_by(school_id=sid, user_id=tutor).one().balance == Decimal("160.00")
+
+    def test_school_less_tutor_settlement_fails_explicitly(self, app):
+        """الجلسة تُكتمل لكنها تبقى غير مسوّاة — بمبلغ صريح لا تخطٍّ صامت."""
+        from app.core.db import TxError
+        from app.extensions import db
+        from app.models.communication import Notification
+        from app.models.tutoring import TutorCommission, TutoringSession
+        from app.models.user import User, UserRole
+        from app.models.wallet import Wallet, WalletTransaction
+
+        sid = make_school(app)
+        tutor = make_user(app, role="teacher")  # بلا عضوية مدرسة نشطة
+        student = make_user(app, role="student", school_id=sid)
+        make_user(app, role="super_admin")
+        session_id = make_tutoring_session(app, tutor_id=tutor, student_id=student, price=100.0)
+
+        with app.app_context():
+            from app.models.tutoring import TutoringSession as TS
+            from app.services.tutoring import create_commission_record
+
+            with pytest.raises(TxError) as exc:
+                create_commission_record(db.session.get(TS, session_id))
+            assert "لا مدرسة نشطة" in str(exc.value)
+            assert TutorCommission.query.filter_by(session_id=session_id).count() == 0
+            assert WalletTransaction.query.filter_by(reference_id=session_id).count() == 0
+            assert Wallet.query.filter_by(user_id=tutor).count() == 0
+            assert db.session.get(TS, session_id).status == "completed"  # مكتملة، غير مسوّاة
+
+        client = self._login_existing(app, tutor)
+        resp = client.get(f"/tutoring/sessions/{session_id}/status/completed", follow_redirects=True)
+        assert resp.status_code == 200
+        assert "لا مدرسة نشطة" in resp.get_data(as_text=True)
+
+        with app.app_context():
+            admins = User.query.filter_by(role=UserRole.super_admin).all()
+            assert admins
+            alerts = Notification.query.filter_by(type="tutoring_settlement").all()
+            assert alerts, "فشل التسوية يجب أن يُسجَّل تنبيهاً إدارياً"
+            assert {alert.user_id for alert in alerts} <= {admin.id for admin in admins}
+            assert all(str(session_id) in (alert.body or "") for alert in alerts)
+            assert TutorCommission.query.filter_by(session_id=session_id).count() == 0
+
+        from app.models.system import AuditLog
+
+        with app.app_context():
+            failure = AuditLog.query.filter_by(action="tutoring.settlement_failed").one()
+            assert failure.detail["reason"] and failure.detail["status"] == "completed"
+            assert db.session.get(TutoringSession, session_id).status == "completed"
 
 
 class TestAdminCredit:

@@ -483,11 +483,21 @@ class TestP7WalletTutoringIntegration:
             w = db.session.get(W, wid)
             assert w.balance == Decimal("160.00"), "P7: no double-credit on retries"
 
-    def test_session_without_wallet_still_creates_commission_record(self, app):
-        """Missing wallet must not break session completion (graceful skip)."""
+    def test_session_without_wallet_creates_wallet_and_ledger_legs(self, app):
+        """AZ-P3-16: غياب المحفظة لم يعد تخطياً صامتاً — تُنشأ وتُكتب الساقان.
+
+        السلوك القديم (P7) كان يُنشئ سجل العمولة ويسقط ساقي الدفتر بلا أثر
+        حين لا يوجد صفّ محفظة، فيتباعد رصيد المعلم عن سجل عمولته. الجديد
+        يُنشئ المحفظة بمنشئ ``wallet_service`` نفسه ثم يكتب القبض والعمولة.
+        """
+        from decimal import Decimal
 
         sid = make_school(app)
         tutor = make_user(app, role="teacher", school_id=sid)
+        with app.app_context():
+            from app.models.wallet import Wallet
+
+            assert Wallet.query.filter_by(school_id=sid, user_id=tutor).first() is None
         session_id = self._completed_session(app, sid, tutor)
 
         with app.app_context():
@@ -500,6 +510,19 @@ class TestP7WalletTutoringIntegration:
             db.session.commit()
             rec = create_commission_record(db.session.get(TutoringSession, session_id))
             assert rec is not None, "P7: commission record created even without wallet"
+
+        with app.app_context():
+            from app.models.wallet import Wallet, WalletTransaction
+
+            wallet = Wallet.query.filter_by(school_id=sid, user_id=tutor).one()
+            legs = WalletTransaction.query.filter_by(reference_type="tutoring_session", reference_id=session_id).all()
+            assert {leg.transaction_type for leg in legs} == {"tutor_session_credit", "tutor_commission"}
+            # مطابقة الرصيد مع مجموع قيود الدفتر — لا رصيد بلا أثر ولا أثر بلا رصيد.
+            legs_net = sum(
+                leg.amount if leg.transaction_type == "tutor_session_credit" else -leg.amount for leg in legs
+            )
+            assert wallet.balance == Decimal("160.00")  # 200 - 20% عمولة
+            assert wallet.balance == legs_net
 
 
 class TestAZP109PendingPaymentsCron:

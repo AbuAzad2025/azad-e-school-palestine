@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 09:02+0300\n"
+"POT-Creation-Date: 2026-10-18 09:48+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -359,7 +359,7 @@ msgstr "The user is not an active member of this school."
 msgid "إيداع إداري"
 msgstr "Administrative deposit"
 
-#: app/modules/wallet_ui.py:32
+#: app/modules/wallet_ui.py:31
 msgid "لا توجد مدرسة نشطة لحسابك لعرض محفظتها."
 msgstr "Your account has no active school to show a wallet for."
 
@@ -484,101 +484,98 @@ msgstr "psql not found — make sure PostgreSQL is installed"
 msgid "غير مسماً"
 msgstr "Unnamed"
 
-#: app/modules/admin/routes.py:983
+#: app/modules/admin/routes.py:989
 msgid "فشل حفظ الإعدادات"
 msgstr "Failed to save settings"
 
-#: app/modules/admin/routes.py:986
+#: app/modules/admin/routes.py:992
 msgid "تم حفظ الإعدادات"
 msgstr "Settings saved"
 
-#: app/modules/admin/routes.py:1021 app/modules/admin/routes.py:1043
+#: app/modules/admin/routes.py:1027 app/modules/admin/routes.py:1049
 msgid "هذا المستخدم ليس في حالة انتظار"
 msgstr "This user is not pending approval"
 
-#: app/modules/admin/routes.py:1032
+#: app/modules/admin/routes.py:1038
 msgid "تم قبول المستخدم بنجاح. يمكنه الآن تسجيل الدخول."
 msgstr "User approved successfully. They can now sign in."
 
-#: app/modules/admin/routes.py:1051
+#: app/modules/admin/routes.py:1057
 msgid "تم رفض تسجيل المستخدم."
 msgstr "User registration rejected."
 
-#: app/modules/admin/routes.py:1178
+#: app/modules/admin/routes.py:1185
 msgid "تعذّر عكس الحركة."
 msgstr "The transaction could not be reversed."
 
-#: app/modules/admin/routes.py:1198
+#: app/modules/admin/routes.py:1205
 msgid "تم عكس الحركة بقيد مقابل."
 msgstr "The transaction was reversed with an offsetting entry."
 
-#: app/modules/admin/routes.py:1229
+#: app/modules/admin/routes.py:1236
 msgid "اختر المدرسة والمستخدم قبل الإيداع."
 msgstr "Choose the school and the user before depositing."
 
-#: app/modules/admin/routes.py:1235 app/modules/admin/routes.py:1238
+#: app/modules/admin/routes.py:1242 app/modules/admin/routes.py:1245
 #: app/modules/family/routes.py:146
 msgid "المبلغ غير صالح — أدخل رقماً موجباً."
 msgstr "The amount is invalid — enter a positive number."
 
-#: app/modules/admin/routes.py:1250
+#: app/modules/admin/routes.py:1257
 msgid "تعذّر تنفيذ الإيداع."
 msgstr "The deposit could not be completed."
 
-#: app/modules/admin/routes.py:1270
+#: app/modules/admin/routes.py:1277
 msgid "تم إيداع المبلغ في محفظة المستخدم."
 msgstr "The amount was deposited into the user's wallet."
 
-#: app/modules/admin/routes.py:1440
+#: app/modules/admin/routes.py:1447
 msgid "نص الرد مطلوب"
 msgstr "Reply text is required"
 
-#: app/modules/admin/routes.py:1450
+#: app/modules/admin/routes.py:1457
 msgid "تم إرسال الرد بنجاح"
 msgstr "Reply sent successfully"
 
-#: app/modules/admin/routes.py:1452
+#: app/modules/admin/routes.py:1459
 msgid "فشل إرسال الرد"
 msgstr "Failed to send reply"
 
-#: app/modules/admin/routes.py:1497 app/modules/admin/routes.py:1523
+#: app/modules/admin/routes.py:1504 app/modules/admin/routes.py:1530
 msgid "طلب السحب غير موجود."
 msgstr "The withdrawal request does not exist."
 
-#: app/modules/admin/routes.py:1499 app/modules/admin/routes.py:1525
+#: app/modules/admin/routes.py:1506 app/modules/admin/routes.py:1532
 msgid "تمت مراجعة طلب السحب مسبقاً."
 msgstr "This withdrawal request has already been reviewed."
 
-#: app/modules/admin/routes.py:1515
+#: app/modules/admin/routes.py:1522
 msgid "فشل اعتماد طلب السحب"
 msgstr "Failed to approve the payout request"
 
-#: app/modules/admin/routes.py:1517
+#: app/modules/admin/routes.py:1524
 msgid "تم اعتماد طلب السحب."
 msgstr "Payout request approved."
 
-#: app/modules/admin/routes.py:1538
+#: app/modules/admin/routes.py:1545
 msgid "فشل رفض طلب السحب"
 msgstr "Failed to reject the payout request"
 
-#: app/modules/admin/routes.py:1540
+#: app/modules/admin/routes.py:1547
 msgid "تم رفض طلب السحب."
 msgstr "Payout request rejected."
 
-#: app/modules/admin/routes.py:1590
+#: app/modules/admin/routes.py:1597
 msgid "تعذّرت معالجة طلب الشحن."
 msgstr "The top-up request could not be processed."
 
-
-#: app/modules/admin/routes.py:1612
+#: app/modules/admin/routes.py:1619
 msgid "تم اعتماد طلب الشحن وإثراء محفظة الابن."
 msgstr "Top-up request approved and the child's wallet has been credited."
 
-
-#: app/modules/admin/routes.py:1612
+#: app/modules/admin/routes.py:1619
 msgid "تم رفض طلب الشحن."
 msgstr "Top-up request rejected."
-
 
 #: app/modules/ai/routes.py:55 app/modules/ai/routes.py:118
 #: app/modules/ai/routes.py:219
@@ -978,10 +975,10 @@ msgstr "Subscribe"
 msgid "رقم مرجع التحويل"
 msgstr "Transfer reference number"
 
-#: app/modules/billing/forms.py:42 app/templates/admin/payouts.html:11
+#: app/modules/billing/forms.py:42 app/templates/admin/_topup_queue.html:18
+#: app/templates/admin/payouts.html:11
 #: app/templates/admin/wallet_ledger.html:40
 #: app/templates/admin/wallet_ledger.html:95
-#: app/templates/admin/wallet_ledger.html:166
 #: app/templates/billing/invoice.html:41
 #: app/templates/family/child_wallet.html:62
 #: app/templates/family/child_wallet.html:108
@@ -1295,8 +1292,7 @@ msgstr "Link account"
 msgid "مبلغ الشحن"
 msgstr "Top-up amount"
 
-
-#: app/modules/family/forms.py:24 app/templates/admin/wallet_ledger.html:167
+#: app/modules/family/forms.py:24 app/templates/admin/_topup_queue.html:19
 #: app/templates/family/child_wallet.html:110
 #: app/templates/grades/rubric_grade.html:19
 #: app/templates/grades/rubric_grade.html:34
@@ -1306,7 +1302,6 @@ msgstr "Note"
 #: app/modules/family/forms.py:25
 msgid "إرسال طلب الشحن"
 msgstr "Send top-up request"
-
 
 #: app/modules/family/routes.py:39
 msgid "تم ربط الحساب بنجاح."
@@ -1320,11 +1315,9 @@ msgstr "Link removed."
 msgid "تحقق من بيانات النموذج قبل الإرسال."
 msgstr "Please check the form fields before submitting."
 
-
 #: app/modules/family/routes.py:158
 msgid "تم إرسال طلب الشحن — بانتظار اعتماد إدارة المدرسة."
 msgstr "Top-up request sent — awaiting the school administration's approval."
-
 
 #: app/modules/grades/forms.py:10
 msgid "عنوان الواجب"
@@ -1857,19 +1850,19 @@ msgstr "Requested amount (minimum ₪200)"
 msgid "طلب سحب"
 msgstr "Withdrawal request"
 
-#: app/modules/tutoring/routes.py:60
+#: app/modules/tutoring/routes.py:62
 msgid "رمز دعوة غير صالح."
 msgstr "Invalid invite code."
 
-#: app/modules/tutoring/routes.py:99
+#: app/modules/tutoring/routes.py:101
 msgid "تم نشر ملفك. شارك رابط ملفك مع طلابك."
 msgstr "Your profile is published. Share your profile link with your students."
 
-#: app/modules/tutoring/routes.py:120
+#: app/modules/tutoring/routes.py:122
 msgid "تم تحديث الملف."
 msgstr "Profile updated."
 
-#: app/modules/tutoring/routes.py:130
+#: app/modules/tutoring/routes.py:132
 msgid ""
 "حجز الدروس الخصوصية متاح للطلاب فقط. سجّل الدخول بحساب طالب لتتمكن من "
 "الحجز."
@@ -1877,98 +1870,98 @@ msgstr ""
 "Private tutoring booking is available to students only. Sign in with a "
 "student account to book."
 
-#: app/modules/tutoring/routes.py:137
+#: app/modules/tutoring/routes.py:139
 msgid "لا يمكنك حجز درس من نفسك."
 msgstr "You cannot book a session with yourself."
 
-#: app/modules/tutoring/routes.py:150
+#: app/modules/tutoring/routes.py:152
 msgid "السعر المقترح خارج النطاق المسموح (80%–150% من سعر المعلم المعلن)."
 msgstr ""
 "The suggested price is outside the allowed range (80%–150% of the tutor's"
 " listed price).The proposed rate is outside the allowed range (80%–150% "
 "of the tutor's listed rate)."
 
-#: app/modules/tutoring/routes.py:172
+#: app/modules/tutoring/routes.py:174
 msgid "طلب درس خصوصي جديد"
 msgstr "New private tutoring request"
 
-#: app/modules/tutoring/routes.py:173
+#: app/modules/tutoring/routes.py:175
 msgid "أُرسل طلبك للمعلم. سيعاودك بالرد."
 msgstr "Your request has been sent to the tutor. They will get back to you."
 
-#: app/modules/tutoring/routes.py:185
+#: app/modules/tutoring/routes.py:187
 msgid "تم الرد على هذا الطلب مسبقاً."
 msgstr "This request has already been answered."
 
-#: app/modules/tutoring/routes.py:191
+#: app/modules/tutoring/routes.py:193
 msgid "قُبل طلب درسك الخصوصي"
 msgstr "Your private tutoring request was accepted"
 
-#: app/modules/tutoring/routes.py:193
+#: app/modules/tutoring/routes.py:195
 msgid "اعتذر المعلم عن طلبك"
 msgstr "The tutor declined your request"
 
-#: app/modules/tutoring/routes.py:194
+#: app/modules/tutoring/routes.py:196
 msgid "تم تحديث الطلب."
 msgstr "Request updated."
 
-#: app/modules/tutoring/routes.py:219
+#: app/modules/tutoring/routes.py:221
 msgid "تم تحديث الجلسة."
 msgstr "Session updated."
 
-#: app/modules/tutoring/routes.py:251 app/modules/tutoring/routes.py:283
+#: app/modules/tutoring/routes.py:253 app/modules/tutoring/routes.py:285
 msgid "تم تأكيد دفع درسك الخصوصي من الطالب والمعلم"
 msgstr "Your private session payment was confirmed by both student and tutor"
 
-#: app/modules/tutoring/routes.py:253 app/modules/tutoring/routes.py:284
+#: app/modules/tutoring/routes.py:255 app/modules/tutoring/routes.py:286
 msgid "تم إقفال الدفع بعد تأكيد الطرفين."
 msgstr "Payment confirmed by both parties."
 
-#: app/modules/tutoring/routes.py:255
+#: app/modules/tutoring/routes.py:257
 msgid "سجّلنا تأكيدك — بانتظار تأكيد المعلم باستلام الدفع."
 msgstr "Confirmation recorded — waiting for the tutor to confirm receipt."
 
-#: app/modules/tutoring/routes.py:286
+#: app/modules/tutoring/routes.py:288
 msgid "سجّلنا تأكيدك — بانتظار تأكيد الطالب بتفاصيل الدفع."
 msgstr "Confirmation recorded — waiting for the student's payment confirmation."
 
-#: app/modules/tutoring/routes.py:306
+#: app/modules/tutoring/routes.py:308
 msgid "أُلغي قيد الدفع — الجلسة بلا تأكيدات."
 msgstr "Payment was cleared — the session has no confirmations."
 
-#: app/modules/tutoring/routes.py:324
+#: app/modules/tutoring/routes.py:341
 msgid "تم تحديث حالة الجلسة."
 msgstr "Session status updated."
 
-#: app/modules/tutoring/routes.py:366
+#: app/modules/tutoring/routes.py:383
 msgid "تم بدء الجلسة المباشرة."
 msgstr "Live session started."
 
-#: app/modules/tutoring/routes.py:379
+#: app/modules/tutoring/routes.py:396
 msgid "تم إنهاء الجلسة المباشرة."
 msgstr "Live session ended."
 
-#: app/modules/tutoring/routes.py:394 app/services/tutoring.py:403
+#: app/modules/tutoring/routes.py:411 app/services/tutoring.py:403
 msgid "لا يمكن تقييم جلسة لم تنتهِ بعد."
 msgstr "You cannot rate a session that has not ended yet."
 
-#: app/modules/tutoring/routes.py:405 app/services/tutoring.py:414
+#: app/modules/tutoring/routes.py:422 app/services/tutoring.py:414
 msgid "انتهى وقت التقييم (24 ساعة بعد انتهاء الجلسة)."
 msgstr "The rating window has closed (24 hours after the session ended)."
 
-#: app/modules/tutoring/routes.py:410 app/services/tutoring.py:420
+#: app/modules/tutoring/routes.py:427 app/services/tutoring.py:420
 msgid "لقد قيّمت هذه الجلسة مسبقاً."
 msgstr "You have already rated this session."
 
-#: app/modules/tutoring/routes.py:417 app/services/tutoring.py:423
+#: app/modules/tutoring/routes.py:434 app/services/tutoring.py:423
 msgid "التقييم يجب أن يكون بين 1 و 5."
 msgstr "Rating must be between 1 and 5."
 
-#: app/modules/tutoring/routes.py:423
+#: app/modules/tutoring/routes.py:440
 msgid "شكراً لتقيميكم!"
 msgstr "Thank you for your rating!"
 
-#: app/modules/tutoring/routes.py:454
+#: app/modules/tutoring/routes.py:471
 msgid "تم إرسال طلب السحب."
 msgstr "Withdrawal request submitted."
 
@@ -2637,8 +2630,8 @@ msgid "لديك طلب معلّق لهذا المعلم."
 msgstr "You already have a pending request for this tutor."
 
 #: app/services/tutoring.py:242 app/services/tutoring.py:399
-#: app/services/tutoring.py:777 app/services/tutoring.py:805
-#: app/services/tutoring.py:833
+#: app/services/tutoring.py:848 app/services/tutoring.py:876
+#: app/services/tutoring.py:904
 msgid "الجلسة غير موجودة."
 msgstr "Session not found."
 
@@ -2664,28 +2657,51 @@ msgstr "Unexpected error: %(detail)s"
 msgid "ليس لديك صلاحية تقييم هذه الجلسة."
 msgstr "You cannot review this session."
 
-#: app/services/tutoring.py:690
+#: app/services/tutoring.py:615
+#, python-format
+msgid "تعذّرت تسوية الجلسة #%(session)s: لا مدرسة نشطة للمعلم."
+msgstr "Could not settle session #%(session)s: the tutor has no active school."
+
+
+#: app/services/tutoring.py:627
+#, python-format
+msgid "تعذّر فتح محفظة المعلم لتسوية الجلسة #%(session)s."
+msgstr "Could not open the tutor's wallet to settle session #%(session)s."
+
+
+#: app/services/tutoring.py:662
+msgid "فشل تسوية عمولة جلسة خصوصية"
+msgstr "Private session commission settlement failed"
+
+
+#: app/services/tutoring.py:664
+#, python-format
+msgid "الجلسة #%(session)s للمعلم #%(tutor)s لم تُسوَّ: %(reason)s"
+msgstr "Session #%(session)s for tutor #%(tutor)s was not settled: %(reason)s"
+
+
+#: app/services/tutoring.py:761
 msgid "الحد الأدنى للسحب 200₪."
 msgstr "Minimum withdrawal is ₪200."
 
-#: app/services/tutoring.py:699
+#: app/services/tutoring.py:770
 #, python-format
 msgid "المبلغ المطلوب (%(amount)s) يتجاوز الرصيد المتاح (%(balance)s)."
 msgstr "Requested amount (%(amount)s) exceeds the available balance (%(balance)s)."
 
-#: app/services/tutoring.py:779
+#: app/services/tutoring.py:850
 msgid "هذا التأكيد حق الطالب وحده."
 msgstr "Only the student can make this confirmation."
 
-#: app/services/tutoring.py:807
+#: app/services/tutoring.py:878
 msgid "هذا التأكيد حق المعلم وحده."
 msgstr "Only the tutor can make this confirmation."
 
-#: app/services/tutoring.py:835
+#: app/services/tutoring.py:906
 msgid "هذا الرفض حق المعلم وحده."
 msgstr "Only the tutor can make this rejection."
 
-#: app/services/tutoring.py:837
+#: app/services/tutoring.py:908
 msgid "لا يمكن رفض دفعة مقفلة مسبقاً — الجلسة مدفوعة."
 msgstr "A closed payment cannot be rejected — the session is paid."
 
@@ -2716,7 +2732,6 @@ msgstr "Transaction reversal"
 #: app/services/wallet_service.py:137
 msgid "قبض جلسة خصوصية"
 msgstr "Private session payout"
-
 
 #: app/services/wallet_service.py:143
 msgid "وارِد"
@@ -2814,36 +2829,29 @@ msgstr "Reversal of transaction %(id)s"
 msgid "مبلغ طلب الشحن يتجاوز الحد المسموح."
 msgstr "The top-up request amount exceeds the allowed limit."
 
-
 #: app/services/wallet_service.py:820
 msgid "الطالب ليس عضواً نشطاً في هذه المدرسة."
 msgstr "The student is not an active member of this school."
-
 
 #: app/services/wallet_service.py:829
 msgid "لديك طلب شحن معلّق لهذا الابن بالفعل."
 msgstr "You already have a pending top-up request for this child."
 
-
 #: app/services/wallet_service.py:903
 msgid "طلب الشحن غير موجود في هذه المدرسة."
 msgstr "The top-up request does not exist in this school."
-
 
 #: app/services/wallet_service.py:905
 msgid "تمت معالجة هذا الطلب مسبقاً."
 msgstr "This request has already been processed."
 
-
 #: app/services/wallet_service.py:915
 msgid "شحن محفظة بموافقة إدارية"
 msgstr "Wallet top-up approved by administration"
 
-
 #: app/services/wallet_service.py:919
 msgid "تعذّر إتمام شحن المحفظة."
 msgstr "The wallet top-up could not be completed."
-
 
 #: app/templates/base.html:9 app/templates/landing.html:9
 msgid "منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية"
@@ -2945,7 +2953,7 @@ msgstr "Home"
 msgid "كورساتي"
 msgstr "My courses"
 
-#: app/templates/admin/school_admin_dashboard.html:59
+#: app/templates/admin/school_admin_dashboard.html:62
 #: app/templates/assessment/quiz_list.html:6
 #: app/templates/auth/dashboard.html:54 app/templates/auth/dashboard.html:62
 #: app/templates/auth/dashboard.html:124 app/templates/auth/dashboard.html:201
@@ -3029,7 +3037,7 @@ msgstr "Classes"
 #: app/templates/admin/base.html:28 app/templates/admin/dashboard.html:41
 #: app/templates/admin/dashboard.html:122
 #: app/templates/admin/school_admin_dashboard.html:32
-#: app/templates/admin/school_admin_dashboard.html:61
+#: app/templates/admin/school_admin_dashboard.html:64
 #: app/templates/admin/subscriptions_list.html:3
 #: app/templates/admin/subscriptions_list.html:6
 #: app/templates/auth/dashboard.html:31 app/templates/base.html:170
@@ -3506,6 +3514,51 @@ msgstr "Ready to start?"
 msgid "انضم لآلاف الطلاب والمدارس الذين يثقون بأزاد"
 msgstr "Join thousands of students and schools who trust Azad"
 
+#: app/templates/admin/_topup_queue.html:10
+msgid "طلبات شحن بانتظار الاعتماد"
+msgstr "Top-up requests awaiting approval"
+
+#: app/templates/admin/_topup_queue.html:15
+#: app/templates/admin/certificates.html:17
+#: app/templates/admin/moe_export.html:15 app/templates/admin/revenue.html:47
+#: app/templates/admin/revenue.html:120
+#: app/templates/admin/schools_list.html:17
+#: app/templates/admin/wallet_ledger.html:27
+#: app/templates/admin/wallet_ledger.html:93
+#: app/templates/school_approvals/queue.html:17
+#: app/templates/school_approvals/super_admin_queue.html:17
+#: app/templates/schools/onboarding.html:59
+msgid "المدرسة"
+msgstr "School"
+
+#: app/templates/admin/_topup_queue.html:16
+msgid "ولي الأمر (الدافع)"
+msgstr "Parent (payer)"
+
+#: app/templates/admin/_topup_queue.html:17
+msgid "محفظة الطالب"
+msgstr "Student wallet"
+
+#: app/templates/admin/_topup_queue.html:20
+msgid "القرار"
+msgstr "Decision"
+
+#: app/templates/admin/_topup_queue.html:35 app/templates/admin/payouts.html:22
+#: app/templates/admin/pending_payments.html:34
+#: app/templates/billing/admin.html:22
+msgid "اعتماد"
+msgstr "Approve"
+
+#: app/templates/admin/_topup_queue.html:40 app/templates/admin/payouts.html:25
+#: app/templates/admin/pending_payments.html:38
+#: app/templates/admin/pending_registrations.html:36
+#: app/templates/billing/admin.html:26
+#: app/templates/school_approvals/queue.html:33
+#: app/templates/school_approvals/super_admin_queue.html:33
+#: app/templates/tutoring/my.html:28
+msgid "رفض"
+msgstr "Reject"
+
 #: app/templates/admin/ai_usage.html:3 app/templates/admin/base.html:32
 msgid "إحصائيات AI"
 msgstr "AI statistics"
@@ -3859,19 +3912,6 @@ msgstr "Manage completion and Tawjihi certificate templates."
 msgid "قريباً"
 msgstr "Coming soon"
 
-#: app/templates/admin/certificates.html:17
-#: app/templates/admin/moe_export.html:15 app/templates/admin/revenue.html:47
-#: app/templates/admin/revenue.html:120
-#: app/templates/admin/schools_list.html:17
-#: app/templates/admin/wallet_ledger.html:27
-#: app/templates/admin/wallet_ledger.html:93
-#: app/templates/admin/wallet_ledger.html:163
-#: app/templates/school_approvals/queue.html:17
-#: app/templates/school_approvals/super_admin_queue.html:17
-#: app/templates/schools/onboarding.html:59
-msgid "المدرسة"
-msgstr "School"
-
 #: app/templates/admin/certificates.html:19
 #: app/templates/admin/user_detail.html:82
 #: app/templates/tutoring/session.html:71
@@ -4201,24 +4241,6 @@ msgstr "Request date"
 msgid "تأكيد اعتماد طلب السحب؟"
 msgstr "Approve this payout request?"
 
-#: app/templates/admin/payouts.html:22
-#: app/templates/admin/pending_payments.html:34
-#: app/templates/admin/wallet_ledger.html:183
-#: app/templates/billing/admin.html:22
-msgid "اعتماد"
-msgstr "Approve"
-
-#: app/templates/admin/payouts.html:25
-#: app/templates/admin/pending_payments.html:38
-#: app/templates/admin/pending_registrations.html:36
-#: app/templates/admin/wallet_ledger.html:188
-#: app/templates/billing/admin.html:26
-#: app/templates/school_approvals/queue.html:33
-#: app/templates/school_approvals/super_admin_queue.html:33
-#: app/templates/tutoring/my.html:28
-msgid "رفض"
-msgstr "Reject"
-
 #: app/templates/admin/payouts.html:46
 msgid "لا توجد طلبات سحب معلقة."
 msgstr "No pending payout requests."
@@ -4506,26 +4528,26 @@ msgstr "Pending"
 msgid "اشتراكات منتهية"
 msgstr "Expired subscriptions"
 
-#: app/templates/admin/school_admin_dashboard.html:56
+#: app/templates/admin/school_admin_dashboard.html:59
 #: app/templates/auth/dashboard.html:27 app/templates/auth/dashboard.html:51
 msgid "إجراءات سريعة"
 msgstr "Quick actions"
 
-#: app/templates/admin/school_admin_dashboard.html:58
+#: app/templates/admin/school_admin_dashboard.html:61
 #: app/templates/auth/dashboard.html:53
 msgid "مدارسي"
 msgstr "My schools"
 
-#: app/templates/admin/school_admin_dashboard.html:60
+#: app/templates/admin/school_admin_dashboard.html:63
 msgid "التقويم"
 msgstr "Calendar"
 
-#: app/templates/admin/school_admin_dashboard.html:62
+#: app/templates/admin/school_admin_dashboard.html:65
 #: app/templates/auth/dashboard.html:32 app/templates/auth/dashboard.html:56
 msgid "دفعات معلقة"
 msgstr "Pending payments"
 
-#: app/templates/admin/school_admin_dashboard.html:63
+#: app/templates/admin/school_admin_dashboard.html:66
 #: app/templates/auth/dashboard.html:29
 msgid "المستخدمين"
 msgstr "Users"
@@ -4927,26 +4949,6 @@ msgstr "Reverse this transaction with an offsetting entry?"
 #: app/templates/admin/wallet_ledger.html:152
 msgid "لا حركات في الدفتر بهذه الفلاتر."
 msgstr "No ledger transactions match these filters."
-
-#: app/templates/admin/wallet_ledger.html:158
-msgid "طلبات شحن بانتظار الاعتماد"
-msgstr "Top-up requests awaiting approval"
-
-
-#: app/templates/admin/wallet_ledger.html:164
-msgid "ولي الأمر (الدافع)"
-msgstr "Parent (payer)"
-
-
-#: app/templates/admin/wallet_ledger.html:165
-msgid "محفظة الطالب"
-msgstr "Student wallet"
-
-
-#: app/templates/admin/wallet_ledger.html:168
-msgid "القرار"
-msgstr "Decision"
-
 
 #: app/templates/ai/chat.html:2 app/templates/ai/chat.html:18
 msgid "مساعد ذكي"
@@ -6268,18 +6270,17 @@ msgstr "Excused"
 msgid "محفظة الابن"
 msgstr "Child wallet"
 
-
 #: app/templates/family/child_wallet.html:16
 msgid "لا توجد محفظة نشطة لابنك بعد."
 msgstr "Your child has no active wallet yet."
-
 
 #: app/templates/family/child_wallet.html:17
 msgid ""
 "يمكنك إرسال طلب شحن — تُنشأ المحفظة بعد اعتماد إدارة المدرسة ويُضاف "
 "المبلغ إليها."
-msgstr "You can send a top-up request — the wallet is created once the school administration approves it, and the amount is added to it."
-
+msgstr ""
+"You can send a top-up request — the wallet is created once the school "
+"administration approves it, and the amount is added to it."
 
 #: app/templates/family/child_wallet.html:21 app/templates/wallet/index.html:21
 msgid "الرصيد الحالي"
@@ -6296,7 +6297,6 @@ msgstr "Total outgoing"
 #: app/templates/family/child_wallet.html:29
 msgid "طلب شحن المحفظة"
 msgstr "Wallet top-up request"
-
 
 #: app/templates/family/child_wallet.html:53 app/templates/wallet/index.html:27
 msgid "سجل الحركات"
@@ -6327,16 +6327,13 @@ msgstr "Older"
 msgid "لا توجد حركات مالية مسجّلة على محفظة ابنك بعد."
 msgstr "No financial transactions are recorded on your child's wallet yet."
 
-
 #: app/templates/family/child_wallet.html:102
 msgid "طلبات الشحن لهذا الابن"
 msgstr "Top-up requests for this child"
 
-
 #: app/templates/family/child_wallet.html:128
 msgid "لا طلبات شحن بعد."
 msgstr "No top-up requests yet."
-
 
 #: app/templates/family/generate_code.html:9
 msgid "أرسل هذا الرمز لولي أمرك لربط حسابك بحسابه"

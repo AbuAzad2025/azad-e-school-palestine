@@ -2017,12 +2017,30 @@ def db_get_session(session_id):
 # ═══════════════════════════════════════════════════════════════════════════
 
 
+def _ensure_tutor_school(app, tutor_id):
+    """AZ-P3-16: تسوية العمولة تفتح محفظة المعلّم — والمحفظة صفّ تينانتي.
+
+    المعلّم بلا عضوية مدرسة نشطة لا يُسوَّى (فشل صريح لا تخطٍّ صامت)، فهذا
+    المُهيّئ يمنح الحسابات الاختبارية عضوية مدرسة مرة واحدة، ويبقى سلوك
+    «بلا مدرسة» نفسه مُختبراً في موضعه (اختبارات الفشل الصريح).
+    """
+    from app.extensions import db
+    from app.models.user import User
+
+    with app.app_context():
+        tutor = db.session.get(User, tutor_id)
+        if tutor is None or tutor.school_id:
+            return
+    make_user_role_link(app, tutor_id, make_school(app), role="teacher")
+
+
 def _seed_commission(app, tutor_id, price, *, status=None, tutor_net=None):
     """ينشئ جلسة مكتملة ثم سجل عمولتها عبر الخدمة الحقيقية (لا صف مزيف).
 
     ``status`` و``tutor_net`` تعديلان مباشران يحاكيان حالتين فقط: عمولة
     مسحوبة (لا تُحتسب في المتاح)، وانحراف مخزَّن يختبر كشف عدم المطابقة.
     """
+    _ensure_tutor_school(app, tutor_id)
     stu_id = make_user(app, role="student", email=f"ri-earn-{_uid()}@test.com")
     sess_id = make_tutoring_session(app, tutor_id, stu_id, status="completed", price=price)
     with app.app_context():

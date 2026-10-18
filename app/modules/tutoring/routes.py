@@ -3,7 +3,8 @@
 from datetime import UTC
 from decimal import Decimal
 
-from app.core.db import db
+from app.core.db import TxError, db
+from app.core.errors import flash_error
 from app.core.permissions import role_required
 from app.models.tutoring import TutoringRequest, TutoringSession, TutorReview
 from app.models.user import User, UserRole
@@ -20,6 +21,7 @@ from app.services.tutoring import (
     list_requests_for_student,
     list_requests_for_tutor,
     list_sessions_for,
+    notify_settlement_failure,
     rate_session,
     request_payout,
     respond_request,
@@ -319,7 +321,22 @@ def session_status(session_id, value):
         abort(404)
     update_session(session_, status=value)
     if value in ("completed", "ended"):
-        create_commission_record(session_)
+        try:
+            create_commission_record(session_)
+        except TxError as exc:
+            # AZ-P3-16: فشل التسوية ليس صمتاً. الحالة بقيت «مكتملة» بلا سجل
+            # عمولة ولا دفتر ⇒ الجلسة غير مسوّاة، والتنبيه الإداري يُسجَّل
+            # خارج المعاملة المتراجعة وإلا لُمح معها، والتدقيق يخلّد السبب.
+            reason = str(exc)
+            notify_settlement_failure(session_.id, session_.tutor_id, reason)
+            audit(
+                "tutoring.settlement_failed",
+                "tutoring_sessions",
+                session_.id,
+                {"status": value, "reason": reason},
+            )
+            flash_error(reason, "danger", 400)
+            return redirect(url_for("tutoring.session_detail", session_id=session_.id))
     audit("tutoring.session_status", "tutoring_sessions", session_.id, {"status": value})
     flash(_("تم تحديث حالة الجلسة."), "success")
     return redirect(url_for("tutoring.session_detail", session_id=session_.id))

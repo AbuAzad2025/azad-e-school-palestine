@@ -599,6 +599,85 @@ def create_commission_record(session: TutoringSession) -> TutorCommission | None
     return tx(_create)
 
 
+def _wallet_for_commission_settlement(locked: TutoringSession):
+    """يحضر صفّ محفظة المعلم للتسوية — ويُنشئه إن غاب (AZ-P3-16).
+
+    المحفظة صفّ تينانتي (``school_id`` مفتاحه)، فالمعلم بلا مدرسة نشطة لا
+    يمكن تسويته: يُرفع فشل صريح بدل تخطٍّ صامت يُبقي الرصيد وسجل العمولة
+    متباعدين بلا أثر. والإنشاء يمرّ عبر ``get_or_create_wallet`` (المنشئ
+    الوحيد في المنصة) داخل نفس ``tx()`` — لا صف محفظة مكتوب بمنطق محلي.
+    """
+    from app.models.wallet import Wallet
+    from app.services.wallet_service import get_or_create_wallet
+
+    school_id = getattr(locked.tutor, "school_id", None)
+    if not school_id:
+        raise TxError(_("تعذّرت تسوية الجلسة #%(session)s: لا مدرسة نشطة للمعلم.", session=locked.id))
+
+    def _locked_wallet():
+        return (
+            db.session.query(Wallet).filter_by(school_id=school_id, user_id=locked.tutor_id).with_for_update().first()
+        )
+
+    wallet = _locked_wallet()
+    if wallet is None:
+        get_or_create_wallet(school_id, locked.tutor_id)
+        wallet = _locked_wallet()
+    if wallet is None:
+        raise TxError(_("تعذّر فتح محفظة المعلم لتسوية الجلسة #%(session)s.", session=locked.id))
+    return wallet, school_id
+
+
+def notify_settlement_failure(session_id: int, tutor_id: int, reason: str) -> None:
+    """تنبيه إداري بعد فشل تسوية عمولة جلسة — أثر بشري لخلل مالي (AZ-P3-16).
+
+    يُستدعى **خارج** ``tx()`` الفاشلة (بعد التراجع)، وإلا لُمح الإشعار مع ما
+    تراجع. المدى: المشرفون المنشطون في مدرسة المعلم + super_admin دائماً،
+    بنفس نمط قائمة المشرفين في ``payments._flag_for_review``.
+    """
+    from app.models.user import User, UserRole, UserRoleLink
+    from app.services.communication import notify
+
+    school_id = None
+    with_session = db.session.get(TutoringSession, session_id)
+    if with_session is not None:
+        school_id = getattr(with_session.tutor, "school_id", None)
+
+    query = User.query.filter(
+        User.role.in_([UserRole.super_admin, UserRole.school_admin]),
+        User.is_active.is_(True),
+    )
+    if school_id:
+        query = query.filter(
+            db.or_(
+                User.role == UserRole.super_admin,
+                User.id.in_(
+                    db.session.query(UserRoleLink.user_id).filter(
+                        UserRoleLink.school_id == school_id,
+                        UserRoleLink.is_active.is_(True),
+                    )
+                ),
+            )
+        )
+    title = _("فشل تسوية عمولة جلسة خصوصية")
+    body = _(
+        "الجلسة #%(session)s للمعلم #%(tutor)s لم تُسوَّ: %(reason)s",
+        session=session_id,
+        tutor=tutor_id,
+        reason=reason,
+    )
+    admins = query.all()
+    for admin in admins:
+        notify(admin.id, "tutoring_settlement", title, body)
+    logger.warning(
+        "commission_settlement_failed",
+        session_id=session_id,
+        tutor_id=tutor_id,
+        reason=reason,
+        notified=len(admins),
+    )
+
+
 def _append_commission_ledger(locked: TutoringSession, *, amount_dec: Decimal, commission_dec: Decimal) -> None:
     """سجّل الدفعة في دفتر المحفظة (أنواع P7 ``tutor_commission``) — داخل tx() الحالي.
 
@@ -611,25 +690,17 @@ def _append_commission_ledger(locked: TutoringSession, *, amount_dec: Decimal, c
     حساب "منصة" مخترع: القيود للخارج ممثلة بجانب NULL (نفس الممثّل الذي
     يستخدمه ``admin_credit`` للإيداع الإداري).
 
-    الفشل ليس فادحًا: سجل العمولة سبق أن أُنشئ (والجلسة مكتملة). النقص
-    يُسجّل لا يُرفع — إنهاء جلسة لا يجب أن ينهار لأن المحفظة غير موجودة.
+    AZ-P3-16: لا تخطٍّ صامت مطلقاً. غياب صفّ المحفظة لم يكن سبباً مقبولاً لإسقاط
+    ساقي الدفتر: الصف يُنشأ بمنشئ ``wallet_service`` نفسه (لا منطق إنشاء محفظة
+    مكرر هنا) ثم يُكتب الدفتر كاملاً — فلا رصيد معلوم بلا قيد ولا قيد بلا رصيد.
+    وما لا يمكن تسويته حقاً (معلم بلا مدرسة نشطة: المحفظة صفّ تينانتي) يرفع
+    ``TxError`` صريحاً: الجلسة تبقى غير مسوّاة، وتنبيه إداري يُسجّل الخلل عبر
+    ``notify_settlement_failure``.
     """
-    from app.models.wallet import Wallet, WalletTransaction
+    from app.models.wallet import WalletTransaction
     from app.services.wallet_service import _generate_tx_hash, _money
 
-    school_id = getattr(locked.tutor, "school_id", None)
-    if not school_id:
-        logger.info(
-            "commission_ledger_skipped_no_school",
-            session_id=locked.id,
-            tutor_id=locked.tutor_id,
-        )
-        return
-
-    wallet = db.session.query(Wallet).filter_by(school_id=school_id, user_id=locked.tutor_id).with_for_update().first()
-    if wallet is None:
-        logger.info("commission_ledger_skipped_no_wallet", session_id=locked.id, tutor_id=locked.tutor_id)
-        return
+    wallet, school_id = _wallet_for_commission_settlement(locked)
 
     _money(amount_dec - commission_dec)  # صافي المعلم محفوظ في سجل العمولة — غير مستخدم هنا
     commission_dec = _money(commission_dec)
