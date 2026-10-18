@@ -1258,17 +1258,24 @@ class TestFamilyPayerMigration:
 
         with app.app_context():
             engine = db.engine
-            # الحالة الأساس: قاعدة الاختبار مبنية بـ create_all فأعمدتها موجودة؛
-            # نثبّت الجدول alembic_version عند رأس ما قبل هذه المراجعة ثم نحوّل لنا.
-            stamp = runner.invoke(args=["db", "stamp", "q0r1s2t3u4v5"])
+            # القاعدة هنا مبنية بـ create_all أي أنها في حالة الرأس فعلياً. تثبيت
+            # alembic_version عند مراجعة أقدم لا يغيّر المخطط، فأول ترحيل لاحق يُنشئ
+            # جدولاً/عموداً موجوداً أصلاً (absence_alert_logs، أعمدة tutor payment)
+            # يفشل بـ Duplicate*. لذلك نُنزل المخطط فعلياً إلى تلك المراجعة أولاً —
+            # وهذا يغطّي مسار downgrade أيضاً — ثم نُرقّيه، فتصبح الترقية حقيقية.
+            stamp = runner.invoke(args=["db", "stamp", "head"])
             assert stamp.exit_code == 0, f"stamp failed: {stamp.output}"
+            base = runner.invoke(args=["db", "downgrade", "q0r1s2t3u4v5"])
+            assert base.exit_code == 0, f"baseline downgrade failed: {base.output}"
 
             up = runner.invoke(args=["db", "upgrade"])
             assert up.exit_code == 0, f"upgrade failed: {up.output}"
             assert "payer_id" in _cols("subscriptions", engine)
             assert "payer_id" in _cols("manual_payments", engine)
 
-            down = runner.invoke(args=["db", "downgrade", "--", "-1"])
+            # مراجعة محدّدة لا خطوة واحدة: «-1» كانت تعني r1 وقت كتابة الاختبار،
+            # ثم صار رأس السلسلة أبعد منها فصارت تُنزل إلى u4 ولا تمسّ payer_id.
+            down = runner.invoke(args=["db", "downgrade", "q0r1s2t3u4v5"])
             assert down.exit_code == 0, f"downgrade failed: {down.output}"
             assert "payer_id" not in _cols("subscriptions", engine)
             assert "payer_id" not in _cols("manual_payments", engine)
