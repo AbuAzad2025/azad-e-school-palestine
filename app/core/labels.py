@@ -70,6 +70,11 @@ _LABELS: dict[str, dict[str, str]] = {
         "approved": "مقبول",
         "rejected": "مرفوض",
     },
+    "topup_status": {
+        "pending": "معلق",
+        "approved": "معتمد",
+        "rejected": "مرفوض",
+    },
 }
 
 

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ _('محفظة الابن') }}{% endblock %}
+{% from "macros/ui.html" import azad_stat_card %}
+{% block content %}
+<div class="azad-section">
+  <div>
+    <h1 class="page-title azad-title azad-mt-0" data-testid="child-wallet-title">{{ icon('wallet') }} {{ _('محفظة الابن') }}</h1>
+    <p class="page-subtitle">{{ child.name_ar or child.email }}</p>
+  </div>
+</div>
+
+{% if ledger is none %}
+{# AZ-P3-15: حالة فراغ صريحة — لا محفظة بعد، ولطلب الشحن أثر فوري لا #}
+<div class="azad-card azad-empty" role="status" data-testid="child-wallet-empty">
+  <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+  <p class="u-m-0">{{ _('لا توجد محفظة نشطة لابنك بعد.') }}</p>
+  <p class="azad-field__help u-m-0">{{ _('يمكنك إرسال طلب شحن — تُنشأ المحفظة بعد اعتماد إدارة المدرسة ويُضاف المبلغ إليها.') }}</p>
+</div>
+{% else %}
+<div class="azad-quick-actions u-grid-cards--fit" data-testid="child-wallet-summary">
+  {{ azad_stat_card(ledger.summary.balance ~ ' ' ~ ledger.summary.currency, _('الرصيد الحالي'), 'wallet', 'var(--azad-green)') }}
+  {{ azad_stat_card(ledger.summary.total_received ~ ' ' ~ ledger.summary.currency, _('إجمالي الوارد'), 'arrow-down-circle', 'var(--azad-blue)') }}
+  {{ azad_stat_card(ledger.summary.total_sent ~ ' ' ~ ledger.summary.currency, _('إجمالي الصادر'), 'arrow-up-circle', 'var(--azad-red)') }}
+</div>
+{% endif %}
+
+{# طلب الشحن: يُنشئ طلباً معلّقاً فقط — لا رصيد قبل اعتماد الإدارة #}
+<div class="azad-section azad-mt-6">
+  <h2 class="section-title">{{ _('طلب شحن المحفظة') }}</h2>
+  <div class="azad-card azad-card--narrow">
+    <form method="post" action="{{ url_for('family.child_topup', student_id=student_id) }}" data-testid="child-topup-form">
+      {{ topup_form.hidden_tag() }}
+      <div class="azad-field">
+        {{ topup_form.amount.label(class="azad-field__label") }}
+        {{ topup_form.amount(class="azad-field__input") }}
+        {% for error in topup_form.amount.errors %}
+        <ul class="form-errors"><li>{{ error }}</li></ul>
+        {% endfor %}
+      </div>
+      <div class="azad-field">
+        {{ topup_form.note.label(class="azad-field__label") }}
+        {{ topup_form.note(class="azad-field__input") }}
+      </div>
+      <div class="form-actions">
+        {{ topup_form.submit(class="azad-btn") }}
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if ledger is not none %}
+<div class="azad-section azad-mt-6">
+  <h2 class="section-title">{{ _('سجل الحركات') }}</h2>
+  {% if ledger.rows %}
+  <div class="azad-card azad-card--wide">
+    <table class="azad-table" data-testid="child-wallet-transactions">
+      <thead>
+        <tr>
+          <th scope="col">{{ _('النوع') }}</th>
+          <th scope="col">{{ _('الوصف') }}</th>
+          <th scope="col">{{ _('الاتجاه') }}</th>
+          <th scope="col">{{ _('المبلغ') }}</th>
+          <th scope="col">{{ _('التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in ledger.rows %}
+        <tr data-testid="child-wallet-tx-row">
+          <td>{{ t.type_label }}</td>
+          <td>{{ t.description }}</td>
+          <td>{{ t.direction_label }}</td>
+          <td class="u-text-{% if t.direction == 'in' %}success{% else %}danger{% endif %}">
+            {%- if t.direction == 'in' %}+{% else %}-{% endif -%}
+            <bdi>{{ t.amount }}</bdi>
+          </td>
+          <td><bdi>{{ t.created_at.strftime('%Y-%m-%d') if t.created_at else '—' }}</bdi></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="azad-pagination u-mt-2" aria-label="{{ _('ترقيم الصفحات') }}" data-testid="child-wallet-pagination">
+    {% if ledger.has_prev %}
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_wallet', student_id=student_id, page=ledger.page - 1) }}">← {{ _('الأحدث') }}</a>
+    {% endif %}
+    <span class="azad-field__help">{{ _('صفحة %(page)s من %(pages)s', page=ledger.page, pages=ledger.pages) }}</span>
+    {% if ledger.has_next %}
+    <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_wallet', student_id=student_id, page=ledger.page + 1) }}">{{ _('الأقدم') }} →</a>
+    {% endif %}
+  </nav>
+  {% else %}
+  <div class="azad-card azad-empty" role="status" data-testid="child-wallet-no-transactions">
+    <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+    <p class="u-m-0">{{ _('لا توجد حركات مالية مسجّلة على محفظة ابنك بعد.') }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# طلبات هذا الابن: حالة كل طلب مصدر الحقيقة الوحيد #}
+<div class="azad-section azad-mt-6">
+  <h2 class="section-title">{{ _('طلبات الشحن لهذا الابن') }}</h2>
+  {% if topups %}
+  <div class="azad-card azad-card--wide">
+    <table class="azad-table" data-testid="child-topup-requests">
+      <thead>
+        <tr>
+          <th scope="col">{{ _('المبلغ') }}</th>
+          <th scope="col">{{ _('الحالة') }}</th>
+          <th scope="col">{{ _('ملاحظة') }}</th>
+          <th scope="col">{{ _('التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in topups %}
+        <tr data-testid="child-topup-request">
+          <td><bdi>{{ r.amount }}</bdi> <bdi>{{ r.currency }}</bdi></td>
+          <td><span class="badge-status badge-{% if r.status == 'approved' %}ok{% elif r.status == 'rejected' %}err{% else %}warn{% endif %}">{{ status_label('topup_status', r.status) }}</span></td>
+          <td>{{ r.note or '—' }}</td>
+          <td><bdi>{{ r.created_at.strftime('%Y-%m-%d') if r.created_at else '—' }}</bdi></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="azad-card azad-empty" role="status" data-testid="child-topup-empty">
+    <p class="u-m-0">{{ _('لا طلبات شحن بعد.') }}</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

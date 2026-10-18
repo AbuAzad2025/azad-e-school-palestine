@@ -152,4 +152,7 @@
   <div class="azad-empty__title">{{ _('لا حركات في الدفتر بهذه الفلاتر.') }}</div>
 </div>
 {% endif %}
+{#- AZ-P3-15: مراجعة طلبات شحن أولياء الأمور — لا رصيد قبل قرار إداري -#}
+{% include "admin/_topup_queue.html" %}
+
 {% endblock %}

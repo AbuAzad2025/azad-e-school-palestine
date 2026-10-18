@@ -41,6 +41,8 @@ TX_ADMIN_ADJUSTMENT = "admin_adjustment"
 TX_REFUND = "refund"
 # AZ-P1-07: قيد مقابل لحركة معكوسة — أصلاً جديد في الدفتر لا تعديل على غيره.
 TX_REVERSAL = "reversal"
+# AZ-P2-13: تدفّق دفع الجلسة الخصوصية للمعلم — منسوخ من tutoring.py لأغراض التسمية هنا.
+TX_TUTOR_SESSION_CREDIT = "tutor_session_credit"
 
 
 def _money(value: Decimal | float | int | str) -> Decimal:
@@ -106,7 +108,7 @@ def get_or_create_wallet(
 
 
 def find_wallet(school_id: int, user_id: int) -> Any | None:
-    """صف المحفظة إن وجد — بلا إنشاء (فروقان عن get_or_create_wallet).
+    """صف المحفظة إن وجد — بلا إنشاء (بخلاف get_or_create_wallet).
 
     AZ-P3-14: حالة «لا محفظة نشطة» في الواجهة تحتاج تمييزاً صريحاً عن
     الرصيد صفر، فالمحفظة الغائبة ليست رصيداً صفراً — هي لا وجود.
@@ -114,6 +116,80 @@ def find_wallet(school_id: int, user_id: int) -> Any | None:
     from app.models.wallet import Wallet
 
     return Wallet.query.filter_by(school_id=school_id, user_id=user_id).first()
+
+
+# ════════════════════════════════════════════════════════════════════
+# AZ-P3-14/15 — عرض السجل المشترك: مصدر وحيد لتمثيل حالة المحفظة
+# وتسمياتها (تستهلكه واجهتا «محفظتي» و«محفظة الابن»).
+# ════════════════════════════════════════════════════════════════════
+
+
+def transaction_type_label(tx_type: str) -> str:
+    """تسمية عربية لنوع القيد — والمصادر غير المعروفة تُعرض كما هي."""
+    return {
+        TX_TRANSFER: _("تحويل بين حسابين"),
+        TX_TUTOR_COMMISSION: _("عمولة المنصة"),
+        TX_TUTOR_PAYOUT: _("سحب أرباح"),
+        TX_SUBSCRIPTION_CREDIT: _("فائض اشتراك"),
+        TX_ADMIN_ADJUSTMENT: _("إيداع إداري"),
+        TX_REFUND: _("استرداد"),
+        TX_REVERSAL: _("عكس حركة"),
+        TX_TUTOR_SESSION_CREDIT: _("قبض جلسة خصوصية"),
+    }.get(tx_type, tx_type)
+
+
+def direction_label(direction: str) -> str:
+    """وارِد/صارِد حسب اتجاه القيد على المحفظة المعنية."""
+    return {"in": _("وارِد"), "out": _("صارِد")}[direction]
+
+
+def decorate_transactions(rows: list[Any], wallet_id: int) -> list[dict]:
+    """حوّل صفوف الدفتر إلى عناصر عرض (اتجاه + تسمية النوع) — بلا N+1.
+
+    الاتجاه يُقرأ من أطراف القيد بمُعرّف المحفظة الصلبة، فلا يستدعي
+    ``t.source_wallet`` المهدّر للاستعلامات المفاجئة.
+    """
+    items: list[dict] = []
+    for t in rows:
+        direction = "out" if t.source_wallet_id == wallet_id else "in"
+        items.append(
+            {
+                "id": t.id,
+                "amount": t.amount,
+                "direction": direction,
+                "direction_label": direction_label(direction),
+                "type_label": transaction_type_label(t.transaction_type),
+                "description": t.description,
+                "created_at": t.created_at,
+            }
+        )
+    return items
+
+
+def user_ledger_page(school_id: int, user_id: int, page: int = 1, per_page: int = 10) -> dict | None:
+    """حالة المحفظة + صفحة واحدة من السجل — الواجهتان تستلهمان منها.
+
+    ``None`` يعني لا محفظة نشطة (حالة فراغ صريحة أعلى)، والترقيم مبني
+    على عدّاد السجل نفسه الذي يستعمله get_transaction_history — فلا ينحرف
+    عدّ الصفحات عن الصفوف الفعلية.
+    """
+    wallet = find_wallet(school_id, user_id)
+    if wallet is None:
+        return None
+    page = max(page, 1)
+    summary = get_wallet_summary(school_id, user_id)
+    rows = get_transaction_history(school_id, user_id, limit=per_page, offset=(page - 1) * per_page)
+    pages = max((summary["transaction_count"] + per_page - 1) // per_page, 1)
+    return {
+        "wallet": wallet,
+        "summary": summary,
+        # «rows» وليس «items»: اسم items يلتقطه Jinja كأسلوب dict.items()
+        "rows": decorate_transactions(rows, wallet.id),
+        "page": page,
+        "pages": pages,
+        "has_next": page < pages,
+        "has_prev": page > 1,
+    }
 
 
 def get_balance(
@@ -710,3 +786,154 @@ def reverse_transaction(
         operator=operator_id,
     )
     return result, None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AZ-P3-15 — طلب شحن محفظة الابن من ولي الأمر (لا رصيد قبل اعتماد يدوي)
+# ═══════════════════════════════════════════════════════════════════════════
+# الطلب صف مستقل بهوية الدافع، والرصيد لا يتحرك إلا باعتماد إداري يمرّ عبر
+# admin_deposit — فلا يمنح هذا القسم ولي الأمر أي قدرة على الإثراء الذاتي.
+
+# سقف الطلب الواحد: حدّ عملي يمنع طلبات فلكية تراكم أرصدة بغير مراجعة.
+TOPUP_REQUEST_MAX = Decimal("10000.00")
+
+
+def request_topup(
+    school_id: int,
+    parent_id: int,
+    child_user_id: int,
+    amount: Decimal,
+    note: str = "",
+) -> tuple[Any, str | None]:
+    """ينشئ طلب شحن معلّقاً لابن ولي أمر — بلا تحويل مال في هذه الخطوة.
+
+    يُرفض: المبلغ غير الموجب، وما يتجاوز ``TOPUP_REQUEST_MAX``، وابنٌ ليس
+    عضواً نشطاً في المدرسة، وطلب معلّق مكرر لنفس الابن (طلب واحد قائم
+    لكل ولي أمر وابن — فلا طابور طلبات وهمي على طاولة المراجعة).
+    """
+    amount_dec = _money(amount)
+    if amount_dec <= 0:
+        return None, _("المبلغ يجب أن يكون أكبر من صفر.")
+    if amount_dec > TOPUP_REQUEST_MAX:
+        return None, _("مبلغ طلب الشحن يتجاوز الحد المسموح.")
+    if not user_has_active_link_in_school(child_user_id, school_id):
+        return None, _("الطالب ليس عضواً نشطاً في هذه المدرسة.")
+
+    from app.models.wallet import WalletTopupRequest
+
+    def _create():
+        pending_duplicate = WalletTopupRequest.query.filter_by(
+            school_id=school_id, parent_id=parent_id, child_user_id=child_user_id, status="pending"
+        ).first()
+        if pending_duplicate is not None:
+            raise TxError(_("لديك طلب شحن معلّق لهذا الابن بالفعل."))
+        req = WalletTopupRequest(
+            school_id=school_id,
+            parent_id=parent_id,
+            child_user_id=child_user_id,
+            amount=amount_dec,
+            currency="ILS",
+            status="pending",
+            note=(note or "").strip() or None,
+        )
+        db.session.add(req)
+        return req
+
+    try:
+        created = tx(_create)
+    except TxError as exc:
+        return None, str(exc)
+    logger.info("wallet_topup_requested", request_id=created.id, parent_id=parent_id, child_id=child_user_id)
+    return created, None
+
+
+def list_child_topups(school_id: int, parent_id: int, child_user_id: int, limit: int = 10) -> list[Any]:
+    """طلبات هذا الولي لابنه المرتبط وحده — الأحدث أولاً (لا صف ولي أمر آخر)."""
+    from app.models.wallet import WalletTopupRequest
+
+    return (
+        WalletTopupRequest.query.filter_by(school_id=school_id, parent_id=parent_id, child_user_id=child_user_id)
+        .order_by(WalletTopupRequest.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def list_pending_topups(school_id: int | None = None) -> list[Any]:
+    """طلبات المراجعة المعلّقة — بنطاق مدرسة عند تمريرها، وبالنطاق الكامل للمنصة عند غيابه.
+
+    ``joinedload`` للأطراف الثلاثة لأن جدول المراجعة يعرض المدرسة وولي الأمر
+    والابن معاً؛ تحميلها كسولاً كان سيولّد N+1 على كل صف.
+    """
+    from sqlalchemy.orm import joinedload
+
+    from app.models.wallet import WalletTopupRequest
+
+    query = WalletTopupRequest.query.filter_by(status="pending").options(
+        joinedload(WalletTopupRequest.child),
+        joinedload(WalletTopupRequest.parent),
+        joinedload(WalletTopupRequest.school),
+    )
+    if school_id is not None:
+        query = query.filter_by(school_id=school_id)
+    return query.order_by(WalletTopupRequest.created_at.asc()).limit(200).all()
+
+
+def review_topup(
+    request_id: int,
+    school_id: int,
+    operator_id: int | None,
+    approve: bool,
+    reason: str = "",
+) -> tuple[Any, str | None]:
+    """يعتمد الطلب أو يرفضه مرة واحدة — والاعتماد يُثري الرصيد في نفس المعاملة.
+
+    الصف يُقفل بـ ``with_for_update`` فلا يعتمد طلبان متزامنان نفس الطلب
+    مرتين، والحالة تُقرأ بعد الإقفال لا قبله، ثم ``admin_deposit`` يكتب
+    الرصيد والقيد بمُعرّف تفرد مستمد من مُعرّف الطلب نفسه — فإعادة الاعتماد
+    لا تكرر قيداً ولا مالاً.
+    """
+    from app.models.wallet import WalletTopupRequest
+
+    def _review():
+        req = (
+            db.session.query(WalletTopupRequest).filter_by(id=request_id, school_id=school_id).with_for_update().first()
+        )
+        if req is None:
+            raise TxError(_("طلب الشحن غير موجود في هذه المدرسة."))
+        if req.status != "pending":
+            raise TxError(_("تمت معالجة هذا الطلب مسبقاً."))
+
+        from datetime import UTC, datetime
+
+        if approve:
+            credit, error = admin_deposit(
+                school_id=school_id,
+                target_user_id=req.child_user_id,
+                amount=req.amount,
+                operator_id=operator_id,
+                note=req.note or _("شحن محفظة بموافقة إدارية"),
+                idempotency_key=f"wallet_topup:{req.id}",
+            )
+            if error or credit is None:
+                raise TxError(error or _("تعذّر إتمام شحن المحفظة."))
+            req.status = "approved"
+        else:
+            req.status = "rejected"
+        req.handled_by = operator_id
+        req.handled_at = datetime.now(UTC)
+        if reason.strip():
+            req.note = reason.strip()
+        return req
+
+    try:
+        reviewed = tx(_review)
+    except TxError as exc:
+        return None, str(exc)
+    logger.info(
+        "wallet_topup_%s" % ("approved" if approve else "rejected"),
+        request_id=reviewed.id,
+        school_id=school_id,
+        operator=operator_id,
+    )
+    return reviewed, None

@@ -37,6 +37,7 @@
         <div class="item-actions">
             <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('family.child_progress', student_id=link.student_id) }}">{{ _('التقدم') }}</a>
             <a class="azad-btn-outline azad-btn-sm" data-testid="family-child-grades" href="{{ url_for('family.child_grades', student_id=link.student_id) }}">{{ _('الدرجات') }}</a>
+            <a class="azad-btn-outline azad-btn-sm" data-testid="family-child-wallet" href="{{ url_for('family.child_wallet', student_id=link.student_id) }}">{{ _('محفظة الابن') }}</a>
             <form class="u-inline" method="post" action="{{ url_for('family.do_remove', link_id=link.id) }}" data-confirm="{{ _('هل أنت متأكد من إلغاء الربط؟') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="azad-btn-outline azad-btn-sm u-text-danger">{{ _('إلغاء الربط') }}</button>

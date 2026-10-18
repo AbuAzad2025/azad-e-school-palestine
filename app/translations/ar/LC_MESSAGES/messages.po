@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-17 20:19+0300\n"
+"POT-Creation-Date: 2026-10-18 09:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -131,60 +131,60 @@ msgstr ""
 msgid "انتهت صلاحية الجلسة. حدّث الصفحة ثم حاول مجدداً."
 msgstr ""
 
-#: app/core/labels.py:93
+#: app/core/labels.py:98
 msgid "مدير النظام"
 msgstr ""
 
-#: app/core/labels.py:94
+#: app/core/labels.py:99
 msgid "مدير مدرسة"
 msgstr ""
 
-#: app/core/labels.py:95 app/modules/auth/forms.py:31
+#: app/core/labels.py:100 app/modules/auth/forms.py:31
 #: app/templates/schools/onboarding.html:62
 msgid "معلم"
 msgstr ""
 
-#: app/core/labels.py:96 app/modules/auth/forms.py:31
+#: app/core/labels.py:101 app/modules/auth/forms.py:31
 #: app/templates/admin/school_admin_dashboard.html:12
 #: app/templates/auth/dashboard.html:75 app/templates/landing.html:133
 msgid "طالب"
 msgstr ""
 
-#: app/core/labels.py:97 app/modules/auth/forms.py:31
+#: app/core/labels.py:102 app/modules/auth/forms.py:31
 msgid "ولي أمر"
 msgstr ""
 
-#: app/core/labels.py:98
+#: app/core/labels.py:103
 msgid "طلب معلق"
 msgstr ""
 
-#: app/core/labels.py:99 app/templates/admin/payouts.html:17
+#: app/core/labels.py:104 app/templates/admin/payouts.html:17
 msgid "مقبول"
 msgstr ""
 
-#: app/core/labels.py:100 app/templates/admin/payouts.html:17
+#: app/core/labels.py:105 app/templates/admin/payouts.html:17
 msgid "مرفوض"
 msgstr ""
 
-#: app/core/labels.py:101 app/modules/tutoring/forms.py:18
+#: app/core/labels.py:106 app/modules/tutoring/forms.py:18
 msgid "أونلاين وحضوري"
 msgstr ""
 
-#: app/core/labels.py:102 app/modules/tutoring/forms.py:18
+#: app/core/labels.py:107 app/modules/tutoring/forms.py:18
 #: app/modules/tutoring/forms.py:35 app/modules/tutoring/forms.py:49
 msgid "أونلاين"
 msgstr ""
 
-#: app/core/labels.py:103 app/modules/tutoring/forms.py:18
+#: app/core/labels.py:108 app/modules/tutoring/forms.py:18
 #: app/modules/tutoring/forms.py:35 app/modules/tutoring/forms.py:49
 msgid "حضوري"
 msgstr ""
 
-#: app/core/labels.py:104
+#: app/core/labels.py:109
 msgid "مطلوبة"
 msgstr ""
 
-#: app/core/labels.py:105 app/templates/admin/dashboard.html:128
+#: app/core/labels.py:110 app/templates/admin/dashboard.html:128
 #: app/templates/admin/dashboard.html:131
 #: app/templates/admin/school_detail.html:32
 #: app/templates/admin/schools_list.html:26
@@ -192,38 +192,38 @@ msgstr ""
 msgid "نشطة"
 msgstr ""
 
-#: app/core/labels.py:106
+#: app/core/labels.py:111
 msgid "مكتملة"
 msgstr ""
 
-#: app/core/labels.py:107 app/templates/admin/dashboard.html:142
+#: app/core/labels.py:112 app/templates/admin/dashboard.html:142
 #: app/templates/admin/dashboard.html:145
 #: app/templates/admin/subscriptions_list.html:12
 msgid "منتهية"
 msgstr ""
 
-#: app/core/labels.py:108
+#: app/core/labels.py:113
 msgid "ملغاة"
 msgstr ""
 
-#: app/core/labels.py:109 app/templates/admin/payouts.html:17
+#: app/core/labels.py:114 app/templates/admin/payouts.html:17
 #: app/templates/billing/invoice.html:33
 msgid "معلق"
 msgstr ""
 
-#: app/core/labels.py:110
+#: app/core/labels.py:115
 msgid "مدفوع"
 msgstr ""
 
-#: app/core/labels.py:111
+#: app/core/labels.py:116
 msgid "معتمد"
 msgstr ""
 
-#: app/core/labels.py:112
+#: app/core/labels.py:117
 msgid "فاشل"
 msgstr ""
 
-#: app/core/labels.py:113 app/services/export.py:29
+#: app/core/labels.py:118 app/services/export.py:29
 #: app/templates/admin/certificates.html:23
 #: app/templates/admin/user_detail.html:36
 #: app/templates/admin/user_detail.html:62
@@ -234,38 +234,38 @@ msgstr ""
 msgid "نشط"
 msgstr ""
 
-#: app/core/labels.py:114 app/templates/billing/invoice.html:33
+#: app/core/labels.py:119 app/templates/billing/invoice.html:33
 msgid "ملغي"
 msgstr ""
 
-#: app/core/labels.py:115 app/modules/admin/routes.py:495
-#: app/modules/admin/routes.py:505 app/modules/admin/routes.py:515
+#: app/core/labels.py:120 app/modules/admin/routes.py:500
+#: app/modules/admin/routes.py:510 app/modules/admin/routes.py:520
 msgid "بانتظار المراجعة"
 msgstr ""
 
-#: app/core/labels.py:116 app/templates/content/_lesson_row.html:6
+#: app/core/labels.py:121 app/templates/content/_lesson_row.html:6
 #: app/templates/content/_lesson_row.html:15
 msgid "مسودة"
 msgstr ""
 
-#: app/core/labels.py:117 app/templates/content/_lesson_row.html:6
+#: app/core/labels.py:122 app/templates/content/_lesson_row.html:6
 msgid "منشور"
 msgstr ""
 
-#: app/core/labels.py:118
+#: app/core/labels.py:123
 msgid "مؤرشف"
 msgstr ""
 
-#: app/core/labels.py:119 app/templates/progress/my_progress.html:25
+#: app/core/labels.py:124 app/templates/progress/my_progress.html:25
 #: app/templates/progress/student_detail.html:18
 msgid "قيد التنفيذ"
 msgstr ""
 
-#: app/core/labels.py:120
+#: app/core/labels.py:125
 msgid "مُسلّم"
 msgstr ""
 
-#: app/core/labels.py:121
+#: app/core/labels.py:126
 msgid "مُصحّح"
 msgstr ""
 
@@ -330,244 +330,225 @@ msgstr ""
 msgid "المستخدم ليس عضواً نشطاً في هذه المدرسة"
 msgstr ""
 
-#: app/modules/wallet_api.py:318 app/modules/wallet_ui.py:32
-#: app/services/wallet_service.py:592 app/templates/admin/wallet_ledger.html:20
+#: app/modules/wallet_api.py:318 app/services/wallet_service.py:134
+#: app/services/wallet_service.py:668 app/templates/admin/wallet_ledger.html:20
 msgid "إيداع إداري"
 msgstr ""
 
-#: app/modules/wallet_ui.py:28
-msgid "تحويل بين حسابين"
-msgstr ""
-
-#: app/modules/wallet_ui.py:29
-msgid "عمولة المنصة"
-msgstr ""
-
-#: app/modules/wallet_ui.py:30
-msgid "سحب أرباح"
-msgstr ""
-
-#: app/modules/wallet_ui.py:31
-msgid "فائض اشتراك"
-msgstr ""
-
-#: app/modules/wallet_ui.py:33
-msgid "استرداد"
-msgstr ""
-
-#: app/modules/wallet_ui.py:34
-msgid "عكس حركة"
-msgstr ""
-
-#: app/modules/wallet_ui.py:38
-msgid "وارِد"
-msgstr ""
-
-#: app/modules/wallet_ui.py:39
-msgid "صارِد"
-msgstr ""
-
-#: app/modules/wallet_ui.py:68
+#: app/modules/wallet_ui.py:32
 msgid "لا توجد مدرسة نشطة لحسابك لعرض محفظتها."
 msgstr ""
 
-#: app/modules/admin/routes.py:281
+#: app/modules/admin/routes.py:286
 msgid "لا يمكنك تعطيل حسابك الخاص"
 msgstr ""
 
-#: app/modules/admin/routes.py:288
+#: app/modules/admin/routes.py:293
 msgid "تم تحديث حالة المستخدم"
 msgstr ""
 
-#: app/modules/admin/routes.py:303
+#: app/modules/admin/routes.py:308
 msgid "بيانات غير كافية"
 msgstr ""
 
-#: app/modules/admin/routes.py:310
+#: app/modules/admin/routes.py:315
 msgid "إجراء غير مسموح"
 msgstr ""
 
-#: app/modules/admin/routes.py:339
+#: app/modules/admin/routes.py:344
 msgid "تم تنفيذ الإجراء"
 msgstr ""
 
-#: app/modules/admin/routes.py:361
+#: app/modules/admin/routes.py:366
 #, python-format
 msgid ""
 "وضع انتحال الصفة: أنت تتصفح الآن كـ %(name)s — استخدم شريط الانتحال "
 "للعودة."
 msgstr ""
 
-#: app/modules/admin/routes.py:382
+#: app/modules/admin/routes.py:387
 msgid "عدت إلى حسابك الأصلي."
 msgstr ""
 
-#: app/modules/admin/routes.py:465
+#: app/modules/admin/routes.py:470
 msgid "تم إلغاء الاشتراك"
 msgstr ""
 
-#: app/modules/admin/routes.py:485
+#: app/modules/admin/routes.py:490
 msgid "مُرسل"
 msgstr ""
 
-#: app/modules/admin/routes.py:526 app/modules/admin/routes.py:536
-#: app/modules/admin/routes.py:546
+#: app/modules/admin/routes.py:531 app/modules/admin/routes.py:541
+#: app/modules/admin/routes.py:551
 msgid "مُعتمد / نشط"
 msgstr ""
 
-#: app/modules/admin/routes.py:528 app/modules/admin/routes.py:538
+#: app/modules/admin/routes.py:533 app/modules/admin/routes.py:543
 msgid "المشرف"
 msgstr ""
 
-#: app/modules/admin/routes.py:557 app/modules/admin/routes.py:567
+#: app/modules/admin/routes.py:562 app/modules/admin/routes.py:572
 msgid "منتهي الصلاحية"
 msgstr ""
 
-#: app/modules/admin/routes.py:628
+#: app/modules/admin/routes.py:633
 msgid "فشل اعتماد الدفع"
 msgstr ""
 
-#: app/modules/admin/routes.py:638
+#: app/modules/admin/routes.py:643
 msgid "تم اعتماد الدفع وتفعيل الاشتراك"
 msgstr ""
 
-#: app/modules/admin/routes.py:676
+#: app/modules/admin/routes.py:681
 msgid "فشل رفض الدفع"
 msgstr ""
 
-#: app/modules/admin/routes.py:686
+#: app/modules/admin/routes.py:691
 msgid "تم رفض الدفع"
 msgstr ""
 
-#: app/modules/admin/routes.py:744 app/modules/admin/routes.py:796
+#: app/modules/admin/routes.py:749 app/modules/admin/routes.py:801
 msgid "DATABASE_URL غير مضبوط"
 msgstr ""
 
-#: app/modules/admin/routes.py:761
+#: app/modules/admin/routes.py:766
 msgid "تم إنشاء النسخة الاحتياطية بنجاح"
 msgstr ""
 
-#: app/modules/admin/routes.py:764
+#: app/modules/admin/routes.py:769
 #, python-format
 msgid "فشل النسخ الاحتياطي: %(detail)s"
 msgstr ""
 
-#: app/modules/admin/routes.py:768
+#: app/modules/admin/routes.py:773
 msgid "لم يتم العثور على pg_dump — تأكد من تثبيت PostgreSQL"
 msgstr ""
 
-#: app/modules/admin/routes.py:770 app/modules/admin/routes.py:837
+#: app/modules/admin/routes.py:775 app/modules/admin/routes.py:842
 #, python-format
 msgid "خطأ: %(detail)s"
 msgstr ""
 
-#: app/modules/admin/routes.py:786
+#: app/modules/admin/routes.py:791
 msgid "الملف غير موجود"
 msgstr ""
 
-#: app/modules/admin/routes.py:791
+#: app/modules/admin/routes.py:796
 msgid "يجب كتابة 'yes — restore' للتأكيد"
 msgstr ""
 
-#: app/modules/admin/routes.py:814
+#: app/modules/admin/routes.py:819
 msgid "فشل تسجيل عملية الاستعادة"
 msgstr ""
 
-#: app/modules/admin/routes.py:828
+#: app/modules/admin/routes.py:833
 msgid "تمت الاستعادة بنجاح"
 msgstr ""
 
-#: app/modules/admin/routes.py:831
+#: app/modules/admin/routes.py:836
 #, python-format
 msgid "فشل الاستعادة: %(detail)s"
 msgstr ""
 
-#: app/modules/admin/routes.py:835
+#: app/modules/admin/routes.py:840
 msgid "لم يتم العثور على psql — تأكد من تثبيت PostgreSQL"
 msgstr ""
 
-#: app/modules/admin/routes.py:914
+#: app/modules/admin/routes.py:919
 msgid "غير مسماً"
 msgstr ""
 
-#: app/modules/admin/routes.py:978
+#: app/modules/admin/routes.py:983
 msgid "فشل حفظ الإعدادات"
 msgstr ""
 
-#: app/modules/admin/routes.py:981
+#: app/modules/admin/routes.py:986
 msgid "تم حفظ الإعدادات"
 msgstr ""
 
-#: app/modules/admin/routes.py:1016 app/modules/admin/routes.py:1038
+#: app/modules/admin/routes.py:1021 app/modules/admin/routes.py:1043
 msgid "هذا المستخدم ليس في حالة انتظار"
 msgstr ""
 
-#: app/modules/admin/routes.py:1027
+#: app/modules/admin/routes.py:1032
 msgid "تم قبول المستخدم بنجاح. يمكنه الآن تسجيل الدخول."
 msgstr ""
 
-#: app/modules/admin/routes.py:1046
+#: app/modules/admin/routes.py:1051
 msgid "تم رفض تسجيل المستخدم."
 msgstr ""
 
-#: app/modules/admin/routes.py:1170
+#: app/modules/admin/routes.py:1178
 msgid "تعذّر عكس الحركة."
 msgstr ""
 
-#: app/modules/admin/routes.py:1190
+#: app/modules/admin/routes.py:1198
 msgid "تم عكس الحركة بقيد مقابل."
 msgstr ""
 
-#: app/modules/admin/routes.py:1221
+#: app/modules/admin/routes.py:1229
 msgid "اختر المدرسة والمستخدم قبل الإيداع."
 msgstr ""
 
-#: app/modules/admin/routes.py:1227 app/modules/admin/routes.py:1230
+#: app/modules/admin/routes.py:1235 app/modules/admin/routes.py:1238
+#: app/modules/family/routes.py:146
 msgid "المبلغ غير صالح — أدخل رقماً موجباً."
 msgstr ""
 
-#: app/modules/admin/routes.py:1242
+#: app/modules/admin/routes.py:1250
 msgid "تعذّر تنفيذ الإيداع."
 msgstr ""
 
-#: app/modules/admin/routes.py:1262
+#: app/modules/admin/routes.py:1270
 msgid "تم إيداع المبلغ في محفظة المستخدم."
 msgstr ""
 
-#: app/modules/admin/routes.py:1432
+#: app/modules/admin/routes.py:1440
 msgid "نص الرد مطلوب"
 msgstr ""
 
-#: app/modules/admin/routes.py:1442
+#: app/modules/admin/routes.py:1450
 msgid "تم إرسال الرد بنجاح"
 msgstr ""
 
-#: app/modules/admin/routes.py:1444
+#: app/modules/admin/routes.py:1452
 msgid "فشل إرسال الرد"
 msgstr ""
 
-#: app/modules/admin/routes.py:1489 app/modules/admin/routes.py:1515
+#: app/modules/admin/routes.py:1497 app/modules/admin/routes.py:1523
 msgid "طلب السحب غير موجود."
 msgstr ""
 
-#: app/modules/admin/routes.py:1491 app/modules/admin/routes.py:1517
+#: app/modules/admin/routes.py:1499 app/modules/admin/routes.py:1525
 msgid "تمت مراجعة طلب السحب مسبقاً."
 msgstr ""
 
-#: app/modules/admin/routes.py:1507
+#: app/modules/admin/routes.py:1515
 msgid "فشل اعتماد طلب السحب"
 msgstr ""
 
-#: app/modules/admin/routes.py:1509
+#: app/modules/admin/routes.py:1517
 msgid "تم اعتماد طلب السحب."
 msgstr ""
 
-#: app/modules/admin/routes.py:1530
+#: app/modules/admin/routes.py:1538
 msgid "فشل رفض طلب السحب"
 msgstr ""
 
-#: app/modules/admin/routes.py:1532
+#: app/modules/admin/routes.py:1540
 msgid "تم رفض طلب السحب."
+msgstr ""
+
+#: app/modules/admin/routes.py:1590
+msgid "تعذّرت معالجة طلب الشحن."
+msgstr ""
+
+#: app/modules/admin/routes.py:1612
+msgid "تم اعتماد طلب الشحن وإثراء محفظة الابن."
+msgstr ""
+
+#: app/modules/admin/routes.py:1612
+msgid "تم رفض طلب الشحن."
 msgstr ""
 
 #: app/modules/ai/routes.py:55 app/modules/ai/routes.py:118
@@ -681,7 +662,8 @@ msgstr ""
 #: app/templates/admin/wallet_ledger.html:94
 #: app/templates/assessment/question_bank.html:19
 #: app/templates/billing/discount_list.html:18
-#: app/templates/calendar/index.html:22 app/templates/wallet/index.html:33
+#: app/templates/calendar/index.html:22
+#: app/templates/family/child_wallet.html:59 app/templates/wallet/index.html:33
 msgid "النوع"
 msgstr ""
 
@@ -968,7 +950,11 @@ msgstr ""
 #: app/modules/billing/forms.py:42 app/templates/admin/payouts.html:11
 #: app/templates/admin/wallet_ledger.html:40
 #: app/templates/admin/wallet_ledger.html:95
-#: app/templates/billing/invoice.html:41 app/templates/wallet/index.html:36
+#: app/templates/admin/wallet_ledger.html:166
+#: app/templates/billing/invoice.html:41
+#: app/templates/family/child_wallet.html:62
+#: app/templates/family/child_wallet.html:108
+#: app/templates/wallet/index.html:36
 msgid "المبلغ"
 msgstr ""
 
@@ -1264,14 +1250,29 @@ msgstr ""
 msgid "تم الإزالة"
 msgstr ""
 
-#: app/modules/family/forms.py:10 app/templates/family/generate_code.html:3
+#: app/modules/family/forms.py:12 app/templates/family/generate_code.html:3
 #: app/templates/family/generate_code.html:5
 #: app/templates/family/generate_code.html:8
 msgid "رمز الربط"
 msgstr ""
 
-#: app/modules/family/forms.py:11
+#: app/modules/family/forms.py:13
 msgid "ربط الحساب"
+msgstr ""
+
+#: app/modules/family/forms.py:20
+msgid "مبلغ الشحن"
+msgstr ""
+
+#: app/modules/family/forms.py:24 app/templates/admin/wallet_ledger.html:167
+#: app/templates/family/child_wallet.html:110
+#: app/templates/grades/rubric_grade.html:19
+#: app/templates/grades/rubric_grade.html:34
+msgid "ملاحظة"
+msgstr ""
+
+#: app/modules/family/forms.py:25
+msgid "إرسال طلب الشحن"
 msgstr ""
 
 #: app/modules/family/routes.py:39
@@ -1280,6 +1281,14 @@ msgstr ""
 
 #: app/modules/family/routes.py:51
 msgid "تم إلغاء الربط."
+msgstr ""
+
+#: app/modules/family/routes.py:142
+msgid "تحقق من بيانات النموذج قبل الإرسال."
+msgstr ""
+
+#: app/modules/family/routes.py:158
+msgid "تم إرسال طلب الشحن — بانتظار اعتماد إدارة المدرسة."
 msgstr ""
 
 #: app/modules/grades/forms.py:10
@@ -2047,8 +2056,8 @@ msgstr ""
 msgid "مهلة الدفعة المعلّقة يجب أن تكون أكبر من صفر."
 msgstr ""
 
-#: app/services/billing.py:365 app/services/wallet_service.py:181
-#: app/services/wallet_service.py:338
+#: app/services/billing.py:365 app/services/wallet_service.py:257
+#: app/services/wallet_service.py:414 app/services/wallet_service.py:816
 msgid "المبلغ يجب أن يكون أكبر من صفر."
 msgstr ""
 
@@ -2328,6 +2337,7 @@ msgstr ""
 #: app/templates/admin/wallet_ledger.html:99
 #: app/templates/assessment/quiz_results.html:28
 #: app/templates/billing/discount_list.html:23
+#: app/templates/family/child_wallet.html:109
 #: app/templates/grades/appeals_queue.html:14
 #: app/templates/grades/attendance.html:27
 #: app/templates/progress/student_detail.html:18
@@ -2613,86 +2623,150 @@ msgstr ""
 msgid "لا يمكن رفض دفعة مقفلة مسبقاً — الجلسة مدفوعة."
 msgstr ""
 
-#: app/services/wallet_service.py:184
+#: app/services/wallet_service.py:130
+msgid "تحويل بين حسابين"
+msgstr ""
+
+#: app/services/wallet_service.py:131
+msgid "عمولة المنصة"
+msgstr ""
+
+#: app/services/wallet_service.py:132
+msgid "سحب أرباح"
+msgstr ""
+
+#: app/services/wallet_service.py:133
+msgid "فائض اشتراك"
+msgstr ""
+
+#: app/services/wallet_service.py:135
+msgid "استرداد"
+msgstr ""
+
+#: app/services/wallet_service.py:136
+msgid "عكس حركة"
+msgstr ""
+
+#: app/services/wallet_service.py:137
+msgid "قبض جلسة خصوصية"
+msgstr ""
+
+#: app/services/wallet_service.py:143
+msgid "وارِد"
+msgstr ""
+
+#: app/services/wallet_service.py:143
+msgid "صارِد"
+msgstr ""
+
+#: app/services/wallet_service.py:260
 msgid "لا يمكن التحويل للمستخدم نفسه."
 msgstr ""
 
-#: app/services/wallet_service.py:206
+#: app/services/wallet_service.py:282
 msgid "محفظة المرسل غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:208
+#: app/services/wallet_service.py:284
 msgid "محفظة المستلم غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:211
+#: app/services/wallet_service.py:287
 msgid "محفظة المرسل غير نشطة."
 msgstr ""
 
-#: app/services/wallet_service.py:213
+#: app/services/wallet_service.py:289
 msgid "محفظة المستلم غير نشطة."
 msgstr ""
 
-#: app/services/wallet_service.py:216
+#: app/services/wallet_service.py:292
 msgid "العملتان غير متطابقتين."
 msgstr ""
 
-#: app/services/wallet_service.py:223
+#: app/services/wallet_service.py:299
 #, python-format
 msgid "الرصيد غير كافٍ. المتاح: %(available)s %(currency)s"
 msgstr ""
 
-#: app/services/wallet_service.py:350
+#: app/services/wallet_service.py:426
 msgid "المحفظة غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:352
+#: app/services/wallet_service.py:428
 msgid "المحفظة غير نشطة."
 msgstr ""
 
-#: app/services/wallet_service.py:579
+#: app/services/wallet_service.py:655
 msgid "بيانات الإيداع غير صالحة."
 msgstr ""
 
-#: app/services/wallet_service.py:581
+#: app/services/wallet_service.py:657
 msgid "المستخدم ليس عضواً نشطاً في هذه المدرسة."
 msgstr ""
 
-#: app/services/wallet_service.py:585
+#: app/services/wallet_service.py:661
 msgid "تعذّر تجهيز المحفظة."
 msgstr ""
 
-#: app/services/wallet_service.py:633
+#: app/services/wallet_service.py:709
 msgid "الحركة غير موجودة في هذه المدرسة."
 msgstr ""
 
-#: app/services/wallet_service.py:635
+#: app/services/wallet_service.py:711
 msgid "لا يمكن عكس قيد عكس."
 msgstr ""
 
-#: app/services/wallet_service.py:643
+#: app/services/wallet_service.py:719
 msgid "هذه الحركة معكوسة مسبقاً."
 msgstr ""
 
-#: app/services/wallet_service.py:660
+#: app/services/wallet_service.py:736
 msgid "محفظة الطرف المقابل غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:662
+#: app/services/wallet_service.py:738
 msgid "المحفظة المرسلة الأصلية غير موجودة."
 msgstr ""
 
-#: app/services/wallet_service.py:666 app/services/wallet_service.py:672
+#: app/services/wallet_service.py:742 app/services/wallet_service.py:748
 msgid "المحفظة غير نشطة — لا يمكن عكس الحركة."
 msgstr ""
 
-#: app/services/wallet_service.py:668
+#: app/services/wallet_service.py:744
 msgid "رصيد المحفظة لا يكفي لعكس الحركة (المبلغ تم صرفه)."
 msgstr ""
 
-#: app/services/wallet_service.py:675
+#: app/services/wallet_service.py:751
 #, python-format
 msgid "عكس الحركة رقم %(id)s"
+msgstr ""
+
+#: app/services/wallet_service.py:818
+msgid "مبلغ طلب الشحن يتجاوز الحد المسموح."
+msgstr ""
+
+#: app/services/wallet_service.py:820
+msgid "الطالب ليس عضواً نشطاً في هذه المدرسة."
+msgstr ""
+
+#: app/services/wallet_service.py:829
+msgid "لديك طلب شحن معلّق لهذا الابن بالفعل."
+msgstr ""
+
+#: app/services/wallet_service.py:903
+msgid "طلب الشحن غير موجود في هذه المدرسة."
+msgstr ""
+
+#: app/services/wallet_service.py:905
+msgid "تمت معالجة هذا الطلب مسبقاً."
+msgstr ""
+
+#: app/services/wallet_service.py:915
+msgid "شحن محفظة بموافقة إدارية"
+msgstr ""
+
+#: app/services/wallet_service.py:919
+msgid "تعذّر إتمام شحن المحفظة."
 msgstr ""
 
 #: app/templates/base.html:9 app/templates/landing.html:9
@@ -3695,6 +3769,7 @@ msgstr ""
 #: app/templates/admin/schools_list.html:17
 #: app/templates/admin/wallet_ledger.html:27
 #: app/templates/admin/wallet_ledger.html:93
+#: app/templates/admin/wallet_ledger.html:163
 #: app/templates/school_approvals/queue.html:17
 #: app/templates/school_approvals/super_admin_queue.html:17
 #: app/templates/schools/onboarding.html:59
@@ -3737,6 +3812,8 @@ msgid "البريد"
 msgstr ""
 
 #: app/templates/admin/contact_inbox.html:14
+#: app/templates/family/child_wallet.html:63
+#: app/templates/family/child_wallet.html:111
 #: app/templates/tutoring/earnings.html:69 app/templates/wallet/index.html:37
 msgid "التاريخ"
 msgstr ""
@@ -4028,6 +4105,7 @@ msgstr ""
 
 #: app/templates/admin/payouts.html:22
 #: app/templates/admin/pending_payments.html:34
+#: app/templates/admin/wallet_ledger.html:183
 #: app/templates/billing/admin.html:22
 msgid "اعتماد"
 msgstr ""
@@ -4035,6 +4113,7 @@ msgstr ""
 #: app/templates/admin/payouts.html:25
 #: app/templates/admin/pending_payments.html:38
 #: app/templates/admin/pending_registrations.html:36
+#: app/templates/admin/wallet_ledger.html:188
 #: app/templates/billing/admin.html:26
 #: app/templates/school_approvals/queue.html:33
 #: app/templates/school_approvals/super_admin_queue.html:33
@@ -4703,6 +4782,7 @@ msgid "من"
 msgstr ""
 
 #: app/templates/admin/wallet_ledger.html:98
+#: app/templates/family/child_wallet.html:60
 #: app/templates/grades/rubric_builder.html:22
 #: app/templates/grades/rubric_builder.html:36
 #: app/templates/wallet/index.html:34
@@ -4741,6 +4821,22 @@ msgstr ""
 
 #: app/templates/admin/wallet_ledger.html:152
 msgid "لا حركات في الدفتر بهذه الفلاتر."
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:158
+msgid "طلبات شحن بانتظار الاعتماد"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:164
+msgid "ولي الأمر (الدافع)"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:165
+msgid "محفظة الطالب"
+msgstr ""
+
+#: app/templates/admin/wallet_ledger.html:168
+msgid "القرار"
 msgstr ""
 
 #: app/templates/ai/chat.html:2 app/templates/ai/chat.html:18
@@ -6041,6 +6137,74 @@ msgstr ""
 msgid "بعذر"
 msgstr ""
 
+#: app/templates/family/child_wallet.html:2
+#: app/templates/family/child_wallet.html:7 app/templates/family/index.html:40
+msgid "محفظة الابن"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:16
+msgid "لا توجد محفظة نشطة لابنك بعد."
+msgstr ""
+
+#: app/templates/family/child_wallet.html:17
+msgid ""
+"يمكنك إرسال طلب شحن — تُنشأ المحفظة بعد اعتماد إدارة المدرسة ويُضاف "
+"المبلغ إليها."
+msgstr ""
+
+#: app/templates/family/child_wallet.html:21 app/templates/wallet/index.html:21
+msgid "الرصيد الحالي"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:22 app/templates/wallet/index.html:22
+msgid "إجمالي الوارد"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:23 app/templates/wallet/index.html:23
+msgid "إجمالي الصادر"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:29
+msgid "طلب شحن المحفظة"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:53 app/templates/wallet/index.html:27
+msgid "سجل الحركات"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:61 app/templates/wallet/index.html:35
+msgid "الاتجاه"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:82 app/templates/wallet/index.html:56
+msgid "ترقيم الصفحات"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:84 app/templates/wallet/index.html:58
+msgid "الأحدث"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:86 app/templates/wallet/index.html:60
+#, python-format
+msgid "صفحة %(page)s من %(pages)s"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:88 app/templates/wallet/index.html:62
+msgid "الأقدم"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:94
+msgid "لا توجد حركات مالية مسجّلة على محفظة ابنك بعد."
+msgstr ""
+
+#: app/templates/family/child_wallet.html:102
+msgid "طلبات الشحن لهذا الابن"
+msgstr ""
+
+#: app/templates/family/child_wallet.html:128
+msgid "لا طلبات شحن بعد."
+msgstr ""
+
 #: app/templates/family/generate_code.html:9
 msgid "أرسل هذا الرمز لولي أمرك لربط حسابك بحسابه"
 msgstr ""
@@ -6093,32 +6257,32 @@ msgstr ""
 msgid "الدرجات"
 msgstr ""
 
-#: app/templates/family/index.html:40
+#: app/templates/family/index.html:41
 msgid "هل أنت متأكد من إلغاء الربط؟"
 msgstr ""
 
-#: app/templates/family/index.html:42
+#: app/templates/family/index.html:43
 msgid "إلغاء الربط"
 msgstr ""
 
-#: app/templates/family/index.html:48
+#: app/templates/family/index.html:49
 msgid "الرسوم والاشتراكات"
 msgstr ""
 
-#: app/templates/family/index.html:54
+#: app/templates/family/index.html:55
 msgid "المتبقي:"
 msgstr ""
 
-#: app/templates/family/index.html:56
+#: app/templates/family/index.html:57
 #: app/templates/individual/dashboard.html:28
 msgid "أكمل الدفع"
 msgstr ""
 
-#: app/templates/family/index.html:58
+#: app/templates/family/index.html:59
 msgid "الفاتورة"
 msgstr ""
 
-#: app/templates/family/index.html:68
+#: app/templates/family/index.html:69
 msgid "لا يوجد أبناء مرتبطين بحسابك. اطلب من طالبك إنشاء رمز الربط."
 msgstr ""
 
@@ -6443,11 +6607,6 @@ msgstr ""
 
 #: app/templates/grades/rubric_grade.html:16
 msgid "المعيار"
-msgstr ""
-
-#: app/templates/grades/rubric_grade.html:19
-#: app/templates/grades/rubric_grade.html:34
-msgid "ملاحظة"
 msgstr ""
 
 #: app/templates/grades/rubric_grade.html:34
@@ -7388,43 +7547,6 @@ msgid ""
 "حركاتك."
 msgstr ""
 
-#: app/templates/wallet/index.html:21
-msgid "الرصيد الحالي"
-msgstr ""
-
-#: app/templates/wallet/index.html:22
-msgid "إجمالي الوارد"
-msgstr ""
-
-#: app/templates/wallet/index.html:23
-msgid "إجمالي الصادر"
-msgstr ""
-
-#: app/templates/wallet/index.html:27
-msgid "سجل الحركات"
-msgstr ""
-
-#: app/templates/wallet/index.html:35
-msgid "الاتجاه"
-msgstr ""
-
-#: app/templates/wallet/index.html:56
-msgid "ترقيم الصفحات"
-msgstr ""
-
-#: app/templates/wallet/index.html:58
-msgid "الأحدث"
-msgstr ""
-
-#: app/templates/wallet/index.html:60
-#, python-format
-msgid "صفحة %(page)s من %(pages)s"
-msgstr ""
-
-#: app/templates/wallet/index.html:62
-msgid "الأقدم"
-msgstr ""
-
 #: app/templates/wallet/index.html:68
 msgid "لا توجد حركات مالية مسجّلة على محفظتك بعد."
 msgstr ""
@@ -7497,5 +7619,11 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "تأكيد استلام الدفع (يدوي)"
+#~ msgstr ""
+
+#~ msgid "تم اعتماد طلب الشحن وتثري المحفظة."
+#~ msgstr ""
+
+#~ msgid "يمكنك إرسال طلب شحن — تُنشأ المحفظة وتُثري بعد اعتماد إدارة المدرسة."
 #~ msgstr ""
 

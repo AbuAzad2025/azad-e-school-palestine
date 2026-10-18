@@ -706,3 +706,225 @@ class TestAdminWalletDeposit:
 
         assert self._rows(app) == (0, 0)
         assert self._balance(app, sid, student) == Decimal("0.00")
+
+
+# ═════════════════════════════ AZ-P3-15: family wallet ═════════════════════════════
+
+
+class TestParentChildWallet:
+    """AZ-P3-15 — محفظة الابن لولي الأمر، وشحن بطلب يمرّ بالاعتماد الإداري.
+
+    معايير القبول المستهدفة (docs/ACTIONABLE_WORK_ITEMS.md §AZ-P3-15):
+    1. ولي أمر مرتبط يرى رصيد ابنه وسجل حركاته من صفحات الأسرة.
+    2. غير مرتبط (أو خارج مدرسة الابن المالية) → 403، ولا مبلغ يتحرك.
+    3. أي شحن يمرّ بالاعتماد اليدوي قبل إثراء الرصيد، وهوية الدافع في التدقيق.
+    4. لا تسريب بين الأسر أو بين المدارس.
+    """
+
+    def _family(self, app, *, link=True, cross_school=False):
+        sid = make_school(app)
+        parent, p_email = mk_user(app, "parent", school_id=sid)
+        child_school = make_school(app) if cross_school else sid
+        child, _ = mk_user(app, "student", school_id=child_school)
+        if link:
+            from tests.conftest import make_family_link
+
+            make_family_link(app, parent, child)
+        return sid, parent, p_email, child
+
+    def _balance(self, app, sid, uid) -> Decimal:
+        from app.services.wallet_service import get_balance
+
+        with app.app_context():
+            return get_balance(sid, uid)
+
+    def _topup_request(self, app, child_id):
+        from app.models.wallet import WalletTopupRequest
+
+        with app.app_context():
+            return WalletTopupRequest.query.filter_by(child_user_id=child_id).one()
+
+    def test_linked_parent_sees_child_balance_and_transactions(self, app):
+        from app.services import wallet_service
+
+        sid, parent, p_email, child = self._family(app)
+        with app.app_context():
+            for amount, note in ((Decimal("75.00"), "رصيد ابتدائي"), (Decimal("25.00"), "إضافة")):
+                wallet_service.admin_deposit(school_id=sid, target_user_id=child, amount=amount, note=note)
+
+        client = login_as(app, (parent, p_email))
+        page = client.get(f"/family/children/{child}/wallet")
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "child-wallet-summary" in html
+        assert "100.00" in html
+        assert "رصيد ابتدائي" in html and "إضافة" in html
+        assert "child-wallet-tx-row" in html
+
+    def test_unlinked_parent_gets_403_and_no_request_row(self, app):
+        from app.models.wallet import WalletTopupRequest
+
+        sid, parent, p_email, child = self._family(app, link=False)
+        client = login_as(app, (parent, p_email))
+        assert client.get(f"/family/children/{child}/wallet").status_code == 403
+        resp = client.post(f"/family/children/{child}/wallet/topup", data={"amount": "50"})
+        assert resp.status_code == 403
+        assert self._balance(app, sid, child) == Decimal("0.00")
+        with app.app_context():
+            assert WalletTopupRequest.query.filter_by(child_user_id=child).count() == 0
+
+    def test_family_link_but_cross_school_tenant_still_403(self, app):
+        """الربط الأسرى لا يفتح حدود المدرسة المالية — حدّ التينانت أولاً."""
+        sid, parent, p_email, child = self._family(app, cross_school=True)
+        client = login_as(app, (parent, p_email))
+        assert client.get(f"/family/children/{child}/wallet").status_code == 403
+        assert client.post(f"/family/children/{child}/wallet/topup", data={"amount": "50"}).status_code == 403
+        assert self._balance(app, sid, child) == Decimal("0.00")
+
+    def test_cannot_tamper_target_student_in_topup_post(self, app):
+        sid, parent, p_email, child = self._family(app)
+        stranger, _ = mk_user(app, "student", school_id=sid)
+        client = login_as(app, (parent, p_email))
+        resp = client.post(f"/family/children/{stranger}/wallet/topup", data={"amount": "50"})
+        assert resp.status_code == 403  # ليس ابنه — parent_of_required يمرّن قبل كل شيء
+        assert self._balance(app, sid, stranger) == Decimal("0.00")
+
+    def test_topup_request_is_pending_and_does_not_credit(self, app):
+        sid, parent, p_email, child = self._family(app)
+        client = login_as(app, (parent, p_email))
+        resp = client.post(f"/family/children/{child}/wallet/topup", data={"amount": "120.50", "note": "بيت المال"})
+        assert resp.status_code == 302
+        assert self._balance(app, sid, child) == Decimal("0.00")  # لا رصيد قبل الاعتماد
+        req = self._topup_request(app, child)
+        assert req.status == "pending"
+        assert req.amount == Decimal("120.50")
+        assert req.parent_id == parent  # هوية الدافع على الصف
+        assert req.school_id == sid
+        # طلب ثانٍ معلّق لنفس الابن → رفض منطقي بلا صف إضافي
+        client.post(f"/family/children/{child}/wallet/topup", data={"amount": "10"})
+        with app.app_context():
+            from app.models.wallet import WalletTopupRequest
+
+            assert WalletTopupRequest.query.filter_by(child_user_id=child).count() == 1
+
+    def test_invalid_amount_writes_nothing(self, app):
+        from app.models.wallet import WalletTopupRequest
+
+        sid, parent, p_email, child = self._family(app)
+        client = login_as(app, (parent, p_email))
+        for amount in ("", "abc", "0", "-5"):
+            client.post(f"/family/children/{child}/wallet/topup", data={"amount": amount})
+        with app.app_context():
+            assert WalletTopupRequest.query.filter_by(child_user_id=child).count() == 0
+
+    def test_approval_credits_child_wallet_and_audits_payer(self, app):
+        from app.models.system import AuditLog
+        from app.models.wallet import WalletTransaction
+
+        sid, parent, p_email, child = self._family(app)
+        client = login_as(app, (parent, p_email))
+        client.post(f"/family/children/{child}/wallet/topup", data={"amount": "60.00", "note": "من الأسرة"})
+        req = self._topup_request(app, child)
+
+        school_admin, admin_email = mk_user(app, "school_admin", school_id=sid)
+        admin_client = login_as(app, (school_admin, admin_email))
+
+        # قسم الطلبات المعلّقة في الدفتر — مستوى المنصة (مستكشف الدفتر super_admin حصراً)
+        platform, platform_email = mk_user(app, "super_admin")
+        platform_client = login_as(app, (platform, platform_email))
+        ledger_page = platform_client.get(f"/admin/wallet?school_id={sid}")
+        assert ledger_page.status_code == 200
+        assert "pending-topup-row" in ledger_page.get_data(as_text=True)
+
+        resp = admin_client.post(f"/admin/wallet/topup/{req.id}/review", data={"decision": "approve"})
+        assert resp.status_code == 302
+        assert self._balance(app, sid, child) == Decimal("60.00")
+        with app.app_context():
+            row = WalletTransaction.query.filter_by(idempotency_key=f"wallet_topup:{req.id}").one()
+            assert row.amount == Decimal("60.00") and row.school_id == sid
+            assert row.reference_id == school_admin  # المنفّذ على القيد
+            log = AuditLog.query.filter_by(action="wallet_topup_review").one()
+            assert log.detail["parent_id"] == parent
+            assert log.detail["child_user_id"] == child
+            assert log.detail["decision"] == "approve"
+            assert self._topup_request(app, child).status == "approved"
+
+        # معالجة ثانية → يُرفض ولا قيد ثانٍ
+        assert (
+            admin_client.post(f"/admin/wallet/topup/{req.id}/review", data={"decision": "approve"}).status_code == 302
+        )
+        with app.app_context():
+            assert WalletTransaction.query.filter_by(idempotency_key=f"wallet_topup:{req.id}").count() == 1
+        assert self._balance(app, sid, child) == Decimal("60.00")
+
+    def test_rejection_keeps_balance_and_marks_request(self, app):
+        from app.models.wallet import WalletTransaction
+
+        sid, parent, p_email, child = self._family(app)
+        client = login_as(app, (parent, p_email))
+        client.post(f"/family/children/{child}/wallet/topup", data={"amount": "40"})
+        req = self._topup_request(app, child)
+
+        school_admin, admin_email = mk_user(app, "school_admin", school_id=sid)
+        admin_client = login_as(app, (school_admin, admin_email))
+        admin_client.post(
+            f"/admin/wallet/topup/{req.id}/review", data={"decision": "reject", "reason": "البيانات غير مكتملة"}
+        )
+        assert self._balance(app, sid, child) == Decimal("0.00")
+        assert self._topup_request(app, child).status == "rejected"
+        with app.app_context():
+            assert WalletTransaction.query.filter_by(idempotency_key=f"wallet_topup:{req.id}").count() == 0
+
+    def test_school_admin_of_another_school_gets_404(self, app):
+        sid, parent, p_email, child = self._family(app)
+        client = login_as(app, (parent, p_email))
+        client.post(f"/family/children/{child}/wallet/topup", data={"amount": "40"})
+        req = self._topup_request(app, child)
+
+        stranger_admin, stranger_email = mk_user(app, "school_admin", school_id=make_school(app))
+        stranger_client = login_as(app, (stranger_admin, stranger_email))
+        assert (
+            stranger_client.post(f"/admin/wallet/topup/{req.id}/review", data={"decision": "approve"}).status_code
+            == 404
+        )
+        assert self._balance(app, sid, child) == Decimal("0.00")
+
+    def test_parent_cannot_use_admin_review_route(self, app):
+        sid, parent, p_email, child = self._family(app)
+        client = login_as(app, (parent, p_email))
+        client.post(f"/family/children/{child}/wallet/topup", data={"amount": "40"})
+        req = self._topup_request(app, child)
+        assert client.post(f"/admin/wallet/topup/{req.id}/review", data={"decision": "approve"}).status_code == 403
+        assert self._balance(app, sid, child) == Decimal("0.00")
+
+    def test_school_admin_dashboard_shows_only_its_own_pending_requests(self, app):
+        """مشرف المدرسة هو من يعتمد الطلب، فطابوره على لوحته — وبمدرسته وحده."""
+        sid, parent, p_email, child = self._family(app)
+        login_as(app, (parent, p_email)).post(f"/family/children/{child}/wallet/topup", data={"amount": "40"})
+
+        other_sid = make_school(app)
+        other_parent, other_email = mk_user(app, "parent", school_id=other_sid)
+        other_child, _ = mk_user(app, "student", school_id=other_sid)
+        from tests.conftest import make_family_link
+
+        make_family_link(app, other_parent, other_child)
+        login_as(app, (other_parent, other_email)).post(
+            f"/family/children/{other_child}/wallet/topup", data={"amount": "90"}
+        )
+
+        school_admin, admin_email = mk_user(app, "school_admin", school_id=sid)
+        admin_client = login_as(app, (school_admin, admin_email))
+        page = admin_client.get("/admin/school-admin", follow_redirects=True)
+        assert page.status_code == 200
+        html = page.get_data(as_text=True)
+        assert "pending-topup-row" in html
+        assert "<bdi>40" in html
+        assert "<bdi>90" not in html  # طلب مدرسة أخرى لا يظهر ولا يُعتمد من هنا
+
+    def test_school_admin_dashboard_hides_the_queue_when_empty(self, app):
+        """لا طلبات = لا قسم — لا عنوان فارغ ولا جدول بلا صفوف."""
+        sid, _parent, _parent_email, _child = self._family(app)
+        school_admin, admin_email = mk_user(app, "school_admin", school_id=sid)
+        admin_client = login_as(app, (school_admin, admin_email))
+        html = admin_client.get("/admin/school-admin", follow_redirects=True).get_data(as_text=True)
+        assert "pending-topups-section" not in html

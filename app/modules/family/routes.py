@@ -3,12 +3,12 @@
 from app.core.permissions import parent_of_required, role_required
 from app.models.user import UserRole
 from app.services.family import billing_by_student, generate_link_code, link_parent, list_children, remove_link
-from flask import flash, redirect, render_template, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
 
 from . import bp
-from .forms import LinkCodeForm
+from .forms import ChildTopupForm, LinkCodeForm
 
 
 @bp.get("/")
@@ -84,3 +84,76 @@ def child_grades(student_id):
 
     memberships = ClassMember.query.filter_by(user_id=student_id, status="active").all()
     return render_template("family/child_grades.html", student_id=student_id, memberships=memberships)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AZ-P3-15 — محفظة الابن: عرض للربط، وشحن بطلب يمرّ بالاعتماد الإداري
+# ═══════════════════════════════════════════════════════════════════════════
+# العرض يستهلك wallet_service.user_ledger_page — نفس المصدر الذي تستهلكه
+# واجهة «محفظتي» — فلا استعلام مالي جديد خارج الخدمة. والشحن ليس إثراءً
+# مباشراً: يُنشئ طلباً معلّقاً تعتمده الإدارة في wallet_service.review_topup
+# فلا رصيد بلا قرار إداري، وهوية الدافع محفوظة على صف الطلب نفسه.
+
+
+def _child_and_school(student_id: int):
+    """الابن الواقعي + مدرسته بشرط تطابقها مع مدرسة ولي الأمر (حدّ التينانت المالي)."""
+    from app.extensions import db
+    from app.models.user import User
+
+    child = db.session.get(User, student_id)
+    if child is None:
+        abort(404)
+    child_school_id = getattr(child, "school_id", None)
+    parent_school_id = getattr(current_user, "school_id", None)
+    if not child_school_id or not parent_school_id or child_school_id != parent_school_id:
+        abort(403)
+    return child, child_school_id
+
+
+@bp.get("/children/<int:student_id>/wallet")
+@parent_of_required
+def child_wallet(student_id):
+    from app.services import wallet_service
+
+    child, school_id = _child_and_school(student_id)
+    page = max(request.args.get("page", 1, type=int) or 1, 1)
+    ledger = wallet_service.user_ledger_page(school_id, child.id, page=page, per_page=10)
+    if ledger is not None and page > ledger["pages"]:
+        abort(404)
+    topups = wallet_service.list_child_topups(school_id, current_user.id, child.id)
+    return render_template(
+        "family/child_wallet.html",
+        student_id=student_id,
+        child=child,
+        ledger=ledger,
+        topups=topups,
+        topup_form=ChildTopupForm(),
+    )
+
+
+@bp.post("/children/<int:student_id>/wallet/topup")
+@parent_of_required
+def child_topup(student_id):
+    from app.services import wallet_service
+
+    form = ChildTopupForm()
+    child, school_id = _child_and_school(student_id)
+    if not form.validate_on_submit():
+        flash(_("تحقق من بيانات النموذج قبل الإرسال."), "danger")
+        return redirect(url_for("family.child_wallet", student_id=student_id))
+    amount = form.amount_decimal
+    if amount is None:
+        flash(_("المبلغ غير صالح — أدخل رقماً موجباً."), "danger")
+        return redirect(url_for("family.child_wallet", student_id=student_id))
+    _created, error = wallet_service.request_topup(
+        school_id=school_id,
+        parent_id=current_user.id,
+        child_user_id=child.id,
+        amount=amount,
+        note=form.note.data or "",
+    )
+    if error:
+        flash(_(error), "danger")
+    else:
+        flash(_("تم إرسال طلب الشحن — بانتظار اعتماد إدارة المدرسة."), "success")
+    return redirect(url_for("family.child_wallet", student_id=student_id))

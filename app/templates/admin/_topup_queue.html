@@ -1,0 +1,49 @@
+{#- AZ-P3-15: طابور طلبات شحن أولياء الأمور — لا رصيد قبل قرار إداري.
+
+    يُستدعى من مستكشف الدفتر (نطاق المنصة، بعمود المدرسة) ومن لوحة مشرف
+    المدرسة (نطاق مدرسته، فيُطوى العمود الزائد عبر with_school=false).
+    القرار نفسه يُنفَّذ في admin.wallet_topup_review الذي يتحقق من تينانت
+    الطلب مرة أخرى — لا يعتمد القالب ثقةً في نطاق الصفحة.
+-#}
+{% if pending_topups %}
+<div class="azad-section azad-mt-6" data-testid="pending-topups-section">
+  <h2 class="section-title" data-testid="pending-topups-title">{{ _('طلبات شحن بانتظار الاعتماد') }}</h2>
+  <div class="azad-card azad-card--wide">
+    <table class="azad-table" data-testid="pending-topups">
+      <thead>
+        <tr>
+          {% if with_school %}<th scope="col">{{ _('المدرسة') }}</th>{% endif %}
+          <th scope="col">{{ _('ولي الأمر (الدافع)') }}</th>
+          <th scope="col">{{ _('محفظة الطالب') }}</th>
+          <th scope="col">{{ _('المبلغ') }}</th>
+          <th scope="col">{{ _('ملاحظة') }}</th>
+          <th scope="col">{{ _('القرار') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in pending_topups %}
+        <tr data-testid="pending-topup-row">
+          {% if with_school %}<td>{{ r.school.name_ar or r.school_id }}</td>{% endif %}
+          <td>{{ r.parent.name_ar or r.parent.email }}</td>
+          <td>{{ r.child.name_ar or r.child.email }}</td>
+          <td><bdi>{{ r.amount }}</bdi> <bdi>{{ r.currency }}</bdi></td>
+          <td>{{ r.note or '—' }}</td>
+          <td class="u-flex-gap-05">
+            <form method="post" action="{{ url_for('admin.wallet_topup_review', topup_id=r.id) }}" class="u-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="decision" value="approve">
+              <button type="submit" class="azad-btn azad-btn-sm" data-testid="topup-approve">{{ _('اعتماد') }}</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.wallet_topup_review', topup_id=r.id) }}" class="u-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="decision" value="reject">
+              <button type="submit" class="azad-btn-outline azad-btn-sm u-text-danger" data-testid="topup-reject">{{ _('رفض') }}</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

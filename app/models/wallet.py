@@ -8,10 +8,11 @@ P7-04: school_id on both models for tenancy isolation.
 
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -99,3 +100,35 @@ class WalletTransaction(PKMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<WalletTransaction {self.id} type={self.transaction_type} amount={self.amount} {self.currency}>"
+
+
+class WalletTopupRequest(PKMixin, db.Model):
+    """AZ-P3-15 — طلب شحن محفظة طالب من ولي أمر مرتبط، بانتظار الاعتماد.
+
+    ولي الأمر **لا يثري رصيداً بنفسه**: الطلب صف مستقل بالحالة
+    ``pending``، والاعتماد (مدرسة طلب أو المنصة) هو ما يستدعي
+    ``admin_deposit`` داخل نفس ``tx()`` فلا رصيد بلا اعتماد يدوي،
+    وهوية الدافع (ولي الأمر) هي الغرض من الصف نفسه — فلا إيداع مجهول.
+    """
+
+    __tablename__ = "wallet_topup_requests"
+    __table_args__ = (
+        Index("ix_wallet_topup_school_id", "school_id"),
+        Index("ix_wallet_topup_child", "child_user_id"),
+        Index("ix_wallet_topup_pending", "school_id", "status"),
+    )
+
+    school_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("schools.id"), nullable=False)
+    parent_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    child_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="ILS")
+    status: Mapped[str] = mapped_column(String(10), nullable=False, default="pending")  # pending / approved / rejected
+    note: Mapped[str | None] = mapped_column(Text)
+    handled_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id"))
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    parent: Mapped[User] = relationship("User", foreign_keys=[parent_id])
+    child: Mapped[User] = relationship("User", foreign_keys=[child_user_id])
+    handler: Mapped[User | None] = relationship("User", foreign_keys=[handled_by])
+    school: Mapped[School] = relationship("School", foreign_keys=[school_id])

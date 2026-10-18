@@ -53,6 +53,9 @@
     {{ azad_stat_card(revenue.overdue_count or 0, _('اشتراكات منتهية'), 'alert', 'var(--color-danger)') }}
 </div>
 
+{#- AZ-P3-15: طلبات شحن محافظ أبناء أولياء أمور هذه المدرسة — لا رصيد بلا اعتماد -#}
+{% include "admin/_topup_queue.html" %}
+
 <div class="azad-section"><h2>{{ _('إجراءات سريعة') }}</h2></div>
 {{ azad_quick_actions([
     {'icon': 'school', 'label': _('مدارسي'), 'href': url_for('schools.index'), 'variant': 'blue'},

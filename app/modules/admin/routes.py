@@ -122,16 +122,21 @@ def _invalidate_admin_nav_cache() -> None:
     cache.delete("admin_nav_counters")
 
 
+# نقاط نهاية أدمن المدرسة التي تخرج من "super_admin فقط" الافتراضي — كل واحدة
+# تحمل role_required وتحقق تينانت صارماً داخل نفسها.
+_SCHOOL_ADMIN_ALLOWED_ENDPOINTS = frozenset({"admin.school_admin_dashboard", "admin.wallet_topup_review"})
+
+
 @bp.before_request
 def require_admin():
     if request.endpoint == "admin.impersonate_exit":
         return None  # جلسة الانتحال ليست سوبر أدمن — مسار الخروج مفتوح لها
-    if request.endpoint == "admin.school_admin_dashboard":
+    if request.endpoint in _SCHOOL_ADMIN_ALLOWED_ENDPOINTS:
         if not current_user.is_authenticated:
             abort(401)
         if not _has_any(UserRole.super_admin, UserRole.school_admin):
             abort(403)
-        return None  # لا يطبّق قبل_request السوبر أدمن فقط
+        return None  # النقطة نفسها تحمل فحصها التينانتي الخاص
     if not current_user.is_authenticated:
         abort(401)
     if not _has_any(UserRole.super_admin):
@@ -939,6 +944,10 @@ def school_admin_dashboard():
         for status in ("active", "pending", "expired", "pending_review")
     ]
 
+    # AZ-P3-15: طابور طلبات شحن أولياء الأمور لمدرسته وحده — مشرف المدرسة هو
+    # من يعتمدها، فيلزمه مدخل يراها منه؛ النطاق يُمرَّر إلى الخدمة لا يُفلتر هنا.
+    from app.services.wallet_service import list_pending_topups
+
     return render_template(
         "admin/school_admin_dashboard.html",
         school_id=school_id,
@@ -951,6 +960,8 @@ def school_admin_dashboard():
         chart_students_by_class=chart_students_by_class,
         chart_revenue=chart_revenue,
         chart_subscriptions=chart_subscriptions,
+        pending_topups=list_pending_topups(school_id),
+        with_school=False,
     )
 
 
@@ -1114,9 +1125,13 @@ def wallet_ledger():
             .all()
         }
 
+    from app.services.wallet_service import list_pending_topups
+
     return render_template(
         "admin/wallet_ledger.html",
         pagination=pagination,
+        pending_topups=list_pending_topups(school_filter),
+        with_school=True,
         schools=School.query.order_by(School.name_ar).all(),
         types=[
             t
@@ -1534,3 +1549,72 @@ def review_payout(payout_id, result):
         abort(404)
 
     return redirect(url_for("admin.payouts_queue"))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AZ-P3-15 — اعتماد/رفض طلبات شحن المحفظة القادمة من أولياء الأمور
+# ═══════════════════════════════════════════════════════════════════════════
+#      (Wallet review: schooladmins for their own school, super admin for all)
+
+
+@bp.post("/wallet/topup/<int:topup_id>/review")
+@login_required
+@role_required(UserRole.super_admin, UserRole.school_admin)
+def wallet_topup_review(topup_id: int):
+    """AZ-P3-15: معالجة الطلب مرة واحدة فقط.
+
+    * أدمن المدرسة مُقيّد بمدرسته — طلب مدرسة أخرى 404 بلا تسريب.
+    * موافقة (approve) تُثري المحفظة وترفع عبر wallet_service.review_topup
+      الذي يدعو admin_deposit داخل tx() واحدة — لا اعتماد بلا رصيد، ولا
+      رصيد بلا اعتماد.
+    * سجل التدقيق يخلد هوية الدافع (ولي الأمر) من صف الطلب نفسه.
+    """
+    from app.models.wallet import WalletTopupRequest
+
+    req = db.session.get(WalletTopupRequest, topup_id)
+    if req is None:
+        abort(404)
+    if current_user.role != UserRole.super_admin and req.school_id != getattr(current_user, "school_id", None):
+        abort(404)
+    decision = request.form.get("decision")
+    if decision not in ("approve", "reject"):
+        abort(400)
+    reason = (request.form.get("reason") or "").strip()
+
+    back_url = url_for("admin.wallet_ledger", school_id=req.school_id)
+
+    from app.services.wallet_service import review_topup
+
+    def _review_and_audit():
+        reviewed, error = review_topup(
+            request_id=req.id,
+            school_id=req.school_id,
+            operator_id=current_user.id,
+            approve=(decision == "approve"),
+            reason=reason,
+        )
+        if error or reviewed is None:
+            raise TxError(error or _("تعذّرت معالجة طلب الشحن."))
+        _audit_admin_action(
+            "wallet_topup_review",
+            {
+                "topup_request_id": req.id,
+                "parent_id": req.parent_id,
+                "child_user_id": req.child_user_id,
+                "amount": str(req.amount),
+                "currency": req.currency,
+                "school_id": req.school_id,
+                "decision": decision,
+                "reason": reason,
+            },
+        )
+        return reviewed
+
+    try:
+        tx(_review_and_audit)
+    except TxError as exc:
+        flash_error(str(exc), "danger", 400)
+        return redirect(back_url)
+
+    flash(_("تم اعتماد طلب الشحن وإثراء محفظة الابن.") if decision == "approve" else _("تم رفض طلب الشحن."), "success")
+    return redirect(back_url)

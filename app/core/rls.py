@@ -78,6 +78,7 @@ _TENANT_TABLES: list[str] = [
     "payment_receipts",
     "wallets",
     "wallet_transactions",
+    "wallet_topup_requests",
 ]
 
 # Tables scoped by the acting user rather than by tenant.
