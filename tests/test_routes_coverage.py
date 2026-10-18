@@ -1201,6 +1201,27 @@ class TestFamilyRoutes:
         resp = client.get("/family/")
         assert resp.status_code in (200, 302)
 
+    def test_parent_navbar_links_to_family_center(self, app, client):
+        """AZ-P3-17: إدارة الربط والتقدم والرسوم كانت تُكتشف من الداشبورد وحده."""
+        parent_id = _create_user(app, role="parent")
+        email = f"p-{_uid()}@test.com"
+        with app.app_context():
+            u = _db.session.get(User, parent_id)
+            u.email = email
+            _db.session.commit()
+        _login(client, email)
+        body = client.get("/auth/dashboard", follow_redirects=True).get_data(as_text=True)
+        assert 'data-testid="nav-family-center"' in body
+        assert 'href="/family/"' in body
+
+    def test_student_navbar_has_no_family_center(self, app, client):
+        """البند لولي الأمر وحده — لا تتسعّ القائمة للطالب."""
+        _, class_id, _teacher_email = _setup_class_with_teacher(app)
+        _sid, student_email = _setup_student_in_class(app, class_id)
+        _login(client, student_email)
+        body = client.get("/auth/dashboard", follow_redirects=True).get_data(as_text=True)
+        assert 'data-testid="nav-family-center"' not in body
+
     def test_generate_code_student(self, app, client):
         sid, student_email = _setup_student_in_class(app, 1) if False else (None, None)
         # Create student with a class

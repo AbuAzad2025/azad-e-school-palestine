@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 09:48+0300\n"
+"POT-Creation-Date: 2026-10-18 10:04+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ar\n"
@@ -2871,7 +2871,7 @@ msgstr ""
 #: app/templates/admin/base.html:19 app/templates/base.html:123
 #: app/templates/errors/403.html:21 app/templates/errors/429.html:21
 #: app/templates/partials/breadcrumbs.html:7
-#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:107
+#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:109
 #: app/templates/schools/class_detail.html:6
 #: app/templates/schools/manage.html:6
 msgid "الرئيسية"
@@ -3206,7 +3206,7 @@ msgid "تبديل المظهر"
 msgstr ""
 
 #: app/templates/landing.html:36 app/templates/landing.html:155
-#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:108
+#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:110
 msgid "دخول"
 msgstr ""
 
@@ -3339,7 +3339,7 @@ msgid "ابدأ رحلتك التعليمية الآن"
 msgstr ""
 
 #: app/templates/landing.html:149 app/templates/main/index.html:10
-#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:109
+#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:111
 #: app/templates/pricing.html:60
 msgid "سجّل مجاناً"
 msgstr ""
@@ -4563,12 +4563,12 @@ msgid "اللغة الافتراضية"
 msgstr ""
 
 #: app/templates/admin/settings.html:22 app/templates/partials/navbar.html:47
-#: app/templates/partials/navbar.html:113
+#: app/templates/partials/navbar.html:115
 msgid "العربية"
 msgstr ""
 
 #: app/templates/admin/settings.html:23 app/templates/partials/navbar.html:47
-#: app/templates/partials/navbar.html:113
+#: app/templates/partials/navbar.html:115
 msgid "English"
 msgstr ""
 
@@ -6919,11 +6919,11 @@ msgstr ""
 msgid "قائمة المستخدم"
 msgstr ""
 
-#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:99
+#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:101
 msgid "الملف الشخصي"
 msgstr ""
 
-#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:102
+#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:104
 msgid "خروج"
 msgstr ""
 
@@ -6944,11 +6944,15 @@ msgstr ""
 msgid "محفظتي"
 msgstr ""
 
-#: app/templates/partials/navbar.html:98
+#: app/templates/partials/navbar.html:97
+msgid "مركز الأسرة"
+msgstr ""
+
+#: app/templates/partials/navbar.html:100
 msgid "الحساب"
 msgstr ""
 
-#: app/templates/partials/navbar.html:110
+#: app/templates/partials/navbar.html:112
 msgid "طالب فردي"
 msgstr ""
 

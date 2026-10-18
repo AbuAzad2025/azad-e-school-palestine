@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-10-18 09:48+0300\n"
+"POT-Creation-Date: 2026-10-18 10:04+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -2662,23 +2662,19 @@ msgstr "You cannot review this session."
 msgid "تعذّرت تسوية الجلسة #%(session)s: لا مدرسة نشطة للمعلم."
 msgstr "Could not settle session #%(session)s: the tutor has no active school."
 
-
 #: app/services/tutoring.py:627
 #, python-format
 msgid "تعذّر فتح محفظة المعلم لتسوية الجلسة #%(session)s."
 msgstr "Could not open the tutor's wallet to settle session #%(session)s."
 
-
 #: app/services/tutoring.py:662
 msgid "فشل تسوية عمولة جلسة خصوصية"
 msgstr "Private session commission settlement failed"
-
 
 #: app/services/tutoring.py:664
 #, python-format
 msgid "الجلسة #%(session)s للمعلم #%(tutor)s لم تُسوَّ: %(reason)s"
 msgstr "Session #%(session)s for tutor #%(tutor)s was not settled: %(reason)s"
-
 
 #: app/services/tutoring.py:761
 msgid "الحد الأدنى للسحب 200₪."
@@ -2941,7 +2937,7 @@ msgstr "Bottom navigation"
 #: app/templates/admin/base.html:19 app/templates/base.html:123
 #: app/templates/errors/403.html:21 app/templates/errors/429.html:21
 #: app/templates/partials/breadcrumbs.html:7
-#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:107
+#: app/templates/partials/navbar.html:76 app/templates/partials/navbar.html:109
 #: app/templates/schools/class_detail.html:6
 #: app/templates/schools/manage.html:6
 msgid "الرئيسية"
@@ -3276,7 +3272,7 @@ msgid "تبديل المظهر"
 msgstr "Toggle theme"
 
 #: app/templates/landing.html:36 app/templates/landing.html:155
-#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:108
+#: app/templates/partials/navbar.html:65 app/templates/partials/navbar.html:110
 msgid "دخول"
 msgstr "Log in"
 
@@ -3420,7 +3416,7 @@ msgid "ابدأ رحلتك التعليمية الآن"
 msgstr "Start your learning journey now"
 
 #: app/templates/landing.html:149 app/templates/main/index.html:10
-#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:109
+#: app/templates/partials/navbar.html:66 app/templates/partials/navbar.html:111
 #: app/templates/pricing.html:60
 msgid "سجّل مجاناً"
 msgstr "Sign up free"
@@ -4650,12 +4646,12 @@ msgid "اللغة الافتراضية"
 msgstr "Default language"
 
 #: app/templates/admin/settings.html:22 app/templates/partials/navbar.html:47
-#: app/templates/partials/navbar.html:113
+#: app/templates/partials/navbar.html:115
 msgid "العربية"
 msgstr "Arabic"
 
 #: app/templates/admin/settings.html:23 app/templates/partials/navbar.html:47
-#: app/templates/partials/navbar.html:113
+#: app/templates/partials/navbar.html:115
 msgid "English"
 msgstr "English"
 
@@ -7040,11 +7036,11 @@ msgstr "Open search"
 msgid "قائمة المستخدم"
 msgstr "User menu"
 
-#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:99
+#: app/templates/partials/navbar.html:36 app/templates/partials/navbar.html:101
 msgid "الملف الشخصي"
 msgstr "Profile"
 
-#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:102
+#: app/templates/partials/navbar.html:52 app/templates/partials/navbar.html:104
 msgid "خروج"
 msgstr "Log out"
 
@@ -7065,11 +7061,16 @@ msgstr "Explore"
 msgid "محفظتي"
 msgstr "My wallet"
 
-#: app/templates/partials/navbar.html:98
+#: app/templates/partials/navbar.html:97
+msgid "مركز الأسرة"
+msgstr "Family Center"
+
+
+#: app/templates/partials/navbar.html:100
 msgid "الحساب"
 msgstr "Account"
 
-#: app/templates/partials/navbar.html:110
+#: app/templates/partials/navbar.html:112
 msgid "طالب فردي"
 msgstr "Individual student"
 

@@ -93,6 +93,8 @@
     <a href="{{ url_for('wallet_ui.my_wallet') }}" data-testid="nav-my-wallet">{{ icon('wallet') }} {{ _('محفظتي') }}</a>
   {% elif is_parent() %}
     <a href="{{ url_for('schools.my_classes') }}">{{ icon('school') }} {{ _('صفوف أبنائي') }}</a>
+    {#- AZ-P3-17: إدارة الربط والتقدم والرسوم كانت تُكتشف من الداشبورد وحده -#}
+    <a href="{{ url_for('family.index') }}" data-testid="nav-family-center">{{ icon('users') }} {{ _('مركز الأسرة') }}</a>
   {% endif %}
 
   <div class="nav-links__section">{{ _('الحساب') }}</div>
