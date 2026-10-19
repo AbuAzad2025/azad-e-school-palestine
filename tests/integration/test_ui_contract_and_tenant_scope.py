@@ -279,6 +279,23 @@ class TestCrossTenantWriteGuards:
         with app.app_context():
             assert Subscription.query.filter_by(user_id=child_id, class_id=b["class"]).count() == 0
 
+    def test_parent_can_subscribe_child_already_in_the_class(self, app):
+        """ضابط موجب: حاجز الوالد لا يمنع الدفع المشروع عن ابنه العضو."""
+        tenant = _tenant(app, "A")
+        parent_id = make_user(app, role="parent", school_id=tenant["school"])
+        make_family_link(app, parent_id, tenant["student"])
+        plan_id = make_subscription_plan(app, tenant["school"], class_id=tenant["class"])
+
+        resp = _client_for(app, parent_id).post(
+            f"/billing/{tenant['class']}/subscribe",
+            data={"plan_id": str(plan_id), "student_id": str(tenant["student"])},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            sub = Subscription.query.filter_by(user_id=tenant["student"], class_id=tenant["class"]).one()
+            assert sub.payer_id == parent_id
+
     def test_school_admin_topup_approval_returns_to_an_allowed_page(self, app):
         """بعد الاعتماد كان التحويل إلى /admin/wallet المحظور على مشرف المدرسة."""
         from decimal import Decimal

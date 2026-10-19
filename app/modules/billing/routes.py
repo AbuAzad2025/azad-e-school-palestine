@@ -183,7 +183,11 @@ def subscribe_route(class_id, class_room=None):
     # نفس شرط فتح صفحة الدفع: وليّ الأمر لا يشترك لابنه في صف لا صلة لهما به
     # عبر تمرير class_id من خارج الواجهة. حاجز الطالب (العضوية) داخل
     # _resolve_payee، وهذا الحاجز يغطي ذراع الوالد صراحةً.
-    if not can_pay_class(class_room, current_user):
+    #
+    # للوالد فقط: ``can_pay_class`` للطالب تشترط اشتراكاً سابقاً (حتى المعلّق)
+    # لأنها صُمِّمت لفتح صفحة الدفع لا لإنشاء أول اشتراك؛ تطبيقها على الطالب
+    # كان يمنع أول عملية شراء رغم عضويته في الصف التي فحصها _resolve_payee.
+    if current_user.role == UserRole.parent and not can_pay_class(class_room, current_user):
         abort(403)
     if form.validate_on_submit():
         plan = get_plan(form.plan_id.data)

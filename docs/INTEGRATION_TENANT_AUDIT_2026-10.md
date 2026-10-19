@@ -28,7 +28,7 @@ cross-tenant suite did not cover.
 | 3 | High | `wallet_api` GET `/balance` and `/transactions` had no auth decorator. Anonymous requests raised `AttributeError: 'AnonymousUserMixin' has no attribute 'id'` → **500**. | `role_required(student, teacher, parent, school_admin, super_admin)` → 401 JSON for anonymous, 403 for a role without a wallet. |
 | 4 | High | `billing.admin` and `billing.review` are open to `school_admin` without school scoping: the list was global and a tampered `payment_id` could approve/reject another school's payment. | `pending_payments(school_id=…)` now joins payment → subscription → class and filters by `class.school_id`; `review()` refuses a foreign payment with 403. The admin-blueprint list/approve/reject got the same guard as defense in depth. |
 | 5 | High | `schools.index` is reachable by `school_admin` but `list_schools()` returned **every active school** (name/domain/join code). | `list_schools(school_id=…)`; the route passes `current_school_id()` for non-super-admins. |
-| 6 | Medium | `billing.subscribe_route` checked the payee but not `can_pay_class`. A parent could POST an arbitrary `class_id` (with a linked child id) and create a subscription for a class the child never joined or was eligible for. | Added the same `can_pay_class` gate the GET page already used. |
+| 6 | Medium | `billing.subscribe_route` checked the payee but not `can_pay_class`. A parent could POST an arbitrary `class_id` (with a linked child id) and create a subscription for a class the child never joined or was eligible for. | Added the `can_pay_class` gate for parents only; students keep the existing membership gate in `_resolve_payee` (applying the page gate to students would block their first-ever purchase, which the CI suite caught). |
 | 7 | Medium | `schools.class_assign_teacher` accepted any user with the `teacher` role by id — including a teacher with no active role link in the class's school. | Assignment now requires an active `UserRoleLink` in `class_room.school_id`. |
 | 8 | Medium | `billing.discount_list` returned every school's discount codes to `school_admin`. | Non-super-admins are filtered to their own `school_id`. |
 | 9 | Medium | Admin nav (`admin/base.html`) and the school-admin dashboard quick actions linked to endpoints the admin blueprint's `before_request` refuses for school admins (`/admin/users`, `/admin/payments/pending`, `/admin/backups`, …). | Nav is split by `is_super_admin()`; school admins get their dashboard link. Quick actions now point only to pages they can open (`schools.index`, `schools.manage`, `schools.my_classes`, `calendar.index`). |
@@ -41,7 +41,7 @@ and is called with POST; every Python `url_for` resolves.
 
 ## Regression tests
 
-`tests/integration/test_ui_contract_and_tenant_scope.py` (15 tests) pins each
+`tests/integration/test_ui_contract_and_tenant_scope.py` (16 tests) pins each
 finding, including negative cases: foreign teacher on an appeal (403/404),
 foreign school admin on a receipt (403/404, no bytes), cross-school payment
 review (403/404 + row unchanged), parent subscribing a child to an unrelated
@@ -59,7 +59,7 @@ queue now require 200/302.
 | `mypy app config.py run.py` | no issues in 161 source files |
 | `pytest tests/unit/test_cross_tenant_adversarial.py -q` | 36 passed |
 | `pytest tests/integration/test_subscription_flows.py -q` | 31 passed |
-| `pytest tests/integration/test_ui_contract_and_tenant_scope.py -q` | 15 passed |
+| `pytest tests/integration/test_ui_contract_and_tenant_scope.py -q` | 16 passed |
 | `pytest tests/test_cov_module_routes.py tests/unit/test_admin_routes_gaps.py tests/test_erp_ux_sprint1.py -q` | 127 passed |
 | `pytest tests/security/test_school_admin_tenant.py tests/test_security.py -q` | 91 passed, 1 skipped |
 | `pytest tests/security/test_parent_child_boundary.py -q` | 16 passed |
