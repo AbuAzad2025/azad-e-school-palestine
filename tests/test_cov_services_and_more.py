@@ -76,6 +76,17 @@ def _user(app, role="student", **kw):
         return u.id
 
 
+def _message_pair(app):
+    """مرسل ومستلم في المدرسة نفسها — حدّ الرسائل يرفض غير ذلك."""
+    from tests.conftest import make_school, make_user
+
+    school_id = make_school(app)
+    return (
+        make_user(app, role="student", school_id=school_id),
+        make_user(app, role="student", school_id=school_id),
+    )
+
+
 def _school(app, **kw):
     with app.app_context():
         s = School(
@@ -202,8 +213,7 @@ class TestMessagesService:
         from app.services.messages import send_message
 
         with app.app_context():
-            sender = _user(app)
-            recipient = _user(app)
+            sender, recipient = _message_pair(app)
             msg, err = send_message(sender, recipient, "موضوع", "نص الرسالة")
             assert msg is not None
             assert err is None
@@ -246,8 +256,7 @@ class TestMessagesService:
         from app.services.messages import inbox, send_message
 
         with app.app_context():
-            sender = _user(app)
-            recipient = _user(app)
+            sender, recipient = _message_pair(app)
             send_message(sender, recipient, "موضوع", "نص")
             messages = inbox(recipient)
             assert len(messages) == 1
@@ -256,8 +265,7 @@ class TestMessagesService:
         from app.services.messages import send_message, sent
 
         with app.app_context():
-            sender = _user(app)
-            recipient = _user(app)
+            sender, recipient = _message_pair(app)
             send_message(sender, recipient, "موضوع", "نص")
             messages = sent(sender)
             assert len(messages) == 1
@@ -266,8 +274,7 @@ class TestMessagesService:
         from app.services.messages import mark_read, send_message, unread_count
 
         with app.app_context():
-            sender = _user(app)
-            recipient = _user(app)
+            sender, recipient = _message_pair(app)
             msg, _ = send_message(sender, recipient, "موضوع", "نص")
             assert unread_count(recipient) == 1
             mark_read(msg.id, recipient)
@@ -277,8 +284,7 @@ class TestMessagesService:
         from app.services.messages import get_thread, send_message
 
         with app.app_context():
-            sender = _user(app)
-            recipient = _user(app)
+            sender, recipient = _message_pair(app)
             msg, _ = send_message(sender, recipient, "موضوع", "نص")
             thread = get_thread(msg.id)
             assert thread is not None

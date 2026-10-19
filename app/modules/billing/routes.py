@@ -27,6 +27,7 @@ from app.services.schools import is_member
 from flask import abort, flash, redirect, render_template, url_for
 from flask_babel import _
 from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from . import bp
 from .forms import DiscountCodeForm, PaymentForm, PlanForm, SubscribeForm, ValidateDiscountForm
@@ -374,7 +375,9 @@ def discount_list():
         school_id = current_school_id()
         if school_id is None:
             abort(403)
-        query = query.filter(DiscountCode.school_id == school_id)
+        # الأكواد العامة (school_id IS NULL) تُطبَّق في مدرسته أيضاً؛ تُعرض
+        # للقراءة فقط، وإنشاؤها وتعديلها يبقيان للمشرف الكلي.
+        query = query.filter(or_(DiscountCode.school_id == school_id, DiscountCode.school_id.is_(None)))
     discounts = query.order_by(DiscountCode.created_at.desc()).all()
     return render_template("billing/discount_list.html", discounts=discounts)
 
@@ -383,10 +386,23 @@ def discount_list():
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def discount_create():
-    """إنشاء كود خصم جديد."""
+    """إنشاء كود خصم جديد.
+
+    مشرف المنصة يُنشئ كوداً عامّاً (``school_id IS NULL``) يُطبَّق في أي
+    مدرسة؛ مشرف المدرسة يُنشئ كوداً لمدرسته حصراً. لا قيمة افتراضية للمدرسة
+    (كانت ``or 1`` تنسب كود المشرف الكلي إلى المدرسة رقم 1).
+    """
+    from app.core.tenancy import current_school_id
+
     form = DiscountCodeForm()
     if form.validate_on_submit():
-        school_id: int = getattr(current_user, "school_id", 0) or 1
+        school_id: int | None
+        if current_user.role == UserRole.super_admin:
+            school_id = None
+        else:
+            school_id = current_school_id()
+            if school_id is None:
+                abort(403)
         discount, error = create_discount_code(
             school_id=school_id,
             code=form.code.data,

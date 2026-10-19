@@ -73,14 +73,24 @@ point), which would take hours. The CI workflow remains the authority for the
 full-suite result; the targeted suites above cover every module touched by this
 audit.
 
+## Product decisions resolved (2026-10-19)
+
+* **Messaging is intra-school.** `messages` carries no `school_id` (a thread is
+  between two users, not owned by a school), so RLS cannot cover it. The rule
+  now lives in `send_message`: sender and recipient must share at least one
+  active school, and a party that is `super_admin` is exempt. A user with no
+  active role link is refused rather than treated as sharing everything.
+  Covered by `tests/integration/test_messaging_and_coupon_boundaries.py`.
+* **Coupons are either global or school-scoped.** `create_discount_code`
+  accepts `school_id=None`, producing a platform-wide code (`school_id IS
+  NULL`) that validates in any school; a school code is refused against another
+  school's plan. The `or 1` fallback is gone, and `billing.discount_create`
+  passes `None` only for a super_admin. RLS gained the `school_id IS NULL` arm
+  for reads and redemption-counter writes, with RESTRICTIVE guards that keep
+  creating/deleting a global code on the platform side; migration
+  `w6x7y8z9a0b1` replays the live builder.
+
 ## Residual notes (not changed)
 
-* `messages.compose` limits the recipient picker to the sender's school but the
-  POST handler accepts any existing `recipient_id`. `messages` has no
-  `school_id`, so it is outside the tenant-table rule; tightening it is a
-  product decision (platform-wide messaging vs intra-school only).
-* `billing.discount_create` still falls back to `school_id = … or 1` for a
-  super admin. Codes are school-scoped by RLS, so a platform-wide code needs a
-  product decision before the fallback can be removed.
 * `admin.payments`/nav counters are global, but the pages that consume them are
   now super-admin-only, and tenant pages no longer render that nav.

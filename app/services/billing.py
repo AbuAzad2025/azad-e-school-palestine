@@ -402,7 +402,7 @@ def subscription_payment_summary(subscription_id: int) -> dict:
 
 
 def create_discount_code(
-    school_id: int,
+    school_id: int | None,
     code: str,
     name: str,
     type_: str,
@@ -412,7 +412,14 @@ def create_discount_code(
     applicable_plan_ids: list[int] | None = None,
     school_id_limit: int | None = None,
 ) -> tuple[DiscountCode | None, str | None]:
-    """إنشاء كود خصم جديد."""
+    """إنشاء كود خصم جديد.
+
+    ``school_id=None`` يعني كوداً عامّاً على مستوى المنصة (``school_id IS
+    NULL``) يُطبَّق في أي مدرسة. إنشاء كود عام حقّ المنصة وحدها؛ المسار
+    (``billing.discount_create``) لا يمرّر ``None`` إلا لمشرف كلي، ومشرف
+    المدرسة يمرّر مدرسته دائماً — لا قيمة افتراضية هنا كما كان (``or 1``)
+    تُنسب كوده إلى مدرسة عشوائية.
+    """
     code = (code or "").strip().upper()
     name = (name or "").strip()
     if not code:
@@ -440,9 +447,9 @@ def create_discount_code(
             max_uses=max_uses,
             expiry_date=expiry_date,
             applicable_plan_ids=applicable_plan_ids,
-            # الكود يُنسب للمدرسة الطالبة؛ وschool_id_limit يضيّق النطاق أكثر
-            # إن مُرّر. كتابة None هنا كانت تُسقط كل كود خارج نطاق أي مدرسة —
-            # وسياسة RLS ترفض السطر لأن ذراع المدرسة لا تطابق فارغاً.
+            # الكود يُنسب للمدرسة الطالبة، أو يبقى NULL ككود عام للمنصة.
+            # school_id_limit يضيّق النطاق أكثر إن مُرّر، وهو المسار القديم
+            # لتحويل كود المدرسة إلى كود محدود النطاق.
             school_id=school_id if school_id_limit is None else school_id_limit,
         )
         db.session.add(dc)
@@ -451,15 +458,29 @@ def create_discount_code(
     return tx(_create), None
 
 
-def validate_discount_code(code: str, plan_id: int) -> tuple[Decimal | None, str | None]:
-    """التحقق من صلاحية كود الخصم وإرجاع مبلغ الخصم (Decimal)."""
+def validate_discount_code(
+    code: str, plan_id: int, *, school_id: int | None = None
+) -> tuple[Decimal | None, str | None]:
+    """التحقق من صلاحية كود الخصم وإرجاع مبلغ الخصم (Decimal).
+
+    ``school_id`` هي المدرسة التي يُسترد فيها الكود؛ الافتراضي مدرسة الخطة
+    نفسها، فلا يستطيع أي مستدعٍ أن ينسى الفحص. الكود العام (``school_id IS
+    NULL``) يُقبل في كل مدرسة، وكود مدرسة أخرى يُرفض.
+    """
     code = (code or "").strip().upper()
     if not code:
         return None, _("كود الخصم مطلوب.")
 
+    plan = db.session.get(SubscriptionPlan, plan_id)
+    if not plan:
+        return None, _("الخطة غير موجودة.")
+    tenant_school_id = plan.school_id if school_id is None else school_id
+
     dc = DiscountCode.query.filter_by(code=code).first()
     if not dc:
         return None, _("كود الخصم غير صالح.")
+    if dc.school_id is not None and dc.school_id != tenant_school_id:
+        return None, _("كود الخصم غير صالح لهذه المدرسة.")
     if not dc.is_active:
         return None, _("كود الخصم غير مفعل.")
     if dc.expiry_date and dc.expiry_date < date_.today():
@@ -468,15 +489,8 @@ def validate_discount_code(code: str, plan_id: int) -> tuple[Decimal | None, str
         return None, _("تم استنفاد عدد استخدامات كود الخصم.")
     if dc.applicable_plan_ids and plan_id not in dc.applicable_plan_ids:
         return None, _("كود الخصم غير صالح لهذه الخطة.")
-    if dc.school_id:
-        # School check will be done at subscription level
-        pass
 
     # Calculate discount amount
-    plan = db.session.get(SubscriptionPlan, plan_id)
-    if not plan:
-        return None, _("الخطة غير موجودة.")
-
     plan_price: Decimal = plan.price.quantize(CENT, rounding=ROUND_HALF_UP)
     if dc.type == "percentage":
         discount = (plan_price * dc.value / Decimal("100")).quantize(CENT, rounding=ROUND_HALF_UP)

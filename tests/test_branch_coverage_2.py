@@ -50,6 +50,15 @@ def _make_teacher(app, school_id):
     return make_user(app, role="teacher", school_id=school_id)
 
 
+def _message_pair(app):
+    """مرسل ومستلم في المدرسة نفسها — حدّ الرسائل يرفض غير ذلك."""
+    school_id = make_school(app)
+    return (
+        _make_student(app, school_id=school_id),
+        _make_student(app, school_id=school_id),
+    )
+
+
 def _make_super_admin(app):
     return make_user(app, role="super_admin")
 
@@ -585,8 +594,7 @@ class TestMessagesEdges:
     def test_inbox_returns_root_messages(self, app):
         from app.services.messages import send_message, inbox
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             msg, _ = send_message(uid, rid, "Root", "Body")
             # Send a reply
             send_message(uid, rid, "Reply", "Reply body", parent_message_id=msg.id)
@@ -597,8 +605,7 @@ class TestMessagesEdges:
     def test_sent_messages(self, app):
         from app.services.messages import send_message, sent
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             send_message(uid, rid, "Msg1", "Body1")
             send_message(uid, rid, "Msg2", "Body2")
             sent_msgs = sent(uid)
@@ -613,8 +620,7 @@ class TestMessagesEdges:
     def test_get_thread(self, app):
         from app.services.messages import send_message, get_thread
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             msg, _ = send_message(uid, rid, "Thread", "Body")
             reply, _ = send_message(uid, rid, "Re: Thread", "Reply", parent_message_id=msg.id)
             thread = get_thread(msg.id)
@@ -629,8 +635,7 @@ class TestMessagesEdges:
     def test_mark_read_already_read(self, app):
         from app.services.messages import send_message, mark_read, unread_count
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             msg, _ = send_message(uid, rid, "Sub", "Body")
             mark_read(msg.id, rid)
             # Mark again — should be a no-op (msg.is_read is True)
@@ -647,8 +652,7 @@ class TestMessagesEdges:
         """msg exists but is already read — mark_read should skip."""
         from app.services.messages import send_message, mark_read, unread_count
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             msg, _ = send_message(uid, rid, "Sub", "Body")
             mark_read(msg.id, rid)
             assert unread_count(rid) == 0
@@ -659,8 +663,7 @@ class TestMessagesEdges:
     def test_inbox_sorted_by_read_status(self, app):
         from app.services.messages import send_message, inbox, mark_read
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             msg1, _ = send_message(uid, rid, "First", "Body1")
             msg2, _ = send_message(uid, rid, "Second", "Body2")
             mark_read(msg1.id, rid)
@@ -671,8 +674,7 @@ class TestMessagesEdges:
     def test_thread_with_reply(self, app):
         from app.services.messages import send_message, get_thread
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            uid, rid = _message_pair(app)
             root, _ = send_message(uid, rid, "Root", "Body")
             reply, _ = send_message(rid, uid, "Re: Root", "Reply", parent_message_id=root.id)
             thread = get_thread(root.id)

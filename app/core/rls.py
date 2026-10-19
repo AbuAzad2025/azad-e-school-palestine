@@ -187,6 +187,17 @@ _DIRECT_CLASS_ID_COLUMNS: dict[str, str] = {
     "subscription_plans": "subscription_plans.class_id",
 }
 
+# Platform-wide coupons: a ``discount_codes`` row with ``school_id = NULL``
+# applies in every school, so every tenant must be able to read it and increment
+# its redemption counter (``apply_discount_code`` does both in one statement, so
+# ``WITH CHECK`` must accept the row too). No tenant row is exposed by this arm
+# — a global code belongs to no school. Creating or deleting a global row is a
+# platform act: ``_global_coupon_guard_ddl`` adds RESTRICTIVE policies that keep
+# both to the ``is_super_admin`` context, and ``billing.discount_create`` passes
+# ``None`` only for a super_admin.
+_GLOBAL_COUPON_TABLES = frozenset({"discount_codes"})
+_GLOBAL_COUPON_ARM = "school_id IS NULL"
+
 # Tables keyed by the actor: a subscriber must always read and write their own
 # rows there, whichever school the row's class belongs to. Both carry
 # ``user_id``, so the arm implies nothing about anybody else's row.
@@ -262,7 +273,7 @@ def build_policy_ddl(
     using = _clause(read_arms)
     with_check = _clause(write_arms)
     policy_name = f"tenant_isolation_{table_name}"
-    return [
+    statements = [
         f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY",
         f"ALTER TABLE {table_name} FORCE ROW LEVEL SECURITY",
         f"DROP POLICY IF EXISTS {policy_name} ON {table_name}",
@@ -271,6 +282,44 @@ def build_policy_ddl(
         FOR ALL
         USING ({using})
         WITH CHECK ({with_check})
+    """,
+    ]
+    if table_name in _GLOBAL_COUPON_TABLES:
+        statements += _global_coupon_guard_ddl(table_name)
+    return statements
+
+
+def _global_coupon_guard_ddl(table_name: str) -> list[str]:
+    """Restrictive guards around the platform-wide coupon arm.
+
+    The permissive policy has to accept ``school_id IS NULL`` rows so every
+    tenant can read a global code and increment its redemption counter. That
+    necessarily accepts *any* NULL row as a write target for UPDATE. These
+    restrictive policies (ANDed with the permissive one) keep creation and
+    deletion of a platform-wide code where they belong — the platform — while
+    leaving a tenant free to write its own school's rows.
+
+    ``current_setting('app.is_super_admin', true) = '1'`` is the same platform
+    switch the permissive clause uses; without it the guard would also block
+    the platform account, which is not a BYPASSRLS role.
+    """
+    admin = "current_setting('app.is_super_admin', true) = '1'"
+    insert_guard = f"global_write_guard_{table_name}"
+    delete_guard = f"global_delete_guard_{table_name}"
+    return [
+        f"DROP POLICY IF EXISTS {insert_guard} ON {table_name}",
+        f"""
+    CREATE POLICY {insert_guard} ON {table_name}
+        AS RESTRICTIVE
+        FOR INSERT
+        WITH CHECK (school_id IS NOT NULL OR {admin})
+    """,
+        f"DROP POLICY IF EXISTS {delete_guard} ON {table_name}",
+        f"""
+    CREATE POLICY {delete_guard} ON {table_name}
+        AS RESTRICTIVE
+        FOR DELETE
+        USING (school_id IS NOT NULL OR {admin})
     """,
     ]
 
@@ -331,15 +380,19 @@ def build_all_policy_ddl(bind=None) -> tuple[list[str], list[str]]:
             skipped.append(table)
             continue
         read_arms: list[str] = []
+        write_arms: list[str] = []
         if expr := _DIRECT_CLASS_ID_COLUMNS.get(table):
             read_arms.append(_class_ids_match(expr))
         if table == "classes":
             read_arms.append(f"(current_setting('{_INDIVIDUAL_GUC}', true) = '1' AND is_public = true)")
+        if table in _GLOBAL_COUPON_TABLES:
+            read_arms.append(_GLOBAL_COUPON_ARM)
+            write_arms.append(_GLOBAL_COUPON_ARM)
         statements += build_policy_ddl(
             table,
             "school_id::text = current_setting('app.current_school_id', true)",
             read_arms,
-            [],
+            write_arms,
         )
 
     for table, subquery in _INDIRECT_TENANT_TABLES.items():
@@ -530,13 +583,17 @@ def enable_rls_on_table(
         read_arms.append(_class_ids_match(expr))
     if individual_catalogue:
         read_arms.append(f"(current_setting('{_INDIVIDUAL_GUC}', true) = '1' AND is_public = true)")
+    write_arms: list[str] = []
+    if table_name in _GLOBAL_COUPON_TABLES:
+        read_arms.append(_GLOBAL_COUPON_ARM)
+        write_arms.append(_GLOBAL_COUPON_ARM)
 
     _apply(
         build_policy_ddl(
             table_name,
             "school_id::text = current_setting('app.current_school_id', true)",
             read_arms,
-            [],
+            write_arms,
         )
     )
     logger.info("rls_policy_created", table=table_name, policy=f"tenant_isolation_{table_name}")

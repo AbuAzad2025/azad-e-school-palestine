@@ -1307,16 +1307,18 @@ class TestMessagesBranches:
     def test_send_message_success(self, app):
         from app.services.messages import send_message
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            sid = make_school(app)
+            uid = _make_student(app, sid)
+            rid = _make_student(app, sid)
             msg, err = send_message(uid, rid, "Hello", "World")
             assert msg is not None
 
     def test_unread_count(self, app):
         from app.services.messages import send_message, unread_count
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            sid = make_school(app)
+            uid = _make_student(app, sid)
+            rid = _make_student(app, sid)
             send_message(uid, rid, "Sub", "Body")
             assert unread_count(rid) >= 1
 
@@ -1324,8 +1326,9 @@ class TestMessagesBranches:
         from app.services.messages import send_message, mark_read, unread_count
         from app.models.message import Message
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            sid = make_school(app)
+            uid = _make_student(app, sid)
+            rid = _make_student(app, sid)
             msg, _ = send_message(uid, rid, "Sub", "Body")
             mark_read(msg.id, rid)
             assert unread_count(rid) == 0
@@ -1333,8 +1336,9 @@ class TestMessagesBranches:
     def test_mark_read_wrong_user(self, app):
         from app.services.messages import send_message, mark_read, unread_count
         with app.app_context():
-            uid = _make_student(app)
-            rid = _make_student(app)
+            sid = make_school(app)
+            uid = _make_student(app, sid)
+            rid = _make_student(app, sid)
             msg, _ = send_message(uid, rid, "Sub", "Body")
             mark_read(msg.id, uid)
             assert unread_count(rid) >= 1
