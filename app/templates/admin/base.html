@@ -17,6 +17,7 @@
     </div>
     <nav class="admin-nav">
       <div class="admin-nav-section">{{ _('الرئيسية') }}</div>
+      {% if is_super_admin() %}
       <a href="{{ url_for('admin.dashboard') }}" class="admin-nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" {% if request.endpoint == 'admin.dashboard' %}aria-current="page"{% endif %}>{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
 
       <div class="admin-nav-section">{{ _('الإدارة') }}</div>
@@ -31,12 +32,15 @@
       <div class="admin-nav-section">{{ _('الذكاء الاصطناعي') }}</div>
       <a href="{{ url_for('admin.ai_usage') }}" class="admin-nav-item {% if request.endpoint == 'admin.ai_usage' %}active{% endif %}" {% if request.endpoint == 'admin.ai_usage' %}aria-current="page"{% endif %}>{{ icon('sparkles') }} {{ _('إحصائيات AI') }}</a>
 
-      {% if is_super_admin() %}
       <div class="admin-nav-section">{{ _('النظام') }}</div>
       <a href="{{ url_for('admin.audit_logs') }}" class="admin-nav-item {% if request.endpoint == 'admin.audit_logs' %}active{% endif %}" {% if request.endpoint == 'admin.audit_logs' %}aria-current="page"{% endif %}>{{ icon('clipboard-list') }} {{ _('سجل التدقيق') }}</a>
       <a href="{{ url_for('admin.wallet_ledger') }}" class="admin-nav-item {% if request.endpoint == 'admin.wallet_ledger' %}active{% endif %}" {% if request.endpoint == 'admin.wallet_ledger' %}aria-current="page"{% endif %}>{{ icon('wallet') }} {{ _('دفتر المحفظة') }}</a>
       <a href="{{ url_for('admin.backups_list') }}" class="admin-nav-item {% if request.endpoint == 'admin.backups_list' %}active{% endif %}" {% if request.endpoint == 'admin.backups_list' %}aria-current="page"{% endif %}>{{ icon('refresh') }} {{ _('النسخ الاحتياطي') }}</a>
       <a href="{{ url_for('admin.settings') }}" class="admin-nav-item {% if request.endpoint == 'admin.settings' %}active{% endif %}" {% if request.endpoint == 'admin.settings' %}aria-current="page"{% endif %}>{{ icon('settings') }} {{ _('الإعدادات') }}</a>
+      {% else %}
+      {#- مشرف المدرسة: النقاط المسموحة له في before_request فقط. روابط الإدارة
+          العليا كانت تُعرض له ثم تردّ 403 — واجهة لا تطابق الحارس. -#}
+      <a href="{{ url_for('admin.school_admin_dashboard') }}" class="admin-nav-item {% if request.endpoint == 'admin.school_admin_dashboard' %}active{% endif %}" {% if request.endpoint == 'admin.school_admin_dashboard' %}aria-current="page"{% endif %}>{{ icon('dashboard') }} {{ _('لوحة التحكم') }}</a>
       {% endif %}
     </nav>
     <div class="admin-sidebar__footer">

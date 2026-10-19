@@ -60,6 +60,7 @@ def _parse_amount(raw: str | None) -> Decimal | None:
 
 
 @bp.get("/balance")
+@role_required(UserRole.student, UserRole.teacher, UserRole.parent, UserRole.school_admin, UserRole.super_admin)
 def wallet_balance():
     """رصيد محفظة مستخدم.
     ---
@@ -109,6 +110,7 @@ def wallet_balance():
 
 
 @bp.get("/transactions")
+@role_required(UserRole.student, UserRole.teacher, UserRole.parent, UserRole.school_admin, UserRole.super_admin)
 def wallet_transactions():
     """سجل حركات المحفظة (مزدوج القيد).
     ---

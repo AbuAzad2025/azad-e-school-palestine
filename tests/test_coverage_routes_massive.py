@@ -205,7 +205,8 @@ class TestGradeRoutes:
         client, emails, cid = _setup(app)
         _login(client, emails["teacher"])
         resp = client.get(f"/classes/{cid}/appeals")
-        assert resp.status_code in (200, 302, 500)  # 500 = pre-existing template bug
+        # كان 500 بسبب url_for لمسار تفاصيل غير موجود؛ أُصلح ويُثبَّت الآن.
+        assert resp.status_code in (200, 302)
 
 
 # ═══════ ASSESSMENT ROUTES (prefix: /classes) ═══════

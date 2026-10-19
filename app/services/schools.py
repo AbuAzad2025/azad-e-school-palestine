@@ -33,8 +33,16 @@ def create_school(
     return tx(_create), None
 
 
-def list_schools():
-    return School.query.filter_by(is_active=True).order_by(School.name_ar).all()
+def list_schools(school_id: int | None = None):
+    """المدارس النشطة — تمرير ``school_id`` يقصر النتيجة على مدرسة واحدة.
+
+    ``School`` جذر التينانتس فلا عمود ``school_id`` عليه؛ التقييد هنا
+    بالمعرّف نفسه. مشرف المدرسة لا يملك رؤية قائمة المدارس كلها.
+    """
+    query = School.query.filter_by(is_active=True)
+    if school_id is not None:
+        query = query.filter_by(id=school_id)
+    return query.order_by(School.name_ar).all()
 
 
 def _join_code() -> str:

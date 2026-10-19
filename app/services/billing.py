@@ -254,10 +254,24 @@ def reject_payment(payment: ManualPayment, reviewer_id: int | None = None) -> No
     tx(_reject)
 
 
-def pending_payments():
+def pending_payments(school_id: int | None = None):
+    """الدفعات المعلّقة — مقصورة على مدرسة عند تمرير ``school_id``.
+
+    ``manual_payments`` لا تحمل ``school_id`` مباشرة، فالنطاق يُشتق من
+    مسارها: payment → subscription → class.school_id. تمرير ``None`` مقصور
+    على super_admin (فوق التينانتس) وليس دلالة «لا فلترة» لأي دور آخر.
+    """
+    from app.models.class_room import ClassRoom
+
+    query = ManualPayment.query.filter_by(status="pending")
+    if school_id is not None:
+        query = (
+            query.join(Subscription, ManualPayment.subscription_id == Subscription.id)
+            .join(ClassRoom, Subscription.class_id == ClassRoom.id)
+            .filter(ClassRoom.school_id == school_id)
+        )
     return (
-        ManualPayment.query.filter_by(status="pending")
-        .options(
+        query.options(
             joinedload(ManualPayment.subscription).joinedload(Subscription.user),
             joinedload(ManualPayment.subscription).joinedload(Subscription.plan),
             joinedload(ManualPayment.payer),

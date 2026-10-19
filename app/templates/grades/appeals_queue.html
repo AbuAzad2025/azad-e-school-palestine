@@ -20,7 +20,7 @@
   {% set _ = rows.append({'id': appeal.id, 'cells': {
     'student': appeal.student.name_ar,
     'assignment': appeal.submission.assignment.title,
-    'mark': appeal.current_mark,
+    'mark': appeal.submission.mark if appeal.submission.mark is not none else '—',
     'reason': appeal.reason,
     'status': status_cell
   }, 'actions': actions_html}) %}

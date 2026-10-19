@@ -122,6 +122,22 @@ def _invalidate_admin_nav_cache() -> None:
     cache.delete("admin_nav_counters")
 
 
+def _assert_payment_tenant(payment: ManualPayment) -> None:
+    """حاجز تينانت على دفعة بمعرّفها — دفاع ثانٍ بعد حاجز before_request.
+
+    ``manual_payments`` لا تحمل school_id، فوِجهة المقارنة اشتراكها ثم صفّه.
+    super_admin فوق التينانتس، وغيره يُرفض 403 إن لم تكن الدفعة من مدرسته.
+    """
+    if current_user.role == UserRole.super_admin:
+        return
+    from app.core.tenancy import current_school_id
+
+    sub = payment.subscription
+    class_room = sub.class_room if sub is not None else None
+    if class_room is None or class_room.school_id != current_school_id():
+        abort(403)
+
+
 # نقاط نهاية أدمن المدرسة التي تخرج من "super_admin فقط" الافتراضي — كل واحدة
 # تحمل role_required وتحقق تينانت صارماً داخل نفسها.
 _SCHOOL_ADMIN_ALLOWED_ENDPOINTS = frozenset({"admin.school_admin_dashboard", "admin.wallet_topup_review"})
@@ -583,17 +599,16 @@ def subscription_detail(sub_id):
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def pending_payments():
-    payments = (
-        ManualPayment.query.filter_by(status="pending")
-        .options(
-            joinedload(ManualPayment.subscription).joinedload(Subscription.user),
-            joinedload(ManualPayment.subscription).joinedload(Subscription.plan),
-            joinedload(ManualPayment.receipts),
-        )
-        .order_by(ManualPayment.created_at.desc())
-        .all()
-    )
-    return render_template("admin/pending_payments.html", payments=payments)
+    from app.core.tenancy import current_school_id
+    from app.services.billing import pending_payments as list_pending_payments
+
+    # النطاق مشتق من payment → subscription → class.school_id. المشرف الكلي
+    # (فوق التينانتس) بلا نطاق، وغيره يُقيَّد بمدرسته حتى لو تغيّر حاجز
+    # before_request لاحقاً — لا قائمة عابرة للتينانتس من هذه النقطة.
+    school_id = None if current_user.role == UserRole.super_admin else current_school_id()
+    if current_user.role != UserRole.super_admin and school_id is None:
+        abort(403)
+    return render_template("admin/pending_payments.html", payments=list_pending_payments(school_id=school_id))
 
 
 @bp.post("/payments/<int:payment_id>/approve")
@@ -602,6 +617,7 @@ def pending_payments():
 def payment_approve(payment_id):
     """اعتماد الدفع اليدوي وتفعيل الاشتراك + إنشاء عضوية الصف."""
     payment = db.get_or_404(ManualPayment, payment_id)
+    _assert_payment_tenant(payment)
     from app.services.billing import approve_payment
 
     def _approve_payment():
@@ -650,6 +666,7 @@ def payment_approve(payment_id):
 def payment_reject(payment_id):
     """رفض الدفع وإلغاء الاشتراك."""
     payment = db.get_or_404(ManualPayment, payment_id)
+    _assert_payment_tenant(payment)
     from app.services.billing import reject_payment
 
     def _reject_payment():
@@ -1582,7 +1599,13 @@ def wallet_topup_review(topup_id: int):
         abort(400)
     reason = (request.form.get("reason") or "").strip()
 
-    back_url = url_for("admin.wallet_ledger", school_id=req.school_id)
+    # مشرف المدرسة لا يملك فتح دفتر المحفظة (before_request يردّه 403)، فلا
+    # يجوز أن ينتهي اعتماده على صفحة محظورة. يعود للوحته، والمشرف الكلي
+    # يعود للدفتر مصفّىً على المدرسة نفسها.
+    if current_user.role == UserRole.super_admin:
+        back_url = url_for("admin.wallet_ledger", school_id=req.school_id)
+    else:
+        back_url = url_for("admin.school_admin_dashboard")
 
     from app.services.wallet_service import review_topup
 

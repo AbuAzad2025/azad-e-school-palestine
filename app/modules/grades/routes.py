@@ -510,6 +510,35 @@ def appeals_list(class_id, class_room=None):
     return render_template("grades/appeals_queue.html", class_room=class_room, appeals=appeals)
 
 
+@bp.get("/appeals/<int:appeal_id>")
+@login_required
+def appeal_detail(appeal_id):
+    """تفاصيل الاعتراض — للمعلم الذي يدرّس الصف وللطالب صاحب الاعتراض.
+
+    هذا هو المسار الذي يشير إليه زر «تفاصيل» في قائمة الاعتراضات؛ وبدونه كان
+    ``url_for`` يفشل بـ BuildError فيصير الطابور 500 متى وُجد اعتراض واحد.
+    """
+    from app.models.gradebook import GradeAppeal
+
+    appeal = db.session.get(GradeAppeal, appeal_id)
+    if appeal is None:
+        abort(404)
+    # التسليم محجوب بـ RLS عن معلم مدرسة أخرى. حجبه يعني بالضبط أن الطالب
+    # ليس من نطاقه — 403 لا 500 بسبب علاقة لم تُحمّل.
+    if appeal.submission is None:
+        abort(403)
+    class_room = _class_or_404(appeal.submission.assignment.class_id)
+    can_review = can_teach_class(class_room, current_user)
+    if not can_review and current_user.id != appeal.student_id:
+        abort(403)
+    return render_template(
+        "grades/appeal_detail.html",
+        appeal=appeal,
+        class_room=class_room,
+        can_review=can_review,
+    )
+
+
 @bp.post("/submissions/<int:submission_id>/appeal")
 @login_required
 def appeal_submit(submission_id):

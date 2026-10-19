@@ -461,7 +461,8 @@ class TestGradesRoutes:
         _, class_id, teacher_email = _setup_class_with_teacher(app)
         _login(client, teacher_email)
         resp = client.get(f"/classes/{class_id}/appeals")
-        assert resp.status_code in (200, 302, 500)
+        # كان 500 بسبب url_for لمسار تفاصيل غير موجود؛ أُصلح ويُثبَّت الآن.
+        assert resp.status_code in (200, 302)
 
 
 # ═══════════════════════════════════════════════════════════════════

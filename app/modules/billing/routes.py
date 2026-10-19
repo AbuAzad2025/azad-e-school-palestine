@@ -3,7 +3,7 @@
 from app.core import class_teach_required, flash_error, role_required
 from app.core.db import TxError
 from app.extensions import db
-from app.models.billing import ManualPayment, Subscription
+from app.models.billing import ManualPayment, PaymentReceipt, Subscription
 from app.models.class_room import ClassRoom
 from app.models.user import UserRole
 from app.services.access import can_pay_class, can_teach_class
@@ -65,6 +65,22 @@ def _invoice_can_view(class_room, sub) -> bool:
     if is_member(class_room, current_user):
         return True
     return current_user.role == UserRole.parent and is_parent_of(current_user.id, sub.user_id)
+
+
+def _payment_scope_or_403(payment: ManualPayment) -> None:
+    """يمنع مشرف مدرسة من مراجعة دفعة/إيصال مدرسة أخرى via ID.
+
+    super_admin فوق التينانتس؛ غيره يُقارَن بمدرسته الفعّالة. الرفض 403 لا 404
+    لأن الصفّ موجود فعلاً، فلا نكشفه ولا نسمح بتعديله.
+    """
+    if current_user.role == UserRole.super_admin:
+        return
+    from app.core.tenancy import current_school_id
+
+    sub = payment.subscription
+    class_room = sub.class_room if sub is not None else None
+    if class_room is None or class_room.school_id != current_school_id():
+        abort(403)
 
 
 def _class_or_404(class_id):
@@ -164,6 +180,11 @@ def subscribe_route(class_id, class_room=None):
     payee_id, payer_id = _resolve_payee(class_room, form)
     if payee_id is None:
         abort(403)
+    # نفس شرط فتح صفحة الدفع: وليّ الأمر لا يشترك لابنه في صف لا صلة لهما به
+    # عبر تمرير class_id من خارج الواجهة. حاجز الطالب (العضوية) داخل
+    # _resolve_payee، وهذا الحاجز يغطي ذراع الوالد صراحةً.
+    if not can_pay_class(class_room, current_user):
+        abort(403)
     if form.validate_on_submit():
         plan = get_plan(form.plan_id.data)
         if not plan or (plan.class_id not in (None, class_id)):
@@ -228,11 +249,55 @@ def payment_create(subscription_id):
     return redirect(url_for("billing.class_billing", class_id=class_room.id))
 
 
+@bp.get("/payments/receipts/<path:filename>")
+@login_required
+def payment_file(filename):
+    """تنزيل إيصال دفع عبر جدول الإيصالات — لا من مسار قابل للاجتياز.
+
+    الاسم القادم من الرابط يُبحث عنه كصفّ ``PaymentReceipt.stored_name``
+    (اسم عشوائي يُولّده ``save_upload``). بهذا لا يُبنى أي مسار من مدخل
+    المستخدم، والوصول يُقيَّد بمالك الاشتراك/الدافع/وليّ الأمر/مشرف المدرسة.
+    """
+    from flask import current_app, send_from_directory
+
+    receipt = PaymentReceipt.query.filter_by(stored_name=filename).first()
+    if receipt is None:
+        abort(404)
+    payment = receipt.payment
+    sub = payment.subscription
+
+    allowed = current_user.role == UserRole.super_admin
+    if not allowed:
+        if current_user.role == UserRole.school_admin:
+            from app.core.tenancy import current_school_id
+
+            class_room = sub.class_room if sub is not None else None
+            allowed = class_room is not None and class_room.school_id == current_school_id()
+        elif sub is not None:
+            allowed = current_user.id in {sub.user_id, sub.payer_id, payment.payer_id}
+            if not allowed and current_user.role == UserRole.parent:
+                allowed = is_parent_of(current_user.id, sub.user_id)
+    if not allowed:
+        abort(403)
+
+    return send_from_directory(
+        current_app.config["UPLOAD_FOLDER"],
+        receipt.stored_name,
+        as_attachment=True,
+        download_name=receipt.original_name or "receipt",
+    )
+
+
 @bp.get("/admin")
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def admin():
-    payments = pending_payments()
+    from app.core.tenancy import current_school_id
+
+    school_id = None if current_user.role == UserRole.super_admin else current_school_id()
+    if current_user.role != UserRole.super_admin and school_id is None:
+        abort(403)
+    payments = pending_payments(school_id=school_id)
     return render_template("billing/admin.html", payments=payments)
 
 
@@ -241,6 +306,7 @@ def admin():
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def review(payment_id, result):
     payment = db.get_or_404(ManualPayment, payment_id)
+    _payment_scope_or_403(payment)
     if result == "approve":
         try:
             sub = approve_payment(payment, reviewer_id=current_user.id)
@@ -296,9 +362,16 @@ def review(payment_id, result):
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def discount_list():
     """قائمة أكواد الخصم."""
+    from app.core.tenancy import current_school_id
     from app.models.billing import DiscountCode
 
-    discounts = DiscountCode.query.order_by(DiscountCode.created_at.desc()).all()
+    query = DiscountCode.query
+    if current_user.role != UserRole.super_admin:
+        school_id = current_school_id()
+        if school_id is None:
+            abort(403)
+        query = query.filter(DiscountCode.school_id == school_id)
+    discounts = query.order_by(DiscountCode.created_at.desc()).all()
     return render_template("billing/discount_list.html", discounts=discounts)
 
 

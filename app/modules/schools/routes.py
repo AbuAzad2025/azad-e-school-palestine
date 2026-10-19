@@ -36,7 +36,10 @@ def _school_id_or_abort():
 @login_required
 @role_required(UserRole.super_admin, UserRole.school_admin)
 def index():
-    return render_template("schools/index.html", schools=list_schools())
+    # School هي جذر التينانتس؛ مشرف المدرسة يرى مدرسته فقط، والمشرف الكلي
+    # يرى الكل. بلا هذا القيد كانت الصفحة تسرّب أسماء/نطاقات كل المدارس.
+    school_id = None if current_user.role == UserRole.super_admin else _school_id_or_abort()
+    return render_template("schools/index.html", schools=list_schools(school_id=school_id))
 
 
 @bp.route("/new", methods=["GET", "POST"])
@@ -270,8 +273,20 @@ def class_assign_teacher(class_id):
         abort(403)
     form = AssignTeacherForm()
     if form.validate_on_submit():
+        from app.models.user import UserRoleLink as _Link
+
         teacher = db.session.get(User, form.teacher_id.data)
-        if teacher and teacher.role == UserRole.teacher:
+        # المعلم يجب أن يكون عضواً نشطاً في مدرسة الصف نفسه — لا يكفي الدور.
+        # بدون هذا كان تمرير teacher_id لمستخدم من مدرسة أخرى يربطه بصفّ
+        # لا صلة له به (تلويث عبر التينانتس من نموذج قابل للتلاعب).
+        linked = (
+            teacher is not None
+            and _Link.query.filter_by(
+                user_id=teacher.id, school_id=class_room.school_id, role=UserRole.teacher, is_active=True
+            ).first()
+            is not None
+        )
+        if teacher and teacher.role == UserRole.teacher and linked:
 
             def _assign():
                 class_room.teacher_id = teacher.id

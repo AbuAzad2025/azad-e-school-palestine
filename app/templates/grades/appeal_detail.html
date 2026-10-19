@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "macros/ui.html" import azad_card, azad_breadcrumb, azad_badge %}
+{% block title %}{{ _('سبب الاعتراض') }} — {{ appeal.submission.assignment.title }}{% endblock %}
+{% block content %}
+{{ azad_breadcrumb([
+  {'label': _('دفتر الدرجات'), 'href': url_for('grades.gradebook', class_id=class_room.id)},
+  {'label': _('اعتراضات الدرجات'), 'href': url_for('grades.appeals_list', class_id=class_room.id)},
+  {'label': _('سبب الاعتراض')}
+]) }}
+
+<h1 class="page-title azad-mb-4">{{ icon('alert-triangle') }} {{ _('سبب الاعتراض') }}</h1>
+
+{% call azad_card('', '', 'file-text') %}
+<div class="u-slate-box">
+  <div class="u-between-wrap">
+    <div>
+      <span class="u-muted">{{ _('الطالب') }}:</span>
+      <strong>{{ appeal.student.name_ar or appeal.student.email }}</strong>
+    </div>
+    <div>
+      <span class="u-muted">{{ _('الحالة') }}:</span>
+      <span class="badge-status badge-{{ 'ok' if appeal.status == 'approved' else ('warn' if appeal.status == 'pending' else 'err') }}">
+        {{ status_label('grade_appeal_status', appeal.status) }}
+      </span>
+    </div>
+  </div>
+  <div class="u-divided">
+    <span class="u-muted">{{ _('الواجب') }}:</span>
+    <strong>{{ appeal.submission.assignment.title }}</strong>
+  </div>
+  <div class="u-divided">
+    <span class="u-muted">{{ _('الدرجة الحالية') }}:</span>
+    <span class="azad-badge-variant azad-badge-variant--info">
+      {{ appeal.submission.mark if appeal.submission.mark is not none else '—' }} / {{ appeal.submission.assignment.max_mark or '—' }}
+    </span>
+  </div>
+  <div class="u-divided">
+    <span class="u-muted">{{ _('سبب الاعتراض') }}:</span>
+    <p>{{ appeal.reason }}</p>
+  </div>
+  {% if appeal.teacher_response %}
+  <div class="u-divided">
+    <span class="u-muted">{{ _('ملاحظات') }}:</span>
+    <p>{{ appeal.teacher_response }}</p>
+  </div>
+  {% endif %}
+</div>
+
+{% if can_review and appeal.status in ('pending', 'reviewing') %}
+<div class="azad-section"><h2>{{ _('ملاحظات') }}</h2></div>
+<form method="post" action="{{ url_for('grades.appeal_review', appeal_id=appeal.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="azad-field u-mb-sp4">
+    <label class="azad-field__label" for="response">{{ _('ملاحظات') }}</label>
+    <textarea name="response" id="response" class="azad-field__textarea" rows="4">{{ appeal.teacher_response or '' }}</textarea>
+  </div>
+  <div class="azad-form-actions">
+    <button type="submit" name="action" value="approved" class="azad-btn">{{ icon('check') }} {{ _('اعتماد') }}</button>
+    <button type="submit" name="action" value="rejected" class="azad-btn-outline">{{ icon('x') }} {{ _('رفض') }}</button>
+  </div>
+</form>
+{% endif %}
+{% endcall %}
+{% endblock %}
