@@ -88,12 +88,23 @@ def _audit_admin_action(action: str, detail: dict) -> None:
 
 @bp.app_context_processor
 def admin_nav_context():
-    """عدّادات شريط التنقل في لوحة المشرف (تُحقن لصفحات اللوحة فقط).
+    """عدّادات شريط التنقل في لوحة المشرف.
 
-    P2-PERF-01: عدادات الكاش لمدة 60 ثانية — كانت تُنفَّذ 3 COUNT على كل
-    طلب عرض. الإبطال الفوري يتم عبر ``_invalidate_admin_nav_cache()``
-    عند تغيّر الحالات (موافقة/رفض/اعتماد تسجيل).
+    تُحسب فقط للمشرفين (لتفادي استعلامات COUNT على كل طلب لغيرهم)،
+    مع كاش لمدة 60 ثانية والإبطال الفوري عبر ``_invalidate_admin_nav_cache()``.
     """
+    try:
+        from app.models.user import UserRole
+        from flask_login import current_user
+
+        if not current_user.is_authenticated or current_user.role not in (
+            UserRole.super_admin,
+            UserRole.school_admin,
+        ):
+            return {"subs_pending": 0, "pending_payments": 0, "pending_reg_count": 0}
+    except Exception:  # noqa: BLE001
+        return {"subs_pending": 0, "pending_payments": 0, "pending_reg_count": 0}
+
     from app.core import cache
 
     cached = cache.get("admin_nav_counters")
