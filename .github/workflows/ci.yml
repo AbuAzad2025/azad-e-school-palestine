@@ -427,6 +427,12 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+
       - name: Cache Playwright
         uses: actions/cache@v5
         id: playwright-cache
@@ -435,15 +441,14 @@ jobs:
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
           restore-keys: ${{ runner.os }}-playwright-
 
+      # Must run after `npm ci`: npx then finds the project's pinned Playwright
+      # (the one in package-lock.json) and installs the browsers that exact
+      # version expects. Before the fix, npx downloaded latest playwright
+      # (v1.64.1) which shipped browsers incompatible with the project's
+      # pinned v1.62.1, so every spec failed with "Executable doesn't exist".
       - name: Install Playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
 
       - name: Make the app role subject to RLS
         # Same reason as the `test` job: the container's POSTGRES_USER is a
