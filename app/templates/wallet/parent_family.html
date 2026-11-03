@@ -89,6 +89,7 @@
         <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('wallet_ui.parent_child_wallet', child_id=child_id, page=page + 1) }}" data-testid="wallet-page-next" rel="next">{{ _('الأقدم') }} →</a>
         {% endif %}
       </nav>
+      {% endif %}
       {% else %}
       <div class="azad-card azad-empty" role="status" data-testid="wallet-no-transactions">
         <div class="azad-empty__icon">{{ icon('wallet') }}</div>
@@ -96,8 +97,7 @@
       </div>
       {% endif %}
     </div>
-    {% endif %}
-    
+
     <!-- Top-up form -->
     <div class="azad-section azad-mt-6">
       <h2 class="section-title">{{ _('شحن المحفظة') }}</h2>
@@ -115,7 +115,6 @@
         </a>
       </form>
     </div>
-    {% endif %}
   </div>
 </div>
 
@@ -161,5 +160,6 @@
     </div>
   </div>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}
