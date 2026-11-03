@@ -24,10 +24,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import text  # noqa: E402
-
 from app import create_app  # noqa: E402
 from app.core.db import tx  # noqa: E402
+from app.core.rls import platform_scope  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.models.assessment import Question, Quiz  # noqa: E402
@@ -36,7 +35,8 @@ from app.models.content import Lesson, Unit  # noqa: E402
 from app.models.gradebook import Assignment  # noqa: E402
 from app.models.school import Grade, School, Subject, SubjectGradeLink  # noqa: E402
 from app.models.tutoring import TutorProfile  # noqa: E402
-from app.models.user import User, UserRole, UserRoleLink, UserApprovalStatus  # noqa: E402
+from app.models.user import User, UserApprovalStatus, UserRole, UserRoleLink  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
 # ======================================================================
 # حسابات تجريبية
@@ -6289,7 +6289,9 @@ def _create_user(email, password, name_ar, name_en, role, school_id=None, verifi
             locale="ar",
             is_active=True,
             is_verified=verified,
-            approval_status=UserApprovalStatus.approved if is_super else UserApprovalStatus.pending,
+            # بذور الديمو تُنشئ حسابات مكتملة لتكون قابلة للاختبار فوراً؛
+            # التسجيلات الحقيقية تبقى pending حتى يوافق عليها المدير.
+            approval_status=UserApprovalStatus.approved,
         )
         db.session.add(u)
         db.session.flush()
@@ -6758,7 +6760,10 @@ def main() -> None:
     args = parser.parse_args()
 
     app = create_app()
-    with app.app_context():
+    # البذور تملك المدرسة والصفوف — ليس تيناتنس أيها، فهيهرز سياق المنصة
+    # لنفس السبب في get_or_create_system_school: FORCE RLS يرفض الكتابات
+    # العادية بلا GUC. لا ترفع نطاق بيانات المستخدم نفسه إلا عبر المسارات.
+    with app.app_context(), platform_scope():
         if args.purge:
             _out("تنظيف البذور السابقة…")
             tables = [t.name for t in db.metadata.sorted_tables if t.name != "alembic_version"]
@@ -6780,6 +6785,7 @@ def main() -> None:
                     locale="ar",
                     is_active=True,
                     is_verified=True,
+                    approval_status=UserApprovalStatus.approved,
                 )
                 db.session.add(u)
                 return u
