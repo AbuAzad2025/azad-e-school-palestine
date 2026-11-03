@@ -166,7 +166,11 @@ def _snapshot_request_gucs(*, school_id: int | None = None) -> dict[str, str]:
     user_role_links قد يفشل في سياقات RLS أو عندما تكون الجلسة
     منتهية الصلاحية.
     """
-    if school_id is None and getattr(current_user, "is_authenticated", False) and getattr(current_user, "role", None) != UserRole.super_admin:
+    if (
+        school_id is None
+        and getattr(current_user, "is_authenticated", False)
+        and getattr(current_user, "role", None) != UserRole.super_admin
+    ):
         school_id = getattr(current_user, "school_id", None)
     sid_val = str(school_id) if school_id else "0"
     if not getattr(current_user, "is_authenticated", False):
@@ -270,7 +274,7 @@ def set_tenant_for_request() -> None:
                     "school_id": snap["app.current_school_id"],
                 },
             ).fetchone()
-            class_ids = str(_res[1] or "") if _res else "" 
+            class_ids = str(_res[1] or "") if _res else ""
             # Update snapshot with derived class_ids so after_begin replay keeps them
             snap["app.current_class_ids"] = class_ids
             _g._rls_request_gucs = snap
