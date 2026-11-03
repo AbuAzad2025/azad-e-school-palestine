@@ -155,7 +155,43 @@ export function initFileUploads() {
   });
 }
 
+/**
+ * Prevent double submission on forms by disabling submit buttons.
+ */
+function initFormDoubleSubmitPrevention() {
+  document.addEventListener(
+    "submit",
+    (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      if (form.dataset.noDoubleSubmit === "true") return;
+
+      const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+      submitBtns.forEach((btn) => {
+        // Don't disable if it's marked as allowing multiple submits
+        if (btn.dataset.allowDoubleSubmit === "true") return;
+        // Small delay to allow normal form submission
+        setTimeout(() => {
+          if (btn instanceof HTMLButtonElement) {
+            btn.disabled = true;
+          } else if (btn instanceof HTMLInputElement) {
+            btn.disabled = true;
+          }
+        }, 0);
+      });
+    },
+    false,
+  );
+}
+
+export function initForms() {
+  initInlineValidation();
+  initFileUploads();
+  initFormDoubleSubmitPrevention();
+}
+
 export default {
   initInlineValidation,
   initFileUploads,
+  initForms,
 };

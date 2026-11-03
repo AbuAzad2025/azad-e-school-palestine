@@ -410,6 +410,24 @@ def create_app(config_class=Config):
             count = run_absence_alerts()
         click.echo(f"absence_alerts_sent={count}")
 
+    # تنتهي صلاحية جلسات الدروس الخصوصية غير المؤكدة بعد المهلة
+    @app.cli.command("tutoring-auto-timeout")
+    @click.option(
+        "--grace-hours",
+        default=None,
+        type=click.IntRange(min=1),
+        help="ساعات المهلة قبل الإنهاء التلقائي (افتراضياً TUTORING_SESSION_TIMEOUT_HOURS).",
+    )
+    def tutoring_auto_timeout_cmd(grace_hours):
+        """ينهي تلقائياً جلسات الدروس الخصوصية غير المؤكدة بعد انتهاء المهلة."""
+        from .services.tutoring import auto_timeout_unconfirmed_sessions
+
+        result = auto_timeout_unconfirmed_sessions(grace_hours=grace_hours)
+        click.echo(
+            f"tutoring_auto_timeout finalized={result['finalized']} "
+            f"skipped={result['skipped']} errors={result['errors']}"
+        )
+
     @app.cli.command("init-system")
     @click.option("--super-admin-email", default=None, help="Email of the super admin to ensure exists.")
     @click.option("--super-admin-password", default=None, help="Password for the super admin.")

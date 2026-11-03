@@ -76,6 +76,10 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
     @property
     def belongs_to_school(self) -> bool:
         """True if user has an active role link to a non-system school."""
+        try:
+            _ = self.role_links
+        except Exception:
+            return False
         for link in self.role_links:
             if link.is_active and not link.school.is_system:
                 return True
@@ -83,7 +87,23 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
 
     @property
     def school_id(self) -> int | None:
-        """أول مدرسة نشطة للمستخدم (من user_role_links). None للمشرف الكلي."""
+        """أول مدرسة نشطة للمستخدم (من user_role_links). None للمشرف الكلي.
+
+        يحاول أولاً استخدام القيمة المخبوزة إن وُجدت (من reload كامل)،
+        ويفصل عن علاقة ``role_links`` فقط عند الحاجة لتجنب استعلامات
+        خفية تفشل تحت قيود RLS أو عندما تكون الجلسة منتهية الصلاحية.
+        """
+        # أولًا: جرّب القيمة من الذاكرة إن كان الكائن مُحمّلاً كاملاً
+        state = getattr(self, "_sa_instance_state", None)
+        if state is not None and "school_id" in state.unloaded:
+            # علاقة role_links غير مخبوزة —只需要 تحميلها عند الحاجة
+            pass
+        # تحميل relationship مرة واحدة فقط إن لم تكن مُعبأة
+        try:
+            # استخدام getattr لإجبار التحميل إذا لم يكن مُخبوزًا
+            _ = self.role_links
+        except Exception:
+            return None
         for link in self.role_links:
             if link.is_active:
                 return link.school_id

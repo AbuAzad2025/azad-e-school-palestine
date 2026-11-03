@@ -292,15 +292,22 @@ def error_payload(
 def wants_json() -> bool:
     """هل يتوقع العميل JSON؟ (مسارات API/health أو عميل لا يقبل HTML).
 
-    غياب ترويسة ``Accept`` ليس تفضيلاً للـ JSON: طلب بلا ترويسة (متصفح قديم،
-    أداة داخلية، عميل اختبار) يقبل أي صيغة، ومسارات الواجهة وجهتها الأصلية
-    صفحة عربية — لذلك الافتراضي هنا HTML، وJSON يُختار فقط عن نية صريحة:
-    مسار API/health، جسم JSON، أو عميل لا يقبل HTML (``accept_html`` خطأ وعنده
-    صيغ أخرى مقبولة).
+    Unified AJAX/form error contract: treat requests with X-Requested-With:
+    XMLHttpRequest or is_json as AJAX expecting JSON.
     """
     if request.path.startswith(("/api/", "/health")):
         return True
     if request.is_json:
+        return True
+    # AJAX detection
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return True
+    # Accept application/json
+    if (
+        request.accept_mimetypes
+        and request.accept_mimetypes.best == "application/json"
+        and not request.accept_mimetypes.accept_html
+    ):
         return True
     if not request.accept_mimetypes:
         return False  # لا ترويسة Accept → صفحة الواجهة العربية

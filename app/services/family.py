@@ -3,6 +3,8 @@
 import secrets
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import select
+
 from app.core.db import tx
 from app.core.i18n import _
 from app.extensions import db
@@ -94,7 +96,14 @@ def remove_link(link_id: int, parent_id: int) -> tuple[bool, str | None]:
 
 def is_parent_of(parent_id: int, student_id: int) -> bool:
     """يتحقق مما إذا كان ولي الأمر مرتبطاً بالطالب."""
-    return FamilyLink.query.filter_by(parent_id=parent_id, student_id=student_id, status="active").first() is not None
+    link = db.session.execute(
+        select(FamilyLink).where(
+            FamilyLink.parent_id == parent_id,
+            FamilyLink.student_id == student_id,
+            FamilyLink.status == "active",
+        )
+    ).scalar_one_or_none()
+    return link is not None
 
 
 def child_progress_summary(student_id: int) -> list[dict]:

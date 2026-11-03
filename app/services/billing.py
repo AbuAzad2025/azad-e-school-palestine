@@ -10,6 +10,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from sqlalchemy import func, update
 from sqlalchemy.orm import joinedload
 
+from app.config.constants import PENDING_SUBSCRIPTION_EXPIRE_HOURS
 from app.core.db import TxError, tx
 from app.core.i18n import _
 from app.core.uploads import save_upload
@@ -186,6 +187,66 @@ def _activate(subscription: Subscription, duration_days: int | None = None, auto
     if auto_activate:
         subscription.auto_activated_at = now
         subscription.source = "gateway"
+
+
+def expire_stale_pending_subscriptions(hours: int | None = None) -> int:
+    """Expire pending subscriptions that have exceeded the grace period.
+
+    Lazy expiration helper - can be called from cron or lazily from access checks.
+    Returns count of expired subscriptions.
+    """
+    if hours is None:
+        hours = PENDING_SUBSCRIPTION_EXPIRE_HOURS
+
+    cutoff = datetime.now(UTC) - timedelta(hours=hours)
+    count = 0
+
+    def _expire():
+        nonlocal count
+        subs = (
+            Subscription.query.filter(
+                Subscription.status == "pending",
+                Subscription.created_at < cutoff,
+            )
+            .with_for_update()
+            .all()
+        )
+        for sub in subs:
+            sub.status = "expired"
+            count += 1
+        return count
+
+    try:
+        return tx(_expire)
+    except Exception:
+        return 0
+
+
+def lazy_expire_pending_subscription(subscription: Subscription) -> bool:
+    """Lazily expire a single pending subscription if it's stale.
+
+    Returns True if it was expired, False otherwise.
+    """
+    if subscription.status != "pending":
+        return False
+    hours = PENDING_SUBSCRIPTION_EXPIRE_HOURS
+    cutoff = datetime.now(UTC) - timedelta(hours=hours)
+    if subscription.created_at and subscription.created_at < cutoff:
+
+        def _expire_one():
+            locked = db.session.execute(
+                db.select(Subscription).where(Subscription.id == subscription.id).with_for_update()
+            ).scalar_one_or_none()
+            if locked and locked.status == "pending":
+                locked.status = "expired"
+                return True
+            return False
+
+        try:
+            return bool(tx(_expire_one))
+        except Exception:
+            return False
+    return False
 
 
 def approve_payment(payment: ManualPayment, reviewer_id: int | None = None) -> Subscription:

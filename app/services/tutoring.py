@@ -6,13 +6,13 @@
 import hashlib
 import os
 import secrets
-from datetime import UTC
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
-from app.config.constants import TUTOR_MIN_PAYOUT
+from app.config.constants import TUTOR_MIN_PAYOUT, TUTORING_SESSION_TIMEOUT_HOURS
 from app.core.db import TxError, tx
 from app.core.i18n import _
 from app.core.logging import get_logger
@@ -915,3 +915,66 @@ def reject_session_payment_by_tutor(session_id: int, actor_id: int) -> tuple[str
         return tx(_work), None
     except TxError as exc:
         return None, str(exc)
+
+
+def auto_timeout_unconfirmed_sessions(grace_hours: int | None = None) -> dict:
+    """Auto-finalize unconfirmed tutoring sessions after grace period.
+
+    Anti-deadlock: if a session remains unconfirmed by one party after the window
+    expires and no formal dispute/flag is raised, auto-finalize payment and
+    trigger the tutoring commission ledger.
+    """
+    if grace_hours is None:
+        grace_hours = TUTORING_SESSION_TIMEOUT_HOURS
+
+    cutoff = datetime.now(UTC) - timedelta(hours=grace_hours)
+    finalized = 0
+    skipped = 0
+    errors = 0
+
+    # Find candidate sessions: not paid, not cancelled, with some age
+    candidates = TutoringSession.query.filter(
+        TutoringSession.payment_status != "paid",
+        TutoringSession.status.notin_(["cancelled", "rejected"]),
+        TutoringSession.created_at < cutoff,
+    ).all()
+
+    for session in candidates:
+        try:
+
+            def _timeout_finalize(sess=session):
+                locked = db.session.execute(
+                    db.select(TutoringSession).where(TutoringSession.id == sess.id).with_for_update()
+                ).scalar_one_or_none()
+                if not locked or locked.payment_status == "paid":
+                    return False
+                if locked.status in ("cancelled", "rejected"):
+                    return False
+                # Mark both confirmed to break deadlock if missing
+                if not locked.student_confirmed_payment:
+                    locked.student_confirmed_payment = True
+                if not locked.tutor_confirmed_payment:
+                    locked.tutor_confirmed_payment = True
+                _finalize_session_payment(locked)
+                # Ensure session is in a completable state for commission
+                if locked.status not in ("completed", "ended"):
+                    locked.status = "completed"
+                    if not locked.end_time:
+                        locked.end_time = datetime.now(UTC)
+                # Trigger commission ledger if not exists
+                try:
+                    create_commission_record(locked)
+                except Exception:
+                    logger.exception("auto_timeout_commission_failed", session_id=locked.id)
+                return True
+
+            result = tx(_timeout_finalize)
+            if result:
+                finalized += 1
+            else:
+                skipped += 1
+        except Exception:
+            errors += 1
+            logger.exception("auto_timeout_session_failed", session_id=getattr(session, "id", None))
+
+    return {"finalized": finalized, "skipped": skipped, "errors": errors, "cutoff": cutoff.isoformat()}

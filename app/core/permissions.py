@@ -15,9 +15,18 @@ SUPER_ROLE = UserRole.super_admin
 
 
 def _has_any(*roles: UserRole) -> bool:
+    """هل المستخدم الحالي يحمل أيّ من الأدوار المُعطى؟
+
+    يشمل المشرف الكلي دائمًا. يتحقق من ``current_user.is_authenticated``
+    قبل Everything else، ويتجنب الوصول إلى ``current_user.role`` عندما
+    قد يكون غير مُحمّل (الجلسة منتهية الصلاحية) بـ ``getattr``.
+    """
     if not current_user.is_authenticated:
         return False
-    return current_user.role in roles or current_user.role == SUPER_ROLE
+    role = getattr(current_user, "role", None)
+    if role is None:
+        return False
+    return role in roles or role == SUPER_ROLE
 
 
 def role_required(*roles: UserRole):
@@ -122,18 +131,19 @@ def class_teach_required(fn):
 def parent_of_required(fn):
     """@role_required(parent) + is_parent_of(current_user, student_id).
 
-    Expects the route to accept a ``student_id`` keyword argument.
+    expects the route to accept a ``student_id`` keyword argument.
     """
     from flask import request as _req
 
     @role_required(UserRole.parent)
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        from app.services.family import is_parent_of
-
         student_id = kwargs.get("student_id") or (_req.view_args or {}).get("student_id")
         if student_id is None:
             abort(400)
+
+        from app.services.family import is_parent_of
+
         if not is_parent_of(current_user.id, student_id):
             abort(403)
         return fn(*args, **kwargs)

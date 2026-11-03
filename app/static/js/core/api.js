@@ -37,6 +37,9 @@ export async function request(method, url, options = {}) {
   if (csrfToken && !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())) {
     headers.set("X-CSRFToken", csrfToken);
   }
+  if (!headers.has("X-Requested-With")) {
+    headers.set("X-Requested-With", "XMLHttpRequest");
+  }
 
   const init = {
     method: method.toUpperCase(),

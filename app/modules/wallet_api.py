@@ -91,8 +91,24 @@ def wallet_balance():
     school_id = _school_id_for_admin_scope()
 
     if target_user_id != current_user.id:
-        # مشاهدة محفظة غيرك: أدمن فقط، ونفس المدرسة
-        if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+        # السماح لـ ولي الأمر برؤية محفظة ابنه (بالتحقق من الرابط العائلي)
+        if current_user.role == UserRole.parent:
+            # البحث عن رابط عائلي actif لهذا الابن
+            # student_id = request.args.get("child_user_id", type=int)
+            # إذا تم تحديد child_user_id، التحقق من أنه ابن لهذا الوالد
+            # child_user_id = request.args.get("child_user_id", type=int)
+            # إن لم يتم تحديد child_user_id، نحاول استنتاجه من الروابط العائلية
+            # للطالب المرتبط بالمدرسة نفسها
+            if school_id is None:
+                return api_error(_("school_id مطلوب"), 400, "VALIDATION_ERROR")
+            # البحث عن روابط عائلة حيث هذا المستخدم هو ولي الأمر
+            from app.models.family import FamilyLink
+
+            parent_links = FamilyLink.query.filter_by(parent_id=current_user.id, status="active").all()
+            linked_student_ids = [link.student_id for link in parent_links]
+            if target_user_id not in linked_student_ids:
+                return api_error(_("غير مصرح بالوصول إلى محفظة هذا الابن"), 403, "FORBIDDEN")
+        elif current_user.role not in (UserRole.super_admin, UserRole.school_admin):
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
         if school_id is None and current_user.role == UserRole.school_admin:
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
@@ -139,7 +155,15 @@ def wallet_transactions():
     school_id = _school_id_for_admin_scope()
 
     if target_user_id != current_user.id:
-        if current_user.role not in (UserRole.super_admin, UserRole.school_admin):
+        # السماح لـ ولي الأمر برؤية حركات محفظة ابنه (بالتحقق من الرابط العائلي)
+        if current_user.role == UserRole.parent:
+            from app.models.family import FamilyLink
+
+            parent_links = FamilyLink.query.filter_by(parent_id=current_user.id, status="active").all()
+            linked_student_ids = [link.student_id for link in parent_links]
+            if target_user_id not in linked_student_ids:
+                return api_error(_("غير مصرح بحركات محفظة هذا الابن"), 403, "FORBIDDEN")
+        elif current_user.role not in (UserRole.super_admin, UserRole.school_admin):
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
     elif school_id is None:
         school_id = getattr(current_user, "school_id", None)

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ _('محفظة الأبناء') }}{% endblock %}
+{% from "macros/ui.html" import azad_stat_card %}
+{% block content %}
+<div class="azad-section">
+  <div>
+    <h1 class="page-title azad-title azad-mt-0" data-testid="family-wallet-title">
+      {{ icon('users') }} {{ _('محفظة الأبناء') }}
+    </h1>
+    <p class="page-subtitle">
+      {{ _('عرض وإدارة رصيد المحافظ لأبنائك') }}
+    </p>
+  </div>
+</div>
+
+{% if not children %}
+<div class="azad-card azad-empty" role="status" data-testid="family-wallet-empty">
+  <div class="azad-empty__icon">{{ icon('users') }}</div>
+  <p class="u-m-0">{{ _('لا أبناء مسجلين لديك بعد.') }}</p>
+  <p class="azad-field__help u-m-0">
+    {{ _('يمكنك ربط الأبناء بحسابك من ملفك الشخصي لإظهار المحافظ') }}
+  </p>
+</div>
+{% else %}
+{% if child_id %}
+<!-- Display single child wallet -->
+<div class="azad-section azad-mt-6">
+  <div class="azad-card azad-card--wide">
+    {% if wallet %}
+      <h2 class="section-title">
+        {{ _('محفظة') }} {{ link('family.child_progress', child_id) ~ ': ' ~ child_name }}
+      </h2>
+    {% else %}
+      <h2 class="section-title">
+        {{ _('لا توجد محفظة نشطة') }} {{ _('للابن') }} {{ child_name }}
+      </h2>
+    {% endif %}
+    
+    {% if wallet %}
+      {{ azad_stat_card(summary.balance ~ ' ' ~ summary.currency, _('الرصيد الحالي'), 'wallet', 'var(--azad-green)') }}
+      {{ azad_stat_card(summary.total_received ~ ' ' ~ summary.currency, _('إجمالي الوارد'), 'arrow-down-circle', 'var(--azad-blue)') }}
+      {{ azad_stat_card(summary.total_sent ~ ' ' ~ summary.currency, _('إجمالي الصادر'), 'arrow-up-circle', 'var(--azad-red)') }}
+    {% else %}
+      <div class="azad-card azad-empty">
+        <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+        <p class="u-m-0">{{ _('لا توجد محفظة نشطة لهذا الابن') }}</p>
+        <p class="azad-field__help">
+          {{ _('يمكنك شحن المحفظة من لوحة الإدارة أو استخدام التحويلات') }}
+        </p>
+      </div>
+    {% endif %}
+    
+    {% if rows %}
+    <div class="azad-section azad-mt-6">
+      <h2 class="section-title">{{ _('سجل الحركات') }}</h2>
+      <div class="azad-card azad-card--wide">
+        <table class="azad-table" data-testid="family-wallet-transactions">
+          <thead>
+            <tr>
+              <th scope="col">{{ _('النوع') }}</th>
+              <th scope="col">{{ _('الوصف') }}</th>
+              <th scope="col">{{ _('الاتجاه') }}</th>
+              <th scope="col">{{ _('المبلغ') }}</th>
+              <th scope="col">{{ _('التاريخ') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in rows %}
+            <tr data-testid="wallet-tx-row">
+              <td>{{ t.type_label }}</td>
+              <td>{{ t.description }}</td>
+              <td>{{ t.direction_label }}</td>
+              <td class="u-text-{% if t.direction == 'in' %}success{% else %}danger{% endif %}">
+                <bdi style="direction: ltr; unicode-bidi: bidi-override;">{%- if t.direction == 'in' %}+{% else %}-{% endif -%}{{ t.amount }}</bdi>
+              </td>
+              <td><bdi>{{ t.created_at.strftime('%Y-%m-%d') if t.created_at else '—' }}</bdi></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if has_next or has_prev %}
+      <nav class="azad-pagination" aria-label="{{ _('ترقيم الصفحات') }}" u-mt-2 data-testid="wallet-pagination">
+        {% if has_prev %}
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('wallet_ui.parent_child_wallet', child_id=child_id, page=page - 1) }}" data-testid="wallet-page-prev" rel="prev">← {{ _('الأحدث') }}</a>
+        {% endif %}
+        <span class="azad-field__help">{{ _('صفحة %(page)s من %(pages)s', page=page, pages=pages) }}</span>
+        {% if has_next %}
+        <a class="azad-btn-outline azad-btn-sm" href="{{ url_for('wallet_ui.parent_child_wallet', child_id=child_id, page=page + 1) }}" data-testid="wallet-page-next" rel="next">{{ _('الأقدم') }} →</a>
+        {% endif %}
+      </nav>
+      {% else %}
+      <div class="azad-card azad-empty" role="status" data-testid="wallet-no-transactions">
+        <div class="azad-empty__icon">{{ icon('wallet') }}</div>
+        <p class="u-m-0">{{ _('لا توجد حركات مالية مسجّلة على هذه المحفظة بعد.') }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Top-up form -->
+    <div class="azad-section azad-mt-6">
+      <h2 class="section-title">{{ _('شحن المحفظة') }}</h2>
+      <form method="post" action="{{ url_for('wallet_ui.topup_child', child_id=child_id) }}" data-testid="topup-form">
+        <div class="azad-form-group">
+          <label for="amount">{{ _('المبلغ') }} <span class="required">*</span></label>
+          <input type="number" id="amount" name="amount" min="1" step="0.01" required
+                 class="azad-form-control" placeholder="{{ _('أدخل المبلغ') }}">
+        </div>
+        <button type="submit" class="azad-btn azad-btn--primary" data-testid="topup-submit">
+          {{ _('شحن المحفظة') }}
+        </button>
+        <a href="{{ url_for('auth.dashboard') }}" class="azad-btn-outline">
+          {{ _('الغاء') }}
+        </a>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" data-testid="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('auth.dashboard') }}">{{ _('الرئيسية') }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ _('محفظة الأبناء') }}</li>
+  </ol>
+</nav>
+{% else %}
+<!-- List of children -->
+<div class="azad-section azad-mt-6">
+  <div class="azad-card">
+    <div class="azad-card-header">
+      <h2 class="azad-card-title">{{ _('أبناء ولي الأمر') }}</h2>
+    </div>
+    <div class="azad-card-body">
+      <p class="azad-field__help">{{ _('select a child to view their wallet') }}</p>
+      <ul class="azad-list-unstyled">
+        {% for child in children %}
+        <li>
+          <a href="{{ url_for('wallet_ui.parent_child_wallet', child_id=child.student_id) }}" class="azad-list-item">
+            <div class="azad-list-item__header">
+              <strong>{{ child.student.name_ar or child.student.email }}</strong>
+              <span class="azad-list-item__meta">{{ _('صف %(grade)s', grade=child.student.current_grade or '') }}</span>
+            </div>
+            <div class="azad-list-item__description">
+              {% if child.wallet %}
+                <span class="azad-badge azad-badge--success">
+                  {{ _('محفظة') }}: {{ child.wallet.balance }}
+                </span>
+              {% else %}
+                <span class="azad-badge azad-badge--warning">
+                  {{ _('لا توجد محفظة') }}
+                </span>
+              {% endif %}
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -76,22 +76,29 @@ def _email() -> str:
 
 
 def _create_user(app, role: str, school_id: int | None = None, **kw):
-    """Create a user in the DB and return user_id."""
+    """Create a user in the DB and return user_id.
+
+    Uses ``platform_scope()`` when creating role links so RLS does not block
+    the insert (the test runner has no GUC context of its own).
+    """
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        u = User(
-            email=kw.get("email", _email()),
-            name_ar=kw.get("name_ar", f"User {_uid()}"),
-            role=UserRole(role),
-            password_hash=hash_password(kw.get("password", "TestPass123!")),
-            approval_status=UserApprovalStatus.approved,
-            is_active=True,
-            is_individual=kw.get("is_individual", False),
-        )
-        _db.session.add(u)
-        _db.session.commit()
-        if school_id:
-            rl = UserRoleLink(user_id=u.id, school_id=school_id, role=UserRole(role))
-            _db.session.add(rl)
+        with platform_scope():
+            u = User(
+                email=kw.get("email", _email()),
+                name_ar=kw.get("name_ar", f"User {_uid()}"),
+                role=UserRole(role),
+                password_hash=hash_password(kw.get("password", "TestPass123!")),
+                approval_status=UserApprovalStatus.approved,
+                is_active=True,
+                is_individual=kw.get("is_individual", False),
+            )
+            _db.session.add(u)
+            _db.session.flush()
+            if school_id:
+                rl = UserRoleLink(user_id=u.id, school_id=school_id, role=UserRole(role))
+                _db.session.add(rl)
             _db.session.commit()
         return u.id
 
@@ -124,103 +131,127 @@ def make_persona(app, role, school_id=None, **kw):
 
 @pytest.fixture()
 def school_a(app):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        s = School(
-            name_ar=f"مدرسة أ {_uid()}",
-            name_en=f"School A {_uid()}",
-            domain=f"a-{_uid()}.test.org",
-            join_code=f"A-{_uid()[:6]}",
-        )
-        _db.session.add(s)
-        _db.session.commit()
-        return s.id
+        with platform_scope():
+            s = School(
+                name_ar=f"مدرسة أ {_uid()}",
+                name_en=f"School A {_uid()}",
+                domain=f"a-{_uid()}.test.org",
+                join_code=f"A-{_uid()[:6]}",
+            )
+            _db.session.add(s)
+            _db.session.commit()
+            return s.id
 
 
 @pytest.fixture()
 def school_b(app):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        s = School(
-            name_ar=f"مدرسة ب {_uid()}",
-            name_en=f"School B {_uid()}",
-            domain=f"b-{_uid()}.test.org",
-            join_code=f"B-{_uid()[:6]}",
-        )
-        _db.session.add(s)
-        _db.session.commit()
-        return s.id
+        with platform_scope():
+            s = School(
+                name_ar=f"مدرسة ب {_uid()}",
+                name_en=f"School B {_uid()}",
+                domain=f"b-{_uid()}.test.org",
+                join_code=f"B-{_uid()[:6]}",
+            )
+            _db.session.add(s)
+            _db.session.commit()
+            return s.id
 
 
 @pytest.fixture()
 def grade_a(app, school_a):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        g = Grade(school_id=school_a, grade_level=10, name_ar="العاشر")
-        _db.session.add(g)
-        _db.session.commit()
-        return g.id
+        with platform_scope():
+            g = Grade(school_id=school_a, grade_level=10, name_ar="العاشر")
+            _db.session.add(g)
+            _db.session.commit()
+            return g.id
 
 
 @pytest.fixture()
 def grade_b(app, school_b):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        g = Grade(school_id=school_b, grade_level=10, name_ar="العاشر")
-        _db.session.add(g)
-        _db.session.commit()
-        return g.id
+        with platform_scope():
+            g = Grade(school_id=school_b, grade_level=10, name_ar="العاشر")
+            _db.session.add(g)
+            _db.session.commit()
+            return g.id
 
 
 @pytest.fixture()
 def subject(app):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        s = Subject(name_ar=f"مادة {_uid()}")
-        _db.session.add(s)
-        _db.session.commit()
-        return s.id
+        with platform_scope():
+            s = Subject(name_ar=f"مادة {_uid()}")
+            _db.session.add(s)
+            _db.session.commit()
+            return s.id
 
 
 @pytest.fixture()
 def class_a(app, school_a, grade_a, subject):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        c = ClassRoom(
-            school_id=school_a,
-            grade_id=grade_a,
-            subject_id=subject,
-            join_code=f"CA-{_uid()[:6]}",
-            name=f"صف A {_uid()}",
-        )
-        _db.session.add(c)
-        _db.session.commit()
-        return c.id
+        with platform_scope():
+            c = ClassRoom(
+                school_id=school_a,
+                grade_id=grade_a,
+                subject_id=subject,
+                join_code=f"CA-{_uid()[:6]}",
+                name=f"صف A {_uid()}",
+            )
+            _db.session.add(c)
+            _db.session.commit()
+            return c.id
 
 
 @pytest.fixture()
 def class_b(app, school_b, grade_b, subject):
+    from app.core.rls import platform_scope
+
     with app.app_context():
-        c = ClassRoom(
-            school_id=school_b,
-            grade_id=grade_b,
-            subject_id=subject,
-            join_code=f"CB-{_uid()[:6]}",
-            name=f"صف B {_uid()}",
-        )
-        _db.session.add(c)
-        _db.session.commit()
-        return c.id
+        with platform_scope():
+            c = ClassRoom(
+                school_id=school_b,
+                grade_id=grade_b,
+                subject_id=subject,
+                join_code=f"CB-{_uid()[:6]}",
+                name=f"صف B {_uid()}",
+            )
+            _db.session.add(c)
+            _db.session.commit()
+            return c.id
 
 
 @pytest.fixture()
 def lesson_a(app, class_a):
-    with app.app_context():
-        from app.models.content import Lesson
+    from app.core.rls import platform_scope
 
-        lesson = Lesson(
-            class_id=class_a,
-            title=f"درس اختبار {_uid()}",
-            status="published",
-            sort_order=1,
-        )
-        _db.session.add(lesson)
-        _db.session.commit()
-        return lesson.id
+    with app.app_context():
+        with platform_scope():
+            from app.models.content import Lesson
+
+            lesson = Lesson(
+                class_id=class_a,
+                title=f"درس اختبار {_uid()}",
+                status="published",
+                sort_order=1,
+            )
+            _db.session.add(lesson)
+            _db.session.commit()
+            return lesson.id
 
 
 # ---------------------------------------------------------------------------
@@ -244,41 +275,59 @@ def school_admin_b_persona(app, school_b):
 
 @pytest.fixture()
 def teacher_a_persona(app, school_a, class_a):
+    from app.core.rls import platform_scope
+
     uid, c = make_persona(app, "teacher", school_id=school_a, name_ar="معلم أ")
     with app.app_context():
-        cr = _db.session.get(ClassRoom, class_a)
-        cr.teacher_id = uid
-        _db.session.commit()
+        with platform_scope():
+            cr = _db.session.get(ClassRoom, class_a)
+            if cr is None:
+                raise ValueError(f"class_a={class_a} not found")
+            cr.teacher_id = uid
+            _db.session.commit()
     return uid, c
 
 
 @pytest.fixture()
 def teacher_b_persona(app, school_b, class_b):
+    from app.core.rls import platform_scope
+
     uid, c = make_persona(app, "teacher", school_id=school_b, name_ar="معلم ب")
     with app.app_context():
-        cr = _db.session.get(ClassRoom, class_b)
-        cr.teacher_id = uid
-        _db.session.commit()
+        with platform_scope():
+            cr = _db.session.get(ClassRoom, class_b)
+            if cr is None:
+                raise ValueError(f"class_b={class_b} not found")
+            cr.teacher_id = uid
+            _db.session.commit()
     return uid, c
 
 
 @pytest.fixture()
 def student_a_persona(app, school_a, class_a):
+    from app.core.rls import platform_scope
+    from app.models.class_room import ClassMember
+
     uid, c = make_persona(app, "student", school_id=school_a, name_ar="طالب أ")
     with app.app_context():
-        m = ClassMember(class_id=class_a, user_id=uid, status="active")
-        _db.session.add(m)
-        _db.session.commit()
+        with platform_scope():
+            m = ClassMember(class_id=class_a, user_id=uid, status="active")
+            _db.session.add(m)
+            _db.session.commit()
     return uid, c
 
 
 @pytest.fixture()
 def student_b_persona(app, school_b, class_b):
+    from app.core.rls import platform_scope
+    from app.models.class_room import ClassMember
+
     uid, c = make_persona(app, "student", school_id=school_b, name_ar="طالب ب")
     with app.app_context():
-        m = ClassMember(class_id=class_b, user_id=uid, status="active")
-        _db.session.add(m)
-        _db.session.commit()
+        with platform_scope():
+            m = ClassMember(class_id=class_b, user_id=uid, status="active")
+            _db.session.add(m)
+            _db.session.commit()
     return uid, c
 
 
@@ -289,10 +338,13 @@ def student_unlinked_persona(app):
 
 @pytest.fixture()
 def parent_a_persona(app, school_a, student_a_persona):
+    from app.core.rls import platform_scope
+
     student_id = student_a_persona[0]
     parent_id, c = make_persona(app, "parent", school_id=school_a, name_ar="ولي أمر")
     with app.app_context():
-        fl = FamilyLink(parent_id=parent_id, student_id=student_id, status="active")
-        _db.session.add(fl)
-        _db.session.commit()
+        with platform_scope():
+            fl = FamilyLink(parent_id=parent_id, student_id=student_id, status="active")
+            _db.session.add(fl)
+            _db.session.commit()
     return parent_id, c

@@ -58,3 +58,9 @@ LBL_TUTORING_REQUEST_STATUS = "tutoring_request_status"
 LBL_TUTORING_SESSION_STATUS = "tutoring_session_status"
 LBL_TUTORING_PAYMENT_STATUS = "tutoring_payment_status"
 LBL_TUTORING_MODE = "tutoring_mode"
+
+# Tutoring session auto-timeout (anti-deadlock)
+TUTORING_SESSION_TIMEOUT_HOURS = 48
+
+# Subscription lazy expiration
+PENDING_SUBSCRIPTION_EXPIRE_HOURS = 72

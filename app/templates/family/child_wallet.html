@@ -70,8 +70,7 @@
           <td>{{ t.description }}</td>
           <td>{{ t.direction_label }}</td>
           <td class="u-text-{% if t.direction == 'in' %}success{% else %}danger{% endif %}">
-            {%- if t.direction == 'in' %}+{% else %}-{% endif -%}
-            <bdi>{{ t.amount }}</bdi>
+            <bdi style="direction: ltr; unicode-bidi: bidi-override;">{%- if t.direction == 'in' %}+{% else %}-{% endif -%}{{ t.amount }}</bdi>
           </td>
           <td><bdi>{{ t.created_at.strftime('%Y-%m-%d') if t.created_at else '—' }}</bdi></td>
         </tr>

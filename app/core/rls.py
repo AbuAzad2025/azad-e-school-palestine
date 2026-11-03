@@ -139,6 +139,7 @@ _USER_SCOPED_WITH_TENANT: list[str] = ["user_role_links"]
 # keyed by the actor, so the arm grants nothing about anybody else's row.
 _CLASS_IDS_GUC = "app.current_class_ids"
 _INDIVIDUAL_GUC = "app.is_individual"
+_SCHOOL_ID_GUC = "app.current_school_id"
 
 # How each indirect table reaches its class. Parallel to
 # ``_INDIRECT_TENANT_TABLES`` above and navigates the same joins, so a row

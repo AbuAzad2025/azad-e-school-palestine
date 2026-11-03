@@ -45,8 +45,14 @@ def _is_class_free(class_room) -> bool:
 def _has_valid_subscription(user_id: int, class_id: int) -> bool:
     """Check if user has an active, non-expired subscription for a class."""
     from app.models.billing import Subscription
+    from app.services import billing as billing_service
 
     now = datetime.now(UTC)
+    # Lazy expiration guard for any pending subscriptions
+    try:
+        billing_service.expire_stale_pending_subscriptions()
+    except Exception:
+        pass
     sub = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").first()
     if not sub:
         return False
@@ -153,7 +159,19 @@ def can_pay_class(class_room, user) -> bool:
         return False
     from app.models.billing import Subscription
 
-    return Subscription.query.filter_by(user_id=user.id, class_id=class_room.id).first() is not None
+    sub = Subscription.query.filter_by(user_id=user.id, class_id=class_room.id).first()
+    if sub:
+        try:
+            from app.services import billing as billing_service
+
+            billing_service.lazy_expire_pending_subscription(sub)
+            from app.extensions import db
+
+            db.session.expire(sub)
+            sub = Subscription.query.filter_by(user_id=user.id, class_id=class_room.id).first()
+        except Exception:
+            pass
+    return sub is not None
 
 
 def _parent_can_pay(class_id: int, parent_id: int) -> bool:

@@ -8,6 +8,13 @@ bp = Blueprint("main", __name__)
 @bp.get("/")
 def index():
     if current_user.is_authenticated:
+        # Students see their wallet page; others go to dashboard
+        from app.models.user import UserRole
+
+        if current_user.role == UserRole.student:
+            from app.modules.wallet_ui import my_wallet
+
+            return my_wallet()
         return redirect(url_for("auth.dashboard"))
     stats = {"student_count": 0, "lesson_count": 150, "school_count": 0}
     try:
