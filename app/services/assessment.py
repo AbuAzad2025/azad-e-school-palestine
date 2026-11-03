@@ -207,7 +207,7 @@ def deadline_exceeded(attempt: QuizAttempt) -> bool:
     مهلة السماح QUIZ_GRACE_SECONDS (افتراضي 30 ثانية) لتقلبات الشبكة.
     """
     quiz = attempt.quiz
-    if not quiz.duration_min or not attempt.started_at:
+    if quiz is None or not quiz.duration_min or not attempt.started_at:
         return False
     started = attempt.started_at
     if started.tzinfo is None:

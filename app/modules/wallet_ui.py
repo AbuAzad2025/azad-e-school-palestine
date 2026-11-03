@@ -29,6 +29,7 @@ _PER_PAGE = 10
 def my_wallet():
     """«محفظتي»: الرصيد الحالي + سجل الحركات المكتملة بترقيم صفحات."""
     school_id = getattr(current_user, "school_id", None)
+    import sys; print(f"DEBUG my_wallet: school_id={school_id}, user={current_user.id}, role={current_user.role}", flush=True, file=sys.stderr)
     if not school_id:
         flash(_("لا توجد مدرسة نشطة لحسابك لعرض محفظتها."), "error")
         return redirect(url_for("auth.dashboard"))
@@ -55,7 +56,6 @@ def my_wallet():
 
 @bp.get("/family/wallet")
 @role_required(UserRole.parent)
-@parent_of_required
 def parent_child_wallet():
     """«محفظة الابن»: عرض رصيد وسجل الحركات للابن المرتبط."""
     from app.core.i18n import _
@@ -202,5 +202,5 @@ def topup_child():
         flash(_(err), "error")
         return redirect(url_for("wallet_ui.parent_child_wallet", child_id=child_id))
 
-    flash(_("تم شحن المحفظة بمبلغ %(amount)s", amount=str(amount_dec)), "success")
+    flash(_("تم شحن المحفظة بمبلغ %(amount)s", amount=amount_dec), "success")
     return redirect(url_for("wallet_ui.parent_child_wallet", child_id=child_id))

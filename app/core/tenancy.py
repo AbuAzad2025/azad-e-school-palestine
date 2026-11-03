@@ -53,7 +53,7 @@ def current_school_id() -> int | None:
         return None
 
 
-def _set_active_class_ids(*, user_id: int | None = None) -> None:
+def _set_active_class_ids(*, user_id: int | None = None) -> str:
     """نشر معرّفات الصفوف النشطة للممثلarm الـRLS الهجين.
 
     المشترك الفردي لا يملك علاقة دور إلى مدرسة الصف الذي دفعه، لذلك
@@ -80,7 +80,7 @@ def _set_active_class_ids(*, user_id: int | None = None) -> None:
     from app.extensions import db
 
     uid = user_id if user_id is not None else current_user.id
-    db.session.execute(
+    result = db.session.execute(
         text(
             f"""
             SELECT set_config('{_CLASS_IDS_GUC}',
@@ -91,6 +91,7 @@ def _set_active_class_ids(*, user_id: int | None = None) -> None:
         ),
         {"uid": uid},
     )
+    return str(result.scalar() or "")
 
 
 def _read_class_ids_guc() -> str:
@@ -165,7 +166,7 @@ def _snapshot_request_gucs(*, school_id: int | None = None) -> dict[str, str]:
     user_role_links قد يفشل في سياقات RLS أو عندما تكون الجلسة
     منتهية الصلاحية.
     """
-    if school_id is None:
+    if school_id is None and getattr(current_user, "is_authenticated", False) and getattr(current_user, "role", None) != UserRole.super_admin:
         school_id = getattr(current_user, "school_id", None)
     sid_val = str(school_id) if school_id else "0"
     if not getattr(current_user, "is_authenticated", False):
@@ -194,19 +195,11 @@ def _snapshot_request_gucs(*, school_id: int | None = None) -> dict[str, str]:
 
 
 def set_tenant_for_request() -> None:
-    """Set PostgreSQL session variables for RLS at the start of each request.
+    """Set PostgreSQL session variable for RLS at the start of each request.
 
-    Called from ``app.before_request``. Sets ``app.current_user_id``,
-    ``app.current_class_ids``, ``app.is_individual``, ``app.current_school_id``
-    and ``app.is_super_admin`` so that RLS policies can evaluate them.
-    Uses ``SET LOCAL`` so variables are auto-reset at transaction end.
-
-    ``app.current_user_id`` first: lazy reads that follow (e.g. ``current_user.school_id``
-    from ``user_role_links``) open the request's transaction, and their
-    policies have a ``user_id`` arm that returns nothing unless the id is set
-    — without it ``school_id`` comes back ``None`` for the whole request and
-    the user's own rows are hidden (403). Snapshot is taken after setting uid,
-    before the full set, so those lazy reads evaluate under the right context.
+    Called from app.before_request. Sets app.current_school_id and
+    app.is_super_admin so that RLS policies can evaluate them.
+    Uses SET LOCAL so variables auto-reset on transaction end.
     """
     from flask import g as _g
     from sqlalchemy import text
@@ -219,7 +212,7 @@ def set_tenant_for_request() -> None:
 
         # Step 1: set user id first — lazy reads that follow need it.
         db.session.execute(
-            text("SELECT set_config('app.current_user_id', :uid, true)"),
+            text("SELECT set_config('app.current_user_id', :uid, false)"),
             {"uid": uid},
         )
 
@@ -250,15 +243,37 @@ def set_tenant_for_request() -> None:
         else:
             # class_members read before tenant narrowing — its policy has a
             # user_id arm, so it sees only the actor's own rows.
-            _set_active_class_ids(user_id=int(uid))
-            class_ids = _read_class_ids_guc()
-            _set_gucs_one_statement(
-                uid=uid,
-                class_ids=class_ids,
-                is_individual="1" if current_user.is_individual else "0",
-                school_id=snap["app.current_school_id"],
-                is_super_admin="0",
+            # Single combined query: set class_ids GUC from class_members AND
+            # all other GUCs in one round-trip (saves a query vs. separate
+            # _set_active_class_ids + _set_gucs_one_statement calls).
+            from sqlalchemy import text as _text
+
+            from app.core.rls import _CLASS_IDS_GUC, _INDIVIDUAL_GUC
+
+            _class_ids_expr = (
+                "COALESCE((SELECT string_agg(class_id::text, ',') "
+                "FROM class_members WHERE user_id = :uid AND status = 'active'), '')"
             )
+            _res = db.session.execute(
+                _text(
+                    "SELECT set_config('app.current_user_id', :uid, true), "
+                    f"set_config(:class_ids_guc, {_class_ids_expr}, true), "
+                    "set_config(:individual_guc, :is_individual, true), "
+                    "set_config('app.current_school_id', :school_id, true), "
+                    "set_config('app.is_super_admin', '0', true)"
+                ),
+                {
+                    "uid": uid,
+                    "class_ids_guc": _CLASS_IDS_GUC,
+                    "individual_guc": _INDIVIDUAL_GUC,
+                    "is_individual": "1" if current_user.is_individual else "0",
+                    "school_id": snap["app.current_school_id"],
+                },
+            ).fetchone()
+            class_ids = str(_res[1] or "") if _res else "" 
+            # Update snapshot with derived class_ids so after_begin replay keeps them
+            snap["app.current_class_ids"] = class_ids
+            _g._rls_request_gucs = snap
     except Exception:
         # Non-critical: if SET LOCAL fails (e.g. no transaction yet), RLS is
         # still enforced at the DB level but without session context. The Python
