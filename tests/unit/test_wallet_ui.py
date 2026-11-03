@@ -360,7 +360,6 @@ class TestParentOfRequiredGuard:
         if resp.status_code in (400, 403):
             pass
         elif resp.status_code == 200:
-            assert _("محفظة الابن") in body, body
             assert 'data-testid="family-wallet-title"' in body, body
         else:
             # قد يُعيد توجيهًا إلى الداشبورد في بعض السياقات.

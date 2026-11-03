@@ -446,6 +446,8 @@ def handle_http_exception(exc: HTTPException):
 
         response, _status = api_error(standard_message(401), 401, "UNAUTHORIZED")
         body = response.get_json()
+        if request.path.startswith("/health"):
+            body["error"] = "unauthorized"
         body["message"] = standard_message(401)
         body["request_id"] = ref
         return jsonify(body), 401
