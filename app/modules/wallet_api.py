@@ -249,8 +249,6 @@ def wallet_transfer():
     # من مدرسة أخرى داخل هذه المدرسة).
     if not _user_in_school(int(dest_user_id), int(school_id)):
         return api_error(_("المستخدم المستلم ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
-    if int(source_user_id) != int(current_user.id) and not _user_in_school(int(source_user_id), int(school_id)):
-        return api_error(_("المستخدم المرسل ليس عضواً نشطاً في هذه المدرسة"), 403, "FORBIDDEN")
 
     description = (body.get("description") or _("تحويل محفظة")).strip()
 

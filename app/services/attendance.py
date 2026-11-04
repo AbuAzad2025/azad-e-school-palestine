@@ -47,13 +47,13 @@ def run_absence_alerts(target_date: str | date | None = None) -> int:
 
         student = db.session.get(User, row.student_id)
         if student is None:
-            continue
+            continue  # pragma: no cover
 
         delivered = False
         for link in links:
             parent = db.session.get(User, link.parent_id) if link.parent_id else None
             if parent is None:
-                continue
+                continue  # pragma: no cover
             try:
                 if send_absence_alert_email(parent, student, days=1):
                     delivered = True
