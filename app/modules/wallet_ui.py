@@ -93,6 +93,12 @@ def parent_child_wallet():
         flash(_("أنت غير مرتبط بهذا الابن في النظام."), "error")
         return redirect(url_for("wallet_ui.parent_child_wallet"))
 
+    # تجهيز الاسم لعرضه في القالب — الطفل المستعرَض يجب أن يكون ضمن روابطه
+    child_name = next(
+        (link.student.name_ar for link in children if link.student_id == child_id),
+        _("الابن"),
+    )
+
     # الحصول على الرصيد والحركات للمحفظة
     get_balance(school_id, child_id)
     wallet = find_wallet(school_id, child_id)
@@ -111,6 +117,7 @@ def parent_child_wallet():
             },
             rows=[],
             child_id=child_id,
+            child_name=child_name,
             children=children,
             has_wallet=wallet is not None,
             _=_,  # gettext
@@ -139,6 +146,7 @@ def parent_child_wallet():
         summary=summary,
         rows=decorated_rows,
         child_id=child_id,
+        child_name=child_name,
         children=children,
         has_wallet=wallet is not None,
         _=_,  # gettext
@@ -158,7 +166,7 @@ def topup_child():
     children = list_children(current_user.id)
     child_id = request.form.get("child_id", type=int)
 
-    if not child_id or child_id not in {c.id for c in children}:
+    if not child_id or child_id not in {c.student_id for c in children}:
         flash(_("ابن غير محدّد أو غير مرخّص."), "error")
         return redirect(url_for("wallet_ui.parent_child_wallet"))
 

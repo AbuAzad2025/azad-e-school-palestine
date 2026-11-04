@@ -37,7 +37,7 @@
 <div class="azad-section azad-mt-6">
   <div class="azad-card azad-card--wide">
     <h2 class="section-title">
-      {{ _('محفظة') }} {{ link('family.child_progress', child_id) ~ ': ' ~ child_name }}
+      {{ _('محفظة') }} — <a href="{{ url_for('family.child_progress', student_id=child_id) }}">{{ child_name }}</a>
     </h2>
     
     {{ azad_stat_card(summary.balance ~ ' ' ~ summary.currency, _('الرصيد الحالي'), 'wallet', 'var(--azad-green)') }}

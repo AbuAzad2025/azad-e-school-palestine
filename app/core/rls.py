@@ -1014,7 +1014,9 @@ def get_for_access_check(model, row_id: int):
             if hasattr(model, "deleted_at"):
                 stmt = stmt.where(model.deleted_at.is_(None))
             stmt = stmt.options(*(joinedload(getattr(model, rel)) for rel in eager))
-            row = db.session.execute(stmt).scalar_one_or_none()
+            # unique() إلزامي مع joinedload لمجموعات (one-to-many) — بدونه
+            # ترفع SQLAlchemy InvalidRequestError. آمنة أيضًا للعلاقات to-one.
+            row = db.session.execute(stmt).unique().scalar_one_or_none()
         else:
             row = db.session.get(model, row_id)
         if row is not None:

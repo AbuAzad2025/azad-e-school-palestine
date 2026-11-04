@@ -732,9 +732,11 @@ def reverse_transaction(
             else None
         )
 
-        if original.destination_wallet_id and origin_wallet is None:
+        # FK على wallet_transactions يمنع هاتين الحالتين من أي مسار حقيقي —
+        # تبقى كدرع دفاعي لبيانات فاسدة فقط (لا تُختبر مباشرة).
+        if original.destination_wallet_id and origin_wallet is None:  # pragma: no cover
             raise TxError(_("محفظة الطرف المقابل غير موجودة."))
-        if original.source_wallet_id and back_wallet is None:
+        if original.source_wallet_id and back_wallet is None:  # pragma: no cover
             raise TxError(_("المحفظة المرسلة الأصلية غير موجودة."))
 
         if origin_wallet is not None:

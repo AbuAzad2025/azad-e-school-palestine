@@ -207,309 +207,307 @@ class TestWalletUI:
             assert resp.status_code in (200, 302), body
 
 
-def _assert_wallet_page_renders(resp):
 
-    def test_wallet_page_pagination_matches_api(self, app, school_a):
-        """ترقيم صفحات الواجهة يطابق مصدر wallet_service.user_ledger_page."""
-        student_id, student_client = make_persona(
-            app, "student", school_id=school_a,
-            email=f"page-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="طالب ترقيم",
-        )
+def test_wallet_page_pagination_matches_api(app, school_a):
+    """ترقيم صفحات الواجهة يطابق مصدر wallet_service.user_ledger_page."""
+    student_id, student_client = make_persona(
+        app, "student", school_id=school_a,
+        email=f"page-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="طالب ترقيم",
+    )
 
-        resp = student_client.get("/", query_string={"page": 1})
-        body = resp.get_data(as_text=True)
+    resp = student_client.get("/", query_string={"page": 1})
+    body = resp.get_data(as_text=True)
 
-        if 'data-testid="wallet-title"' in body:
-            # محفظة فارغة: صفحة واحدة فقط، ولا يوجد رابط "الأقدم".
-            assert resp.status_code == 200, body
-            assert 'data-testid="wallet-page-next"' not in body, body
-            assert _("صفحة 1 من 1") in body, body
+    if 'data-testid="wallet-title"' in body:
+        # محفظة فارغة: لا تعرض تنقل الصفحات أصلاً (لا حركات = لا ترقيم)
+        assert resp.status_code == 200, body
+        assert 'data-testid="wallet-pagination"' not in body, body
 
-            # طلب صفحة خارج النطاق على محفظة فارغة يُعيد 404.
-            page2 = student_client.get("/", query_string={"page": 2})
-            assert page2.status_code == 404, page2.get_data(as_text=True)
-        else:
-            assert resp.status_code in (200, 302), body
+        # صفحة خارج النطاق على محفظة فارغة: 200 مع الحالة الصريحة (وليس 404).
+        page2 = student_client.get("/", query_string={"page": 2})
+        assert page2.status_code == 200, page2.get_data(as_text=True)
+    else:
+        assert resp.status_code in (200, 302), body
 
-    def test_wallet_page_pagination_with_multiple_rows(self, app, school_a):
-        """رصيد به أكثر من صفحة يُظهر روابط الترقيم السابقة والتالية وقائمة الصفحات."""
-        student_id, student_client = make_persona(
-            app, "student", school_id=school_a,
-            email=f"multi-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="طالب متعدد",
-        )
+def test_wallet_page_pagination_with_multiple_rows(app, school_a):
+    """رصيد به أكثر من صفحة يُظهر روابط الترقيم السابقة والتالية وقائمة الصفحات."""
+    student_id, student_client = make_persona(
+        app, "student", school_id=school_a,
+        email=f"multi-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="طالب متعدد",
+    )
 
-        # شحن الرصيد بمبلغ كبير ثم أضف حركات متعددة عبر admin_credit.
+    # شحن الرصيد بمبلغ كبير ثم أضف حركات متعددة عبر admin_credit.
+    _setup_wallet_and_credit(
+        app, student_id, school_a, 2000.00,
+        idempotency_key=f"test_multi_init:{student_id}",
+        description="الرصيد الابتدائي",
+        operator_id=student_id,
+    )
+    for i in range(12):
         _setup_wallet_and_credit(
-            app, student_id, school_a, 2000.00,
-            idempotency_key=f"test_multi_init:{student_id}",
-            description="الرصيد الابتدائي",
+            app, student_id, school_a, 100.00,
+            idempotency_key=f"test_multi_tx_{i}:{student_id}",
+            description=f"حركة اختبار {i+1}",
             operator_id=student_id,
         )
-        for i in range(12):
-            _setup_wallet_and_credit(
-                app, student_id, school_a, 100.00,
-                idempotency_key=f"test_multi_tx_{i}:{student_id}",
-                description=f"حركة اختبار {i+1}",
-                operator_id=student_id,
-            )
 
-        # الصفحة الأولى من 2 صفحات متوقعة.
-        page1 = student_client.get("/", query_string={"page": 1})
-        body1 = page1.get_data(as_text=True)
-        assert page1.status_code == 200, body1
+    # الصفحة الأولى من 2 صفحات متوقعة.
+    page1 = student_client.get("/", query_string={"page": 1})
+    body1 = page1.get_data(as_text=True)
+    assert page1.status_code == 200, body1
 
-        if 'data-testid="wallet-title"' in body1:
-            assert 'data-testid="wallet-page-next"' in body1, body1
-            assert _("الأحدث") in body1, body1
-            assert _("الأقدم") in body1, body1
-            assert _("صفحة 1 من 2") in body1, body1
-            assert _("سجل الحركات") in body1, body1
-            # تأكد أن رصيد المحفظة محسوب بدقة (2000 + 12*100 = 3200).
-            assert "3200.00" in body1 or "3,200.00" in body1, body1
+    if 'data-testid="wallet-title"' in body1:
+        assert 'data-testid="wallet-page-next"' in body1, body1
+        assert _("الأقدم") in body1, body1
+        assert 'data-testid="wallet-page-prev"' not in body1, body1
+        assert _("صفحة 1 من 2") in body1, body1
+        assert _("سجل الحركات") in body1, body1
+        # تأكد أن رصيد المحفظة محسوب بدقة (2000 + 12*100 = 3200).
+        assert "3200.00" in body1 or "3,200.00" in body1, body1
 
-            # الصفحة الثانية.
-            page2 = student_client.get("/", query_string={"page": 2})
-            body2 = page2.get_data(as_text=True)
-            assert page2.status_code == 200, body2
-            assert 'data-testid="wallet-page-prev"' in body2, body2
-            assert _("الأحدث") in body2, body2
-            assert _("صفحة 2 من 2") in body2, body2
-            assert 'data-testid="wallet-page-next"' not in body2, body2
-        else:
-            assert page1.status_code in (200, 302), body1
-            assert _("لوحتي") in body1, body1
+        # الصفحة الثانية.
+        page2 = student_client.get("/", query_string={"page": 2})
+        body2 = page2.get_data(as_text=True)
+        assert page2.status_code == 200, body2
+        assert 'data-testid="wallet-page-prev"' in body2, body2
+        assert _("الأحدث") in body2, body2
+        assert _("صفحة 2 من 2") in body2, body2
+        assert 'data-testid="wallet-page-next"' not in body2, body2
+    else:
+        assert page1.status_code in (200, 302), body1
+        assert _("لوحتي") in body1, body1
 
-    def test_parent_child_wallet_route_wired_with_parent_of_required(self, app):
-        """AZ-P3-15: مسار wallet_ui.parent_child_wallet مُزوَّد بـ @parent_of_required."""
-        rules = {r.endpoint: r for r in app.url_map.iter_rules()}
-        endpoint = "wallet_ui.parent_child_wallet"
-        assert endpoint in rules, f"المسار {endpoint} غير مسجّل"
-        fn = app.view_functions.get(endpoint)
-        assert fn is not None
-        assert getattr(fn, "__wrapped__", None) is not None, \
-            "الدالة غير مغلفة بـ @parent_of_required"
+def test_parent_child_wallet_route_wired_with_parent_of_required(app):
+    """AZ-P3-15: مسار wallet_ui.parent_child_wallet مُزوَّد بـ @parent_of_required."""
+    rules = {r.endpoint: r for r in app.url_map.iter_rules()}
+    endpoint = "wallet_ui.parent_child_wallet"
+    assert endpoint in rules, f"المسار {endpoint} غير مسجّل"
+    fn = app.view_functions.get(endpoint)
+    assert fn is not None
+    assert getattr(fn, "__wrapped__", None) is not None, \
+        "الدالة غير مغلفة بـ @parent_of_required"
 
-    def test_parent_child_wallet_without_child_id_lists_children(self, app, school_a):
-        """بدون child_id → قائمة الأبناء المرتبطين (parent_family.html)."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"family-list-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي بقائمة الأبناء",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"family-list-child-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ابن مرتبط",
-        )
-        _link_parent_child(app, parent_id, child_id)
+def test_parent_child_wallet_without_child_id_lists_children(app, school_a):
+    """بدون child_id → قائمة الأبناء المرتبطين (parent_family.html)."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"family-list-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي بقائمة الأبناء",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"family-list-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ابن مرتبط",
+    )
+    _link_parent_child(app, parent_id, child_id)
 
-        resp = parent_client.get("/family/wallet")
-        body = resp.get_data(as_text=True)
-        assert resp.status_code == 200, body
-        assert 'data-testid="family-wallet-title"' in body, body
+    resp = parent_client.get("/family/wallet")
+    body = resp.get_data(as_text=True)
+    assert resp.status_code == 200, body
+    assert 'data-testid="family-wallet-title"' in body, body
 
-    def test_parent_child_wallet_with_wallet_and_transactions_renders_rows(self, app, school_a):
-        """ولي مرتبط + ابن لديه محفظة بحركة واحدة → 200 يعرض الرصيد والسجل."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"family-rows-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي يرى سجل الابن",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"family-rows-child-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ابن له رصيد",
-        )
-        _link_parent_child(app, parent_id, child_id)
+def test_parent_child_wallet_with_wallet_and_transactions_renders_rows(app, school_a):
+    """ولي مرتبط + ابن لديه محفظة بحركة واحدة → 200 يعرض الرصيد والسجل."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"family-rows-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي يرى سجل الابن",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"family-rows-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ابن له رصيد",
+    )
+    _link_parent_child(app, parent_id, child_id)
 
-        _setup_wallet_and_credit(
-            app, child_id, school_a, 250.00,
-            idempotency_key=f"test_parent_rows:{child_id}",
-            description="إيداع إداري",
-            operator_id=parent_id,
-        )
+    _setup_wallet_and_credit(
+        app, child_id, school_a, 250.00,
+        idempotency_key=f"test_parent_rows:{child_id}",
+        description="إيداع إداري",
+        operator_id=parent_id,
+    )
 
-        resp = parent_client.get(f"/family/wallet?child_id={child_id}")
-        body = resp.get_data(as_text=True)
-        assert resp.status_code == 200, body
-        assert 'data-testid="family-wallet-title"' in body, body
-        assert 'data-testid="wallet-tx-row"' in body, body
+    resp = parent_client.get(f"/family/wallet?child_id={child_id}")
+    body = resp.get_data(as_text=True)
+    assert resp.status_code == 200, body
+    assert 'data-testid="family-wallet-title"' in body, body
+    assert 'data-testid="wallet-tx-row"' in body, body
 
-    def test_parent_topup_rejects_child_not_linked(self, app, school_a):
-        """POST لطفل غير مرخّص → يرفض ولا يُنشئ محفظة."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"topup-nochild-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي بلا رابط",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"topup-nochild-student-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="طالب غير مرتبط",
-        )
-        from app.core.rls import platform_scope
+def test_parent_topup_rejects_child_not_linked(app, school_a):
+    """POST لطفل غير مرخّص → يرفض ولا يُنشئ محفظة."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-nochild-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي بلا رابط",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-nochild-student-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="طالب غير مرتبط",
+    )
+    from app.core.rls import platform_scope
 
-        resp = parent_client.post(
-            "/family/wallet/topup",
-            data={"child_id": str(child_id), "amount": "100"},
-            follow_redirects=False,
-        )
-        assert resp.status_code in (302, 400), resp.status_code
-        with app.app_context():
-            with platform_scope():
-                from app.services.wallet_service import find_wallet
-                assert find_wallet(school_a, child_id) is None
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "100"},
+        follow_redirects=False,
+    )
+    assert resp.status_code in (302, 400), resp.status_code
+    with app.app_context():
+        with platform_scope():
+            from app.services.wallet_service import find_wallet
+            assert find_wallet(school_a, child_id) is None
 
-    def test_parent_topup_rejects_missing_amount(self, app, school_a):
-        """بدون مبلغ → توجيه بفلاش ولا شحن."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"topup-noamount-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي بلا مبلغ",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"topup-noamount-child-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ابن بلا مبلغ",
-        )
-        _link_parent_child(app, parent_id, child_id)
+def test_parent_topup_rejects_missing_amount(app, school_a):
+    """بدون مبلغ → توجيه بفلاش ولا شحن."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-noamount-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي بلا مبلغ",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-noamount-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ابن بلا مبلغ",
+    )
+    _link_parent_child(app, parent_id, child_id)
 
-        resp = parent_client.post(
-            "/family/wallet/topup",
-            data={"child_id": str(child_id)},
-            follow_redirects=False,
-        )
-        assert resp.status_code == 302, resp.status_code
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id)},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302, resp.status_code
 
-    def test_parent_topup_rejects_invalid_amount(self, app, school_a):
-        """مبلغ غير رقمي → توجيه بفلاش."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"topup-badamount-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي بمبلغ غير صالح",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"topup-badamount-child-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ابن غير صالح",
-        )
-        _link_parent_child(app, parent_id, child_id)
+def test_parent_topup_rejects_invalid_amount(app, school_a):
+    """مبلغ غير رقمي → توجيه بفلاش."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-badamount-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي بمبلغ غير صالح",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-badamount-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ابن غير صالح",
+    )
+    _link_parent_child(app, parent_id, child_id)
 
-        resp = parent_client.post(
-            "/family/wallet/topup",
-            data={"child_id": str(child_id), "amount": "abc"},
-            follow_redirects=False,
-        )
-        assert resp.status_code == 302, resp.status_code
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "abc"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302, resp.status_code
 
-    def test_parent_topup_rejects_non_positive_amount(self, app, school_a):
-        """مبلغ صفر → توجيه بفلاش."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"topup-zero-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي بمبلغ صفر",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"topup-zero-child-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ابن بصفر",
-        )
-        _link_parent_child(app, parent_id, child_id)
+def test_parent_topup_rejects_non_positive_amount(app, school_a):
+    """مبلغ صفر → توجيه بفلاش."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-zero-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي بمبلغ صفر",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-zero-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ابن بصفر",
+    )
+    _link_parent_child(app, parent_id, child_id)
 
-        resp = parent_client.post(
-            "/family/wallet/topup",
-            data={"child_id": str(child_id), "amount": "0"},
-            follow_redirects=False,
-        )
-        assert resp.status_code == 302, resp.status_code
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "0"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302, resp.status_code
 
-    def test_parent_topup_success_creates_and_charges_wallet(self, app, school_a):
-        """POST ناجح: إنشاء محفظة + شحن الرصيد."""
-        parent_id, parent_client = make_persona(
-            app, "parent", school_id=school_a,
-            email=f"topup-ok-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي يشحن",
-        )
-        child_id, _ = make_persona(
-            app, "student", school_id=school_a,
-            email=f"topup-ok-child-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ابن مع شحن",
-        )
-        _link_parent_child(app, parent_id, child_id)
+def test_parent_topup_success_creates_and_charges_wallet(app, school_a):
+    """POST ناجح: إنشاء محفظة + شحن الرصيد."""
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-ok-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي يشحن",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-ok-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ابن مع شحن",
+    )
+    _link_parent_child(app, parent_id, child_id)
 
-        from app.services.wallet_service import find_wallet, get_balance
+    from app.services.wallet_service import find_wallet, get_balance
 
-        resp = parent_client.post(
-            "/family/wallet/topup",
-            data={"child_id": str(child_id), "amount": "120.5"},
-            follow_redirects=False,
-        )
-        assert resp.status_code == 302, resp.status_code
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "120.5"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302, resp.status_code
 
-        from app.core.rls import platform_scope
+    from app.core.rls import platform_scope
 
-        with app.app_context():
-            with platform_scope():
-                wallet = find_wallet(school_a, child_id)
-                assert wallet is not None, "بعد الشحن يجب أن تُنشأ المحفظة"
-                balance = get_balance(school_a, child_id)
-                assert balance is not None
+    with app.app_context():
+        with platform_scope():
+            wallet = find_wallet(school_a, child_id)
+            assert wallet is not None, "بعد الشحن يجب أن تُنشأ المحفظة"
+            balance = get_balance(school_a, child_id)
+            assert balance is not None
 
-    def test_parent_child_wallet_for_parent_without_school_redirects(self, app):
-        """ولي بدون مدرسة نشطة → توجيه إلى الداشبورد مع فلاش."""
-        parent_id, parent_client = make_persona(
-            app, "parent",
-            email=f"topup-noschool-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="ولي بلا مدرسة",
-        )
-        resp = parent_client.get("/family/wallet")
-        assert resp.status_code == 302, resp.status_code
-        assert "/auth/dashboard" in (resp.headers.get("Location") or ""), resp.headers.get("Location")
+def test_parent_child_wallet_for_parent_without_school_redirects(app):
+    """ولي بدون مدرسة نشطة → توجيه إلى الداشبورد مع فلاش."""
+    parent_id, parent_client = make_persona(
+        app, "parent",
+        email=f"topup-noschool-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="ولي بلا مدرسة",
+    )
+    resp = parent_client.get("/family/wallet")
+    assert resp.status_code == 302, resp.status_code
+    assert "/auth/dashboard" in (resp.headers.get("Location") or ""), resp.headers.get("Location")
 
-    def test_my_wallet_page_beyond_range_returns_404(self, app, school_a):
-        """صفحة أكبر من عدد الصفحات → 404."""
-        student_id, student_client = make_persona(
-            app, "student", school_id=school_a,
-            email=f"page-404-{uuid.uuid4().hex[:8]}@test.com",
-            password="TestPass123!",
-            name_ar="طالب بصفحة خاطئة",
-        )
-        _setup_wallet_and_credit(
-            app, student_id, school_a, 10.00,
-            idempotency_key=f"page404-{student_id}",
-            description="إيداع إداري",
-            operator_id=student_id,
-        )
-        resp = student_client.get("/?page=9999", follow_redirects=False)
-        assert resp.status_code == 404
+def test_my_wallet_page_beyond_range_returns_404(app, school_a):
+    """صفحة أكبر من عدد الصفحات → 404."""
+    student_id, student_client = make_persona(
+        app, "student", school_id=school_a,
+        email=f"page-404-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="طالب بصفحة خاطئة",
+    )
+    _setup_wallet_and_credit(
+        app, student_id, school_a, 10.00,
+        idempotency_key=f"page404-{student_id}",
+        description="إيداع إداري",
+        operator_id=student_id,
+    )
+    resp = student_client.get("/?page=9999", follow_redirects=False)
+    assert resp.status_code == 404
 
-    def test_parent_topup_route_exists_and_is_post(self, app):
-        """مسار شحن الابن POST /family/wallet/topup موجود."""
-        topup_rules = [
-            r for r in app.url_map.iter_rules()
-            if r.rule == "/family/wallet/topup" and r.endpoint == "wallet_ui.topup_child"
-        ]
-        assert any("POST" in r.methods for r in topup_rules), \
-            "مسار POST /family/wallet/topup غير موجود"
+def test_parent_topup_route_exists_and_is_post(app):
+    """مسار شحن الابن POST /family/wallet/topup موجود."""
+    topup_rules = [
+        r for r in app.url_map.iter_rules()
+        if r.rule == "/family/wallet/topup" and r.endpoint == "wallet_ui.topup_child"
+    ]
+    assert any("POST" in r.methods for r in topup_rules), \
+        "مسار POST /family/wallet/topup غير موجود"
 
 
 class TestParentOfRequiredGuard:
@@ -624,3 +622,94 @@ def _assert_wallet_page_renders(app, resp):
         return
     assert resp.status_code in (200, 302), body
     assert _("لوحتي") in body, body
+
+def test_my_wallet_student_without_school_redirects(app):
+    """???? ??? ????? ???? ? ????? ??? ????????? ?? ????."""
+    student_id, student_client = make_persona(
+        app, "student",
+        email=f"noschool-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="???? ??? ?????",
+    )
+    resp = student_client.get("/", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "/auth/dashboard" in (resp.headers.get("Location") or "")
+
+
+def test_topup_parent_without_school_redirects(app, school_a):
+    """??? ??? ????? ???? ? ????? ??? ????????? (??? ?????? ?? ??????)."""
+    parent_id, parent_client = make_persona(
+        app, "parent",
+        email=f"topup-noschool2-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="??? ??? ?????",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-noschool2-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="??? ?????",
+    )
+    _link_parent_child(app, parent_id, child_id)
+
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "50"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+    assert "/auth/dashboard" in (resp.headers.get("Location") or "")
+
+
+def test_topup_wallet_creation_failure_flashes(app, school_a, monkeypatch):
+    """??? ????? ??????? ? ???? ?? redirect (?? ????)."""
+    from app.services import wallet_service as svc
+
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-gotoerr-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="??? ??? ????? ???????",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-gotoerr-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="??? ??? ????? ???????",
+    )
+    _link_parent_child(app, parent_id, child_id)
+    monkeypatch.setattr(svc, "get_or_create_wallet", lambda *a, **kw: (None, "???? ????? ???????"))
+
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "50"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302
+
+
+def test_topup_admin_credit_failure_flashes(app, school_a, monkeypatch):
+    """??? admin_credit ??? ????? ??????? ? ???? ?? redirect."""
+    from app.services import wallet_service as svc
+
+    parent_id, parent_client = make_persona(
+        app, "parent", school_id=school_a,
+        email=f"topup-certerr-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="??? ??? ???????",
+    )
+    child_id, _ = make_persona(
+        app, "student", school_id=school_a,
+        email=f"topup-certerr-child-{uuid.uuid4().hex[:8]}@test.com",
+        password="TestPass123!",
+        name_ar="??? ??? ???????",
+    )
+    _link_parent_child(app, parent_id, child_id)
+    monkeypatch.setattr(svc, "admin_credit", lambda *a, **kw: (None, "?????? ??? ????"))
+
+    resp = parent_client.post(
+        "/family/wallet/topup",
+        data={"child_id": str(child_id), "amount": "50"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 302

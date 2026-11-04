@@ -177,15 +177,25 @@ def test_log_transaction_failure_tolerates_tenancy_failure(app, monkeypatch):
 
 
 def test_after_request_without_correlation_id_omits_header(monkeypatch):
+    """استثناء في before_request ⇒ الاستجابة بلا ترويسة X-Request-ID ولا انهيار.
+
+    تُبنى بفئة الإنتاج صراحةً (TESTING=False) — الحالة الوحيدة التي يلتقط فيها
+    معالج الأخطاء العامة الاستثناءات بدل تمريرها للمستخدم.
+    """
+    from config import ProductionConfig
+
     import app as app_module
 
-    class _BoomUuid:
+    class _BoomSet:
         @staticmethod
-        def uuid4():
-            raise RuntimeError("uuid broke")
+        def _raise(_cid):
+            raise RuntimeError("set broke")
 
-    monkeypatch.setattr("app.core.logging.uuid", _BoomUuid)
-    a = app_module.create_app()
+    # كسر set_correlation_id يجعل before_request يفشل قبل ضبط g.correlation_id —
+    # بينما يبقى uuid صالحًا لبقية مسار الخطأ (correlation_id تسقط على fallback
+    # وتعطيه قيمة حقيقية) ⇒ الفرع cid=None في after_request يُغطّى تمامًا.
+    monkeypatch.setattr("app.core.logging.set_correlation_id", _BoomSet._raise)
+    a = app_module.create_app(ProductionConfig)
     assert a.config.get("TESTING") is not True
     a.config["WTF_CSRF_ENABLED"] = False
     a.config["TALISMAN_ENABLED"] = False
