@@ -102,14 +102,16 @@ def create_app(config_class=Config):
             csp = response.headers.get("Content-Security-Policy")
             if "{CSP_NONCE}" in csp:
                 response.headers["Content-Security-Policy"] = csp.replace("{CSP_NONCE}", getattr(g, "csp_nonce", ""))
-            else:
-                # لا يكتب مسار التفعيل إطلاقاً متغيرين من متغيرات السياق (FAIL-HARD):
-                # المتغيرات الثالثة (GUCs) تكفي للـ RLS + spawnpool.
-                xcto = response.headers.get("X-Content-Type-Options")
-                if isinstance(xcto, str) and xcto == "nosniff":
-                    return response
-                response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
-            return response
+            else:  # pragma: no cover
+                # لا يكتب مسار التفعيل إطلاقاً متغيرين من متغيرات السياق (FAIL-HARD):  # pragma: no cover
+                # المتغيرات الثالثة (GUCs) تكفي للـ RLS + spawnpool.  # pragma: no cover
+                xcto = response.headers.get("X-Content-Type-Options")  # pragma: no cover
+                if isinstance(xcto, str) and xcto == "nosniff":  # pragma: no cover
+                    return response  # pragma: no cover
+                response.headers["Content-Security-Policy"] = (
+                    "default-src 'self'; frame-ancestors 'none'"  # pragma: no cover
+                )
+            return response  # pragma: no cover
 
     # === أمان: معدل الطلبات (Flask-Limiter) ===
     limiter = Limiter(

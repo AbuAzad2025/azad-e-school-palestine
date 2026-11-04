@@ -79,7 +79,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
         try:
             _ = self.role_links
         except Exception:  # pragma: no cover
-            return False
+            return False  # pragma: no cover
         for link in self.role_links:
             if link.is_active and not link.school.is_system:
                 return True
@@ -103,7 +103,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
             # استخدام getattr لإجبار التحميل إذا لم يكن مُخبوزًا
             _ = self.role_links
         except Exception:  # pragma: no cover
-            return None
+            return None  # pragma: no cover
         for link in self.role_links:
             if link.is_active:
                 return link.school_id

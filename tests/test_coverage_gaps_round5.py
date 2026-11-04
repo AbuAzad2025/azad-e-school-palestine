@@ -111,8 +111,13 @@ def test_lazy_expire_tx_failure(app, monkeypatch):
         db.session.add(plan)
         db.session.flush()
         sub = Subscription(user_id=stud, plan_id=plan.id, class_id=cid, price=0.0, status="pending")
-        sub.created_at = datetime.now(UTC) - timedelta(days=10)
         db.session.add(sub)
+        db.session.commit()
+        # server_default overrides Python value; force backdate via SQL
+        db.session.execute(
+            __import__("sqlalchemy").text("UPDATE subscriptions SET created_at = :t WHERE id = :i"),
+            {"t": datetime.now(UTC) - timedelta(days=10), "i": sub.id},
+        )
         db.session.commit()
 
         def _boom(*a, **kw):
