@@ -168,6 +168,31 @@ def test_run_absence_alerts_email_failure_does_not_write_log(app, monkeypatch):
         assert result == 0
         assert db.session.query(AbsenceAlertLog).count() == 0
 
+def test_run_absence_alerts_email_returns_false(app):
+    """send_absence_alert_email returning False -> 58->53 arc."""
+    from tests.conftest import make_class, make_family_link, make_grade, make_school, make_subject, make_user
+
+    from app.extensions import db
+    from app.models.attendance import Attendance
+    from app.services import attendance
+
+    sid = make_school(app)
+    gid = make_grade(app, sid, grade_level=1)
+    subj = make_subject(app)
+    cid = make_class(app, sid, gid, subj)
+    stu_uid = make_user(app, role="student", school_id=sid)
+    parent_uid = make_user(app, role="parent", school_id=sid)
+    make_family_link(app, parent_uid, stu_uid)
+
+    with app.app_context():
+        att = Attendance(class_id=cid, student_id=stu_uid, date=__import__("datetime").date.today(), status="absent")
+        db.session.add(att)
+        db.session.commit()
+
+        with patch("app.services.email.send_absence_alert_email", return_value=False):
+            result = attendance.run_absence_alerts()
+        assert result == 0
+
 
 # ───────────────────────── __init__.py ─────────────────────────
 

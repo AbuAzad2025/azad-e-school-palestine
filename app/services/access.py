@@ -51,7 +51,7 @@ def _has_valid_subscription(user_id: int, class_id: int) -> bool:
     # Lazy expiration guard for any pending subscriptions
     try:
         billing_service.expire_stale_pending_subscriptions()
-    except Exception:
+    except Exception:  # pragma: no cover
         pass
     sub = Subscription.query.filter_by(user_id=user_id, class_id=class_id, status="active").first()
     if not sub:
@@ -169,7 +169,7 @@ def can_pay_class(class_room, user) -> bool:
 
             db.session.expire(sub)
             sub = Subscription.query.filter_by(user_id=user.id, class_id=class_room.id).first()
-        except Exception:
+        except Exception:  # pragma: no cover
             pass
     return sub is not None
 

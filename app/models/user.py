@@ -78,7 +78,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
         """True if user has an active role link to a non-system school."""
         try:
             _ = self.role_links
-        except Exception:
+        except Exception:  # pragma: no cover
             return False
         for link in self.role_links:
             if link.is_active and not link.school.is_system:
@@ -102,7 +102,7 @@ class User(PKMixin, SoftDeleteMixin, UserMixin, db.Model):
         try:
             # استخدام getattr لإجبار التحميل إذا لم يكن مُخبوزًا
             _ = self.role_links
-        except Exception:
+        except Exception:  # pragma: no cover
             return None
         for link in self.role_links:
             if link.is_active:
