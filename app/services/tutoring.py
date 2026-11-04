@@ -943,8 +943,11 @@ def auto_timeout_unconfirmed_sessions(grace_hours: int | None = None) -> dict:
         try:
 
             def _timeout_finalize(sess=session):
+                # لا تقرأ السمة مباشرة: قد تكون انتهت صلاحية الكائن (جلسة محذوفة
+                # خارجياً أثناء الترقية) فترمي ObjectDeletedError داخل المسار.
+                sess_id_value = sess.__dict__.get("id")
                 locked = db.session.execute(
-                    db.select(TutoringSession).where(TutoringSession.id == sess.id).with_for_update()
+                    db.select(TutoringSession).where(TutoringSession.id == sess_id_value).with_for_update()
                 ).scalar_one_or_none()
                 if not locked or locked.payment_status == "paid":
                     return False
@@ -975,6 +978,6 @@ def auto_timeout_unconfirmed_sessions(grace_hours: int | None = None) -> dict:
                 skipped += 1
         except Exception:
             errors += 1
-            logger.exception("auto_timeout_session_failed", session_id=getattr(session, "id", None))
+            logger.exception("auto_timeout_session_failed", session_id=session.__dict__.get("id"))
 
     return {"finalized": finalized, "skipped": skipped, "errors": errors, "cutoff": cutoff.isoformat()}
