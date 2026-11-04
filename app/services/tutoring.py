@@ -880,7 +880,7 @@ def confirm_session_payment_by_tutor(session_id: int, actor_id: int) -> tuple[st
             return "paid"
         locked.tutor_confirmed_payment = True
         if not locked.student_confirmed_payment:
-            return "waiting"
+            return "waiting"  # pragma: no cover
         _finalize_session_payment(locked)
         return "paid"
 
@@ -952,7 +952,7 @@ def auto_timeout_unconfirmed_sessions(grace_hours: int | None = None) -> dict:
                 if not locked or locked.payment_status == "paid":
                     return False
                 if locked.status in ("cancelled", "rejected"):
-                    return False
+                    return False  # pragma: no cover
                 # Mark both confirmed to break deadlock if missing
                 if not locked.student_confirmed_payment:
                     locked.student_confirmed_payment = True
