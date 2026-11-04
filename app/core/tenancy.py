@@ -53,61 +53,6 @@ def current_school_id() -> int | None:
         return None
 
 
-def _set_active_class_ids(*, user_id: int | None = None) -> str:
-    """نشر معرّفات الصفوف النشطة للممثلarm الـRLS الهجين.
-
-    المشترك الفردي لا يملك علاقة دور إلى مدرسة الصف الذي دفعه، لذلك
-
-    ``app.current_school_id`` لوحده يخبئه. معرّفات الصفوف التي *يدخل*ها
-
-    هي ما تحتاجه سياسات الرسم البياني للمحتوى.
-
-    تُقرأ من ``class_members`` قبل ضبط متغير المدرسة، وهو آمن وغير دائري
-
-    لأن السياسة تحمل arm ``user_id``: الصفوف المرئية هي صفوف الممثل نفسه،
-
-    لا صفوف المدرسة كلها.
-
-    인수 ``user_id`` يُعطى صراحةً لتجنب إعادة قراءة GUC ``app.current_user_id``
-
-    داخل جملة SARGable — استخدام العمود الصحيح ``user_id = :uid`` أسرع من
-
-    ``user_id::text = current_setting(...)`` ويتجنب مشاكل التطابق النصي.
-    """
-    from sqlalchemy import text
-
-    from app.core.rls import _CLASS_IDS_GUC
-    from app.extensions import db
-
-    uid = user_id if user_id is not None else current_user.id
-    result = db.session.execute(
-        text(
-            f"""
-            SELECT set_config('{_CLASS_IDS_GUC}',
-                   COALESCE(string_agg(class_id::text, ','), ''), true)
-            FROM class_members
-            WHERE user_id = :uid AND status = 'active'
-            """  # nosec B608 — اسم GUC ثابت من rls.py، :uid مُربَط
-        ),
-        {"uid": uid},
-    )
-    return str(result.scalar() or "")
-
-
-def _read_class_ids_guc() -> str:
-    """اقرأ قيمة GUC المعرّفات المُفعّلة التي ضبطها _set_active_class_ids."""
-    from sqlalchemy import text
-
-    from app.core.rls import _CLASS_IDS_GUC
-    from app.extensions import db
-
-    # اسم GUC ثابت من rls.py — لا مدخلات مستخدم في التداخل.
-    raw = db.session.execute(
-        text(f"SELECT current_setting('{_CLASS_IDS_GUC}', true)")  # nosec B608
-    ).scalar()
-    return str(raw or "")
-
-
 def _set_gucs_one_statement(
     *,
     uid: str,
