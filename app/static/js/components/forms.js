@@ -158,7 +158,7 @@ export function initFileUploads() {
 /**
  * Prevent double submission on forms by disabling submit buttons.
  */
-function initFormDoubleSubmitPrevention() {
+export function initFormDoubleSubmitPrevention() {
   document.addEventListener(
     "submit",
     (e) => {
@@ -193,5 +193,6 @@ export function initForms() {
 export default {
   initInlineValidation,
   initFileUploads,
+  initFormDoubleSubmitPrevention,
   initForms,
 };
