@@ -69,7 +69,7 @@
   </form>
   <div class="auth-card__footer">
     <p class="auth-card__alt">{{ _('لديك حساب بالفعل؟') }} <a href="{{ url_for('auth.login') }}" class="auth-card__link">{{ _('سجّل الدخول') }}</a></p>
-    <p class="auth-card__alt">{{ _('مدرستك لديها كود انضمام؟') }} <a href="{{ url_for('auth.register') }}" class="auth-card__link">{{ _('سجّل كطالب مدرسي') }}</a></p>
+    <p class="auth-card__alt">{{ _('مدرستك لديها كود انضمام؟') }} <a href="{{ url_for('auth.register_individual') }}" class="auth-card__link">{{ _('سجّل كطالب مدرسي') }}</a></p>
   </div>
 </div>
 {% endblock %}

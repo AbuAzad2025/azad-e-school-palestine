@@ -46,7 +46,7 @@
       <p class="hero__sub">{{ _('تعليم إضافي منظم للتوجيهي — دروس مسجلة، اختبارات تفاعلية، دروس خصوصية أونلاين') }}</p>
       <div class="hero__btns">
         <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('user-plus') }} {{ _('سجّل كطالب فردي') }}</a>
-        <a href="{{ url_for('auth.register') }}" class="azad-btn-outline azad-btn-lg">{{ icon('school') }} {{ _('سجّل مدرستك') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn-outline azad-btn-lg">{{ icon('school') }} {{ _('سجّل مدرستك') }}</a>
       </div>
     </div>
   </section>
@@ -115,7 +115,7 @@
           <div class="price-card__label">{{ _('للمدارس') }}</div>
           <div class="price-card__price">{{ _('تسعير خاص') }}</div>
           <p class="price-card__note">{{ _('حساب مدرسي كامل مع إدارة وتحليلات') }}</p>
-          <a href="{{ url_for('auth.register') }}" class="azad-btn price-card__cta">{{ icon('school') }} {{ _('تواصل معنا') }}</a>
+          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn price-card__cta">{{ icon('school') }} {{ _('تواصل معنا') }}</a>
         </div>
       </div>
     </div>
@@ -153,7 +153,7 @@
     <p>{{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
     <p class="ft__links">
       <a href="{{ url_for('auth.login') }}">{{ _('دخول') }}</a> ·
-      <a href="{{ url_for('auth.register') }}">{{ _('تسجيل مدارس') }}</a> ·
+      <a href="{{ url_for('auth.register_individual') }}">{{ _('تسجيل مدارس') }}</a> ·
       <a href="{{ url_for('auth.register_individual') }}">{{ _('تسجيل فردي') }}</a>
     </p>
   </footer>

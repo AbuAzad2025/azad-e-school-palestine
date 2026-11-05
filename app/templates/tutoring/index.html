@@ -33,6 +33,6 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="empty-state">{{ _('لا معلمون مطابقون بعد.') }} {% if current_user.is_authenticated %}<a href="{{ url_for('tutoring.profile_new') }}">{{ _('كن أول معلم خصوصي') }}</a>{% else %}<a href="{{ url_for('auth.register') }}">{{ _('سجّل لتشارك أو تحجز') }}</a>{% endif %}</div>
+<div class="empty-state">{{ _('لا معلمون مطابقون بعد.') }} {% if current_user.is_authenticated %}<a href="{{ url_for('tutoring.profile_new') }}">{{ _('كن أول معلم خصوصي') }}</a>{% else %}<a href="{{ url_for('auth.register_individual') }}">{{ _('سجّل لتشارك أو تحجز') }}</a>{% endif %}</div>
 {% endif %}
 {% endblock %}

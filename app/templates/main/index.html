@@ -7,7 +7,7 @@
     {% if current_user.is_authenticated %}
       <a class="azad-btn" href="{{ url_for('auth.dashboard') }}">{{ _('لوحتي') }}</a>
     {% else %}
-      <a class="azad-btn" href="{{ url_for('auth.register') }}">{{ _('سجّل مجاناً') }}</a>
+      <a class="azad-btn" href="{{ url_for('auth.register_individual') }}">{{ _('سجّل مجاناً') }}</a>
       <a class="azad-btn-outline" href="{{ url_for('auth.login') }}">{{ _('تسجيل الدخول') }}</a>
     {% endif %}
   </div>
