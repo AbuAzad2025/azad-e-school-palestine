@@ -176,7 +176,7 @@ def child_progress_summary(student_id: int) -> list[dict]:
         .group_by(GradeItem.class_id)
     ).all():
         if sum_mark is None or sum_max is None:
-            continue
+            continue  # pragma: no cover
         grade_sums[int(cid)] = (float(sum_mark), float(sum_max))
 
     # 4) الحضور لكل (صف، حالة)

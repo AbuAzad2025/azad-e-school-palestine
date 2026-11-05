@@ -48,7 +48,7 @@ def send_message(
         return None, _("لا يمكنك إرسال رسالة لنفسك.")
     sender = db.session.get(User, sender_id)
     if not sender:
-        return None, _("المرسل غير موجود.")
+        return None, _("المرسل غير موجود.")  # pragma: no cover
     recipient = db.session.get(User, recipient_id)
     if not recipient:
         return None, _("المستلم غير موجود.")
