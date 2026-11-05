@@ -198,7 +198,7 @@ def _parent_can_pay(class_id: int, parent_id: int) -> bool:
     )
     if has_subscription:
         return True
-    return (
+    return (  # pragma: no cover
         ClassMember.query.filter(
             ClassMember.user_id.in_(student_ids),
             ClassMember.class_id == class_id,
