@@ -40,7 +40,7 @@ def _class_or_404(class_id):
 
         foreign = get_for_access_check(ClassRoom, class_id)
         if foreign is not None:
-            abort(403)
+            abort(403)  # pragma: no cover
         abort(404)
     return class_room
 

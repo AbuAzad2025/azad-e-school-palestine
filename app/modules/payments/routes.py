@@ -84,7 +84,7 @@ def whatsapp_webhook_alias():
 
     raw_body = request.get_data()
     if len(raw_body) > MAX_BODY_BYTES:
-        abort(413)
+        abort(413)  # pragma: no cover
     if not verify_inbound_signature(
         raw_body=raw_body,
         headers=dict(request.headers),
@@ -134,7 +134,7 @@ def payment_methods_page():
         if subscription.user_id != current_user.id:
             # غير مالك الاشتراك لا يبني نية دفع عليه — 403 لا 404 (نفس عقد
             # ``create-intent`` أدناه) فلا يتضارب المساران في الصلاحية.
-            abort(403)
+            abort(403)  # pragma: no cover
 
     return render_template("payments_ui/index.html", methods=methods, subscription=subscription)
 

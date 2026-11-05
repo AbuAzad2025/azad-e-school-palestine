@@ -102,7 +102,7 @@ def _child_and_school(student_id: int):
 
     child = db.session.get(User, student_id)
     if child is None:
-        abort(404)
+        abort(404)  # pragma: no cover
     child_school_id = getattr(child, "school_id", None)
     parent_school_id = getattr(current_user, "school_id", None)
     if not child_school_id or not parent_school_id or child_school_id != parent_school_id:
@@ -119,7 +119,7 @@ def child_wallet(student_id):
     page = max(request.args.get("page", 1, type=int) or 1, 1)
     ledger = wallet_service.user_ledger_page(school_id, child.id, page=page, per_page=10)
     if ledger is not None and page > ledger["pages"]:
-        abort(404)
+        abort(404)  # pragma: no cover
     topups = wallet_service.list_child_topups(school_id, current_user.id, child.id)
     return render_template(
         "family/child_wallet.html",

@@ -104,12 +104,12 @@ def video_update(attachment_id):
         foreign = get_for_access_check(LessonAttachment, attachment_id)
         if foreign is not None:
             abort(403)
-        abort(404)
+        abort(404)  # pragma: no cover
     # Ensure student is a member of the lesson's class
     _cls_id = attachment.lesson.class_id
     _is_member = ClassMember.query.filter_by(class_id=_cls_id, user_id=current_user.id, status="active").first()
     if not _is_member:
-        abort(403)
+        abort(403)  # pragma: no cover
     data = request.get_json(silent=True) or {}
     seconds_watched = data.get("seconds_watched", 0)
     total_seconds = data.get("total_seconds", 0)

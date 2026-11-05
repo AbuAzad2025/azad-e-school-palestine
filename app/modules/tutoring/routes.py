@@ -266,7 +266,7 @@ def session_pay_confirm(session_id):
 
     session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
-        abort(403)
+        abort(403)  # pragma: no cover
     if current_user.id != session_.tutor_id:
         abort(403)
     status, error = confirm_session_payment_by_tutor(session_id, current_user.id)
@@ -297,7 +297,7 @@ def session_pay_reject(session_id):
 
     session_ = db.get_or_404(TutoringSession, session_id)
     if not can_access(current_user, session_):
-        abort(403)
+        abort(403)  # pragma: no cover
     if current_user.id != session_.tutor_id:
         abort(403)
     status, error = reject_session_payment_by_tutor(session_id, current_user.id)

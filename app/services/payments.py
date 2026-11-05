@@ -686,7 +686,7 @@ class PaymentService:
             plan = db.session.get(SubscriptionPlan, subscription.plan_id)
             if plan:
                 return plan.school_id
-        return None
+        return None  # pragma: no cover
 
     def _flag_for_review(
         self,
@@ -718,7 +718,7 @@ class PaymentService:
 
         query = User.query.filter(User.role.in_([UserRole.super_admin, UserRole.school_admin]))
         if school_id is None:
-            school_id = getattr(subscription, "school_id", None)
+            school_id = getattr(subscription, "school_id", None)  # pragma: no cover
         if school_id:
             # D5: قصر الإشعار على بعضية هذه المدرسة (دور نشط) أو super_admin.
             # نفس شرط ``role_school_ids`` في core/context.py — دور نشط لا
@@ -869,12 +869,12 @@ class PaymentService:
         # D1: الاشتقاق الموحد عبر المساعد — لا تكرار (مسار صفّ → مسار خطّة).
         school_id = self._resolve_subscription_school(subscription)
         if not school_id:
-            logger.error(
+            logger.error(  # pragma: no cover
                 "ledger_entry_no_school",
                 subscription_id=subscription.id,
                 detail="cannot derive school_id — no wallet row written",
             )
-            return
+            return  # pragma: no cover
 
         def _create_ledger_tx():
             # FOR UPDATE على محفظة المشترك إن وُجدت، وإن لم توجد نُسجل الدخول

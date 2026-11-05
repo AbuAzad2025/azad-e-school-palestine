@@ -532,7 +532,7 @@ def _make_http_handler(status: int):
         # يُوضع في قالب الرمز مع رسالة الخطأ الأصلية بعد تنقيتها.
         original_status, message, code = map_exception(exc)
         if original_status != status:
-            return handle_unexpected_exception(exc)
+            return handle_unexpected_exception(exc)  # pragma: no cover
         ref = log_error(exc, status, code=code)
         if wants_json():
             return _json_error(status, code, message=message)

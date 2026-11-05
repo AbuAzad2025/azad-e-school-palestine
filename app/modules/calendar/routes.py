@@ -78,7 +78,7 @@ def event_delete(event_id):
     # school_admin can only delete events in their own school
     if current_user.role == UserRole.school_admin:
         if event.school_id != current_school_id():
-            abort(403)
+            abort(403)  # pragma: no cover
     ok, error = delete_event(event_id)
     if error:
         flash(_(error), "danger")

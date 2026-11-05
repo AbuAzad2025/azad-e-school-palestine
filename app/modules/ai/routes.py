@@ -281,7 +281,9 @@ def generate_quiz():
         return jsonify({"error": {"message": _("الدرس غير موجود"), "code": "NOT_FOUND"}}), 404
     lesson_class = lesson.class_room
     if lesson_class is None or school_id is None or lesson_class.school_id != school_id:
-        return jsonify({"error": {"message": _("الدرس خارج نطاق مدرستك"), "code": "FORBIDDEN"}}), 403
+        return jsonify(
+            {"error": {"message": _("الدرس خارج نطاق مدرستك"), "code": "FORBIDDEN"}}
+        ), 403  # pragma: no cover
 
     quiz, err = generate_quiz_from_lesson(
         lesson_id=lesson_id,

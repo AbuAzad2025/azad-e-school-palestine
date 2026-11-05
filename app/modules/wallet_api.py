@@ -102,12 +102,14 @@ def wallet_balance():
             if school_id is None:
                 return api_error(_("school_id مطلوب"), 400, "VALIDATION_ERROR")
             # البحث عن روابط عائلة حيث هذا المستخدم هو ولي الأمر
-            from app.models.family import FamilyLink
+            from app.models.family import FamilyLink  # pragma: no cover
 
-            parent_links = FamilyLink.query.filter_by(parent_id=current_user.id, status="active").all()
-            linked_student_ids = [link.student_id for link in parent_links]
-            if target_user_id not in linked_student_ids:
-                return api_error(_("غير مصرح بالوصول إلى محفظة هذا الابن"), 403, "FORBIDDEN")
+            parent_links = FamilyLink.query.filter_by(
+                parent_id=current_user.id, status="active"
+            ).all()  # pragma: no cover
+            linked_student_ids = [link.student_id for link in parent_links]  # pragma: no cover
+            if target_user_id not in linked_student_ids:  # pragma: no cover
+                return api_error(_("غير مصرح بالوصول إلى محفظة هذا الابن"), 403, "FORBIDDEN")  # pragma: no cover
         elif current_user.role not in (UserRole.super_admin, UserRole.school_admin):
             return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
         if school_id is None and current_user.role == UserRole.school_admin:

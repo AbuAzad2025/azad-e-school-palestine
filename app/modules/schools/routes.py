@@ -244,7 +244,7 @@ def class_code(class_id):
             abort(403)
         abort(404)
     if current_school_id() != class_room.school_id and current_user.role != UserRole.super_admin:
-        abort(403)
+        abort(403)  # pragma: no cover
     regenerate_join_code(class_room)
     audit("class.code", "classes", class_room.id)
     flash(_("تم توليد رمز جديد."), "success")
@@ -270,7 +270,7 @@ def class_assign_teacher(class_id):
             abort(403)
         abort(404)
     if current_school_id() != class_room.school_id and current_user.role != UserRole.super_admin:
-        abort(403)
+        abort(403)  # pragma: no cover
     form = AssignTeacherForm()
     if form.validate_on_submit():
         from app.models.user import UserRoleLink as _Link

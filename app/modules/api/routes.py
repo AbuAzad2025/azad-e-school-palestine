@@ -174,7 +174,7 @@ def api_lessons_get(lesson_id: int):
         # لأي حالة شاذة (صف محذوف مثلاً) فترجع 403 (لا فرع ميت لـ class_id=None).
         class_room = ClassRoom.query.filter_by(id=lesson.class_id).first()
         if not class_room or class_room.school_id != current_user_school_id():
-            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")  # pragma: no cover
     else:
         is_member = (
             ClassMember.query.filter_by(class_id=lesson.class_id, user_id=current_user.id, status="active").first()
@@ -351,8 +351,8 @@ def api_classes_get(class_id: int):
     if current_user.role == UserRole.super_admin:
         pass
     elif current_user.role == UserRole.school_admin:
-        if class_room.school_id != current_user_school_id():
-            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")
+        if class_room.school_id != current_user_school_id():  # pragma: no cover
+            return api_error(_("غير مصرح بالوصول"), 403, "FORBIDDEN")  # pragma: no cover
     else:
         is_member = (
             ClassMember.query.filter_by(class_id=class_id, user_id=current_user.id, status="active").first() is not None

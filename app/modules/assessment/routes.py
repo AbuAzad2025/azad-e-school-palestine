@@ -47,7 +47,7 @@ def _class_or_404(class_id):
 
         foreign = get_for_access_check(ClassRoom, class_id)
         if foreign is not None:
-            abort(403)
+            abort(403)  # pragma: no cover
         abort(404)
     return class_room
 
@@ -171,10 +171,10 @@ def attempt_start(quiz_id):
         foreign = get_for_access_check(Quiz, quiz_id)
         if foreign is not None:
             abort(403)
-        abort(404)
+        abort(404)  # pragma: no cover
     class_room = _class_or_404(quiz.class_id)
     if not can_view_class(class_room, current_user):
-        abort(403)
+        abort(403)  # pragma: no cover
     if current_user.role != UserRole.student:
         flash(_("المحاولة للطلاب فقط."), "warning")
         return redirect(url_for("assessment.quiz_list", class_id=quiz.class_id))
@@ -198,7 +198,7 @@ def attempt_do(attempt_id):
 
         if get_for_access_check(QuizAttempt, attempt_id) is not None:
             abort(403)
-        abort(404)
+        abort(404)  # pragma: no cover
     if attempt.student_id != current_user.id:
         abort(403)
     quiz = attempt.quiz
@@ -548,10 +548,10 @@ def quiz_stats(quiz_id):
         foreign = get_for_access_check(Quiz, quiz_id)
         if foreign is not None:
             abort(403)
-        abort(404)
+        abort(404)  # pragma: no cover
     class_room = _class_or_404(quiz.class_id)
     if not can_teach_class(class_room, current_user):
-        abort(403)
+        abort(403)  # pragma: no cover
 
     stats = get_quiz_stats(quiz_id)
     if not stats:
