@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('إعداد المنصة') }}{% endblock %}
+
+{% block content %}
+<div class="azad-section azad-mt-8">
+  <div class="azad-card azad-card--wide azad-mx-auto" style="max-width: 560px;">
+    <div class="azad-card-header">
+      <h1 class="page-title azad-title azad-mt-0">
+        {{ icon('settings') }} {{ _('إعداد منصة أزاد التعليمية') }}
+      </h1>
+      <p class="page-subtitle">
+        {{ _('هذه صفحة الإعداد الأول. أنشئ حساب مالك المنصة للبدء.') }}
+      </p>
+    </div>
+    <div class="azad-card-body">
+      <form method="post" action="{{ url_for('auth.setup') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="azad-form-group">
+          <label for="email">{{ _('البريد الإلكتروني') }} <span class="required">*</span></label>
+          <input type="email" id="email" name="email" required class="azad-form-control"
+                 value="{{ email }}" placeholder="admin@yourdomain.com">
+        </div>
+        <div class="azad-form-group">
+          <label for="password">{{ _('كلمة المرور') }} <span class="required">*</span></label>
+          <input type="password" id="password" name="password" required minlength="8"
+                 class="azad-form-control" placeholder="8+ characters">
+        </div>
+        <div class="azad-form-group">
+          <label for="name_ar">{{ _('الاسم (عربي)') }} <span class="required">*</span></label>
+          <input type="text" id="name_ar" name="name_ar" required class="azad-form-control"
+                 value="{{ name_ar }}" placeholder="أحمد غنام">
+        </div>
+        <div class="azad-form-group">
+          <label for="name_en">{{ _('الاسم (إنجليزي)') }}</label>
+          <input type="text" id="name_en" name="name_en" class="azad-form-control"
+                 value="{{ name_en }}" placeholder="Ahmad Ghannam">
+        </div>
+        <button type="submit" class="azad-btn azad-btn--primary azad-btn-block">
+          {{ _('إنشاء حساب مالك المنصة') }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

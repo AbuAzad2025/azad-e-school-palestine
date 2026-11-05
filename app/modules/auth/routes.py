@@ -4,7 +4,7 @@ from app.models.user import UserRole
 from app.services.auth import authenticate, mark_login, register_user, request_password_reset
 from app.services.auth import reset_password as reset_user_password
 from app.services.tutoring import get_tutor_earnings
-from flask import current_app, flash, make_response, redirect, render_template, url_for
+from flask import current_app, flash, make_response, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import func
@@ -14,10 +14,74 @@ from . import bp
 from .forms import ForgotPasswordForm, IndividualRegisterForm, LoginForm, RegisterForm, ResetPasswordForm
 
 
-@bp.route("/register", methods=["GET", "POST"])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for("auth.dashboard"))
+@bp.route("/setup", methods=["GET", "POST"])
+def setup():
+    """First-run setup wizard: create the initial platform owner.
+
+    Only accessible when no super_admin exists. After creation, redirects
+    to login. Idempotent: if a super_admin already exists, redirects to login.
+    """
+    from app.core.bootstrap import ensure_system_school_exists
+    from app.core.security import hash_password
+    from app.extensions import db
+    from app.models.user import User, UserApprovalStatus, UserRole
+
+    # If super_admin already exists, redirect to login
+    existing = db.session.execute(db.select(User).where(User.role == UserRole.super_admin)).scalar_one_or_none()
+    if existing is not None:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip()
+        password = request.form.get("password") or ""
+        name_ar = (request.form.get("name_ar") or "").strip()
+        name_en = (request.form.get("name_en") or "").strip()
+
+        errors = []
+        if not email:
+            errors.append(_("البريد الإلكتروني مطلوب."))
+        if not password or len(password) < 8:
+            errors.append(_("كلمة المرور يجب أن تكون 8 أحرف على الأقل."))
+        if not name_ar:
+            errors.append(_("الاسم (عربي) مطلوب."))
+
+        if errors:
+            for e in errors:
+                flash(e, "danger")
+            return render_template("auth/setup.html", email=email, name_ar=name_ar, name_en=name_en)
+
+        # Ensure system school exists
+        ensure_system_school_exists()
+
+        # Create super admin
+        from app.core.db import tx
+
+        def _create():
+            user = User(
+                email=email,
+                password_hash=hash_password(password),
+                role=UserRole.super_admin,
+                name_ar=name_ar,
+                name_en=name_en or name_ar,
+                locale="ar",
+                is_active=True,
+                is_verified=True,
+                approval_status=UserApprovalStatus.approved,
+            )
+            db.session.add(user)
+            db.session.flush()
+            return user
+
+        try:
+            tx(_create)
+        except Exception as exc:
+            flash(str(exc), "danger")
+            return render_template("auth/setup.html", email=email, name_ar=name_ar, name_en=name_en)
+
+        flash(_("تم إنشاء حساب مالك المنصة بنجاح. سجّل الدخول الآن."), "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/setup.html", email="", name_ar="", name_en="")
     form = RegisterForm()
     if form.validate_on_submit():
         user, error = register_user(

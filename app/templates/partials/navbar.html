@@ -63,7 +63,7 @@
           {{ icon('search') }}
         </button>
         <a href="{{ url_for('auth.login') }}" class="azad-btn-outline nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
-        <a href="{{ url_for('auth.register') }}" class="azad-btn nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
       {% endif %}
     </div>
   </div>
@@ -108,7 +108,7 @@
 <div class="nav-links" id="nav-menu" data-nav-links>
   <a href="{{ url_for('main.index') }}">{{ icon('home') }} {{ _('الرئيسية') }}</a>
   <a href="{{ url_for('auth.login') }}" class="nav-cta">{{ icon('login') }} {{ _('دخول') }}</a>
-  <a href="{{ url_for('auth.register') }}" class="nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
+  <a href="{{ url_for('auth.register_individual') }}" class="nav-cta">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
   <a href="{{ url_for('auth.register_individual') }}" class="nav-cta">{{ icon('user-plus') }} {{ _('طالب فردي') }}</a>
   <form method="post" action="{{ url_for('main.set_locale', lang='en' if current_locale != 'ar' else 'ar') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

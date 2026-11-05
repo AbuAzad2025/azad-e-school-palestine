@@ -115,6 +115,36 @@ def create_app(config_class=Config):
                 )
             return response  # pragma: no cover
 
+    # First-run setup: if no super_admin exists, redirect to /auth/setup
+    @app.before_request
+    def _redirect_to_setup_if_needed():
+        # Skip in testing mode
+        if app.config.get("TESTING"):
+            return None
+        # Skip static files and setup route itself
+        if request.path.startswith("/static") or request.path == "/auth/setup":
+            return None
+        # Skip health check
+        if request.path == "/health":
+            return None
+        # Check if super_admin exists (cached)
+        if getattr(app, "_has_super_admin", None) is None:
+            try:
+                from app.extensions import db
+                from app.models.user import User, UserRole
+
+                has_admin = (
+                    db.session.execute(db.select(User).where(User.role == UserRole.super_admin)).scalar_one_or_none()
+                    is not None
+                )
+                app._has_super_admin = has_admin  # type: ignore[attr-defined]
+            except Exception:
+                # Tables might not exist yet (during migration)
+                return None
+        if not app._has_super_admin:  # type: ignore[attr-defined]
+            return redirect(url_for("auth.setup"))
+        return None
+
     # === أمان: معدل الطلبات (Flask-Limiter) ===
     limiter = Limiter(
         key_func=_rate_limit_key,
@@ -123,7 +153,6 @@ def create_app(config_class=Config):
         strategy=app.config.get("RATELIMIT_STRATEGY", "fixed-window"),
     )
     limiter.init_app(app)
-
     # === CORS for mobile/API clients ===
     CORS(
         app,
