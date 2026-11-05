@@ -89,10 +89,12 @@ export function initInlineValidation() {
   );
 }
 
-function updateUploadZone(zone, file) {
+export function updateUploadZone(zone, file) {
   const nameEl = zone.querySelector(".azad-upload__file-name");
   const previewEl = zone.querySelector(".azad-upload__preview");
-  if (nameEl) nameEl.textContent = file ? file.name : "";
+  if (nameEl) {
+    nameEl.textContent = file ? file.name : "";
+  }
 
   if (previewEl && file?.type.startsWith("image/")) {
     const reader = new FileReader();
@@ -107,7 +109,7 @@ function updateUploadZone(zone, file) {
   }
 }
 
-function handleFiles(zone, files) {
+export function handleFiles(zone, files) {
   const input = zone.querySelector(".azad-upload__input");
   if (!input) return;
   if (files.length) {
@@ -193,6 +195,8 @@ export function initForms() {
 export default {
   initInlineValidation,
   initFileUploads,
+  updateUploadZone,
+  handleFiles,
   initFormDoubleSubmitPrevention,
   initForms,
 };
