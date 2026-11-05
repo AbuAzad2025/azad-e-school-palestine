@@ -20,6 +20,7 @@
     {{ _('يمكنك شحن المحفظة يدوياً من هنا، أو إنشاء محفظة للطالب') }}
   </p>
   <form method="post" action="{{ url_for('wallet_ui.topup_child', child_id=child_id) }}" data-testid="create-wallet-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <div class="azad-form-group">
       <label for="amount">{{ _('مبلغ الشحن') }} <span class="required">*</span></label>
       <input type="number" id="amount" name="amount" min="1" step="0.01" required
@@ -97,6 +98,7 @@
 <div class="azad-section azad-mt-6">
   <h2 class="section-title">{{ _('شحن المحفظة') }}</h2>
   <form method="post" action="{{ url_for('wallet_ui.topup_child', child_id=child_id) }}" data-testid="topup-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <div class="azad-form-group">
       <label for="amount">{{ _('مبلغ الشحن') }} <span class="required">*</span></label>
       <input type="number" id="amount" name="amount" min="1" step="0.01" required
