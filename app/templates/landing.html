@@ -1,4 +1,4 @@
-﻿{%- block doc -%}
+{%- block doc -%}
 <!doctype html>
 {% set _locale = request.cookies.get('locale', config.DEFAULT_LOCALE) %}<html lang="{{ _locale }}" dir="{{ 'ltr' if _locale == 'en' else 'rtl' }}">
 <head>
@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f766e">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="{{ _('Ù…Ù†ØµØ© Ù…Ø¯Ø±Ø³Ø© Ø£Ø²Ø§Ø¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ© â€” ØªØ¹Ù„ÙŠÙ… Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…ØªÙƒØ§Ù…Ù„ Ù„Ù„Ù…Ù†Ø§Ù‡Ø¬ Ø§Ù„ÙÙ„Ø³Ø·ÙŠÙ†ÙŠØ©') }}">
-<title>{{ _('Ù…Ø¯Ø±Ø³Ø© Ø£Ø²Ø§Ø¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©') }} â€” {{ _('ØªØ¹Ù„ÙŠÙ… Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…ØªÙƒØ§Ù…Ù„') }}</title>
+<meta name="description" content="{{ _('منصة مدرسة أزاد الإلكترونية — تعليم إلكتروني متكامل للمناهج الفلسطينية') }}">
+<title>{{ _('مدرسة أزاد الإلكترونية') }} — {{ _('تعليم إلكتروني متكامل') }}</title>
 <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/azad-mark.svg') }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,51 +25,51 @@
   <nav class="l-nav" id="l-nav">
     <div class="container">
       <a class="l-brand" href="/">
-        <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('Ø´Ø¹Ø§Ø± Ø£Ø²Ø§Ø¯') }}" loading="lazy" decoding="async">
-        <span>{{ _('Ù…Ø¯Ø±Ø³Ø© Ø£Ø²Ø§Ø¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©') }}</span>
+        <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="{{ _('شعار أزاد') }}" loading="lazy" decoding="async">
+        <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
       </a>
       <div class="l-nav-actions">
-        <button class="l-theme-btn" type="button" data-theme-toggle aria-label="{{ _('ØªØ¨Ø¯ÙŠÙ„ Ø§Ù„Ù…Ø¸Ù‡Ø±') }}">
+        <button class="l-theme-btn" type="button" data-theme-toggle aria-label="{{ _('تبديل المظهر') }}">
           <span data-theme-icon-light hidden>{{ icon('sun') }}</span>
           <span data-theme-icon-dark hidden>{{ icon('moon') }}</span>
         </button>
-        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline l-nav__btn l-nav__btn--outline">{{ icon('login') }} {{ _('Ø¯Ø®ÙˆÙ„') }}</a>
-        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn l-nav__btn l-nav__btn--solid">{{ icon('sparkles') }} {{ _('Ø³Ø¬Ù‘Ù„') }}</a>
+        <a href="{{ url_for('auth.login') }}" class="azad-btn-outline l-nav__btn l-nav__btn--outline">{{ icon('login') }} {{ _('دخول') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn l-nav__btn l-nav__btn--solid">{{ icon('sparkles') }} {{ _('سجّل') }}</a>
       </div>
     </div>
   </nav>
 
   <section class="hero" id="hero">
     <div class="hero__inner">
-      <div class="hero__badge">{{ icon('shield-check') }} {{ _('ØªØ¹Ù„ÙŠÙ… Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…ÙˆØ«ÙˆÙ‚') }}</div>
-      <h1 class="hero__title">{{ _('Ù…Ø¯Ø±Ø³ØªÙƒ Ø§Ù„Ø«Ø§Ù†ÙŠØ©... Ø£ÙˆÙ†Ù„Ø§ÙŠÙ†') }}</h1>
-      <p class="hero__sub">{{ _('ØªØ¹Ù„ÙŠÙ… Ø¥Ø¶Ø§ÙÙŠ Ù…Ù†Ø¸Ù… Ù„Ù„ØªÙˆØ¬ÙŠÙ‡ÙŠ â€” Ø¯Ø±ÙˆØ³ Ù…Ø³Ø¬Ù„Ø©ØŒ Ø§Ø®ØªØ¨Ø§Ø±Ø§Øª ØªÙØ§Ø¹Ù„ÙŠØ©ØŒ Ø¯Ø±ÙˆØ³ Ø®ØµÙˆØµÙŠØ© Ø£ÙˆÙ†Ù„Ø§ÙŠÙ†') }}</p>
+      <div class="hero__badge">{{ icon('shield-check') }} {{ _('تعليم إلكتروني موثوق') }}</div>
+      <h1 class="hero__title">{{ _('مدرستك الثانية... أونلاين') }}</h1>
+      <p class="hero__sub">{{ _('تعليم إضافي منظم للتوجيهي — دروس مسجلة، اختبارات تفاعلية، دروس خصوصية أونلاين') }}</p>
       <div class="hero__btns">
-        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('user-plus') }} {{ _('Ø³Ø¬Ù‘Ù„ ÙƒØ·Ø§Ù„Ø¨ ÙØ±Ø¯ÙŠ') }}</a>
-        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn-outline azad-btn-lg">{{ icon('school') }} {{ _('Ø³Ø¬Ù‘Ù„ Ù…Ø¯Ø±Ø³ØªÙƒ') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('user-plus') }} {{ _('سجّل كطالب فردي') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}" class="azad-btn-outline azad-btn-lg">{{ icon('school') }} {{ _('سجّل مدرستك') }}</a>
       </div>
     </div>
   </section>
 
   <section class="section">
     <div class="container">
-      <h2 class="section__title">{{ _('Ù„Ù…Ø§Ø°Ø§ Ø£Ø²Ø§Ø¯ØŸ') }}</h2>
-      <p class="section__sub">{{ _('ÙƒÙ„ Ù…Ø§ ØªØ­ØªØ§Ø¬Ù‡ Ù„Ù„Ù†Ø¬Ø§Ø­ ÙÙŠ Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ÙŠ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯') }}</p>
+      <h2 class="section__title">{{ _('لماذا أزاد؟') }}</h2>
+      <p class="section__sub">{{ _('كل ما تحتاجه للنجاح في التوجيهي في مكان واحد') }}</p>
       <div class="feat-grid">
         <div class="feat-card">
           <div class="feat-card__ico feat-card__ico--green">{{ icon('video') }}</div>
-          <h3 class="feat-card__h">{{ _('Ø¯Ø±ÙˆØ³ Ù…Ø³Ø¬Ù„Ø© Ù…Ù†Ø¸Ù…Ø©') }}</h3>
-          <p class="feat-card__p">{{ _('Ù…Ø­ØªÙˆÙ‰ ØªØ¹Ù„ÙŠÙ…ÙŠ Ø¹Ø§Ù„ÙŠ Ø§Ù„Ø¬ÙˆØ¯Ø© Ù…Ù† Ø£ÙØ¶Ù„ Ø§Ù„Ù…Ø¹Ù„Ù…ÙŠÙ†ØŒ Ù…Ø±ØªÙ‘Ø¨ Ø­Ø³Ø¨ Ø§Ù„Ù…Ù†Ø§Ù‡Ø¬ Ø§Ù„Ø±Ø³Ù…ÙŠØ©.') }}</p>
+          <h3 class="feat-card__h">{{ _('دروس مسجلة منظمة') }}</h3>
+          <p class="feat-card__p">{{ _('محتوى تعليمي عالي الجودة من أفضل المعلمين، مرتّب حسب المناهج الرسمية.') }}</p>
         </div>
         <div class="feat-card">
           <div class="feat-card__ico feat-card__ico--blue">{{ icon('shield-check') }}</div>
-          <h3 class="feat-card__h">{{ _('Ø§Ø®ØªØ¨Ø§Ø±Ø§Øª ØªÙØ§Ø¹Ù„ÙŠØ© Ù…Ø±Ø§Ù‚Ø¨Ø©') }}</h3>
-          <p class="feat-card__p">{{ _('Ø§Ø®ØªØ¨Ø§Ø±Ø§Øª Ø°ÙƒÙŠØ© Ù…Ø¹ Ù…Ø±Ø§Ù‚Ø¨Ø© Ø§Ù„Ù†Ø²Ø§Ù‡Ø© ÙˆÙ†ØªØ§Ø¦Ø¬ ÙÙˆØ±ÙŠØ© Ù„ØªØ­Ø³ÙŠÙ† Ø§Ù„Ø£Ø¯Ø§Ø¡.') }}</p>
+          <h3 class="feat-card__h">{{ _('اختبارات تفاعلية مراقبة') }}</h3>
+          <p class="feat-card__p">{{ _('اختبارات ذكية مع مراقبة النزاهة ونتائج فورية لتحسين الأداء.') }}</p>
         </div>
         <div class="feat-card">
           <div class="feat-card__ico feat-card__ico--gold">{{ icon('users') }}</div>
-          <h3 class="feat-card__h">{{ _('Ø¯Ø±ÙˆØ³ Ø®ØµÙˆØµÙŠØ© Ø£ÙˆÙ†Ù„Ø§ÙŠÙ†') }}</h3>
-          <p class="feat-card__p">{{ _('Ø§Ø­Ø¬Ø² Ø¬Ù„Ø³Ø§Øª ÙØ±Ø¯ÙŠØ© Ù…Ø¹ Ù…Ø¹Ù„Ù…ÙŠÙ† Ù…ØªØ®ØµØµÙŠÙ† ÙÙŠ Ø£ÙŠ Ù…Ø§Ø¯Ø© ÙˆÙÙŠ Ø£ÙŠ ÙˆÙ‚Øª.') }}</p>
+          <h3 class="feat-card__h">{{ _('دروس خصوصية أونلاين') }}</h3>
+          <p class="feat-card__p">{{ _('احجز جلسات فردية مع معلمين متخصصين في أي مادة وفي أي وقت.') }}</p>
         </div>
       </div>
     </div>
@@ -77,25 +77,25 @@
 
   <section class="section section--surface">
     <div class="container">
-      <h2 class="section__title">{{ _('ÙƒÙŠÙ ÙŠØ¹Ù…Ù„ØŸ') }}</h2>
-      <p class="section__sub">{{ _('Ø«Ù„Ø§Ø« Ø®Ø·ÙˆØ§Øª ÙÙ‚Ø· Ù„Ù„Ø¨Ø¯Ø¡') }}</p>
+      <h2 class="section__title">{{ _('كيف يعمل؟') }}</h2>
+      <p class="section__sub">{{ _('ثلاث خطوات فقط للبدء') }}</p>
       <div class="steps">
         <div class="step">
           <div class="step__num">1</div>
-          <h3 class="step__h">{{ _('Ø³Ø¬Ù‘Ù„') }}</h3>
-          <p class="step__p">{{ _('Ø£Ù†Ø´Ø¦ Ø­Ø³Ø§Ø¨Ùƒ Ù…Ø¬Ø§Ù†Ø§Ù‹ ÙÙŠ Ø«ÙˆØ§Ù†Ù') }}</p>
+          <h3 class="step__h">{{ _('سجّل') }}</h3>
+          <p class="step__p">{{ _('أنشئ حسابك مجاناً في ثوانٍ') }}</p>
         </div>
         <div class="step__arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         <div class="step">
           <div class="step__num">2</div>
-          <h3 class="step__h">{{ _('Ø§Ø´ØªØ±Ùƒ Ø¨Ø§Ù„ÙƒÙˆØ±Ø³') }}</h3>
-          <p class="step__p">{{ _('Ø§Ø®ØªØ± Ø§Ù„ÙƒÙˆØ±Ø³ Ø§Ù„Ù…Ù†Ø§Ø³Ø¨ ÙˆØ§Ø¨Ø¯Ø£ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ') }}</p>
+          <h3 class="step__h">{{ _('اشترك بالكورس') }}</h3>
+          <p class="step__p">{{ _('اختر الكورس المناسب وابدأ الاشتراك') }}</p>
         </div>
         <div class="step__arrow" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div>
         <div class="step">
           <div class="step__num">3</div>
-          <h3 class="step__h">{{ _('ØªØ¹Ù„Ù‘Ù…') }}</h3>
-          <p class="step__p">{{ _('ØªØ§Ø¨Ø¹ Ø§Ù„Ø¯Ø±ÙˆØ³ ÙˆØ­Ù„Ù‘ Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø±Ø§Øª ÙˆØªØ·ÙˆØ±') }}</p>
+          <h3 class="step__h">{{ _('تعلّم') }}</h3>
+          <p class="step__p">{{ _('تابع الدروس وحلّ الاختبارات وتطور') }}</p>
         </div>
       </div>
     </div>
@@ -103,19 +103,19 @@
 
   <section class="section">
     <div class="container">
-      <h2 class="section__title">{{ _('Ø®Ø·Ø· Ø§Ù„Ø£Ø³Ø¹Ø§Ø±') }}</h2>
+      <h2 class="section__title">{{ _('خطط الأسعار') }}</h2>
       <div class="pricing">
         <div class="price-card">
-          <div class="price-card__label">{{ _('Ù„Ù„Ø·Ù„Ø§Ø¨ Ø§Ù„ÙØ±Ø¯ÙŠ') }}</div>
-          <div class="price-card__price">50 â‚ª+</div>
-          <p class="price-card__note">{{ _('Ø§Ø¨Ø¯Ø§Ù‹ Ù…Ù† 50 Ø´ÙŠÙƒÙ„ / ÙƒÙˆØ±Ø³ / Ø´Ù‡Ø±ÙŠØ§Ù‹') }}</p>
-          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn price-card__cta">{{ icon('user-plus') }} {{ _('Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¢Ù†') }}</a>
+          <div class="price-card__label">{{ _('للطلاب الفردي') }}</div>
+          <div class="price-card__price">50 ₪+</div>
+          <p class="price-card__note">{{ _('ابداً من 50 شيكل / كورس / شهرياً') }}</p>
+          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn price-card__cta">{{ icon('user-plus') }} {{ _('سجّل الآن') }}</a>
         </div>
         <div class="price-card price-card--green">
-          <div class="price-card__label">{{ _('Ù„Ù„Ù…Ø¯Ø§Ø±Ø³') }}</div>
-          <div class="price-card__price">{{ _('ØªØ³Ø¹ÙŠØ± Ø®Ø§Øµ') }}</div>
-          <p class="price-card__note">{{ _('Ø­Ø³Ø§Ø¨ Ù…Ø¯Ø±Ø³ÙŠ ÙƒØ§Ù…Ù„ Ù…Ø¹ Ø¥Ø¯Ø§Ø±Ø© ÙˆØªØ­Ù„ÙŠÙ„Ø§Øª') }}</p>
-          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn price-card__cta">{{ icon('school') }} {{ _('ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§') }}</a>
+          <div class="price-card__label">{{ _('للمدارس') }}</div>
+          <div class="price-card__price">{{ _('تسعير خاص') }}</div>
+          <p class="price-card__note">{{ _('حساب مدرسي كامل مع إدارة وتحليلات') }}</p>
+          <a href="{{ url_for('auth.register_individual') }}" class="azad-btn price-card__cta">{{ icon('school') }} {{ _('تواصل معنا') }}</a>
         </div>
       </div>
     </div>
@@ -126,27 +126,27 @@
       <div class="trust">
         <div class="trust__item">
           <div class="trust__num">{{ stats.lesson_count or 150 }}+</div>
-          <div class="trust__lbl">{{ _('Ø¯Ø±Ø³') }}</div>
+          <div class="trust__lbl">{{ _('درس') }}</div>
         </div>
         <div class="trust__item">
           <div class="trust__num">{{ stats.student_count or 50 }}+</div>
-          <div class="trust__lbl">{{ _('Ø·Ø§Ù„Ø¨') }}</div>
+          <div class="trust__lbl">{{ _('طالب') }}</div>
         </div>
         <div class="trust__item">
           <div class="trust__num">288</div>
-          <div class="trust__lbl">{{ _('Ø§Ø®ØªØ¨Ø§Ø± Ø£Ù…Ø§Ù†') }}</div>
+          <div class="trust__lbl">{{ _('اختبار أمان') }}</div>
         </div>
         <div class="trust__item">
           <div class="trust__num">{{ icon('sparkles') }}</div>
-          <div class="trust__lbl">{{ _('Ù…Ø¯Ø¹ÙˆÙ… Ø¨Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ') }}</div>
+          <div class="trust__lbl">{{ _('مدعوم بالذكاء الاصطناعي') }}</div>
         </div>
       </div>
     </div>
   </section>
 
   <div class="cta">
-    <h2 class="cta__h">{{ _('Ø§Ø¨Ø¯Ø£ Ø±Ø­Ù„ØªÙƒ Ø§Ù„ØªØ¹Ù„ÙŠÙ…ÙŠØ© Ø§Ù„Ø¢Ù†') }}</h2>
-    <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('sparkles') }} {{ _('Ø³Ø¬Ù‘Ù„ Ù…Ø¬Ø§Ù†Ø§Ù‹') }}</a>
+    <h2 class="cta__h">{{ _('ابدأ رحلتك التعليمية الآن') }}</h2>
+    <a href="{{ url_for('auth.register_individual') }}" class="azad-btn azad-btn-lg">{{ icon('sparkles') }} {{ _('سجّل مجاناً') }}</a>
   </div>
 
   <footer class="azad-footer">
@@ -154,31 +154,31 @@
       <div class="azad-footer__brand">
         <a class="azad-footer__logo" href="{{ url_for('main.index') }}">
           <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="azad" width="32" height="32">
-          <span>{{ _('azad e-school') }}</span>
+          <span>{{ _('مدرسة أزاد الإلكترونية') }}</span>
         </a>
-        <p class="azad-footer__tagline">{{ _('platform for digital education') }}</p>
+        <p class="azad-footer__tagline">{{ _('منصة للتعليم الإلكتروني') }}</p>
       </div>
       <div class="azad-footer__col">
-        <h4 class="azad-footer__col-title">{{ _('platform') }}</h4>
-        <a href="{{ url_for('main.index') }}">{{ _('home') }}</a>
-        <a href="{{ url_for('auth.login') }}">{{ _('login') }}</a>
-        <a href="{{ url_for('auth.register_individual') }}">{{ _('register') }}</a>
+        <h4 class="azad-footer__col-title">{{ _('المنصة') }}</h4>
+        <a href="{{ url_for('main.index') }}">{{ _('الرئيسية') }}</a>
+        <a href="{{ url_for('auth.login') }}">{{ _('دخول') }}</a>
+        <a href="{{ url_for('auth.register_individual') }}">{{ _('تسجيل') }}</a>
       </div>
       <div class="azad-footer__col">
-        <h4 class="azad-footer__col-title">{{ _('support') }}</h4>
-        <a href="#">{{ _('help center') }}</a>
-        <a href="#">{{ _('contact us') }}</a>
-        <a href="#">{{ _('privacy policy') }}</a>
-        <a href="#">{{ _('terms of service') }}</a>
+        <h4 class="azad-footer__col-title">{{ _('الدعم') }}</h4>
+        <a href="#">{{ _('مركز المساعدة') }}</a>
+        <a href="#">{{ _('اتصل بنا') }}</a>
+        <a href="#">{{ _('سياسة الخصوصية') }}</a>
+        <a href="#">{{ _('شروط الخدمة') }}</a>
       </div>
       <div class="azad-footer__col">
-        <h4 class="azad-footer__col-title">{{ _('contact') }}</h4>
+        <h4 class="azad-footer__col-title">{{ _('اتصل') }}</h4>
         <p class="azad-footer__contact">info@azad.school</p>
         <p class="azad-footer__contact">+964 770 000 0000</p>
       </div>
     </div>
     <div class="azad-footer__bottom">
-      <p>&copy; {{ now.year }} {{ _('azad e-school platform') }}. {{ _('all rights reserved') }}.</p>
+      <p>&copy; {{ now.year }} {{ _('© %(year)s مدرسة أزاد الإلكترونية. جميع الحقوق محفوظة.', year=now.year) }}</p>
     </div>
   </footer>
 
