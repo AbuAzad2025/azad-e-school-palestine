@@ -1,12 +1,12 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   AZAD E-SCHOOL — APPLICATION CORE STYLES
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   AZAD E-SCHOOL â€” APPLICATION CORE STYLES
    Marine-Coral Identity: Deep Teal + Coral Accent
    WCAG AA/AAA compliant typography & contrast
-   ═══════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 @import url("theme.css");
 
-/* ═══ Global Reset ═══ */
+/* â•â•â• Global Reset â•â•â• */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html {
@@ -44,7 +44,7 @@ textarea:focus-visible,
   border-color: var(--border-focus);
 }
 
-/* ═══ Typography Scale — distinct hierarchy ═══ */
+/* â•â•â• Typography Scale â€” distinct hierarchy â•â•â• */
 h1, h2, h3, h4, h5, h6 {
   color: var(--heading-2, var(--text-strong));
   font-weight: 700;
@@ -62,7 +62,7 @@ p { color: var(--text-medium); line-height: var(--leading-relaxed); margin-botto
 p:last-child { margin-bottom: 0; }
 small, .text-muted { color: var(--text-muted); }
 
-/* Hardcoded labels vs dynamic Jinja variables — distinct styling */
+/* Hardcoded labels vs dynamic Jinja variables â€” distinct styling */
 .label,
 .badge-label,
 .meta-key {
@@ -90,7 +90,7 @@ small, .text-muted { color: var(--text-muted); }
 p { color: var(--text-medium); }
 small, .text-muted { color: var(--text-muted); }
 
-/* ═══ Links — clear affordance, hover state ═══ */
+/* â•â•â• Links â€” clear affordance, hover state â•â•â• */
 a {
   color: var(--color-link, var(--azad-blue));
   text-decoration: none;
@@ -259,3 +259,93 @@ footer.azad-footer a:hover { text-decoration: underline; }
 }
 .azad-impersonate-banner form { margin-inline-start: auto; }
 .azad-impersonate-banner .icon { width: 1.15em; height: 1.15em; }
+
+/* Professional footer */
+.azad-footer {
+  margin-top: auto;
+  background: var(--azad-navy);
+  color: #e2e8f0;
+  padding: var(--sp-10) var(--sp-4) var(--sp-4);
+}
+.azad-footer__inner {
+  max-width: 1200px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 1.5fr repeat(3, 1fr);
+  gap: var(--sp-8);
+  padding-bottom: var(--sp-8);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+@media (max-width: 768px) {
+  .azad-footer__inner {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-6);
+  }
+}
+@media (max-width: 480px) {
+  .azad-footer__inner {
+    grid-template-columns: 1fr;
+  }
+}
+.azad-footer__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: #fff;
+  font-weight: 800;
+  font-size: var(--text-lg);
+  text-decoration: none;
+  margin-bottom: var(--sp-3);
+}
+.azad-footer__logo img {
+  border-radius: var(--radius-sm);
+}
+.azad-footer__tagline {
+  color: #94a3b8;
+  font-size: var(--text-sm);
+  margin-bottom: var(--sp-4);
+  line-height: var(--leading-relaxed);
+}
+.azad-footer__col-title {
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--sp-3);
+}
+.azad-footer__col a,
+.azad-footer__col p {
+  display: block;
+  color: #94a3b8;
+  font-size: var(--text-sm);
+  text-decoration: none;
+  margin-bottom: var(--sp-2);
+  transition: color var(--duration-fast) var(--ease-default);
+}
+.azad-footer__col a:hover {
+  color: #fff;
+  text-decoration: none;
+}
+.azad-footer__contact {
+  color: #94a3b8;
+}
+.azad-footer__bottom {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-top: var(--sp-4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  font-size: var(--text-xs);
+  color: #64748b;
+}
+.azad-footer__bottom p {
+  color: #64748b;
+  margin: 0;
+}
+.azad-footer__credit {
+  font-style: italic;
+}

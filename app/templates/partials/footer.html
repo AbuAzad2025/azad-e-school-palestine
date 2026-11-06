@@ -1,4 +1,36 @@
 <footer class="azad-footer">
-  <p>© {{ now.year }} {{ _('منصة مدرسة أزاد الإلكترونية') }} — {{ _('أزاد للأنظمة الذكية') }}</p>
-  <p>{{ _('تطوير: أحمد غنام') }}</p>
+  <div class="azad-footer__inner">
+    <div class="azad-footer__brand">
+      <a class="azad-footer__logo" href="{{ url_for('main.index') }}">
+        <img src="{{ url_for('static', filename='img/azad-mark.svg') }}" alt="azad" width="32" height="32">
+        <span>{{ _('azad e-school') }}</span>
+      </a>
+      <p class="azad-footer__tagline">{{ _('platform for digital education') }}</p>
+    </div>
+
+    <div class="azad-footer__col">
+      <h4 class="azad-footer__col-title">{{ _('platform') }}</h4>
+      <a href="{{ url_for('main.index') }}">{{ _('home') }}</a>
+      <a href="{{ url_for('auth.login') }}">{{ _('login') }}</a>
+      <a href="{{ url_for('auth.register_individual') }}">{{ _('register') }}</a>
+    </div>
+
+    <div class="azad-footer__col">
+      <h4 class="azad-footer__col-title">{{ _('support') }}</h4>
+      <a href="#">{{ _('help center') }}</a>
+      <a href="#">{{ _('contact us') }}</a>
+      <a href="#">{{ _('privacy policy') }}</a>
+      <a href="#">{{ _('terms of service') }}</a>
+    </div>
+
+    <div class="azad-footer__col">
+      <h4 class="azad-footer__col-title">{{ _('contact') }}</h4>
+      <p class="azad-footer__contact">info@azad.school</p>
+      <p class="azad-footer__contact">+964 770 000 0000</p>
+    </div>
+  </div>
+
+  <div class="azad-footer__bottom">
+    <p>&copy; {{ now.year }} {{ _('azad e-school platform') }}. {{ _('all rights reserved') }}.</p>
+  </div>
 </footer>

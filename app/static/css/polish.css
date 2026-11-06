@@ -1,10 +1,10 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   AZAD — POLISH LAYER «الطبقة الجمالية»
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   AZAD â€” POLISH LAYER Â«Ø§Ù„Ø·Ø¨Ù‚Ø© Ø§Ù„Ø¬Ù…Ø§Ù„ÙŠØ©Â»
    Depth, gradients, micro-interactions. Loads after app.css, overrides nothing
-   structurally — only elevates. Respects prefers-reduced-motion.
-   ═══════════════════════════════════════════════════════════════════════════ */
+   structurally â€” only elevates. Respects prefers-reduced-motion.
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* ─── Ambient page background (soft aurora blobs) ─── */
+/* â”€â”€â”€ Ambient page background (soft aurora blobs) â”€â”€â”€ */
 .azad-app > .container::before { content: none; }
 body.azad-app {
   background:
@@ -14,7 +14,7 @@ body.azad-app {
   background-attachment: fixed;
 }
 
-/* ─── Cards: layered depth + gradient top hairline on hover ─── */
+/* â”€â”€â”€ Cards: layered depth + gradient top hairline on hover â”€â”€â”€ */
 .azad-card,
 .azad-stat-card,
 .azad-item {
@@ -43,7 +43,7 @@ body.azad-app {
   width: 5px;
 }
 
-/* ─── Buttons: press physics + gradient sheen ─── */
+/* â”€â”€â”€ Buttons: press physics + gradient sheen â”€â”€â”€ */
 .azad-btn,
 .azad-btn-primary,
 .azad-btn-accent,
@@ -76,7 +76,7 @@ body.azad-app {
   transform: translateY(0) scale(0.98);
 }
 
-/* ─── Links: elegant underline reveal ─── */
+/* â”€â”€â”€ Links: elegant underline reveal â”€â”€â”€ */
 .azad-card__body a,
 .azad-item .item-title a {
   text-decoration: none;
@@ -96,7 +96,7 @@ body.azad-app {
   background-position: left 100%;
 }
 
-/* ─── Inputs: soft inner glow on focus ─── */
+/* â”€â”€â”€ Inputs: soft inner glow on focus â”€â”€â”€ */
 .azad-field__input:focus,
 .azad-field__select:focus,
 .azad-field__textarea:focus,
@@ -106,7 +106,7 @@ body.azad-app {
     inset 0 1px 2px rgba(15, 61, 56, 0.04);
 }
 
-/* ─── Navbar: deep-sea gradient + glow on scroll ─── */
+/* â”€â”€â”€ Navbar: deep-sea gradient + glow on scroll â”€â”€â”€ */
 .navbar {
   background: linear-gradient(120deg, #0f3d38 0%, #0f766e 60%, #0e7490 100%);
   box-shadow: 0 2px 16px rgba(15, 61, 56, 0.28);
@@ -116,7 +116,7 @@ body.azad-app {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
-/* ─── Tables: softer header, breathing rows ─── */
+/* â”€â”€â”€ Tables: softer header, breathing rows â”€â”€â”€ */
 .azad-table th {
   background: linear-gradient(120deg, #0f3d38 0%, #115e59 100%);
   letter-spacing: 0.01em;
@@ -125,20 +125,20 @@ body.azad-app {
   transition: background var(--duration-fast) var(--ease-out);
 }
 
-/* ─── Badges & chips: subtle inner border ─── */
+/* â”€â”€â”€ Badges & chips: subtle inner border â”€â”€â”€ */
 .azad-badge-variant,
 .badge-status,
 .meta-chip {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
-/* ─── Empty states: friendlier illustration tint ─── */
+/* â”€â”€â”€ Empty states: friendlier illustration tint â”€â”€â”€ */
 .azad-empty__icon {
   background: linear-gradient(135deg, var(--bg-2), var(--surface-hover));
   color: var(--color-link);
 }
 
-/* ─── Focus visibility everywhere (a11y polish) ─── */
+/* â”€â”€â”€ Focus visibility everywhere (a11y polish) â”€â”€â”€ */
 a:focus-visible,
 button:focus-visible,
 [tabindex]:focus-visible {
@@ -147,12 +147,12 @@ button:focus-visible,
   border-radius: var(--radius-sm);
 }
 
-/* ─── Selection color ─── */
+/* â”€â”€â”€ Selection color â”€â”€â”€ */
 ::selection {
   background: rgba(13, 148, 136, 0.25);
 }
 
-/* ─── Scrollbar (WebKit) ─── */
+/* â”€â”€â”€ Scrollbar (WebKit) â”€â”€â”€ */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -162,11 +162,111 @@ button:focus-visible,
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
 
-/* ─── Reduced motion: strip movement, keep clarity ─── */
+/* â”€â”€â”€ Reduced motion: strip movement, keep clarity â”€â”€â”€ */
 @media (prefers-reduced-motion: reduce) {
   .azad-card, .azad-stat-card, .azad-item,
   .azad-btn, .azad-btn-primary, .azad-btn-accent {
     transform: none !important;
     transition: none !important;
   }
+}
+
+/* Navbar user dropdown polish */
+.nav-user-menu {
+  animation: azadFadeIn var(--duration-fast) var(--ease-out);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+.nav-user-menu a:hover,
+.nav-user-menu button:hover {
+  background: var(--surface-hover);
+  transform: translateX(2px);
+}
+[dir="rtl"] .nav-user-menu a:hover,
+[dir="rtl"] .nav-user-menu button:hover {
+  transform: translateX(-2px);
+}
+.nav-user-header {
+  background: var(--surface-2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  margin: -var(--sp-2) -var(--sp-2) var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+}
+.nav-user-header strong {
+  font-size: var(--text-md);
+}
+.nav-user-header small {
+  font-size: var(--text-xs);
+}
+.nav-user-divider {
+  margin: var(--sp-2) -var(--sp-2);
+}
+.nav-user-logout {
+  color: var(--color-danger) !important;
+}
+.nav-user-logout:hover {
+  background: var(--color-danger-light) !important;
+}
+
+/* Button polish - consistent hover elevation */
+.azad-btn,
+.azad-btn-primary,
+.azad-btn-outline,
+.azad-btn-danger,
+.azad-btn-ghost,
+.azad-btn-accent {
+  box-shadow: var(--shadow-xs);
+}
+.azad-btn:hover,
+.azad-btn-primary:hover,
+.azad-btn-accent:hover,
+.azad-btn-danger:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.azad-btn-outline:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.azad-btn:active,
+.azad-btn-primary:active,
+.azad-btn-outline:active,
+.azad-btn-danger:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Page header polish */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--border-strong);
+}
+.page-header h1 {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--text-strong);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.page-header .page-subtitle {
+  color: var(--text-muted);
+  font-size: var(--text-base);
+  margin-top: var(--sp-1);
+}
+
+/* Card header polish */
+.azad-card__header {
+  background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%);
+}
+.azad-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
 }
