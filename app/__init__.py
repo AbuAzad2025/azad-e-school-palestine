@@ -118,8 +118,10 @@ def create_app(config_class=Config):
     # First-run setup: if no super_admin exists, redirect to /auth/setup
     @app.before_request
     def _redirect_to_setup_if_needed():
+        from flask import current_app
+
         # Skip in testing mode
-        if app.config.get("TESTING"):
+        if current_app.config.get("TESTING"):
             return None
         # Skip static files and setup route itself
         if request.path.startswith("/static") or request.path == "/auth/setup":
@@ -128,7 +130,7 @@ def create_app(config_class=Config):
         if request.path == "/health":
             return None
         # Check if super_admin exists (cached)
-        if getattr(app, "_has_super_admin", None) is None:
+        if getattr(current_app, "_has_super_admin", None) is None:
             try:
                 from app.extensions import db
                 from app.models.user import User, UserRole
@@ -137,11 +139,11 @@ def create_app(config_class=Config):
                     db.session.execute(db.select(User).where(User.role == UserRole.super_admin)).scalar_one_or_none()
                     is not None
                 )
-                app._has_super_admin = has_admin  # type: ignore[attr-defined]
+                current_app._has_super_admin = has_admin  # type: ignore[attr-defined]
             except Exception:
                 # Tables might not exist yet (during migration)
                 return None
-        if not app._has_super_admin:  # type: ignore[attr-defined]
+        if not current_app._has_super_admin:  # type: ignore[attr-defined]
             return redirect(url_for("auth.setup"))
         return None
 
