@@ -99,6 +99,27 @@ def setup():
     return render_template("auth/register.html", form=form)
 
 
+@bp.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("auth.dashboard"))
+    form = RegisterForm()
+    if form.validate_on_submit():
+        user, error = register_user(
+            email=form.email.data,
+            name_ar=form.name_ar.data,
+            role=form.role.data,
+            password=form.password.data,
+            school_join_code=form.school_join_code.data.strip().upper() if form.school_join_code.data else None,
+        )
+        if error:
+            flash(_(error), "danger")
+            return render_template("auth/register.html", form=form)
+        flash(_("تم إرسال طلب التسجيل. بانتظار الموافقة."), "success")
+        return redirect(url_for("auth.login"))
+    return render_template("auth/register.html", form=form)
+
+
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
