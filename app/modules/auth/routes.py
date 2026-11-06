@@ -74,8 +74,8 @@ def setup():
 
         try:
             tx(_create)
-        except Exception as exc:
-            flash(str(exc), "danger")
+        except Exception:
+            flash(_("حدث خطأ غير متوقع. يرجى المحاولة لاحقا."), "danger")
             return render_template("auth/setup.html", email=email, name_ar=name_ar, name_en=name_en)
 
         flash(_("تم إنشاء حساب مالك المنصة بنجاح. سجّل الدخول الآن."), "success")

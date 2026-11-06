@@ -123,6 +123,9 @@ def create_app(config_class=Config):
         # Skip in testing mode
         if current_app.config.get("TESTING"):
             return None
+        # Skip when explicitly disabled (e.g. error-handling test apps)
+        if not current_app.config.get("SETUP_REDIRECT_ENABLED", True):
+            return None
         # Skip static files and setup route itself
         if request.path.startswith("/static") or request.path == "/auth/setup":
             return None

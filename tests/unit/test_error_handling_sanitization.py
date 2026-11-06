@@ -180,6 +180,7 @@ def error_app():
         RATELIMIT_ENABLED=False,
         WTF_CSRF_ENABLED=False,
         SESSION_COOKIE_SECURE=False,
+        SETUP_REDIRECT_ENABLED=False,
     )
 
     @app.get("/adv-boom")
