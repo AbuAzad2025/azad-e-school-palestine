@@ -132,8 +132,16 @@ def create_app(config_class=Config):
         # Skip health check
         if request.path == "/health":
             return None
-        # Check if super_admin exists (cached)
-        if getattr(current_app, "_has_super_admin", None) is None:
+        # Check if super_admin exists — cached, but only the POSITIVE answer.
+        #
+        # Caching "no admin" is what turned first-run setup into an infinite
+        # loop: the worker that served POST /auth/setup kept answering from a
+        # stale False, so /auth/login -> /auth/setup, and /auth/setup saw the
+        # freshly-created owner and sent the browser back to /auth/login.
+        # Never caching the negative result makes the cache self-healing (the
+        # next request re-checks) and keeps the steady-state cost at zero,
+        # since a platform owner is never deleted in normal operation.
+        if getattr(current_app, "_has_super_admin", False) is not True:
             try:
                 from app.extensions import db
                 from app.models.user import User, UserRole
@@ -142,11 +150,12 @@ def create_app(config_class=Config):
                     db.session.execute(db.select(User).where(User.role == UserRole.super_admin)).scalar_one_or_none()
                     is not None
                 )
-                current_app._has_super_admin = has_admin  # type: ignore[attr-defined]
+                if has_admin:
+                    current_app._has_super_admin = True  # type: ignore[attr-defined]
             except Exception:
                 # Tables might not exist yet (during migration)
                 return None
-        if not current_app._has_super_admin:  # type: ignore[attr-defined]
+        if getattr(current_app, "_has_super_admin", False) is not True:
             return redirect(url_for("auth.setup"))
         return None
 
