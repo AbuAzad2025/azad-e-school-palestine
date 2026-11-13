@@ -24,6 +24,11 @@ class _BaseConfig:
 
     SECRET_KEY = os.getenv("SECRET_KEY")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Read-replica routing (Phase D): binds 'replica' when READ_DATABASE_URL is set.
+    SQLALCHEMY_BINDS = {}
+    _read_url = os.getenv("READ_DATABASE_URL")
+    if _read_url:
+        SQLALCHEMY_BINDS["replica"] = _read_url
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_size": int(os.getenv("DB_POOL_SIZE", "10")),

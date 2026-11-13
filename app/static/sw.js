@@ -28,6 +28,21 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+/* Background sync: queue offline quiz submissions / attendance. */
+const SYNC_QUEUE = "azad-sync-queue";
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === "azad-quiz-submit" || event.tag === "azad-attendance") {
+    event.waitUntil(flushSyncQueue());
+  }
+});
+
+async function flushSyncQueue() {
+  // Placeholder: real implementation posts queued payloads from IndexedDB.
+  // Kept minimal to avoid breaking offline flows without a backend contract.
+  return Promise.resolve();
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
