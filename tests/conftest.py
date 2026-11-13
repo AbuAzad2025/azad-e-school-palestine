@@ -31,6 +31,32 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 
+def _apply_migrations() -> None:
+    """يبني مخطط قاعدة الاختبار من ترحيلات Alembic، لا من ``create_all`` وحده.
+
+    ``db.create_all()`` ينسخ الجداول والأعمدة فقط؛ قيود CHECK (مثل
+    ``ck_tutoring_session_status``) وسياسات RLS التي تنشئها الترحيلات لا
+    تصل إلى قاعدة بُنيت به، فتمرّ اختبارات محلياً وتفشل على CI. نطبّق
+    الترحيلات أولاً كي يتطابق المخطط، ثم يكمل ``create_all`` أي جدول لم
+    يغطّه ترحيل بعد.
+
+    قاعدة أنشأها ``create_all`` سابقاً بلا ``alembic_version`` تُفرَّغ أولاً:
+    الترقية ستصطدم بجداول موجودة، وحارس ``_guard_dev_database`` سبق أن منع
+    أي قاعدة تحمل بيانات حقيقية، فالتفريغ آمن.
+    """
+    from flask_migrate import upgrade as alembic_upgrade
+    from sqlalchemy import inspect, text
+
+    if not inspect(_db.engine).has_table("alembic_version"):
+        # لا سجل ترحيلات: إما قاعدة جديدة أو بناها create_all سابقاً. نجعل
+        # المخطط فارغاً تماماً — إسقاط الجداول وحده يترك أنواع ENUM فتتعارض
+        # مع الترحيلات.
+        with _db.engine.begin() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE"))
+            conn.execute(text("CREATE SCHEMA public"))
+    alembic_upgrade()
+
+
 def _ensure_phase2_schema(db_engine):
     """Ensure Phase 2+ columns/tables exist (migration pending separately)."""
     from sqlalchemy import text
@@ -388,6 +414,7 @@ def app():
         _guard_dev_database()
         _db.session.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         _db.session.commit()
+        _apply_migrations()
         _db.create_all()
         _ensure_phase2_schema(_db)
         # السياسات تُبنى من المنشئ الحي في app.core.rls عند كل جلسة اختبار:
