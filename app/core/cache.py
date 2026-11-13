@@ -110,3 +110,32 @@ def clear() -> None:
                 r.delete(k)
         except Exception:  # noqa: BLE001
             pass
+
+
+def tenant_key(school_id: int | None, name: str, *parts: Any) -> str:
+    """Build a tenant-aware cache key prefixed with the school_id.
+
+    Prevents cross-tenant cache leakage: every key for tenant-scoped data
+    MUST be built through this helper (or include the school_id segment).
+    """
+    sid = "platform" if school_id is None else str(school_id)
+    segments = [sid, name] + [str(p) for p in parts]
+    return ":".join(segments)
+
+
+def invalidate_prefix(prefix: str) -> int:
+    """Invalidate all keys starting with ``prefix`` (tenant or feature)."""
+    r = _get_redis()
+    removed = 0
+    if r is not None:
+        try:
+            for k in r.scan_iter(f"azad:cache:{prefix}*"):
+                r.delete(k)
+                removed += 1
+        except Exception:  # noqa: BLE001
+            pass
+    for k in list(_MEM.keys()):
+        if k.startswith(prefix):
+            _MEM.pop(k, None)
+            removed += 1
+    return removed

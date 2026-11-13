@@ -87,7 +87,7 @@ def check_and_award_badges(student_id: int, event_type: str, event_data: dict | 
                 if _check_course_complete(student_id, event_data.get("class_id")):
                     should_award = True
 
-        elif badge.criteria_type == BadgeCriteriaType.early_bird:
+        else:  # early_bird — BadgeCriteriaType مستنفد أعلاه؛ أي نوع جديد يُضاف قبله
             if event_type == "assignment_submitted" and event_data:
                 deadline = event_data.get("deadline")
                 submitted_at = event_data.get("submitted_at")

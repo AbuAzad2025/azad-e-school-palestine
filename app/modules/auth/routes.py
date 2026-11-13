@@ -119,18 +119,21 @@ def login():
             is_first_login = user.last_login_at is None
             mark_login(user)
 
-            # تحويل مباشر للوحة المطلوبة حسب الدور — بدون تعقيد أو تكدس
-            redirect_target = url_for("auth.dashboard")
-            if user.role == UserRole.super_admin or user.role == UserRole.school_admin:
-                redirect_target = url_for("admin.dashboard")
-            elif user.role == UserRole.teacher:
-                redirect_target = url_for("schools.my_classes")
-            elif user.role == UserRole.student:
-                from app.core.context import is_individual
+            # تحويل مباشر للوحة المطلوبة حسب الدور. جدول صريح بدل سلسلة
+            # if/elif كان آخرها غير قابل للوصول (UserRole مستنفد) ويترك
+            # redirect_target غير معرّف لو ظهر دور جديد.
+            from app.core.context import is_individual
 
-                redirect_target = url_for("individual.my_courses") if is_individual() else url_for("schools.my_classes")
-            elif user.role == UserRole.parent:
-                redirect_target = url_for("family.index")
+            redirect_targets = {
+                UserRole.super_admin: url_for("admin.dashboard"),
+                UserRole.school_admin: url_for("admin.dashboard"),
+                UserRole.teacher: url_for("schools.my_classes"),
+                UserRole.student: (
+                    url_for("individual.my_courses") if is_individual() else url_for("schools.my_classes")
+                ),
+                UserRole.parent: url_for("family.index"),
+            }
+            redirect_target = redirect_targets.get(user.role, url_for("auth.dashboard"))
 
             resp = make_response(redirect(redirect_target))
             if is_first_login:

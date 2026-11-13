@@ -353,19 +353,18 @@ def bulk_action():
                     user.is_active = True
                 elif action == "deactivate":
                     user.is_active = False
-                elif action == "delete":
+                else:  # delete — الإجراءات مقصورة على allowed أعلاه
                     user.is_active = False
                     user.deleted_at = datetime.now(UTC)
 
-        elif entity == "schools":
+        else:  # schools — الإجراء الوحيد المسموح لهذا الكيان هو delete
             # Batch: جلب كل المدارس في استعلام واحد
             schools = {s.id: s for s in School.query.filter(School.id.in_(ids)).all()}
             for school_id in ids:
                 school = schools.get(school_id)
                 if not school:
                     continue
-                if action == "delete":
-                    school.is_active = False
+                school.is_active = False
 
     tx(_apply)
     return {"success": True, "message": _("تم تنفيذ الإجراء")}

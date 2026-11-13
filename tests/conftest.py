@@ -12,6 +12,9 @@ from datetime import UTC
 os.environ.pop("AI_API_KEY", None)
 os.environ.pop("OPENAI_API_KEY", None)
 os.environ["RAG_DISABLE_EMBEDDINGS"] = "1"
+# Swagger معطّل افتراضياً في TestingConfig؛ نفعّله هنا كي يتحقق عقد
+# OpenAPI الحقيقي (test_openapi.py) لا أن يُستبعد من التشغيل.
+os.environ.setdefault("SWAGGER_ENABLED", "1")
 
 import pytest
 from app import create_app

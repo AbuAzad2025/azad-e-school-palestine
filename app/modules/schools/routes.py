@@ -94,7 +94,9 @@ def class_new(school_id):
         )
         if error:
             flash(_(error), "danger")
-        elif class_room is not None:
+        else:
+            # create_class يعيد الصف عند النجاح دائماً (None مع خطأ فقط).
+            assert class_room is not None
             audit("class.create", "classes", class_room.id)
             flash(_("تم إنشاء الصف."), "success")
             return redirect(url_for("schools.class_detail", class_id=class_room.id))

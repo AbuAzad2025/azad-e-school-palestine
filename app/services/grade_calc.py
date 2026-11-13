@@ -202,12 +202,12 @@ def class_grades_summary(class_id: int) -> list[dict]:
     # جلب جميع الدرجات لكل الطلاب في استعلام واحد
     all_entries = GradeEntry.query.filter(GradeEntry.grade_item_id.in_(item_ids or [0])).all() if item_ids else []
     # تجميع الدرجات: {category_id: {item_id: entry}}
+    # الاستعلام أعلاه مقيَّد ببنود الصف نفسه، فكل ``grade_item_id`` هنا موجود
+    # في ``item_to_cat`` بالضرورة — لا فحص None ميت.
     item_to_cat = {i.id: i.category_id for i in all_items}
     entries_by_cat: dict[int, dict[int, GradeEntry]] = {}
     for e in all_entries:
-        cat_id = item_to_cat.get(e.grade_item_id)
-        if cat_id is not None:
-            entries_by_cat.setdefault(cat_id, {})[e.grade_item_id] = e
+        entries_by_cat.setdefault(item_to_cat[e.grade_item_id], {})[e.grade_item_id] = e
 
     # جلب الأعضاء مع المستخدم في استعلام واحد
     members = (

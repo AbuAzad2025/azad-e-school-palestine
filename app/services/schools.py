@@ -218,10 +218,10 @@ def get_or_create_system_school() -> School:
         )
         db.session.add(s)
         db.session.flush()
+        # المدرسة أنشئت للتوّ، فلا صفوف دراسية لها بعد: لا داعي لاستعلام
+        # وجود لكل مستوى (كان 12 SELECT زائدة وفرعها غير قابل للوصول).
         for level in range(1, 13):
-            existing = Grade.query.filter_by(school_id=s.id, grade_level=level).first()
-            if not existing:
-                db.session.add(Grade(school_id=s.id, grade_level=level, name_ar=f"صف {level}"))
+            db.session.add(Grade(school_id=s.id, grade_level=level, name_ar=f"صف {level}"))
         return s
 
     # The seed rows belong to the platform, not to a tenant: the caller is

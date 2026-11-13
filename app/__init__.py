@@ -222,6 +222,12 @@ def create_app(config_class=Config):
         if hasattr(g, "_request_start"):
             elapsed_ms = int((_time.monotonic() - g._request_start) * 1000)
             _response_times.append(elapsed_ms)
+            try:
+                from .core.metrics import record_request
+
+                record_request(request.method, request.path, response.status_code, float(elapsed_ms))
+            except Exception:  # noqa: BLE001
+                pass
         return response
 
     if not app.config.get("TALISMAN_ENABLED", True):
@@ -375,6 +381,54 @@ def create_app(config_class=Config):
 
         count = expire_subscriptions()
         click.echo(f"expired_subscriptions={count}")
+
+    @app.cli.command("purge-expired-logs")
+    @click.option("--days", default=None, type=int, help="Retention window in days.")
+    def purge_expired_logs_cmd(days):
+        """Purge audit logs older than the retention window."""
+        from datetime import UTC, datetime, timedelta
+
+        from app.extensions import db
+        from app.models.system import AuditLog
+
+        retention = days if days is not None else app.config.get("AUDIT_LOG_RETENTION_DAYS", 90)
+        cutoff = datetime.now(UTC) - timedelta(days=retention)
+        deleted = db.session.query(AuditLog).filter(AuditLog.created_at < cutoff).delete()
+        db.session.commit()
+        click.echo(f"purged_audit_logs={deleted}")
+
+    # AZ-PH2: reconciliation command
+    @app.cli.command("reconcile-payments")
+    @click.option("--since", default=None, help="ISO timestamp lower bound.")
+    def reconcile_payments_cmd(since):
+        """Run payment reconciliation and print a structured report."""
+        import json
+        from datetime import datetime
+
+        from .services.reconciliation import reconcile
+
+        since_dt = datetime.fromisoformat(since) if since else None
+        report = reconcile(since=since_dt)
+        click.echo(
+            json.dumps(
+                {
+                    "generated_at": report.generated_at.isoformat(),
+                    "total_discrepancy": str(report.total_discrepancy),
+                    "items": [
+                        {
+                            "reference": i.reference,
+                            "kind": i.kind,
+                            "expected": str(i.expected),
+                            "actual": str(i.actual),
+                            "discrepancy": str(i.discrepancy),
+                            "status": i.status,
+                        }
+                        for i in report.items
+                    ],
+                },
+                ensure_ascii=False,
+            )
+        )
 
     # AZ-P1-09: الدفعات المعلّقة تتجاوز مهلة 24 ساعة → expired (cron: flask expire-pending-payments)
     @app.cli.command("expire-pending-payments")
@@ -564,6 +618,32 @@ def create_app(config_class=Config):
             checks=checks,
             version=app.config.get("APP_VERSION", "1.0.0"),
         )
+
+    @app.get("/metrics")
+    def metrics_endpoint():
+        from flask import Response
+
+        # Protect: super_admin session OR Bearer token with metrics scope.
+        allowed = False
+        if current_user.is_authenticated and getattr(current_user, "role", None) is not None:
+            try:
+                if current_user.role.value == "super_admin":
+                    allowed = True
+            except Exception:  # noqa: BLE001
+                allowed = False
+        if not allowed:
+            # Allow via X-Metrics-Token header matching METRICS_TOKEN env/config.
+            token = request.headers.get("X-Metrics-Token", "")
+            configured = app.config.get("METRICS_TOKEN", "")
+            if configured and token and token == configured:
+                allowed = True
+        if not allowed:
+            from werkzeug.exceptions import Forbidden
+
+            raise Forbidden()
+        from .core.metrics import render_prometheus
+
+        return Response(render_prometheus(), mimetype="text/plain; version=0.0.4")
 
     @app.get("/health/deep")
     def health_deep():

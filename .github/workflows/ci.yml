@@ -332,10 +332,7 @@ jobs:
             --cov=app --cov-branch \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov \
-            --deselect tests/test_erp_ux_sprint4.py \
-            --deselect tests/test_openapi.py \
-            --deselect tests/test_offline_client.py
+            --cov-report=html:htmlcov
 
       - name: Upload coverage
         if: always()

@@ -134,6 +134,7 @@ class _BaseConfig:
     BACKUP_S3_ACCESS_KEY = os.getenv("BACKUP_S3_ACCESS_KEY", "")
     BACKUP_S3_SECRET_KEY = os.getenv("BACKUP_S3_SECRET_KEY", "")
     BACKUP_LOCAL_RETENTION_DAYS = int(os.getenv("BACKUP_LOCAL_RETENTION_DAYS", "7"))
+    AUDIT_LOG_RETENTION_DAYS = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "90"))
 
     ALERT_EMAIL = os.getenv("ALERT_EMAIL", "")
 
@@ -202,7 +203,8 @@ class TestingConfig(_BaseConfig):
     WTF_CSRF_ENABLED = False
     RATELIMIT_ENABLED = False
     EMAIL_ENABLED = False
-    SWAGGER_ENABLED = False
+    # معطّل افتراضياً؛ يُفعَّل صراحةً (SWAGGER_ENABLED=1) لاختبار عقد OpenAPI.
+    SWAGGER_ENABLED = os.getenv("SWAGGER_ENABLED", "0") == "1"
     LOG_LEVEL = "WARNING"
 
 

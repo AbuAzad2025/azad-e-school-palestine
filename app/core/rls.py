@@ -773,7 +773,8 @@ def _elevate_now() -> None:
 
 def _session_in_transaction() -> bool:
     """هل للجلسة الحقيقية معاملة مفتوحة؟ (scoped_session لا يكشفها مباشرة)"""
-    return bool(db.session().in_transaction())
+    session = db.session.registry()
+    return bool(session is not None and session.in_transaction())
 
 
 def _request_guc_snapshot() -> dict[str, str]:

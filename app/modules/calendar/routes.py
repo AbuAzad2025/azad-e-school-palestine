@@ -53,7 +53,9 @@ def event_create(school_id):
         )
         if error:
             flash(_(error), "danger")
-        elif event is not None:
+        else:
+            # create_event يعيد الحدث عند النجاح دائماً (None مع خطأ فقط).
+            assert event is not None
             flash(_("أُضيف الحدث."), "success")
     return redirect(url_for("calendar.index", school_id=school_id))
 

@@ -282,9 +282,10 @@ def _parse_llm_response(raw: str) -> list[dict] | None:
         match = re.search(r"\[.*\]", cleaned, re.DOTALL)
         if match:
             try:
+                # مطابقة ``\[.*\]`` تُنتج JSON قائمة دائماً؛ إن أعادت نوعاً
+                # آخر فالتصفية أدناه تعيد قائمة فارغة بلا انفجار.
                 data = json.loads(match.group())
-                if isinstance(data, list):
-                    return [q for q in data if isinstance(q, dict) and "question_text" in q]
+                return [q for q in data if isinstance(q, dict) and "question_text" in q]
             except json.JSONDecodeError:
                 pass
         return None

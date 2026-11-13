@@ -92,12 +92,13 @@ def get_quiz_stats(quiz_id: int) -> QuizStats | None:
             score_distribution["80-100"] += 1
 
     question_stats = []
-    if attempts:
-        sorted_attempts = sorted(attempts, key=lambda a: float(a.score or 0), reverse=True)
-        top_n = max(1, int(len(sorted_attempts) * 0.27))
-        bottom_n = max(1, int(len(sorted_attempts) * 0.27))
-        top_students = {a.student_id for a in sorted_attempts[:top_n]}
-        bottom_students = {a.student_id for a in sorted_attempts[-bottom_n:]}
+    # الوصول إلى هنا يستلزم total_attempts > 0 (الفرع الصفري يعود مبكراً)،
+    # فحص attempts هنا كان ميتاً.
+    sorted_attempts = sorted(attempts, key=lambda a: float(a.score or 0), reverse=True)
+    top_n = max(1, int(len(sorted_attempts) * 0.27))
+    bottom_n = max(1, int(len(sorted_attempts) * 0.27))
+    top_students = {a.student_id for a in sorted_attempts[:top_n]}
+    bottom_students = {a.student_id for a in sorted_attempts[-bottom_n:]}
 
     for question in quiz.questions:
         q_answers = []
@@ -115,18 +116,19 @@ def get_quiz_stats(quiz_id: int) -> QuizStats | None:
         top_total = 0
         bottom_correct = 0
         bottom_total = 0
-        if attempts and top_students and bottom_students:
-            for attempt in attempts:
-                for ans in attempt.answers:
-                    if ans.question_id == question.id:
-                        if attempt.student_id in top_students:
-                            top_total += 1
-                            if ans.is_correct is True:
-                                top_correct += 1
-                        if attempt.student_id in bottom_students:
-                            bottom_total += 1
-                            if ans.is_correct is True:
-                                bottom_correct += 1
+        # top_students/bottom_students غير فارغتين دائماً (max(1, ...) ووجود
+        # محاولة واحدة على الأقل)، فلا حاجة لفحصهما.
+        for attempt in attempts:
+            for ans in attempt.answers:
+                if ans.question_id == question.id:
+                    if attempt.student_id in top_students:
+                        top_total += 1
+                        if ans.is_correct is True:
+                            top_correct += 1
+                    if attempt.student_id in bottom_students:
+                        bottom_total += 1
+                        if ans.is_correct is True:
+                            bottom_correct += 1
 
         top_pct = top_correct / top_total if top_total else 0.0
         bottom_pct = bottom_correct / bottom_total if bottom_total else 0.0

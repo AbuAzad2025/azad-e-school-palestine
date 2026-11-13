@@ -62,23 +62,15 @@ def test_input_has_aria_describedby_when_error_present(app):
 
 
 def test_reduced_motion_disables_animations():
-    import pytest
-
-    motion_css = CSS_DIR / "generic" / "_motion.css"
-    if not motion_css.exists():
-        pytest.skip("_motion.css not found — feature not yet implemented")
-    css = motion_css.read_text(encoding="utf-8")
-    assert "prefers-reduced-motion: reduce" in css
-    assert "animation-duration" in css or "transition-duration" in css
+    css = (CSS_DIR / "polish.css").read_text(encoding="utf-8")
+    assert "@media (prefers-reduced-motion: reduce)" in css
+    # القاعدة تلغي الحركة/الانتقال صراحةً، لا تخفّض المدة فقط.
+    assert "transform: none !important" in css
+    assert "transition: none !important" in css
 
 
 def test_all_buttons_have_focus_outline():
-    import pytest
-
-    focus_css = CSS_DIR / "elements" / "_focus.css"
-    if not focus_css.exists():
-        pytest.skip("_focus.css not found — feature not yet implemented")
-    css = focus_css.read_text(encoding="utf-8")
+    css = (CSS_DIR / "app.css").read_text(encoding="utf-8")
     assert ".azad-btn:focus" in css
     assert "outline: 2px solid" in css
     assert "outline-offset: 2px" in css
@@ -86,7 +78,10 @@ def test_all_buttons_have_focus_outline():
 
 def test_tour_modal_renders_for_first_time_user(app, client):
     user_id = make_user(app, role="student")
-    resp = _login(client, _email(app, user_id))
+    assert _login(client, _email(app, user_id)).status_code == 200
+    # تسجيل الدخول يحوّل الطالب إلى صفوفه؛ جولة onboarding تعيش في لوحة
+    # auth.dashboard حيث توجد أهدافها الأربعة — نطلبها صراحةً.
+    resp = client.get("/auth/dashboard")
     assert resp.status_code == 200
     text = resp.get_data(as_text=True)
     assert 'data-show-tour="true"' in text
@@ -98,13 +93,9 @@ def test_tour_modal_renders_for_first_time_user(app, client):
 
 
 def test_toast_announces_via_aria_live():
-    import pytest
-
     base = (TEMPLATES_DIR / "base.html").read_text(encoding="utf-8")
     assert 'aria-live="polite"' in base
     assert 'id="azad-live-region"' in base
-    toast_js = JS_DIR / "modules" / "toast.js"
-    if not toast_js.exists():
-        pytest.skip("toast.js module not found — feature not yet implemented")
+    toast_js = JS_DIR / "components" / "toast.js"
     content_js = toast_js.read_text(encoding="utf-8")
     assert "azad-live-region" in content_js

@@ -939,3 +939,134 @@ def review_topup(
         operator=operator_id,
     )
     return reviewed, None
+
+
+def process_refund(
+    school_id: int,
+    user_id: int,
+    amount: Decimal | float | int | str,
+    reason: str,
+    idempotency_key: str,
+    *,
+    admin_user_id: int | None = None,
+    manual_payment_id: int | None = None,
+    reference_type: str | None = None,
+    reference_id: int | None = None,
+) -> tuple[Any, str | None]:
+    """Idempotent full/partial refund via a counter-entry (never mutating history).
+
+    Credits the payer's wallet and records a ``TX_REFUND`` ledger entry with
+    ``source_wallet_id=None`` (platform-funded) unless a school wallet is
+    provided. Enforces ``with_for_update()`` locking, ``Decimal`` rounding,
+    balance validation, payment status transition and admin audit logging.
+
+    Returns (WalletTransaction, None) on success, (None, error_message) on failure.
+    """
+    from app.models.billing import ManualPayment
+    from app.models.wallet import Wallet, WalletTransaction
+
+    amount_dec = _money(amount)
+    if amount_dec <= 0:
+        return None, _("المبلغ يجب أن يكون أكبر من صفر.")
+
+    # Idempotency: return existing result if already processed.
+    existing = WalletTransaction.query.filter_by(idempotency_key=idempotency_key).first()
+    if existing:
+        logger.info("refund_idempotent_hit", idempotency_key=idempotency_key, tx_id=existing.id)
+        return existing, None
+
+    def _refund():
+        # Lock the destination (payer) wallet.
+        dest_wallet = db.session.query(Wallet).filter_by(school_id=school_id, user_id=user_id).with_for_update().first()
+        if not dest_wallet:
+            raise TxError(_("محفظة المستخدم غير موجودة."))
+        if dest_wallet.status != "active":
+            raise TxError(_("محفظة المستخدم غير نشطة."))
+
+        # Optional: link/transition the manual payment.
+        payment = None
+        if manual_payment_id is not None:
+            payment = (
+                db.session.query(ManualPayment)
+                .filter_by(id=manual_payment_id, school_id=school_id)
+                .with_for_update()
+                .first()
+            )
+            if not payment:
+                raise TxError(_("الدفعة غير موجودة."))
+            if payment.status not in ("approved", "pending"):
+                raise TxError(_("لا يمكن استرداد دفعة بحالة %(status)s.", status=payment.status))
+            # Partial refund guard: refunded total must not exceed paid amount.
+            paid = _money(payment.amount)
+            if amount_dec > paid:
+                raise TxError(_("مبلغ الاسترداد يتجاوز مبلغ الدفعة."))
+
+        # Create the counter-entry (credit to payer). source_wallet_id=None means
+        # platform-funded; the ledger remains append-only.
+        tx_hash = _generate_tx_hash(
+            school_id=school_id,
+            source_wallet_id=None,
+            dest_wallet_id=dest_wallet.id,
+            amount=amount_dec,
+            tx_type=TX_REFUND,
+        )
+        refund_tx = WalletTransaction(
+            school_id=school_id,
+            source_wallet_id=None,
+            destination_wallet_id=dest_wallet.id,
+            amount=amount_dec,
+            currency=dest_wallet.currency,
+            transaction_type=TX_REFUND,
+            transaction_hash=tx_hash,
+            idempotency_key=idempotency_key,
+            description=reason or _("استرداد"),
+            reference_type=reference_type or ("manual_payment" if manual_payment_id else None),
+            reference_id=reference_id or manual_payment_id,
+            status="completed",
+        )
+        db.session.add(refund_tx)
+
+        # Credit the payer's wallet balance.
+        dest_wallet.balance = _money(Decimal(str(dest_wallet.balance)) + amount_dec)
+
+        # Transition the payment status when fully refunded.
+        if payment is not None and amount_dec >= _money(payment.amount):
+            payment.status = "refunded"
+
+        # Admin audit log (same transaction).
+        try:
+            from app.models.system import AuditLog
+
+            db.session.add(
+                AuditLog(
+                    user_id=admin_user_id or 0,
+                    action="process_refund",
+                    entity="wallet_transaction",
+                    entity_id=0,
+                    detail={
+                        "school_id": school_id,
+                        "user_id": user_id,
+                        "amount": str(amount_dec),
+                        "reason": reason,
+                        "manual_payment_id": manual_payment_id,
+                        "idempotency_key": idempotency_key,
+                    },
+                )
+            )
+        except Exception:
+            logger.exception("refund_audit_failed")
+
+        return refund_tx
+
+    try:
+        result = tx(_refund)
+    except TxError as exc:
+        return None, str(exc)
+    logger.info(
+        "refund_processed",
+        school_id=school_id,
+        user_id=user_id,
+        amount=str(amount_dec),
+        admin=admin_user_id,
+    )
+    return result, None

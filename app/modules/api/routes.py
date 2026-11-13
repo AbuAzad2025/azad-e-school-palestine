@@ -57,7 +57,19 @@ def _parse_pagination() -> tuple[int, int]:
 @bp.get("/me")
 @api_auth_required
 def api_me():
-    """الملف الشخصي للمستخدم الحالي."""
+    """الملف الشخصي للمستخدم الحالي.
+    ---
+    tags: [Auth]
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: بيانات المستخدم الحالي
+        schema:
+          $ref: '#/definitions/User'
+      401:
+        description: غير مصادَق
+    """
     log = logger.bind(user_id=current_user.id)
     log.info("api_me_called")
     user = current_user
@@ -129,7 +141,22 @@ def api_schools_get(school_id: int):
 @api_auth_required
 @role_required(UserRole.super_admin, UserRole.school_admin, UserRole.teacher, UserRole.student, UserRole.parent)
 def api_lessons_list():
-    """قائمة الدروس المتاحة للمستخدم."""
+    """قائمة الدروس المتاحة للمستخدم.
+    ---
+    tags: [Content]
+    security:
+      - Bearer: []
+    parameters:
+      - {name: page, in: query, type: integer, default: 1}
+      - {name: per_page, in: query, type: integer, default: 20}
+    responses:
+      200:
+        description: صفحة من الدروس المتاحة
+        schema:
+          $ref: '#/definitions/Lesson'
+      401:
+        description: غير مصادَق
+    """
     log = logger.bind(user_id=current_user.id)
     log.info("api_lessons_called")
 
@@ -204,7 +231,22 @@ def api_lessons_get(lesson_id: int):
 @api_auth_required
 @role_required(UserRole.super_admin, UserRole.school_admin, UserRole.teacher, UserRole.student)
 def api_tutoring_sessions_list():
-    """الجلسات التعليمية للمستخدم."""
+    """الجلسات التعليمية للمستخدم.
+    ---
+    tags: [Tutoring]
+    security:
+      - Bearer: []
+    parameters:
+      - {name: page, in: query, type: integer, default: 1}
+      - {name: per_page, in: query, type: integer, default: 20}
+    responses:
+      200:
+        description: صفحة من الجلسات التعليمية
+        schema:
+          $ref: '#/definitions/TutoringSession'
+      401:
+        description: غير مصادَق
+    """
     log = logger.bind(user_id=current_user.id)
     log.info("api_tutoring_sessions_called")
 
