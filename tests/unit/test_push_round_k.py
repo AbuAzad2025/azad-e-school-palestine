@@ -267,7 +267,7 @@ class TestTutoringBranchClosure:
         with app.app_context():
             from app.models.tutoring import TutoringSession
 
-            sess = TutoringSession(tutor_id=tid, student_id=stu, subject="رياضيات", status="confirmed")
+            sess = TutoringSession(tutor_id=tid, student_id=stu, subject="رياضيات", status="active")
             _db.session.add(sess)
             _db.session.commit()
             sess_id = sess.id
